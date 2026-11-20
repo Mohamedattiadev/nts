@@ -19,6 +19,9 @@
     var t = localStorage.getItem('hn-theme');
     var dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    var a = localStorage.getItem('hn-accent'), r = document.documentElement;
+    if (a && a.charAt(0) === '#') { r.dataset.accent = 'custom'; r.style.setProperty('--accent', a); r.style.setProperty('--accent-soft', 'color-mix(in srgb, ' + a + ' 14%, transparent)'); }
+    else if (a && a !== 'orange') r.dataset.accent = a;
   } catch (e) { document.documentElement.dataset.theme = 'dark'; }
   // never leave a blank screen: a script error or a stuck start still uncovers the app
   (function () {
@@ -42,7 +45,12 @@
   <!-- desktop: small vertical toolbar, left middle -->
   <nav class="rail d-only" id="rail" aria-label="Filtre"></nav>
   <div id="filterPop" class="pop" hidden>
+    <div class="side-label m-only-b">Göster</div>
     <div id="popTypes" class="nav m-only-b"></div>
+    <div class="side-label">Renk ve sıra</div>
+    <div id="sideMarks"></div>
+    <div class="side-label" id="projLabel" hidden>Projeler</div>
+    <div id="sideProjects" class="side-tags"></div>
     <div class="side-label">Konular</div>
     <div id="sideTags" class="side-tags"></div>
   </div>
@@ -55,12 +63,14 @@
     <div id="list" class="list"></div>
     <div id="gallery" class="gallery" hidden></div>
     <div id="topics" class="list" hidden></div>
+    <div id="todo" class="todo" hidden></div>
     <div id="board" class="board" hidden>
-      <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
+      <div id="plane" class="plane"><svg id="wires" class="wires"></svg><svg id="ink" class="ink"></svg></div>
     </div>
     <div id="empty" class="empty" hidden></div>
   </main>
 
+  <div class="board-tools pal" id="pal" hidden aria-label="Araçlar"></div>
   <div class="board-tools" id="boardTools" hidden>
     <button id="zoomOut" class="tool" title="Uzaklaş"></button>
     <button id="zoomPct" class="tool pct" title="%100'e dön"></button>
@@ -91,6 +101,7 @@
 
 <input id="waInput" type="file" accept=".zip,.txt,application/zip,text/plain" hidden>
 <input id="backupInput" type="file" accept=".zip" hidden>
+<input id="bmInput" type="file" accept=".html,.htm,text/html" hidden>
 
 <script src="vendor/jszip.min.js" defer></script>
 <script src="db.js" defer></script>

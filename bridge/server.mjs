@@ -98,11 +98,17 @@ const ORGANIZE_SCHEMA = {
         summary: { type: 'string', description: 'one sentence: what it is and why it matters' },
         tags: { type: 'array', items: { type: 'string' }, description: '1-3 broad topic tags, reuse existing ones' },
         related: { type: 'array', items: { type: 'string' }, description: 'ids of clearly related items in this batch' },
+        todo: { type: 'object', required: ['text'], description: 'ONLY if the item is something the person must do (task, appointment, reminder, errand). Omit otherwise.',
+          properties: { text: { type: 'string', description: 'short task in the item language, e.g. "Diş randevusu"' },
+            due: { type: 'string', description: 'local date "YYYY-MM-DD" or date-time "YYYY-MM-DDTHH:mm" if a day/time is stated or clearly implied (yarın, cuma, 10:30), resolved from "Now"; omit if none' } } },
+        lists: { type: 'array', items: { type: 'string', enum: ['bakilacak', 'begendim', 'onemli'] },
+          description: 'smart lists, zero or more: bakilacak = to read/watch/check later (articles, videos, tools to try); begendim = something the person liked/inspiration (designs, quotes, products); onemli = important to keep (documents, IDs, contracts, receipts, passwords hints, key decisions)' },
+        project: { type: 'string', description: 'name of a clear ongoing project or product this belongs to (lowercase, e.g. poultrycare), reuse an existing project name; omit if none' },
       } } },
   },
 };
 
-async function organize(items, existingTags) {
+async function organize(items, existingTags, projects = []) {
   // images come as small base64 JPEGs; write them where the read-only Read tool may look
   for (const i of items) if (i.image) { const p = join(WORK_DIR, `img-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
   const hasImg = items.some(i => i._imgPath);
@@ -113,10 +119,12 @@ async function organize(items, existingTags) {
     'Never use tags about the item type or format (dosya, link, not, resim, pdf, görsel, belge, video, referans, diğer, genel, kişisel, liste, hatırlatma). Single words, no spaces. ' +
     'Write title and summary in the language of the item (Turkish if unsure), natural and plain, like a helpful friend. ' +
     'For notes keep the user\'s key details (times, dates, amounts, names) in the title. Use "content" (text inside a PDF) and look at "image" files with the Read tool to understand files. ' +
-    'Never talk about yourself, tags, or what you could not see; if a file is unclear, just describe it briefly. Mark related items (same project/topic/task). Output only per schema.';
+    'Never talk about yourself, tags, or what you could not see; if a file is unclear, just describe it briefly. Mark related items (same project/topic/task). Add "todo" only for real tasks/appointments/reminders (resolve relative days from Now). Put items in smart "lists" only when clearly fitting. Output only per schema.';
   // people want ~10-20 folders, not 100+ tags: once the set is full, only existing tags may be used
   const full = existingTags.length >= 25 ? `\nThe tag set is full (${existingTags.length}). Do NOT invent new tags: pick only from the existing ones.` : '';
-  const prompt = `Existing tags: ${existingTags.join(', ') || '(none)'}${full}\n\nItems:\n${JSON.stringify(compact(items))}`;
+  const now = new Date(), day = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const proj = projects.length ? `\nExisting projects: ${projects.join(', ')}` : '';
+  const prompt = `Now: ${localTime(now)} (${day})\nExisting tags: ${existingTags.join(', ') || '(none)'}${full}${proj}\n\nItems:\n${JSON.stringify(compact(items))}`;
   const opts = { prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel, readDir: hasImg ? WORK_DIR : null };
   try { return await runClaude(opts); } catch { return await runClaude(opts); }
   finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
@@ -189,6 +197,40 @@ async function meta(url) {
   } catch { return null; }
 }
 
+// ---- readable copy of a page (no libraries: pick the main block, keep headings / paragraphs / lists / quotes) ----
+async function article(url) {
+  const u = new URL(url); if (!/^https?:$/.test(u.protocol)) throw new Error('bad url');
+  const res = await fetch(u, { redirect: 'follow', signal: AbortSignal.timeout(12000),
+    headers: { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', 'accept-language': 'tr,en;q=0.8' } });
+  if (!(res.headers.get('content-type') || '').includes('html')) throw new Error('not a web page');
+  let html = (await res.text()).slice(0, 3e6);
+  const m = re => { const x = html.match(re); return x ? decode(x[1]) : undefined; };
+  const og = p => m(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]+content=["']([^"']*)["']`, 'i'))
+    || m(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${p}["']`, 'i'));
+  const title = og('og:title') || m(/<title[^>]*>([^<]*)<\/title>/i), image = og('og:image'), byline = og('author') || og('article:author'), site = og('og:site_name');
+  html = html.replace(/<(script|style|noscript|svg|nav|header|footer|aside|form|iframe|button|select|figure[^>]*class=["'][^"']*(?:ad|promo)[^"']*["'])[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+  // candidates: <article>, <main>, else <body>; take the one with the most paragraph text
+  const cands = [...html.matchAll(/<(article|main)[^>]*>([\s\S]*?)<\/\1>/gi)].map(x => x[2]);
+  cands.push((html.match(/<body[^>]*>([\s\S]*)<\/body>/i) || [, html])[1]);
+  const ptext = h => (h.match(/<p[\s>][\s\S]*?<\/p>/gi) || []).join(' ').replace(/<[^>]+>/g, '').length;
+  const main = cands.sort((a, b) => ptext(b) - ptext(a))[0] || '';
+  const strip = h => decode(h.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/[ \t\r\f\v]+/g, ' ').replace(/\n\s*/g, '\n'));
+  const blocks = []; let size = 0;
+  for (const x of main.matchAll(/<(h[1-4]|p|li|blockquote|pre)[\s>][\s\S]*?<\/\1>/gi)) {
+    const tag = x[1].toLowerCase(), text = strip(x[0]).trim(); if (!text) continue;
+    if (tag === 'p' && text.length < 30 && !/[.!?:]$/.test(text)) continue; // menu bits, captions
+    if (tag === 'li' && text.length < 20) continue;
+    const t = tag[0] === 'h' ? 'h' : tag === 'blockquote' ? 'q' : tag === 'pre' ? 'code' : tag;
+    if (blocks.at(-1)?.x === text) continue;
+    blocks.push({ t, x: text.slice(0, 4000) }); size += text.length; if (size > 80000) break;
+  }
+  // the page title / site name usually repeat at the top: the reader shows the title itself
+  const same = (a, b) => a && b && a.toLowerCase().replace(/\W+/g, '') === b.toLowerCase().replace(/\W+/g, '');
+  while (blocks.length && blocks[0].t === 'h' && (same(blocks[0].x, title) || same(blocks[0].x, site) || (title || '').toLowerCase().includes(blocks[0].x.toLowerCase()))) blocks.shift();
+  if (blocks.filter(b => b.t === 'p').length < 2) throw new Error('no readable text');
+  return { title, image, byline, site, blocks, words: blocks.reduce((n, b) => n + b.x.split(/\s+/).length, 0), at: Date.now() };
+}
+
 // ---- http ----
 function send(res, code, body, origin) {
   res.writeHead(code, {
@@ -201,7 +243,7 @@ function send(res, code, body, origin) {
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const API = /^\/(health|meta|organize|ask|tags|inbox|new-repo|config)(\/|$)/;
+const API = /^\/(health|meta|article|organize|ask|tags|inbox|new-repo|config|snapshot)(\/|$)/;
 function serveStatic(req, res) {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   const file = join(APP_DIR, p === '/' ? 'index.html' : p);
@@ -222,9 +264,10 @@ http.createServer(async (req, res) => {
     return res.end();
   }
   if (req.method === 'GET' && !API.test(req.url)) return serveStatic(req, res);
-  if (req.url === '/config') { // token only for the app page served from this same origin
-    if (req.headers['sec-fetch-site'] === 'same-origin') return send(res, 200, { token: conf.token });
-    return send(res, 403, { error: 'same-origin only' });
+  if (req.url === '/config') { // token only for the app on this computer: served from here, or any http://localhost:* page
+    const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.origin || '');
+    if (req.headers['sec-fetch-site'] === 'same-origin' || local) return send(res, 200, { token: conf.token }, local ? req.headers.origin : null);
+    return send(res, 403, { error: 'this computer only' });
   }
   if (req.headers.authorization !== `Bearer ${conf.token}`) return send(res, 401, { error: 'bad token' }, origin);
   try {
@@ -250,12 +293,20 @@ http.createServer(async (req, res) => {
       await new Promise((ok, no) => execFile('gh', ['repo', 'create', name, '--private', '--description', 'Nts data'], (e, o, er) => e && !/already exists/i.test(er) ? no(new Error(er || e.message)) : ok()));
       console.log('new repo ' + name); return send(res, 200, { ok: true, name }, origin);
     }
+    if (req.url === '/snapshot' && req.method === 'POST') { // a plain copy for the MCP server (bridge/mcp.mjs); only this computer reads it
+      writeFileSync(join(CONF_DIR, 'snapshot.json'), JSON.stringify({ at: Date.now(), items: (body.items || []).slice(0, 20000) }), { mode: 0o600 });
+      return send(res, 200, { ok: true, n: body.items?.length || 0 }, origin);
+    }
+    if (req.url === '/article') {
+      try { const r = await article(body.url); console.log(`article ${r.words}w ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+      catch (e) { return send(res, 422, { error: e.message }, origin); }
+    }
     if (req.url === '/meta') {
       const out = {}; await Promise.all((body.urls || []).slice(0, 30).map(async u => { out[u] = await meta(u); }));
       return send(res, 200, out, origin);
     }
     if (req.url === '/organize') {
-      const r = await organize((body.items || []).slice(0, 40), body.tags || []);
+      const r = await organize((body.items || []).slice(0, 40), body.tags || [], (body.projects || []).slice(0, 30));
       console.log(`organize ${body.items?.length} items ${Date.now() - t}ms`);
       return send(res, 200, r, origin);
     }

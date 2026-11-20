@@ -15,7 +15,8 @@ After=network-online.target
 
 [Service]
 ExecStart=$NODE $DIR/server.mjs
-Restart=on-failure
+Restart=always
+RestartSec=3
 Environment=PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
 
 [Install]
