@@ -1056,7 +1056,7 @@ const Cloud = {
   async load() { this.s = (await DB.get('kv', 'sb-session')) || null; },
   async keep(s) { this.s = s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at || Math.floor(now() / 1000) + (s.expires_in || 3600), user: { id: s.user?.id, email: s.user?.email } } : null; this.s ? await DB.put('kv', this.s, 'sb-session') : await DB.del('kv', 'sb-session'); },
   async auth(path, body) {
-    const r = await fetch(SB.url + '/auth/v1/' + path, { method: 'POST', headers: { apikey: SB.key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(SB.url + '/auth/v1/' + path, { method: 'POST', headers: { apikey: SB.key, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { const e = new Error(j.error_description || j.msg || j.message || 'Giriş hatası ' + r.status); e.status = r.status; throw e; }
     return j;
@@ -1085,7 +1085,7 @@ const Cloud = {
   },
   async signOut() {
     try { await fetch(SB.url + '/auth/v1/logout?scope=local', { method: 'POST', headers: { apikey: SB.key, authorization: 'Bearer ' + this.s?.access_token } }); } catch { }
-    await this.keep(null); GH.status('');
+    Live.stop(); await this.keep(null); GH.status('');
   },
   async token() {
     if (!this.s) throw new Error('Giriş yapılmadı');
@@ -1124,7 +1124,7 @@ const Cloud = {
     await DB.put('kv', since, 'sb-since');
   },
   async push() {
-    const dirty = new Set((await DB.get('kv', 'sb-dirty')) || []); if (!dirty.size) return;
+    const dirty = new Set((await DB.get('kv', 'sb-dirty')) || []); if (!dirty.size) return false;
     const map = new Map(S.items.map(i => [i.id, i])), ids = [...dirty].filter(id => map.has(id));
     for (let k = 0; k < ids.length; k += 200) {
       const part = ids.slice(k, k + 200);
@@ -1134,6 +1134,7 @@ const Cloud = {
       const left = new Set((await DB.get('kv', 'sb-dirty')) || []); part.forEach(id => left.delete(id)); await DB.put('kv', [...left], 'sb-dirty');
     }
     const left = ((await DB.get('kv', 'sb-dirty')) || []).filter(id => map.has(id) || !dirty.has(id)); await DB.put('kv', left, 'sb-dirty');
+    return ids.length > 0;
   },
   async uploadFiles() {
     let n = 0;
@@ -1159,12 +1160,36 @@ const Cloud = {
     try {
       await this.pull();
       if (await this.uploadFiles()) this.again = true;
-      await this.push();
+      if (await this.push()) Live.ping();
       GH.status(`✓ ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt`);
     } catch (e) { console.warn('cloud', e); GH.status('Hata: ' + e.message); }
     this.busy = false;
     if (this.again) { this.again = false; this.schedule(); }
   },
+};
+// Instant sync: every device of one account listens on a Supabase Realtime broadcast channel. After a device
+// uploads, it says "changed" (no data, just a nudge) and the others pull right away. Polling stays as the fallback.
+const Live = {
+  ws: null, ref: 0, hb: null, retry: 0, stopped: true,
+  topic() { return 'realtime:nts-' + Cloud.s.user.id; },
+  send(topic, event, payload) { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify({ topic, event, payload, ref: String(++this.ref), join_ref: '1' })); },
+  start() {
+    if (!Cloud.on() || this.ws || !('WebSocket' in window)) return;
+    this.stopped = false;
+    const ws = this.ws = new WebSocket(SB.url.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' + SB.key + '&vsn=1.0.0');
+    ws.onopen = () => {
+      this.retry = 0;
+      this.send(this.topic(), 'phx_join', { config: { broadcast: { self: false }, presence: { key: '' }, private: false } });
+      clearInterval(this.hb); this.hb = setInterval(() => this.send('phoenix', 'heartbeat', {}), 25e3);
+    };
+    ws.onmessage = e => { try { const m = JSON.parse(e.data); if (m.event === 'broadcast' && m.payload?.event === 'changed') Cloud.schedule(); } catch { } };
+    ws.onclose = () => {
+      clearInterval(this.hb); if (this.ws === ws) this.ws = null;
+      if (!this.stopped && Cloud.on()) setTimeout(() => this.start(), Math.min(30e3, 1e3 * 2 ** this.retry++));
+    };
+  },
+  stop() { this.stopped = true; clearInterval(this.hb); const ws = this.ws; this.ws = null; try { ws?.close(); } catch { } },
+  ping() { this.send(this.topic(), 'broadcast', { type: 'broadcast', event: 'changed', payload: {} }); },
 };
 // One front door: signed in → Supabase; else the old GitHub repo if set up.
 const Sync = {
@@ -1549,8 +1574,8 @@ function wire() {
 
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; });
   addEventListener('appinstalled', () => toast('Yüklendi. Artık Paylaş menüsünde var.', 3000, 'check'));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!Lock.conf || Crypt.key)) { reloadFromDB(); AI.health(); Sync.schedule(); } });
-  addEventListener('online', () => Sync.schedule());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!Lock.conf || Crypt.key)) { reloadFromDB(); AI.health(); Sync.schedule(); Live.start(); } });
+  addEventListener('online', () => { Sync.schedule(); Live.start(); });
   Board.init(); Back.init();
 }
 function setView(v) {
@@ -1575,14 +1600,15 @@ async function reloadFromDB() {
   }
   await Cloud.load();
   if (await Lock.load()) await Lock.show();
-  await Cloud.finish();
   Lock.watch();
   S.items = await DB.all('items'); S.items.forEach(indexItem);
   wire(); render();
+  // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
+  Cloud.finish().then(() => { if (Cloud.on()) { render(); Sync.run(); Live.start(); } });
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
-  Sync.run(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
+  Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();

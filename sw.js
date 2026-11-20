@@ -1,4 +1,4 @@
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg'];
@@ -29,12 +29,16 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // cache first for app shell, network fallback; refresh in background
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
+  // network first (a new release never mixes with old cached files), cache when offline or the network is slow
+  const nav = e.request.mode === 'navigate';
+  e.respondWith((async () => {
+    const cached = () => caches.match(nav ? './index.html' : e.request, { ignoreSearch: true });
     const net = fetch(e.request).then(res => {
-      if (res.ok && !url.search) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+      if (res.ok && !url.search) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+    });
+    const slow = new Promise(r => setTimeout(r, 4000)).then(cached);
+    try { return (await Promise.race([net, slow.then(h => h || net)])) || await net; }
+    catch { return (await cached()) || Response.error(); }
+  })());
 });
