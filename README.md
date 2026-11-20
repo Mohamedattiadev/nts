@@ -11,11 +11,18 @@ WhatsApp'ta kendine attığın link, not ve dosyaları tek yerde topla. Uygulama
 - **WhatsApp içe aktarma:** Sohbet → ⋮ → Diğer → Sohbeti dışa aktar → Medya dahil. Çıkan .zip'i Menü → WhatsApp ile içeri al. Tekrar içeri alınca çift kayıt oluşmaz.
 - **Senkron:** private bir GitHub reposuna otomatik yedeklenir (`items/YYYY-MM.json`, `files/YYYY-MM/…`). Resimler yüklemeden önce küçültülür. Repo dolunca `-2`, `-3`… reposuna geçer.
 
+## Gizlilik
+- **Site herkese açık ama veriler değil.** github.io'daki sadece uygulamanın kodu. Notların senin cihazında (tarayıcı veritabanı) ve senin **private** reponda duruyor. Siteyi başkası açarsa boş bir uygulama görür.
+- **Kilit + uçtan uca şifreleme:** Ayarlar → Gizlilik'ten şifre koy. Uygulama açılırken şifre ister (5 dk arka planda kalınca tekrar kilitlenir). GitHub'a giden her şey AES-256-GCM ile şifrelenir. GitHub dahil kimse okuyamaz. Şifreyi unutursan yedek açılamaz.
+- Claude'a sadece "Düzenle / Sor / Açıkla" kullanınca ilgili kayıtlar gider.
+
 ## Bilgisayar kurulumu (bir kez)
 ```bash
 bash bridge/install.sh            # köprü servisi, hn komutu, dosya yöneticisine "Hızlı Not'a gönder"
 sudo tailscale serve --bg --https=8788 http://127.0.0.1:8787   # telefondan erişim (sadece senin cihazların)
 ```
+PC'de uygulamayı **http://localhost:8787** adresinden aç (köprü sunar, izin gerekmez, token kendiliğinden gelir). Brave/Chrome menüsünden "Uygulamayı yükle" ile masaüstü uygulaması yapabilirsin.
+
 Hyprland kısayolu (panodakini gönderir): `bind = SUPER SHIFT, N, exec, hn --clip`
 
 ```bash

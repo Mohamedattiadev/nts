@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f6f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
 <meta name="description" content="Kendine attığın link, not ve dosyaları topla, düzenle, sor.">
 <title>Hızlı Not</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
-  // theme before first paint
   try {
     var t = localStorage.getItem('hn-theme');
     var dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,77 +26,73 @@
 <body>
 <div id="splash"></div>
 
-<header class="top">
-  <div class="brand"><span class="logo">⚡</span><span class="txt">Hızlı Not</span></div>
-  <button id="aiStatus" class="ai-dot" title="Claude köprüsü"><i></i><span>AI</span></button>
-  <div class="seg" role="tablist">
-    <button data-view="list" class="on">Liste</button>
-    <button data-view="board">Board</button>
-    <button data-view="gallery">Galeri</button>
-    <button data-view="topics">Konular</button>
-  </div>
-  <button id="menuBtn" class="icon-btn" aria-label="Menü">⋯</button>
-</header>
-
-<section class="composer" id="composer">
-  <textarea id="input" rows="1" placeholder="Yapıştır, yaz, dosya bırak…"></textarea>
-  <label class="icon-btn" title="Dosya ekle">📎<input id="fileInput" type="file" multiple hidden></label>
-  <button id="saveBtn" class="primary">Kaydet</button>
-</section>
-<div id="attachList" class="attach-list"></div>
-
-<section class="searchbar">
-  <input id="search" type="search" placeholder="Ara…  ya da ? ile başla, Claude'a sor" autocomplete="off">
-  <button id="askBtn" class="ghost">Sor</button>
-</section>
-<div id="filters" class="filters"></div>
-<div id="answer" class="answer" hidden></div>
-
-<main id="main">
-  <div id="list" class="list"></div>
-  <div id="gallery" class="gallery" hidden></div>
-  <div id="topics" class="list topics" hidden></div>
-  <div id="board" class="board" hidden>
-    <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
-    <div class="board-tools">
-      <button id="linkMode" class="ghost">↗ Ok çiz</button>
-      <button id="fitBtn" class="ghost">Sığdır</button>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"></span>Hızlı Not</div>
+    <nav class="nav" id="sideNav"></nav>
+    <div class="side-sec">
+      <div class="side-label">Filtre</div>
+      <div id="sideFilters" class="nav"></div>
     </div>
+    <div class="side-sec grow">
+      <div class="side-label">Etiketler</div>
+      <div id="sideTags" class="side-tags"></div>
+    </div>
+    <div class="side-foot">
+      <button class="side-row ai" id="aiStatusSide"><span class="dot"></span><span class="lbl">Claude</span><span class="n" id="aiCount"></span></button>
+      <button class="side-row" id="settingsSide"></button>
+    </div>
+  </aside>
+
+  <div class="col">
+    <header class="top">
+      <div class="brand m-only"><span class="mark"></span></div>
+      <div class="search">
+        <span class="s-ico"></span>
+        <input id="search" type="search" placeholder="Ara ya da Claude'a sor…" autocomplete="off" enterkeyhint="search">
+        <button id="askBtn" class="ask-btn" title="Claude'a sor"></button>
+      </div>
+      <button id="aiStatus" class="icon-btn m-only ai" title="Claude"><span class="dot"></span></button>
+      <button id="settingsBtn" class="icon-btn m-only" title="Ayarlar"></button>
+    </header>
+
+    <div class="wrap">
+      <section class="composer" id="composer">
+        <div id="attachList" class="attach-list"></div>
+        <div class="c-row">
+          <textarea id="input" rows="1" placeholder="Not yaz, link yapıştır ya da dosya bırak"></textarea>
+          <div class="c-actions">
+            <label class="icon-btn sm" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
+            <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
+          </div>
+        </div>
+      </section>
+      <div id="tabsM" class="tabs m-only"></div>
+      <div id="answer" class="answer" hidden></div>
+    </div>
+
+    <main id="main">
+      <div id="list" class="list"></div>
+      <div id="gallery" class="gallery" hidden></div>
+      <div id="topics" class="list" hidden></div>
+      <div id="board" class="board" hidden>
+        <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
+        <div class="board-tools">
+          <button id="linkMode" class="tool"></button>
+          <button id="fitBtn" class="tool"></button>
+        </div>
+        <div class="board-legend"><span><i class="lg-g"></i>aynı anda atılan</span><span><i class="lg-r"></i>Claude: bağlantılı</span><span><i class="lg-m"></i>senin okun</span></div>
+      </div>
+      <div id="empty" class="empty" hidden></div>
+    </main>
   </div>
-  <div id="empty" class="empty" hidden>
-    <p><b>Henüz bir şey yok.</b></p>
-    <p>Yukarıya link ya da not yapıştır, telefonda herhangi bir uygulamadan <b>Paylaş → Hızlı Not</b> de,<br>ya da eski WhatsApp sohbetini <a href="#" id="emptyImport">içeri al</a>.</p>
-  </div>
-</main>
+</div>
+
+<nav class="tabbar" id="tabbar"></nav>
 
 <div id="toast" class="toast" hidden></div>
-
-<dialog id="sheet" class="sheet"></dialog>
-
-<dialog id="menu" class="sheet">
-  <form method="dialog" class="menu-body">
-    <h3>Menü</h3>
-    <button type="button" id="importWa" class="row-btn">💬 WhatsApp sohbetini içeri al (.zip / .txt)</button>
-    <button type="button" id="organizeNow" class="row-btn">✨ Şimdi düzenle (AI)</button>
-    <button type="button" id="exportBtn" class="row-btn">⬇️ Yedek indir</button>
-    <button type="button" id="importBackup" class="row-btn">⬆️ Yedekten geri yükle</button>
-    <button type="button" id="themeBtn" class="row-btn">🌓 Tema değiştir</button>
-    <button type="button" id="installBtn" class="row-btn" hidden>📲 Uygulamayı yükle</button>
-    <h3>Claude köprüsü</h3>
-    <p class="muted small">Bilgisayarda <code>node bridge/server.mjs</code> çalışırken AI aboneliğinle çalışır. Telefondan Tailscale adresini gir.</p>
-    <label>Adres <input id="bridgeUrl" placeholder="http://localhost:8787  ·  telefonda https://pc.xxx.ts.net:8788"></label>
-    <label>Token <input id="bridgeToken" placeholder="köprünün yazdığı token"></label>
-    <div class="row"><button type="button" id="bridgeTest" class="ghost">Bağlantıyı dene</button><span id="bridgeMsg" class="muted small"></span></div>
-    <h3>Özel GitHub senkronu</h3>
-    <p class="muted small">Kayıtlar ve dosyalar <b>private</b> bir repoya otomatik yedeklenir, telefon ve PC aynı veriyi görür. Sadece o repoya erişen bir token ver
-      (<a href="https://github.com/settings/personal-access-tokens/new?name=hizli-note-sync&description=Hizli%20Not%20sync&contents=write&expires_in=none" target="_blank" rel="noopener">token oluştur</a>:
-      Repository access → Only select → hizli-note-data, Contents: Read and write).</p>
-    <label>Repo <input id="ghRepo" placeholder="kullanici/hizli-note-data"></label>
-    <label>Token <input id="ghToken" type="password" placeholder="github_pat_…"></label>
-    <div class="row"><button type="button" id="syncNow" class="ghost">Şimdi senkronla</button><span id="syncMsg" class="muted small"></span></div>
-    <div class="row end"><button class="primary">Kapat</button></div>
-  </form>
-</dialog>
+<dialog id="sheet" class="drawer"></dialog>
+<dialog id="menu" class="drawer"></dialog>
 
 <input id="waInput" type="file" accept=".zip,.txt,application/zip,text/plain" hidden>
 <input id="backupInput" type="file" accept=".zip" hidden>

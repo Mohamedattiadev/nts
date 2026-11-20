@@ -7,7 +7,8 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname, extname, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CONF_DIR = join(homedir(), '.config', 'hizli-note');
 const CONF_FILE = join(CONF_DIR, 'bridge.json');
@@ -154,6 +155,18 @@ function send(res, code, body, origin) {
   });
   res.end(JSON.stringify(body));
 }
+// the PWA itself, served on localhost so the PC needs no CORS / local-network permission
+const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+const API = /^\/(health|meta|organize|ask|inbox|new-repo|config)(\/|$)/;
+function serveStatic(req, res) {
+  const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
+  const file = join(APP_DIR, p === '/' ? 'index.html' : p);
+  if (!file.startsWith(APP_DIR) || file.includes(`${'/'}bridge${'/'}`) || !existsSync(file) || !TYPES[extname(file)]) { res.writeHead(404); return res.end(); }
+  res.writeHead(200, { 'content-type': TYPES[extname(file)], 'cache-control': 'no-cache' }); res.end(readFileSync(file));
+}
+
 const allowed = o => o && (conf.origins.includes(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o));
 
 http.createServer(async (req, res) => {
@@ -165,6 +178,11 @@ http.createServer(async (req, res) => {
       'access-control-allow-private-network': 'true', vary: 'Origin',
     } : {});
     return res.end();
+  }
+  if (req.method === 'GET' && !API.test(req.url)) return serveStatic(req, res);
+  if (req.url === '/config') { // token only for the app page served from this same origin
+    if (req.headers['sec-fetch-site'] === 'same-origin') return send(res, 200, { token: conf.token });
+    return send(res, 403, { error: 'same-origin only' });
   }
   if (req.headers.authorization !== `Bearer ${conf.token}`) return send(res, 401, { error: 'bad token' }, origin);
   try {
@@ -210,7 +228,7 @@ http.createServer(async (req, res) => {
     send(res, 500, { error: e.message }, origin);
   }
 }).listen(conf.port, '127.0.0.1', () => {
-  console.log(`Hızlı Not bridge → http://localhost:${conf.port}`);
+  console.log(`Hızlı Not bridge → http://localhost:${conf.port}  (uygulama da burada açılır)`);
   console.log(`Token: ${conf.token}`);
   console.log(`Telefon için: sudo tailscale serve --bg --https=8788 http://127.0.0.1:${conf.port}  → https://<pc>.<tailnet>.ts.net:8788`);
   console.log(`Ayarlar: ${CONF_FILE}`);
