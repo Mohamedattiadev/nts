@@ -54,8 +54,9 @@ const I = {
 const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || I.file}</svg>`;
 
 // ---------- utils ----------
-function toast(msg, ms = 2600, icon = '') {
-  const t = $('#toast'); t.innerHTML = (icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>`; t.hidden = false;
+function toast(msg, ms = 2600, icon = '', action = null) {
+  const t = $('#toast'); t.innerHTML = (icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + (action ? `<button class="t-act">${esc(action.label)}</button>` : ''); t.hidden = false;
+  if (action) t.querySelector('.t-act').onclick = () => { t.hidden = true; action.fn(); };
   t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms);
 }
@@ -82,16 +83,18 @@ function fileKind(i) {
 const KIND_LABEL = { link: 'Link', note: 'Not', image: 'Resim', video: 'Video', audio: 'Ses', pdf: 'PDF', text: 'Metin', file: 'Dosya' };
 const extOf = i => ((i.fileName || '').split('.').pop() || '').slice(0, 4).toUpperCase();
 function titleOf(i) {
+  if (i.type === 'note' && i.text && !i.userTitle) return i.text.split('\n')[0].slice(0, 140); // the user's own words come first
   if (i.title) return i.title;
   if (i.type === 'link') { if (i.meta?.title) return i.meta.title; try { const u = new URL(i.url); return domain(i.url) + decodeURI(u.pathname).replace(/\/$/, ''); } catch { return i.url; } }
   if (i.type === 'file') return i.fileName;
   return (i.text || '').split('\n')[0].slice(0, 140);
 }
 function subOf(i) {
-  if (i.type === 'link') return i.summary || i.meta?.description || i.text || '';
-  if (i.type === 'file') return i.summary || i.text || '';
+  if (i.type === 'link') return i.text || i.summary || i.meta?.description || '';
+  if (i.type === 'file') return i.text || i.summary || '';
   const t = i.text || '';
-  return i.title ? (i.summary || t) : (t.includes('\n') ? t.slice(t.indexOf('\n') + 1) : (i.summary || ''));
+  if (i.userTitle) return t;
+  return t.includes('\n') ? t.slice(t.indexOf('\n') + 1) : '';
 }
 const alive = () => S.items.filter(i => !i.deleted);
 const byId = id => S.items.find(x => x.id === id);
@@ -103,7 +106,7 @@ function relatedOf(i) {
 // ---------- search ----------
 function indexItem(i) {
   const h = norm([i.title, i.meta?.title, i.meta?.description, i.meta?.site, i.text, i.url, i.url && domain(i.url),
-    i.fileName, i.summary, i.explain?.text, (i.tags || []).join(' ')].filter(Boolean).join(' '));
+    i.fileName, i.content, i.summary, (i.tags || []).join(' ')].filter(Boolean).join(' '));
   S.idx.set(i.id, { h, w: [...new Set(h.split(/[^a-z0-9]+/).filter(Boolean))] });
 }
 function near(a, b) {
@@ -229,22 +232,22 @@ const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i
 // ---------- render ----------
 function actsHtml(i) {
   return `<div class="acts">
-    <button class="act ai" data-a="explain" title="Claude açıklasın">${ic('spark', 'sm')}Açıkla</button>
+    <button class="act ai" data-a="explain" title="Claude anlatsın">${ic('spark', 'sm')}Anlat</button>
     <button class="act" data-a="copy" title="Kopyala">${ic('copy', 'sm')}</button>
     <button class="act" data-a="star" title="Yıldızla">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}</button>
     ${i.type === 'link' ? `<button class="act" data-a="open" title="Linki aç">${ic('ext', 'sm')}</button>` : ''}
     ${i.type === 'file' ? `<button class="act" data-a="download" title="İndir">${ic('down', 'sm')}</button>` : ''}
   </div>`;
 }
-function metaHtml(i, { tags = 6 } = {}) {
+function metaHtml(i, { tags = 3, acts = false } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
   return `<div class="meta"><span>${fmtTime(i.ts)}</span>
     ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>` : ''}
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
     ${rel ? `<span class="rel">${ic('rel', 'sm')}${rel}</span>` : ''}
-    ${(i.tags || []).slice(0, tags).map(t => `<span class="tg">#${esc(t)}</span>`).join('')}
-    ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}</div>`;
+    ${(i.tags || []).slice(0, tags).map(t => `<span class="tg">${esc(t)}</span>`).join('')}
+    ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}${acts ? actsHtml(i) : ''}</div>`;
 }
 function itemRow(i, { acts = true } = {}) {
   const sub = subOf(i);
@@ -253,8 +256,8 @@ function itemRow(i, { acts = true } = {}) {
     <div class="body">
       <div class="title">${hl(titleOf(i))}</div>
       ${sub ? `<div class="sub">${hl(sub.slice(0, 300))}</div>` : ''}
-      ${metaHtml(i)}
-    </div>${acts ? actsHtml(i) : ''}</div>`;
+      ${metaHtml(i, { acts })}
+    </div></div>`;
 }
 
 function renderList(items) {
@@ -278,7 +281,7 @@ function renderGallery(items) {
   const el = $('#gallery');
   const media = items.filter(i => i.type === 'file' || (i.type === 'link' && i.meta?.image)).slice(0, S.limit);
   el.innerHTML = media.map(i => `<div class="tile${S.hits?.has(i.id) ? ' hit' : ''}" data-id="${i.id}">
-    ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div>${actsHtml(i)}</div>`).join('')
+    ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`).join('')
     || emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
   hookThumbs(el);
 }
@@ -297,7 +300,7 @@ function renderTopics(items) {
   hookThumbs(el);
 }
 
-const VIEWS = [['list', 'list', 'Liste'], ['board', 'board', 'Board'], ['gallery', 'grid', 'Galeri']];
+const VIEWS = [['list', 'list', 'Liste'], ['board', 'board', 'Pano'], ['gallery', 'grid', 'Galeri']];
 function renderChrome() {
   const f = S.filter, live = alive(), cnt = t => live.filter(i => i.type === t).length;
   const types = [['all', 'inbox', 'Tümü', live.length], ['link', 'link', 'Linkler', cnt('link')], ['note', 'note', 'Notlar', cnt('note')], ['file', 'file', 'Dosyalar', cnt('file')]];
@@ -308,13 +311,14 @@ function renderChrome() {
   const counts = new Map(); live.forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
   const all = [...counts].sort((a, b) => b[1] - a[1]), tags = S.allTags ? all : all.slice(0, 8);
   if (f.tag && !tags.some(([t]) => t === f.tag)) tags.push([f.tag, counts.get(f.tag) || 0]);
-  $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">#</span><span class="lbl">${esc(t)}</span><span class="n">${n}</span></button>`).join('')
+  $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">${ic('hash', 'sm')}</span><span class="lbl">${esc(t)}</span><span class="n">${n}</span></button>`).join('')
     + (all.length > 8 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
-    || '<div class="hint" style="padding:0 10px">Claude düzenledikçe etiketler burada çıkar.</div>';
+    || '<div class="hint" style="padding:0 10px">Claude düzenledikçe konular burada çıkar.</div>';
   $('#tabsM').innerHTML = types.map(([t, , l]) => `<button class="tab${typeOn(t) ? ' on' : ''}" data-type="${t}">${l}</button>`).join('')
     + `<button class="tab${f.star ? ' on' : ''}" data-star>${ic('star', 'sm')}Yıldızlı</button>`
-    + (f.tag ? `<button class="tab on" data-tag="${esc(f.tag)}">#${esc(f.tag)} ${ic('x', 'sm')}</button>` : '');
-  $('#tabbar').innerHTML = VIEWS.map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}">${ic(icn)}${l}</button>`).join('');
+    + (f.tag ? `<button class="tab on" data-tag="${esc(f.tag)}">${esc(f.tag)} ${ic('x', 'sm')}</button>` : '')
+    + [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6).filter(([t]) => t !== f.tag).map(([t]) => `<button class="tab" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
+  $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'board').map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}">${ic(icn)}${l}</button>`).join('');
 }
 function emptyHtml(icn, h, p, actions = '') {
   return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
@@ -326,13 +330,13 @@ function render() {
   requestAnimationFrame(() => {
     renderQueued = false;
     const items = visible(), none = !alive().length;
-    renderChrome();
+    renderChrome(); renderQinfo();
     for (const v of ['list', 'board', 'gallery', 'topics']) $('#' + v).hidden = none || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
     $('#empty').hidden = !none;
-    if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Her şey tek yerde', 'Yukarıya bir not yaz ya da link yapıştır. Telefonda herhangi bir uygulamadan <b>Paylaş → Nts</b>, bilgisayarda <code>hn</code> komutu.',
+    if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul, sonu <b>?</b> ile biten sorular Claude\'a gider.',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
-    else if (S.view === 'list') items.length ? renderList(items) : ($('#list').innerHTML = emptyHtml('search', 'Sonuç yok', 'Başka bir kelime dene ya da soruyu Claude\'a sor.'));
+    else if (S.view === 'list') items.length ? renderList(items) : ($('#list').innerHTML = emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. Soru ise sonuna ? koy, Claude\'a sorar.'));
     else if (S.view === 'board') Board.render(items);
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
@@ -356,18 +360,24 @@ async function addFromInput(input) {
   const made = itemsFromInput(input);
   if (!made.length) return [];
   made.forEach(m => { m.createdAt = now(); });
-  for (const m of made) if (m.type === 'link') {
-    const dup = S.items.find(i => !i.deleted && i.url === m.url);
-    if (dup) toast(`Bu link zaten var: ${fmtDay(dayKey(dup.ts))}`, 3500, 'link');
+  if (made.length === 1 && made[0].type === 'link' && input.source !== 'pc') {
+    const dup = S.items.find(i => !i.deleted && i.type === 'link' && i.url.replace(/\/$/, '') === made[0].url.replace(/\/$/, ''));
+    if (dup) { toast(`Bu link zaten kayıtlı (${fmtDay(dayKey(dup.ts))})`, 3500, 'link'); openItem(dup.id); return 'dup'; }
   }
   const saved = await saveItems(made);
   await upsert(saved);
   AI.kick();
   return saved;
 }
-async function removeItem(i) {
-  await DB.del('files', i.id); await DB.del('files', i.id + ':t');
+async function removeItem(i) { // soft delete; blob kept until undo window passes
+  S.undo = { ...i };
   await upsert([{ id: i.id, deleted: true, ts: i.ts, updatedAt: now() }]);
+  toast('Silindi', 6000, 'trash', { label: 'Geri al', fn: undoDelete });
+  clearTimeout(S._undoT); S._undoT = setTimeout(() => { if (S.undo?.id === i.id) { DB.del('files', i.id); DB.del('files', i.id + ':t'); S.undo = null; } }, 30000);
+}
+async function undoDelete() {
+  const u = S.undo; if (!u) return; S.undo = null;
+  await upsert([{ ...u, deleted: false }]); toast('Geri alındı', 1800, 'check');
 }
 async function toggleStar(id) { const i = byId(id); if (i) await upsert([{ ...i, starred: !i.starred }]); }
 async function itemAction(a, id) {
@@ -380,6 +390,16 @@ async function itemAction(a, id) {
 }
 
 // ---------- composer ----------
+const isQuestion = t => { URL_RE.lastIndex = 0; const u = URL_RE.test(t); URL_RE.lastIndex = 0; return /\?\s*$/.test(t.trim()) && !u; };
+function clearBox() { const inp = $('#input'); inp.value = ''; S.q = ''; runSearch(); autoGrow(); render(); closeAnswer(); }
+function closeAnswer() { $('#answer').hidden = true; }
+function renderQinfo() {
+  const el = $('#qinfo'), q = S.q.trim();
+  if (!q || !S.hits) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `<span>${S.hits.size ? `<b>${S.hits.size}</b> benzer kayıt` : 'Benzer kayıt yok'}</span><span class="muted">·</span>
+    <span class="muted">${isQuestion(q) ? 'Enter: Claude\'a sor' : 'Enter: kaydet'}</span><button class="link-btn" data-clear>Temizle</button>`;
+}
 function renderAttach() {
   const el = $('#attachList');
   el.innerHTML = S.attach.map((f, k) => {
@@ -391,16 +411,30 @@ function renderAttach() {
   el.querySelectorAll('img[data-k]').forEach(img => { const u = URL.createObjectURL(S.attach[+img.dataset.k]); img.onload = () => URL.revokeObjectURL(u); img.src = u; });
   updateSend();
 }
-const updateSend = () => { $('#saveBtn').disabled = !$('#input').value.trim() && !S.attach.length; };
+const updateSend = () => {
+  const v = $('#input').value.trim(), q = isQuestion(v);
+  $('#saveBtn').disabled = !v && !S.attach.length;
+  $('#askBtn').classList.toggle('hot', q); $('#saveBtn').classList.toggle('dim', q && !S.attach.length);
+};
 async function save() {
-  const text = $('#input').value.trim();
-  if (!text && !S.attach.length) return;
-  const n = S.attach.length;
-  await addFromInput({ text, files: S.attach });
-  $('#input').value = ''; S.attach = []; renderAttach(); autoGrow();
-  toast(n ? `${n} dosya kaydedildi` : 'Kaydedildi', 1600, 'check');
+  const inp = $('#input'), text = inp.value.trim(), files = S.attach;
+  if (!text && !files.length) return;
+  // clear the box first, so anything added while saving isn't lost
+  inp.value = ''; S.attach = []; S.q = ''; runSearch(); renderAttach(); autoGrow();
+  const r = await addFromInput({ text, files });
+  render();
+  if (r !== 'dup') toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check');
 }
 function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, innerHeight * .4) + 'px'; updateSend(); }
+
+// ---------- Android back button closes panels instead of leaving the app ----------
+const Back = {
+  open(dlg) { if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } },
+  init() {
+    addEventListener('popstate', () => { for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); });
+    for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
+  },
+};
 
 // ---------- detail drawer ----------
 function explainHtml(i) {
@@ -416,7 +450,7 @@ function openItem(id) {
   dlg.innerHTML = `<div class="d-body">
     <div class="d-head"><span class="type ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}${KIND_LABEL[k]}</span><span>·</span><span>${fmtDay(dayKey(i.ts))}, ${fmtTime(i.ts)}</span>
       ${i.source === 'whatsapp' ? '<span>· WhatsApp</span>' : i.source === 'pc' ? '<span>· Bilgisayar</span>' : i.source === 'share' ? '<span>· Paylaşım</span>' : ''}
-      <span class="sp"></span><button class="icon-btn sm" data-act="star" title="Yıldızla">${ic('star', i.starred ? 'fill star-on' : '')}</button><button class="icon-btn sm" data-act="close" title="Kapat">${ic('x')}</button></div>
+      <span class="sp"></span><button class="icon-btn" data-act="star" title="Yıldızla">${ic('star', i.starred ? 'fill star-on' : '')}</button><button class="icon-btn" data-act="close" title="Kapat">${ic('x')}</button></div>
     <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
     <div id="explainBox">${explainHtml(i)}</div>
     ${i.type === 'link' ? `<a class="linkcard" href="${esc(i.url)}" target="_blank" rel="noopener">
@@ -426,15 +460,16 @@ function openItem(id) {
     ${i.type === 'file' ? `<div class="preview" id="filePrev"><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     <div class="field-label">Not</div>
     <textarea class="d-text" placeholder="Bir şey ekle…">${esc(i.text || '')}</textarea>
-    <div class="tags-edit">${(i.tags || []).map(t => `<span class="tagpill">#${esc(t)}<button data-untag="${esc(t)}" title="Kaldır">${ic('x', 'sm')}</button></span>`).join('')}
-      <input class="tag-in" placeholder="+ etiket" enterkeyhint="done"></div>
+    <div class="tags-edit">${(i.tags || []).map(t => `<span class="tagpill">${esc(t)}<button data-untag="${esc(t)}" title="Kaldır">${ic('x', 'sm')}</button></span>`).join('')}
+      <input class="tag-in" placeholder="+ konu" enterkeyhint="done"></div>
     ${rel.length ? `<div class="field-label">Bağlantılı · ${rel.length}</div><div class="rel-list">${rel.slice(0, 12).map(r => itemRow(r, { acts: false })).join('')}</div>` : ''}
+    <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? 'Claude: yeniden anlat' : 'Claude anlatsın: bu ne, neyle bağlantılı?'}</button>
     <div class="d-foot">
-      <button class="btn ai" data-act="explain">${ic('spark', 'sm')}${i.explain ? 'Yeniden açıkla' : 'Claude açıklasın'}</button>
-      <button class="btn secondary" data-act="copy">${ic('copy', 'sm')}Kopyala</button>
-      ${i.type === 'link' ? `<a class="btn secondary" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('ext', 'sm')}Aç</a>` : ''}
-      ${i.type === 'file' ? `<button class="btn secondary" data-act="download">${ic('down', 'sm')}İndir</button>` : ''}
-      <span class="grow"></span><button class="btn danger" data-act="del">${ic('trash', 'sm')}Sil</button></div>
+      <button class="fbtn" data-act="share">${ic('upload')}<span>Paylaş</span></button>
+      <button class="fbtn" data-act="copy">${ic('copy')}<span>Kopyala</span></button>
+      ${i.type === 'link' ? `<a class="fbtn" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('ext')}<span>Aç</span></a>` : ''}
+      ${i.type === 'file' ? `<button class="fbtn" data-act="download">${ic('down')}<span>İndir</span></button>` : ''}
+      <button class="fbtn danger" data-act="del">${ic('trash')}<span>Sil</span></button></div>
   </div>`;
   hookThumbs(dlg);
   const ta = dlg.querySelector('.d-title'); const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
@@ -443,7 +478,7 @@ function openItem(id) {
     const cur = byId(i.id); if (!cur || cur.deleted) return;
     const title = ta.value.trim().replace(/\n/g, ' '), text = dlg.querySelector('.d-text').value;
     const ch = {};
-    if (title && title !== titleOf(cur)) ch.title = title;
+    if (title && title !== titleOf(cur)) { ch.title = title; ch.userTitle = true; }
     if (text !== (cur.text || '')) ch.text = text;
     const nt = dlg.querySelector('.tag-in').value.trim().replace(/^#/, '').toLowerCase();
     if (nt) ch.tags = [...new Set([...(cur.tags || []), nt])];
@@ -454,7 +489,8 @@ function openItem(id) {
     const act = e.target.closest('[data-act]')?.dataset.act, row = e.target.closest('.item');
     if (e.target === dlg || act === 'close') { await commit(); dlg.close(); }
     else if (act === 'star') { await commit(); await toggleStar(i.id); openItem(i.id); }
-    else if (act === 'del') { await removeItem(i); dlg.close(); toast('Silindi', 2000, 'trash'); }
+    else if (act === 'del') { dlg.close(); await removeItem(i); }
+    else if (act === 'share') shareItem(byId(i.id));
     else if (act === 'explain') { await commit(); AI.explain(i.id); }
     else if (act === 'download') itemAction('download', i.id);
     else if (act === 'copy') { await commit(); copyItem(byId(i.id)); }
@@ -463,7 +499,7 @@ function openItem(id) {
   };
   dlg.querySelector('.tag-in').onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await commit(); openItem(i.id); } };
   dlg.oncancel = () => { commit(); };
-  if (!dlg.open) dlg.showModal();
+  Back.open(dlg);
   requestAnimationFrame(fit);
   if (i.type === 'file') showPreview(i);
 }
@@ -509,7 +545,7 @@ const Board = {
         const colx = x + Math.floor(n / PER) * (this.COLW + 20);
         c.dataset.id = i.id; c.dataset.colx = colx; c.dataset.sub = Math.floor(n / PER);
         c.innerHTML = `${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${hl(titleOf(i))}</div></div>
-          ${sub ? `<div class="sub">${hl(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 3 })}</div>${actsHtml(i)}`;
+          ${sub ? `<div class="sub">${hl(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 3 })}</div>`;
         c.style.left = colx + 'px';
         frag.appendChild(c); return { c, i };
       });
@@ -601,7 +637,7 @@ const Board = {
       if (e.ctrlKey || e.metaKey) this.zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .01));
       else { S.cam.x -= e.deltaX || (e.shiftKey ? e.deltaY : 0); S.cam.y -= e.shiftKey ? 0 : e.deltaY; this.apply(); }
     }, { passive: false });
-    $('#fitBtn').innerHTML = ic('fit', 'sm') + 'Sığdır';
+    $('#fitBtn').innerHTML = ic('fit', 'sm') + 'Hepsini göster';
     $('#zoomIn').innerHTML = ic('plus', 'sm'); $('#zoomOut').innerHTML = '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
     const zc = f => { const r = b.getBoundingClientRect(); this.zoomAt(r.width / 2, r.height / 2, f); };
     $('#zoomIn').onclick = () => zc(1.2); $('#zoomOut').onclick = () => zc(1 / 1.2);
@@ -632,6 +668,7 @@ const AI = {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
       d.title = S.bridgeOk ? `Claude bağlı${n ? ` · ${n} kayıt sırada` : ''}` : 'Claude köprüsü kapalı'; }
+    const ml = document.querySelector('#aiStatus .lbl'); if (ml) ml.textContent = S.bridgeOk ? (S.aiBusy ? 'Düzenliyor' : 'Claude hazır') : 'Claude kapalı';
     const c = $('#aiCount'); if (c) c.textContent = S.bridgeOk ? (S.aiBusy ? 'düzenliyor' : n ? n + ' sırada' : 'bağlı') : 'kapalı';
   },
   kick() { clearTimeout(this._t); this._t = setTimeout(() => this.process(), 800); },
@@ -665,14 +702,33 @@ const AI = {
         const m = await this.call('/meta', { urls: needMeta.map(i => i.url) }, 30000);
         await upsert(needMeta.map(i => ({ ...byId(i.id), meta: m[i.url] || { title: '' } })), { sync: false });
       }
-      const batch = S.items.filter(i => i.pending && !i.deleted).sort((a, b) => b.ts - a.ts).slice(0, 25);
+      let batch = S.items.filter(i => i.pending && !i.deleted).sort((a, b) => b.ts - a.ts).slice(0, 25);
+      batch = await Promise.all(batch.map(async i => { // let Claude see inside files
+        const k = fileKind(i);
+        try {
+          if (k === 'pdf' && i.content == null) {
+            const doc = await Prev.pdfDoc(i); let text = '';
+            if (doc) { for (let n = 1; n <= Math.min(doc.numPages, 4) && text.length < 4000; n++) text += (await (await doc.getPage(n)).getTextContent()).items.map(x => x.str).join(' ') + '\n'; doc.destroy(); }
+            const upd = { ...byId(i.id), content: text.replace(/\s+/g, ' ').trim().slice(0, 4000) };
+            await upsert([upd], { sync: false }); return upd;
+          }
+          if (k === 'image') {
+            const u = await blobFor(i); if (!u) return i;
+            const bmp = await createImageBitmap(await (await fetch(u)).blob()), r = Math.min(1, 640 / Math.max(bmp.width, bmp.height));
+            const c = new OffscreenCanvas(Math.round(bmp.width * r), Math.round(bmp.height * r)); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+            const b = await c.convertToBlob({ type: 'image/jpeg', quality: .8 });
+            return { ...i, image: b64(new Uint8Array(await b.arrayBuffer())) };
+          }
+        } catch (e) { console.warn('content', e); }
+        return i;
+      }));
       const counts = new Map(); S.items.forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
       const tags = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 80).map(x => x[0]);
       const r = await this.call('/organize', { items: batch, tags });
       const ids = new Set(S.items.map(i => i.id)), got = new Map((r.items || []).map(x => [x.id, x]));
       await upsert(batch.map(b => {
         const i = byId(b.id) || b, x = got.get(i.id); if (!x) return { ...i, pending: false };
-        return { ...i, pending: false, title: i.title || x.title, summary: x.summary,
+        return { ...i, pending: false, title: i.userTitle ? i.title : x.title, summary: x.summary,
           tags: [...new Set([...(i.tags || []), ...(x.tags || []).map(t => t.toLowerCase().replace(/^#/, ''))])].slice(0, 6),
           related: [...new Set([...(i.related || []), ...(x.related || []).filter(id => ids.has(id) && id !== i.id)])] };
       }));
@@ -702,7 +758,7 @@ const AI = {
     box.innerHTML = `<div class="a-head">${ic('spark', 'sm')}<span>Claude'a sor</span><button data-close title="Kapat">${ic('x', 'sm')}</button></div>
       <div class="sugg">${['Bu hafta neler kaydettim?', 'Yapmam gereken işler neler?', 'Bakmadığım önemli linkler hangileri?', 'Hangi konular üzerine en çok şey biriktirmişim?']
         .map(q => `<button data-q="${esc(q)}">${ic('search', 'sm')}${esc(q)}</button>`).join('')}</div>`;
-    $('#search').focus();
+    $('#input').focus();
   },
   async explain(id) {
     const i = byId(id); if (!i || S.explaining.has(id)) return;
@@ -731,7 +787,7 @@ const AI = {
       if (changed.length) await upsert(changed);
       if (S.filter.tag && map.has(S.filter.tag)) S.filter.tag = map.get(S.filter.tag) || null;
       const after = new Set(alive().flatMap(i => i.tags || []));
-      toast(`Etiketler toparlandı: ${counts.size} → ${after.size}`, 3500, 'check');
+      toast(changed.length ? `Konular sadeleşti: ${counts.size} → ${after.size}` : 'Konular zaten düzenli', 3500, 'check');
     } catch (e) { toast('Toparlanamadı: ' + e.message, 3500); }
   },
   refreshExplain(id) { const dlg = $('#sheet'); if (dlg.open && dlg.dataset.id === id) { if (!S.explaining.has(id)) openItem(id); else $('#explainBox').innerHTML = explainHtml(byId(id)); } },
@@ -1040,6 +1096,14 @@ async function copyItem(i) {
     toast(i.type === 'link' ? 'Link kopyalandı' : 'Kopyalandı', 1800, 'check');
   } catch { toast('Kopyalanamadı'); }
 }
+async function shareItem(i) {
+  try {
+    const data = { title: titleOf(i) };
+    if (i.type === 'link') data.url = i.url; else if (i.type === 'note') data.text = i.text || titleOf(i);
+    else { const u = await blobFor(i); if (u) { const f = new File([await (await fetch(u)).blob()], i.fileName, { type: i.mime || '' }); if (navigator.canShare?.({ files: [f] })) data.files = [f]; } if (i.text) data.text = i.text; }
+    if (navigator.share) await navigator.share(data); else copyItem(i);
+  } catch (e) { if (e.name !== 'AbortError') copyItem(i); }
+}
 async function copyText(t) { try { await navigator.clipboard.writeText(t); toast('Kopyalandı', 1800, 'check'); } catch { toast('Kopyalanamadı'); } }
 
 // ---------- settings drawer ----------
@@ -1066,42 +1130,45 @@ function openSettings() {
   m.innerHTML = `<div class="d-body">
     <div class="d-head"><span class="type">${ic('settings', 'sm')}Ayarlar</span><span class="sp"></span><button class="icon-btn sm" data-act="close">${ic('x')}</button></div>
 
-    <div class="set-sec"><h4>Veri</h4>
-      <button class="set-row" data-do="wa">${ic('chat')}<span>WhatsApp sohbetini içe aktar<small>Sohbet → Dışa aktar → Medya dahil, çıkan .zip</small></span></button>
-      <button class="set-row" data-do="tags">${ic('hash')}<span>Etiketleri toparla<small>Claude benzerleri birleştirir, gereksizleri atar</small></span></button>
-      <button class="set-row" data-do="organize">${ic('spark')}<span>Şimdi düzenle<small>Bekleyen kayıtları Claude'a gönder</small></span></button>
-      <button class="set-row" data-do="export">${ic('down')}<span>Yedek indir<small>Tüm kayıtlar ve dosyalar, .zip</small></span></button>
+    <div class="set-sec"><h4>Kayıtlar</h4>
+      <button class="set-row" data-do="wa">${ic('chat')}<span>WhatsApp sohbetini içe aktar<small>WhatsApp'ta sohbet → ⋮ → Dışa aktar → Medya dahil. Çıkan dosyayı seç.</small></span></button>
+      <button class="set-row" data-do="export">${ic('down')}<span>Yedek indir<small>Her şeyi tek dosya olarak indir</small></span></button>
       <button class="set-row" data-do="import">${ic('upload')}<span>Yedekten geri yükle</span></button>
     </div>
 
-    <div class="set-sec"><h4>Gizlilik</h4>
-      ${locked ? `<div class="callout">${ic('check')}<div class="c-b"><div class="c-t">Kilit ve şifreleme açık</div>Uygulama açılırken şifre ister, GitHub'a giden her şey bu şifreyle şifrelenir. Şifreyi unutursan yedek açılamaz.</div></div>
-        <button class="set-row" data-do="unlock-off">${ic('x')}<span>Kilidi ve şifrelemeyi kapat</span></button>`
-      : `<p class="hint">Şifre koyarsan uygulama açılırken sorar ve GitHub'a giden her şey uçtan uca şifrelenir. GitHub dahil kimse okuyamaz. Diğer cihazlarda da aynı şifreyi kullan.</p>
+    <div class="set-sec"><h4>Şifre</h4>
+      ${locked ? `<div class="callout">${ic('check')}<div class="c-b"><div class="c-t">Şifre açık</div>Uygulama açılırken şifre sorulur. Yedekler de bu şifreyle kilitli, şifresiz kimse okuyamaz. Şifreyi unutursan yedek açılamaz.</div></div>
+        <button class="set-row" data-do="unlock-off">${ic('x')}<span>Şifreyi kaldır</span></button>`
+      : `<p class="hint">Şifre koyarsan uygulama açılırken sorar ve yedeklerin şifreli saklanır.</p>
         <label class="set-field">Şifre<input id="set-pass" type="password" autocomplete="new-password" placeholder="en az 6 karakter"></label>
         <label class="set-field">Şifre tekrar<input id="set-pass2" type="password" autocomplete="new-password"></label>
-        <div class="row"><button class="btn primary" data-do="lock-on">Kilidi aç ve şifrele</button></div>`}
-    </div>
-
-    <div class="set-sec"><h4>Claude</h4>
-      <p class="hint">Bilgisayardaki köprü açıkken Claude aboneliğinle çalışır. Telefonda Tailscale adresini gir.</p>
-      <label class="set-field">Köprü adresi<input id="set-bridgeUrl" value="${esc(st.bridgeUrl || '')}" placeholder="https://pc.xxx.ts.net:8788"></label>
-      <label class="set-field">Token<input id="set-bridgeToken" type="password" value="${esc(st.bridgeToken || '')}" placeholder="~/.config/hizli-note/bridge.json"></label>
-      <div class="row"><button class="btn secondary" data-do="test">${ic('cpu', 'sm')}Bağlantıyı dene</button><span class="status" id="bridgeMsg">${S.bridgeOk ? `<span class="dot" style="background:var(--ok)"></span>Bağlı` : 'Bağlı değil'}</span></div>
-    </div>
-
-    <div class="set-sec"><h4>GitHub senkronu</h4>
-      <p class="hint">Kayıtlar private bir repoya yedeklenir, telefon ve bilgisayar aynı veriyi görür.
-        <a href="https://github.com/settings/personal-access-tokens/new?name=nts-sync&description=Nts%20sync&contents=write" target="_blank" rel="noopener">Token oluştur</a>: sadece bu repo, Contents: Read and write.</p>
-      <label class="set-field">Repo<input id="set-ghRepo" value="${esc(st.ghRepo || '')}" placeholder="kullanici/nts-data"></label>
-      <label class="set-field">Token<input id="set-ghToken" type="password" value="${esc(st.ghToken || '')}" placeholder="github_pat_…"></label>
-      <div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><span class="status" id="syncMsg">${esc(S.syncMsg || (Sync.ready() ? '' : 'Kapalı'))}</span></div>
+        <div class="row"><button class="btn primary" data-do="lock-on">Şifre koy</button></div>`}
     </div>
 
     <div class="set-sec"><h4>Görünüm</h4>
-      <button class="set-row" data-do="theme">${ic('moon')}<span>Tema değiştir</span></button>
-      ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle</span></button>` : ''}
+      <button class="set-row" data-do="theme">${ic('moon')}<span>Açık / koyu tema</span></button>
+      ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle<small>Ana ekrana ekle, Paylaş menüsünde çıksın</small></span></button>` : ''}
     </div>
+
+    <details class="adv"><summary>${ic('chev', 'sm')}Gelişmiş</summary>
+      <div class="set-sec">
+        <button class="set-row" data-do="tags">${ic('hash')}<span>Konuları sadeleştir<small>Claude benzer konuları birleştirir</small></span></button>
+        <button class="set-row" data-do="organize">${ic('spark')}<span>Bekleyenleri şimdi düzenle</span></button>
+      </div>
+      <div class="set-sec"><h4>Claude bağlantısı</h4>
+        <p class="hint">Bilgisayardaki Nts köprüsü açıkken Claude aboneliğinle çalışır. Telefonda Tailscale adresini gir. Bilgisayarda kayıt göndermek için: <code>nts "not"</code>, <code>nts dosya.pdf</code>, <code>nts --clip</code>.</p>
+        <label class="set-field">Köprü adresi<input id="set-bridgeUrl" value="${esc(st.bridgeUrl || '')}" placeholder="https://pc.xxx.ts.net:8788"></label>
+        <label class="set-field">Köprü anahtarı<input id="set-bridgeToken" type="password" value="${esc(st.bridgeToken || '')}"></label>
+        <div class="row"><button class="btn secondary" data-do="test">${ic('cpu', 'sm')}Dene</button><span class="status" id="bridgeMsg">${S.bridgeOk ? `<span class="dot" style="background:var(--ok)"></span>Bağlı` : 'Bağlı değil'}</span></div>
+      </div>
+      <div class="set-sec"><h4>Cihazlar arası senkron (GitHub)</h4>
+        <p class="hint">Kayıtlar senin private GitHub reponda yedeklenir, telefon ve bilgisayar aynı şeyi görür.
+          <a href="https://github.com/settings/personal-access-tokens/new?name=nts-sync&description=Nts%20sync&contents=write" target="_blank" rel="noopener">Anahtar oluştur</a> (sadece nts-data reposu, Contents: Read and write).</p>
+        <label class="set-field">Repo<input id="set-ghRepo" value="${esc(st.ghRepo || '')}" placeholder="kullanici/nts-data"></label>
+        <label class="set-field">GitHub anahtarı<input id="set-ghToken" type="password" value="${esc(st.ghToken || '')}" placeholder="github_pat_…"></label>
+        <div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><span class="status" id="syncMsg">${esc(S.syncMsg || (Sync.ready() ? '' : 'Kapalı'))}</span></div>
+      </div>
+    </details>
   </div>`;
   m.onclick = async e => {
     const d = e.target.closest('[data-do]')?.dataset.do;
@@ -1120,24 +1187,32 @@ function openSettings() {
       const p = $('#set-pass').value, p2 = $('#set-pass2').value;
       if (p.length < 6) return toast('Şifre en az 6 karakter olmalı');
       if (p !== p2) return toast('Şifreler aynı değil');
-      await Lock.enable(p); toast('Kilit ve şifreleme açıldı', 2500, 'check'); openSettings();
-    } else if (d === 'unlock-off') { await Lock.disable(); toast('Kilit kapatıldı'); openSettings(); }
+      await Lock.enable(p); toast('Şifre kondu', 2500, 'check'); openSettings();
+    } else if (d === 'unlock-off') { await Lock.disable(); toast('Şifre kaldırıldı'); openSettings(); }
   };
   m.onclose = async () => { await saveSettings(); AI.health(); Sync.schedule(); };
-  if (!m.open) m.showModal();
+  Back.open(m);
 }
 
 // ---------- wiring ----------
 function wire() {
   for (const [id, icn] of [['#askBtn', 'spark'], ['#saveBtn', 'up'], ['#clipIco', 'clip'], ['#settingsBtn', 'settings']]) $(id).innerHTML = ic(icn, id === '#askBtn' ? 'sm' : '');
   $('#askBtn').insertAdjacentHTML('beforeend', '<span>Sor</span>');
-  document.querySelector('.search .s-ico').innerHTML = ic('search', 'sm');
+  $('#saveBtn').insertAdjacentHTML('beforeend', '<span class="d-lbl">Kaydet</span>');
   $('#settingsSide').innerHTML = ic('settings') + '<span class="lbl">Ayarlar</span>';
 
   $('#saveBtn').onclick = save;
   const inp = $('#input');
-  inp.addEventListener('input', autoGrow);
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (!e.shiftKey && !/Android|iPhone/.test(navigator.userAgent)))) { e.preventDefault(); save(); } });
+  // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
+  let st;
+  inp.addEventListener('input', () => {
+    autoGrow(); clearTimeout(st);
+    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.limit = 300; runSearch(); render(); }, 80);
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); isQuestion(inp.value) ? AI.ask(inp.value) : save(); }
+    if (e.key === 'Escape') { clearBox(); inp.blur(); }
+  });
   $('#fileInput').onchange = e => { S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
   $('#attachList').onclick = e => { const b = e.target.closest('[data-rm]'); if (b) { S.attach.splice(+b.dataset.rm, 1); renderAttach(); } };
   // paste anywhere: files become attachments, text goes into the composer
@@ -1149,9 +1224,10 @@ function wire() {
     e.preventDefault(); inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); inp.focus();
   });
   document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && S.undo && !e.target.closest('input,textarea')) { e.preventDefault(); undoDelete(); return; }
     if (e.target.closest('input,textarea') || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
-    if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
-    else if (e.key === 'n') { e.preventDefault(); inp.focus(); }
+    if (e.key === '/' || e.key === 'n') { e.preventDefault(); inp.focus(); }
+    else if (e.key === 'z' && false) { }
   });
   const comp = $('#composer'); let dragN = 0;
   addEventListener('dragenter', e => { if (e.dataTransfer?.types?.includes('Files')) { dragN++; comp.classList.add('drag'); } });
@@ -1165,23 +1241,14 @@ function wire() {
     else { const t = e.dataTransfer.getData('text'); if (t) { inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); } }
   });
 
-  let st;
-  const search = $('#search');
-  search.addEventListener('input', e => {
-    S.q = e.target.value; clearTimeout(st);
-    st = setTimeout(() => { S.limit = 300; runSearch(); render(); if (!S.q) $('#answer').hidden = true; }, 60);
-  });
-  search.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (S.q.trim().startsWith('?') || S.q.trim().endsWith('?') || e.ctrlKey)) AI.ask(S.q);
-    if (e.key === 'Escape') { search.value = ''; S.q = ''; runSearch(); render(); $('#answer').hidden = true; search.blur(); }
-  });
-  $('#askBtn').onclick = () => { const q = search.value.trim(); q ? AI.ask(q) : AI.suggest(); };
+  $('#askBtn').onclick = () => { const q = inp.value.trim(); q ? AI.ask(q) : AI.suggest(); };
   $('#answer').onclick = e => {
     const o = e.target.closest('[data-open]'); if (o) return openItem(o.dataset.open);
-    const q = e.target.closest('[data-q]'); if (q) { search.value = q.dataset.q; S.q = ''; AI.ask(q.dataset.q); return; }
+    const q = e.target.closest('[data-q]'); if (q) { inp.value = q.dataset.q; AI.ask(q.dataset.q); return; }
     if (e.target.closest('[data-copy]')) return copyText($('#answer .txt')?.innerText || '');
-    if (e.target.closest('[data-close]')) $('#answer').hidden = true;
+    if (e.target.closest('[data-close]')) closeAnswer();
   };
+  $('#qinfo').onclick = e => { if (e.target.closest('[data-clear]')) clearBox(); };
 
   const onFilter = e => {
     const b = e.target.closest('button'); if (!b) return; const f = S.filter;
@@ -1211,7 +1278,7 @@ function wire() {
   addEventListener('appinstalled', () => toast('Yüklendi. Artık Paylaş menüsünde var.', 3000, 'check'));
   document.addEventListener('visibilitychange', () => { if (!document.hidden && (!Lock.conf || Crypt.key)) { reloadFromDB(); AI.health(); Sync.schedule(); } });
   addEventListener('online', () => Sync.schedule());
-  Board.init();
+  Board.init(); Back.init();
 }
 function setView(v) {
   S.view = v; try { localStorage.setItem('hn-view', v); } catch { }
@@ -1242,5 +1309,4 @@ async function reloadFromDB() {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   Sync.run(); setInterval(() => Sync.schedule(), 120000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
-  if (matchMedia('(max-width: 899px)').matches) { $('#search').placeholder = 'Ara ya da sor…'; $('#input').placeholder = 'Not, link ya da dosya…'; }
 })();

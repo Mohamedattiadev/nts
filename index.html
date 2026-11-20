@@ -31,7 +31,7 @@
     <div class="brand"><span class="mark"></span>Nts</div>
     <div id="sideFilters" class="nav"></div>
     <div class="side-sec grow">
-      <div class="side-label">Etiketler</div>
+      <div class="side-label">Konular</div>
       <div id="sideTags" class="side-tags"></div>
     </div>
     <div class="side-foot">
@@ -42,14 +42,9 @@
 
   <div class="col">
     <header class="top">
-      <div class="brand m-only"><span class="mark"></span></div>
-      <div class="search">
-        <span class="s-ico"></span>
-        <input id="search" type="search" placeholder="Ara ya da Claude'a sor…" autocomplete="off" enterkeyhint="search">
-        <button id="askBtn" class="ask-btn" title="Claude'a sor"></button>
-      </div>
-      <div class="seg" id="viewSwitch"></div>
-      <button id="aiStatus" class="icon-btn m-only ai" title="Claude"><span class="dot"></span></button>
+      <div class="brand m-only"><span class="mark"></span>Nts</div>
+      <span class="grow m-only"></span>
+      <button id="aiStatus" class="pill-status m-only ai" title="Claude"><span class="dot"></span><span class="lbl">Claude</span></button>
       <button id="settingsBtn" class="icon-btn m-only" title="Ayarlar"></button>
     </header>
 
@@ -57,14 +52,19 @@
       <section class="composer" id="composer">
         <div id="attachList" class="attach-list"></div>
         <div class="c-row">
-          <textarea id="input" rows="1" placeholder="Not yaz, link yapıştır ya da dosya bırak"></textarea>
+          <textarea id="input" rows="1" placeholder="Yaz, yapıştır ya da ara…" enterkeyhint="send" autocomplete="off"></textarea>
           <div class="c-actions">
             <label class="icon-btn sm" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
-            <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
+            <button id="askBtn" class="ask-btn" title="Claude'a sor"></button>
+            <button id="saveBtn" class="send" title="Kaydet" disabled></button>
           </div>
         </div>
       </section>
-      <div id="tabsM" class="tabs m-only"></div>
+      <div class="bar">
+        <div id="tabsM" class="tabs m-only"></div>
+        <div class="seg" id="viewSwitch"></div>
+      </div>
+      <div id="qinfo" class="qinfo" hidden></div>
       <div id="answer" class="answer" hidden></div>
     </div>
 

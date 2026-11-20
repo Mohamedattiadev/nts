@@ -6,6 +6,7 @@ NODE="$(command -v node)"
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/applications ~/.local/share/kio/servicemenus
 
 ln -sf "$DIR/hn.mjs" ~/.local/bin/hn
+ln -sf "$DIR/hn.mjs" ~/.local/bin/nts
 
 cat > ~/.config/systemd/user/hizli-note-bridge.service <<UNIT
 [Unit]

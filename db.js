@@ -50,10 +50,12 @@ function itemsFromInput({ title = '', text = '', url = '', files = [], ts = Date
     urls.forEach(u => out.push({ id: newId(), type: 'link', url: u, text: '', ts, group, source, tags: [] }));
     if (rest) out.push({ id: newId(), type: 'note', text: rest, ts, group, source, tags: [] });
   }
-  for (const f of files) {
-    const id = newId();
-    out.push({ id, type: 'file', fileName: f.name || 'dosya', mime: f.type || '', size: f.size || 0, ts, group, source, tags: [], _blob: f });
-  }
+  // text typed together with a file becomes that file's note instead of a separate item
+  let caption = '';
+  if (files.length && out.length === 1 && out[0].type === 'note') { caption = out.pop().text; }
+  files.forEach((f, k) => {
+    out.push({ id: newId(), type: 'file', fileName: f.name || 'dosya', mime: f.type || '', size: f.size || 0, text: k === 0 ? caption : '', ts, group, source, tags: [], _blob: f });
+  });
   return out;
 }
 async function saveItems(items) {

@@ -51,9 +51,10 @@ function ackInbox(ids) {
 
 // ---- claude runner (one job at a time) ----
 let chain = Promise.resolve();
-function runClaude({ prompt, system, schema, model }) {
+function runClaude({ prompt, system, schema, model, readDir }) {
   const job = chain.then(() => new Promise((resolve, reject) => {
-    const args = ['-p', '--model', model, '--output-format', 'json', '--tools', '',
+    const args = ['-p', '--model', model, '--output-format', 'json', '--tools', readDir ? 'Read' : '',
+      ...(readDir ? ['--allowedTools', `Read(${readDir}/**)`, '--max-turns', '12'] : []),
       '--no-session-persistence', '--strict-mcp-config', '--disable-slash-commands',
       '--setting-sources', '', '--system-prompt', system];
     if (schema) args.push('--json-schema', JSON.stringify(schema));
@@ -77,10 +78,12 @@ function runClaude({ prompt, system, schema, model }) {
   return job;
 }
 
+const localTime = ts => new Date(ts).toLocaleString('sv-SE', { hour12: false }).slice(0, 16); // PC's own timezone
 const compact = items => items.map(i => ({
-  id: i.id, date: i.ts ? new Date(i.ts).toISOString().slice(0, 16) : undefined, type: i.type,
+  id: i.id, date: i.ts ? localTime(i.ts) : undefined, type: i.type,
   title: i.title || undefined, text: (i.text || '').slice(0, 1500) || undefined, url: i.url || undefined,
-  file: i.fileName || undefined, tags: i.tags?.length ? i.tags : undefined, summary: i.summary || undefined,
+  file: i.fileName || undefined, content: i.content ? i.content.slice(0, 3000) : undefined, image: i._imgPath || undefined,
+  tags: i.tags?.length ? i.tags : undefined, summary: i.summary || undefined,
   page: i.meta ? [i.meta.title, i.meta.description].filter(Boolean).join(' — ').slice(0, 400) : undefined,
 }));
 
@@ -100,15 +103,21 @@ const ORGANIZE_SCHEMA = {
 };
 
 async function organize(items, existingTags) {
+  // images come as small base64 JPEGs; write them where the read-only Read tool may look
+  for (const i of items) if (i.image) { const p = join(WORK_DIR, `img-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
+  const hasImg = items.some(i => i._imgPath);
   const system = 'You organize a person\'s saved notes, links and files (things they sent to themselves). ' +
     'For each item give a short title, a one-sentence summary and 1-3 lowercase Turkish topic tags. ' +
     'TAG RULES: keep the whole tag set small and reusable, like folders. ALWAYS reuse an existing tag when it fits, even loosely; create a new tag only for a clearly new topic. ' +
     'Prefer broad topics (e.g. iş, proje names like poultrycare, sağlık, alışveriş, yazılım, öğrenme, fikir, finans, ev, seyahat). ' +
     'Never use tags about the item type or format (dosya, link, not, resim, pdf, görsel, belge, video, referans, diğer, genel, kişisel, liste, hatırlatma). Single words, no spaces. ' +
-    'Write title and summary in the language of the item (Turkish if unsure). Mark related items (same project/topic/task). Output only per schema.';
+    'Write title and summary in the language of the item (Turkish if unsure), natural and plain, like a helpful friend. ' +
+    'For notes keep the user\'s key details (times, dates, amounts, names) in the title. Use "content" (text inside a PDF) and look at "image" files with the Read tool to understand files. ' +
+    'Never talk about yourself, tags, or what you could not see; if a file is unclear, just describe it briefly. Mark related items (same project/topic/task). Output only per schema.';
   const prompt = `Existing tags: ${existingTags.join(', ') || '(none)'}\n\nItems:\n${JSON.stringify(compact(items))}`;
-  try { return await runClaude({ prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel }); }
-  catch { return await runClaude({ prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel }); }
+  const opts = { prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel, readDir: hasImg ? WORK_DIR : null };
+  try { return await runClaude(opts); } catch { return await runClaude(opts); }
+  finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
 }
 
 const TAGS_SCHEMA = {
@@ -133,8 +142,8 @@ const ASK_SCHEMA = {
 
 async function ask(question, items) {
   const system = 'You answer questions about a person\'s saved notes, links and files. Use only the given items. ' +
-    'Be concise, list items when asked, mention dates when useful. If nothing matches, say so. Answer in the question\'s language.';
-  const prompt = `Today: ${new Date().toISOString().slice(0, 10)}\nQuestion: ${question}\n\nItems:\n${JSON.stringify(compact(items))}`;
+    'Be concise and plain, list items when asked, mention dates/times when useful. "content" is the text inside a PDF. If nothing matches, say so. Answer in the question\'s language. Never describe your own process.';
+  const prompt = `Now: ${localTime(Date.now())}\nQuestion: ${question}\n\nItems:\n${JSON.stringify(compact(items))}`;
   return runClaude({ prompt, system, schema: ASK_SCHEMA, model: conf.askModel });
 }
 
