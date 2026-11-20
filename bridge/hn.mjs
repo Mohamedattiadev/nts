@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// hn — send anything to Hızlı Not from the PC (no browser needed).
+// hn — send anything to Nts from the PC (no browser needed).
 //   hn "metin ya da link"      hn dosya.pdf resim.jpg      hn --clip (pano)      echo x | hn -
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -11,7 +11,7 @@ const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'i
   mp3: 'audio/mpeg', ogg: 'audio/ogg', opus: 'audio/ogg', m4a: 'audio/mp4', wav: 'audio/wav', pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', zip: 'application/zip',
   doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
 const mimeOf = p => MIME[p.split('.').pop().toLowerCase()] || 'application/octet-stream';
-const notify = (msg, urgent) => { try { execFileSync('notify-send', ['-a', 'Hızlı Not', ...(urgent ? ['-u', 'critical'] : []), 'Hızlı Not', msg]); } catch { } console.log(msg); };
+const notify = (msg, urgent) => { try { execFileSync('notify-send', ['-a', 'Nts', ...(urgent ? ['-u', 'critical'] : []), 'Nts', msg]); } catch { } console.log(msg); };
 const sh = (cmd, args) => { try { return execFileSync(cmd, args, { maxBuffer: 300e6 }); } catch { return null; } };
 const fileEntry = p => ({ name: basename(p), mime: mimeOf(p), size: statSync(p).size, data: readFileSync(p).toString('base64') });
 

@@ -1,13 +1,13 @@
 {
-  "name": "Hızlı Not",
-  "short_name": "Hızlı Not",
+  "name": "Nts",
+  "short_name": "Nts",
   "description": "Kendine attığın link, not ve dosyaları topla, düzenle, sor.",
   "start_url": "./",
   "scope": "./",
   "id": "./",
   "display": "standalone",
-  "background_color": "#0f1115",
-  "theme_color": "#0f1115",
+  "background_color": "#0c0c0e",
+  "theme_color": "#0c0c0e",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

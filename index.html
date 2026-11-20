@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
 <meta name="description" content="Kendine attığın link, not ve dosyaları topla, düzenle, sor.">
-<title>Hızlı Not</title>
+<title>Nts</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -28,12 +28,8 @@
 
 <div class="app">
   <aside class="side">
-    <div class="brand"><span class="mark"></span>Hızlı Not</div>
-    <nav class="nav" id="sideNav"></nav>
-    <div class="side-sec">
-      <div class="side-label">Filtre</div>
-      <div id="sideFilters" class="nav"></div>
-    </div>
+    <div class="brand"><span class="mark"></span>Nts</div>
+    <div id="sideFilters" class="nav"></div>
     <div class="side-sec grow">
       <div class="side-label">Etiketler</div>
       <div id="sideTags" class="side-tags"></div>
@@ -52,6 +48,7 @@
         <input id="search" type="search" placeholder="Ara ya da Claude'a sor…" autocomplete="off" enterkeyhint="search">
         <button id="askBtn" class="ask-btn" title="Claude'a sor"></button>
       </div>
+      <div class="seg" id="viewSwitch"></div>
       <button id="aiStatus" class="icon-btn m-only ai" title="Claude"><span class="dot"></span></button>
       <button id="settingsBtn" class="icon-btn m-only" title="Ayarlar"></button>
     </header>
@@ -78,10 +75,10 @@
       <div id="board" class="board" hidden>
         <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
         <div class="board-tools">
-          <button id="linkMode" class="tool"></button>
+          <button id="zoomOut" class="tool" title="Uzaklaş"></button>
           <button id="fitBtn" class="tool"></button>
+          <button id="zoomIn" class="tool" title="Yakınlaş"></button>
         </div>
-        <div class="board-legend"><span><i class="lg-g"></i>aynı anda atılan</span><span><i class="lg-r"></i>Claude: bağlantılı</span><span><i class="lg-m"></i>senin okun</span></div>
       </div>
       <div id="empty" class="empty" hidden></div>
     </main>

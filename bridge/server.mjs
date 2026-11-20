@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hızlı Not bridge: lets the PWA use your Claude subscription through the local `claude` CLI.
+// Nts bridge: lets the PWA use your Claude subscription through the local `claude` CLI.
 // Run: node bridge/server.mjs   (no dependencies)
 import http from 'node:http';
 import { spawn } from 'node:child_process';
@@ -93,7 +93,7 @@ const ORGANIZE_SCHEMA = {
         id: { type: 'string' },
         title: { type: 'string', description: 'short clear title, same language as content' },
         summary: { type: 'string', description: 'one sentence: what it is and why it matters' },
-        tags: { type: 'array', items: { type: 'string' }, description: '1-4 lowercase topic tags' },
+        tags: { type: 'array', items: { type: 'string' }, description: '1-3 broad topic tags, reuse existing ones' },
         related: { type: 'array', items: { type: 'string' }, description: 'ids of clearly related items in this batch' },
       } } },
   },
@@ -101,11 +101,26 @@ const ORGANIZE_SCHEMA = {
 
 async function organize(items, existingTags) {
   const system = 'You organize a person\'s saved notes, links and files (things they sent to themselves). ' +
-    'For each item give a short title, a one-sentence summary and 1-4 lowercase tags. Reuse existing tags when they fit. ' +
+    'For each item give a short title, a one-sentence summary and 1-3 lowercase Turkish topic tags. ' +
+    'TAG RULES: keep the whole tag set small and reusable, like folders. ALWAYS reuse an existing tag when it fits, even loosely; create a new tag only for a clearly new topic. ' +
+    'Prefer broad topics (e.g. iş, proje names like poultrycare, sağlık, alışveriş, yazılım, öğrenme, fikir, finans, ev, seyahat). ' +
+    'Never use tags about the item type or format (dosya, link, not, resim, pdf, görsel, belge, video, referans, diğer, genel, kişisel, liste, hatırlatma). Single words, no spaces. ' +
     'Write title and summary in the language of the item (Turkish if unsure). Mark related items (same project/topic/task). Output only per schema.';
   const prompt = `Existing tags: ${existingTags.join(', ') || '(none)'}\n\nItems:\n${JSON.stringify(compact(items))}`;
   try { return await runClaude({ prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel }); }
   catch { return await runClaude({ prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel }); }
+}
+
+const TAGS_SCHEMA = {
+  type: 'object', required: ['map'],
+  properties: { map: { type: 'array', items: { type: 'object', required: ['from', 'to'],
+    properties: { from: { type: 'string' }, to: { type: 'string', description: 'target tag, or empty string to drop the tag' } } } } },
+};
+async function cleanTags(tags) {
+  const system = 'You clean up the tag list of a personal notes app. Merge synonyms, plurals, spelling variants and near-duplicates into one tag; ' +
+    'fold tiny niche tags into a broader existing tag; drop tags that only describe the item type or are meaningless (dosya, link, not, resim, görsel, pdf, belge, referans, diğer, genel, kişisel, liste). ' +
+    'ALWAYS keep project, product, company and person names as their own tags (e.g. poultrycare). Aim for at most ~15 tags total, lowercase Turkish single words. Return a mapping for EVERY input tag (to = itself if unchanged, empty to drop).';
+  return runClaude({ prompt: `Tags with counts:\n${tags.map(([t, n]) => `${t} (${n})`).join('\n')}`, system, schema: TAGS_SCHEMA, model: conf.askModel });
 }
 
 const ASK_SCHEMA = {
@@ -159,7 +174,7 @@ function send(res, code, body, origin) {
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const API = /^\/(health|meta|organize|ask|inbox|new-repo|config)(\/|$)/;
+const API = /^\/(health|meta|organize|ask|tags|inbox|new-repo|config)(\/|$)/;
 function serveStatic(req, res) {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   const file = join(APP_DIR, p === '/' ? 'index.html' : p);
@@ -204,8 +219,8 @@ http.createServer(async (req, res) => {
     }
     if (req.url === '/new-repo') { // roll over to a new private data repo with the local gh login
       const name = String(body.name || '').replace(/[^\w./-]/g, '');
-      if (!/^[\w.-]+\/hizli-note-data-\d+$/.test(name)) return send(res, 400, { error: 'bad name' }, origin);
-      await new Promise((ok, no) => execFile('gh', ['repo', 'create', name, '--private', '--description', 'Hızlı Not data'], (e, o, er) => e && !/already exists/i.test(er) ? no(new Error(er || e.message)) : ok()));
+      if (!/^[\w.-]+\/(nts|hizli-note)-data-\d+$/.test(name)) return send(res, 400, { error: 'bad name' }, origin);
+      await new Promise((ok, no) => execFile('gh', ['repo', 'create', name, '--private', '--description', 'Nts data'], (e, o, er) => e && !/already exists/i.test(er) ? no(new Error(er || e.message)) : ok()));
       console.log('new repo ' + name); return send(res, 200, { ok: true, name }, origin);
     }
     if (req.url === '/meta') {
@@ -217,6 +232,7 @@ http.createServer(async (req, res) => {
       console.log(`organize ${body.items?.length} items ${Date.now() - t}ms`);
       return send(res, 200, r, origin);
     }
+    if (req.url === '/tags') { const r = await cleanTags((body.tags || []).slice(0, 300)); console.log(`tags ${body.tags?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));
       console.log(`ask "${String(body.question).slice(0, 60)}" ${Date.now() - t}ms`);
@@ -228,7 +244,7 @@ http.createServer(async (req, res) => {
     send(res, 500, { error: e.message }, origin);
   }
 }).listen(conf.port, '127.0.0.1', () => {
-  console.log(`Hızlı Not bridge → http://localhost:${conf.port}  (uygulama da burada açılır)`);
+  console.log(`Nts bridge → http://localhost:${conf.port}  (uygulama da burada açılır)`);
   console.log(`Token: ${conf.token}`);
   console.log(`Telefon için: sudo tailscale serve --bg --https=8788 http://127.0.0.1:${conf.port}  → https://<pc>.<tailnet>.ts.net:8788`);
   console.log(`Ayarlar: ${CONF_FILE}`);

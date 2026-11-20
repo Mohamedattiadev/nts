@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hızlı Not PC setup: bridge as a user service, `hn` command, "Send to Hızlı Not" in file managers, Tailscale HTTPS for the phone.
+# Nts PC setup: bridge as a user service, `hn` command, "Send to Nts" in file managers, Tailscale HTTPS for the phone.
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 NODE="$(command -v node)"
@@ -9,7 +9,7 @@ ln -sf "$DIR/hn.mjs" ~/.local/bin/hn
 
 cat > ~/.config/systemd/user/hizli-note-bridge.service <<UNIT
 [Unit]
-Description=Hızlı Not Claude bridge
+Description=Nts Claude bridge
 After=network-online.target
 
 [Service]
@@ -23,12 +23,12 @@ UNIT
 systemctl --user daemon-reload
 systemctl --user enable --now hizli-note-bridge.service
 
-# "Open with → Hızlı Not'a gönder" in any file manager
+# "Open with → Nts'a gönder" in any file manager
 cat > ~/.local/share/applications/hizli-note-send.desktop <<APP
 [Desktop Entry]
 Type=Application
-Name=Hızlı Not'a gönder
-Comment=Dosyayı ya da metni Hızlı Not'a gönder
+Name=Nts'a gönder
+Comment=Dosyayı ya da metni Nts'a gönder
 Exec=$HOME/.local/bin/hn %F
 Icon=document-send
 Terminal=false
@@ -45,7 +45,7 @@ Actions=send
 X-KDE-Priority=TopLevel
 
 [Desktop Action send]
-Name=Hızlı Not'a gönder
+Name=Nts'a gönder
 Icon=document-send
 Exec=$HOME/.local/bin/hn %F
 SVC

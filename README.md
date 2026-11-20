@@ -1,10 +1,10 @@
-# ⚡ Hızlı Not
+# Nts
 
 WhatsApp'ta kendine attığın link, not ve dosyaları tek yerde topla. Uygulama tarihe göre dizer, Claude ile düzenler ve sorularını cevaplar.
 
-**Uygulama:** https://mohamedattiadev.github.io/hizli-note/
+**Uygulama:** https://mohamedattiadev.github.io/nts/
 
-- **Kaydet:** yapıştır, yaz ya da dosya bırak. Android'de herhangi bir uygulamadan **Paylaş → Hızlı Not**. Bilgisayarda `hn`.
+- **Kaydet:** yapıştır, yaz ya da dosya bırak. Android'de herhangi bir uygulamadan **Paylaş → Nts**. Bilgisayarda `hn`.
 - **Görünümler:** Liste (gün gün), Board (sonsuz whiteboard, bağlantılar ok olarak), Galeri, Konular.
 - **Arama:** anında çalışır, Türkçe karakter ve küçük yazım hatalarını tolere eder. `?` ile başlarsan Claude'a sorar.
 - **AI:** yeni kayıtlara başlık, özet ve etiket koyar, bağlantılı olanları bulur. Senin Claude aboneliğinle çalışır (bilgisayardaki `claude` CLI üzerinden).
@@ -18,7 +18,7 @@ WhatsApp'ta kendine attığın link, not ve dosyaları tek yerde topla. Uygulama
 
 ## Bilgisayar kurulumu (bir kez)
 ```bash
-bash bridge/install.sh            # köprü servisi, hn komutu, dosya yöneticisine "Hızlı Not'a gönder"
+bash bridge/install.sh            # köprü servisi, hn komutu, dosya yöneticisine "Nts'a gönder"
 sudo tailscale serve --bg --https=8788 http://127.0.0.1:8787   # telefondan erişim (sadece senin cihazların)
 ```
 PC'de uygulamayı **http://localhost:8787** adresinden aç (köprü sunar, izin gerekmez, token kendiliğinden gelir). Brave/Chrome menüsünden "Uygulamayı yükle" ile masaüstü uygulaması yapabilirsin.
@@ -35,4 +35,4 @@ PC'den gönderilenler köprüde bekler. Uygulama açık olan ilk cihaz (telefon 
 ## Telefonda
 1. Siteyi Chrome'da aç → ⋮ → **Uygulamayı yükle**.
 2. Menü → Claude köprüsü: adres `https://<pc>.<tailnet>.ts.net:8788`, token `~/.config/hizli-note/bridge.json` içinde. Telefonda Tailscale açık olmalı.
-3. Menü → GitHub senkronu: repo `Mohamedattiadev/hizli-note-data`. Token: fine-grained, sadece bu repo, Contents: Read and write.
+3. Menü → GitHub senkronu: repo `Mohamedattiadev/nts-data`. Token: fine-grained, sadece bu repo, Contents: Read and write.
