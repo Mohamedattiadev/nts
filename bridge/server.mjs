@@ -114,7 +114,9 @@ async function organize(items, existingTags) {
     'Write title and summary in the language of the item (Turkish if unsure), natural and plain, like a helpful friend. ' +
     'For notes keep the user\'s key details (times, dates, amounts, names) in the title. Use "content" (text inside a PDF) and look at "image" files with the Read tool to understand files. ' +
     'Never talk about yourself, tags, or what you could not see; if a file is unclear, just describe it briefly. Mark related items (same project/topic/task). Output only per schema.';
-  const prompt = `Existing tags: ${existingTags.join(', ') || '(none)'}\n\nItems:\n${JSON.stringify(compact(items))}`;
+  // people want ~10-20 folders, not 100+ tags: once the set is full, only existing tags may be used
+  const full = existingTags.length >= 25 ? `\nThe tag set is full (${existingTags.length}). Do NOT invent new tags: pick only from the existing ones.` : '';
+  const prompt = `Existing tags: ${existingTags.join(', ') || '(none)'}${full}\n\nItems:\n${JSON.stringify(compact(items))}`;
   const opts = { prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel, readDir: hasImg ? WORK_DIR : null };
   try { return await runClaude(opts); } catch { return await runClaude(opts); }
   finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
@@ -150,10 +152,26 @@ async function ask(question, items) {
 // ---- link metadata ----
 const decode = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
   .replace(/&#39;|&#x27;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).trim();
+// sites that block bots or return a generic <title> (Reddit gives "Reddit - The heart of the internet") → ask their oEmbed
+const OEMBED = [
+  [/(^|\.)reddit\.com$/, u => `https://www.reddit.com/oembed?url=${encodeURIComponent(u)}`],
+  [/(^|\.)(youtube\.com|youtu\.be)$/, u => `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(u)}`],
+  [/(^|\.)vimeo\.com$/, u => `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(u)}`],
+];
+async function oembed(u) {
+  const hit = OEMBED.find(([re]) => re.test(u.hostname)); if (!hit) return null;
+  try {
+    const r = await fetch(hit[1](u.href), { signal: AbortSignal.timeout(6000), headers: { 'user-agent': 'Mozilla/5.0 (compatible; NtsBot/1.0)' } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j.title ? { title: j.title, description: j.author_name ? `${j.author_name} · ${j.provider_name || u.hostname}` : undefined, image: j.thumbnail_url, site: j.provider_name } : null;
+  } catch { return null; }
+}
 async function meta(url) {
   try {
     const u = new URL(url);
     if (!/^https?:$/.test(u.protocol)) return null;
+    const oe = await oembed(u); if (oe) return oe;
     const res = await fetch(u, { redirect: 'follow', signal: AbortSignal.timeout(6000),
       headers: { 'user-agent': 'Mozilla/5.0 (compatible; HizliNoteBot/1.0)', 'accept-language': 'tr,en;q=0.8' } });
     if (!(res.headers.get('content-type') || '').includes('html')) return { title: u.pathname.split('/').pop() || u.hostname };

@@ -1,4 +1,4 @@
-const VERSION = 'v5';
+const VERSION = 'v7';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg'];
@@ -32,7 +32,7 @@ self.addEventListener('fetch', e => {
   // cache first for app shell, network fallback; refresh in background
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
     const net = fetch(e.request).then(res => {
-      if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+      if (res.ok && !url.search) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
       return res;
     }).catch(() => hit);
     return hit || net;

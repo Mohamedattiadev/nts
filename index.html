@@ -27,69 +27,60 @@
 <div id="splash"></div>
 
 <div class="app">
-  <aside class="side">
-    <div class="brand"><span class="mark"></span>Nts</div>
-    <div id="sideFilters" class="nav"></div>
-    <div class="side-sec grow">
-      <div class="side-label">Konular</div>
-      <div id="sideTags" class="side-tags"></div>
-    </div>
-    <div class="side-foot">
-      <button class="side-row ai" id="aiStatusSide"><span class="dot"></span><span class="lbl">Claude</span><span class="n" id="aiCount"></span></button>
-      <button class="side-row" id="settingsSide"></button>
-    </div>
-  </aside>
+  <!-- floating chrome: the canvas is the whole screen -->
+  <div class="hud hud-l">
+    <span class="mark" title="Nts"></span>
+    <button class="chip m-only" id="filterBtn" title="Filtre"><span id="filterLbl">Tümü</span><svg class="i sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+  </div>
+  <!-- desktop: small vertical toolbar, left middle -->
+  <nav class="rail d-only" id="rail" aria-label="Filtre"></nav>
+  <div id="filterPop" class="pop" hidden>
+    <div id="popTypes" class="nav m-only-b"></div>
+    <div class="side-label">Konular</div>
+    <div id="sideTags" class="side-tags"></div>
+  </div>
+  <div class="hud hud-c"><div class="seg" id="viewSwitch"></div></div>
+  <div class="hud hud-r">
+    <button id="settingsBtn" class="chip icon ai" title="Ayarlar"><span id="setIco"></span><span class="dot badge"></span></button>
+  </div>
 
-  <div class="col">
-    <header class="top">
-      <div class="brand m-only"><span class="mark"></span>Nts</div>
-      <span class="grow m-only"></span>
-      <button id="aiStatus" class="pill-status m-only ai" title="Claude"><span class="dot"></span><span class="lbl">Claude</span></button>
-      <button id="settingsBtn" class="icon-btn m-only" title="Ayarlar"></button>
-    </header>
+  <main id="main">
+    <div id="list" class="list"></div>
+    <div id="gallery" class="gallery" hidden></div>
+    <div id="topics" class="list" hidden></div>
+    <div id="board" class="board" hidden>
+      <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
+    </div>
+    <div id="empty" class="empty" hidden></div>
+  </main>
 
-    <div class="wrap">
-      <section class="composer" id="composer">
-        <div id="attachList" class="attach-list"></div>
-        <div class="c-row">
-          <textarea id="input" rows="1" placeholder="Yaz, yapıştır ya da ara…" enterkeyhint="send" autocomplete="off"></textarea>
-          <div class="c-actions">
-            <label class="icon-btn sm" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
-            <button id="askBtn" class="ask-btn" title="Claude'a sor"></button>
-            <button id="saveBtn" class="send" title="Kaydet" disabled></button>
-          </div>
-        </div>
-      </section>
-      <div class="bar">
-        <div id="tabsM" class="tabs m-only"></div>
-        <div class="seg" id="viewSwitch"></div>
+  <div class="board-tools" id="boardTools" hidden>
+    <button id="zoomOut" class="tool" title="Uzaklaş"></button>
+    <button id="zoomPct" class="tool pct" title="%100'e dön"></button>
+    <button id="zoomIn" class="tool" title="Yakınlaş"></button>
+    <button id="fitBtn" class="tool" title="Hepsini göster (Shift+1)"></button>
+    <button id="tidyBtn" class="tool" title="Otomatik diz: günlere göre"></button>
+  </div>
+
+  <!-- the one box, bottom centre (like a chat box) -->
+  <div class="dock">
+    <div id="answer" class="answer" hidden></div>
+    <div id="hits" class="hits" hidden></div>
+    <section class="composer" id="composer">
+      <div id="attachList" class="attach-list"></div>
+      <div class="c-row">
+        <label class="c-btn" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
+        <textarea id="input" rows="1" placeholder="Not, link ya da soru yaz…" enterkeyhint="send" autocomplete="off"></textarea>
+        <button id="askBtn" class="c-btn" title="Claude'a sor"></button>
+        <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
       </div>
-      <div id="qinfo" class="qinfo" hidden></div>
-      <div id="answer" class="answer" hidden></div>
-    </div>
-
-    <main id="main">
-      <div id="list" class="list"></div>
-      <div id="gallery" class="gallery" hidden></div>
-      <div id="topics" class="list" hidden></div>
-      <div id="board" class="board" hidden>
-        <div id="plane" class="plane"><svg id="wires" class="wires"></svg></div>
-        <div class="board-tools">
-          <button id="zoomOut" class="tool" title="Uzaklaş"></button>
-          <button id="fitBtn" class="tool"></button>
-          <button id="zoomIn" class="tool" title="Yakınlaş"></button>
-        </div>
-      </div>
-      <div id="empty" class="empty" hidden></div>
-    </main>
+    </section>
   </div>
 </div>
 
-<nav class="tabbar" id="tabbar"></nav>
-
 <div id="toast" class="toast" hidden></div>
-<dialog id="sheet" class="drawer"></dialog>
-<dialog id="menu" class="drawer"></dialog>
+<dialog id="sheet" class="drawer modal"></dialog>
+<dialog id="menu" class="drawer modal narrow"></dialog>
 
 <input id="waInput" type="file" accept=".zip,.txt,application/zip,text/plain" hidden>
 <input id="backupInput" type="file" accept=".zip" hidden>

@@ -6,7 +6,7 @@ const norm = s => (s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').normaliz
 const now = () => Date.now();
 
 const S = {
-  items: [], idx: new Map(), view: 'list', q: '', hits: null,
+  items: [], idx: new Map(), view: 'board', q: '', hits: null,
   filter: { type: 'all', tag: null, star: false }, attach: [],
   settings: {}, bridgeOk: false, aiBusy: false, limit: 300,
   cam: null, linkFrom: null, urls: new Map(), explaining: new Set(),
@@ -146,13 +146,13 @@ function hl(text) {
   const re = new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
   return out.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(re, '<mark>$1</mark>'));
 }
-function visible() {
+function visible(keepAll = false) {
   const f = S.filter;
   return S.items.filter(i => !i.deleted
     && (f.type === 'all' || i.type === f.type)
     && (!f.tag || (i.tags || []).includes(f.tag))
     && (!f.star || i.starred)
-    && (!S.hits || S.hits.has(i.id))
+    && (keepAll || !S.searchOn || !S.hits || S.hits.has(i.id))
   ).sort((a, b) => b.ts - a.ts);
 }
 
@@ -160,7 +160,7 @@ function visible() {
 async function blobFor(i) {
   if (S.urls.has(i.id)) return S.urls.get(i.id);
   let rec = await DB.get('files', i.id);
-  if (!rec && i.fileSynced && Sync.ready()) {
+  if (!rec && (i.sbPath ? Cloud.on() : i.fileSynced && GH.ready())) {
     try { const blob = await Sync.downloadFile(i); rec = { id: i.id, blob }; await DB.put('files', rec); } catch { }
   }
   if (!rec) return null;
@@ -212,6 +212,10 @@ const Prev = {
     this.thumbs.set(i.id, url); return url;
   },
 };
+// YouTube links play right in the panel (no-cookie embed)
+const ytId = i => { if (i.type !== 'link') return null; try { const u = new URL(i.url), h = u.hostname.replace(/^www\.|^m\./, '');
+  const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
+  return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
 const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image);
 const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   if (!e.isIntersecting) return;
@@ -227,7 +231,7 @@ function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image
   return `<div class="${cls}" data-tid="${i.id}">${ic(k === 'text' ? 'note' : k, 'lg')}${i.type === 'file' && !['image'].includes(k) ? `<span class="badge">${esc(extOf(i))}</span>` : ''}</div>`;
 }
 const hookThumbs = root => root.querySelectorAll('[data-tid]').forEach(el => thumbIO.observe(el));
-const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${ic(fileKind(i) === 'text' ? 'note' : fileKind(i))}</div>`;
+const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i.type === 'link' && i.meta?.logo ? `<img class="fav" src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.replaceWith(document.createRange().createContextualFragment(ic('link')))">` : ic(fileKind(i) === 'text' ? 'note' : fileKind(i))}</div>`;
 
 // ---------- render ----------
 function actsHtml(i) {
@@ -239,9 +243,9 @@ function actsHtml(i) {
     ${i.type === 'file' ? `<button class="act" data-a="download" title="İndir">${ic('down', 'sm')}</button>` : ''}
   </div>`;
 }
-function metaHtml(i, { tags = 3, acts = false } = {}) {
+function metaHtml(i, { tags = 3, acts = false, day = false } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
-  return `<div class="meta"><span>${fmtTime(i.ts)}</span>
+  return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
     ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>` : ''}
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
@@ -300,25 +304,25 @@ function renderTopics(items) {
   hookThumbs(el);
 }
 
-const VIEWS = [['list', 'list', 'Liste'], ['board', 'board', 'Pano'], ['gallery', 'grid', 'Galeri']];
+const VIEWS = [['board', 'board', 'Pano'], ['list', 'list', 'Liste'], ['gallery', 'grid', 'Galeri']];
 function renderChrome() {
   const f = S.filter, live = alive(), cnt = t => live.filter(i => i.type === t).length;
   const types = [['all', 'inbox', 'Tümü', live.length], ['link', 'link', 'Linkler', cnt('link')], ['note', 'note', 'Notlar', cnt('note')], ['file', 'file', 'Dosyalar', cnt('file')]];
   const typeOn = t => f.type === t && !f.star && !(t === 'all' && f.tag);
   $('#viewSwitch').innerHTML = VIEWS.map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}" title="${l}">${ic(icn, 'sm')}<span>${l}</span></button>`).join('');
-  $('#sideFilters').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n}</span></button>`).join('')
-    + `<button class="side-row${f.star ? ' on' : ''}" data-star>${ic('star')}<span class="lbl">Yıldızlı</span><span class="n">${live.filter(i => i.starred).length}</span></button>`;
+  $('#filterLbl').textContent = f.tag ? '#' + f.tag : f.star ? 'Yıldızlı' : types.find(t => t[0] === f.type)[2];
+  const stars = live.filter(i => i.starred).length;
+  $('#rail').innerHTML = types.map(([t, icn, l, n]) => `<button class="${typeOn(t) ? 'on' : ''}" data-type="${t}" data-tip="${l} · ${n}" aria-label="${l}">${ic(icn)}</button>`).join('')
+    + `<button class="${f.star ? 'on' : ''}" data-star data-tip="Yıldızlı · ${stars}" aria-label="Yıldızlı">${ic('star')}</button><hr>`
+    + `<button class="${f.tag ? 'on' : ''}" data-tags data-tip="${f.tag ? '#' + esc(f.tag) : 'Konular'}" aria-label="Konular">${ic('hash')}</button>`;
+  $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n}</span></button>`).join('')
+    + `<button class="side-row${f.star ? ' on' : ''}" data-star>${ic('star')}<span class="lbl">Yıldızlı</span><span class="n">${stars}</span></button>`;
   const counts = new Map(); live.forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
-  const all = [...counts].sort((a, b) => b[1] - a[1]), tags = S.allTags ? all : all.slice(0, 8);
+  const all = [...counts].sort((a, b) => b[1] - a[1]), tags = S.allTags ? all : all.slice(0, 10);
   if (f.tag && !tags.some(([t]) => t === f.tag)) tags.push([f.tag, counts.get(f.tag) || 0]);
   $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">${ic('hash', 'sm')}</span><span class="lbl">${esc(t)}</span><span class="n">${n}</span></button>`).join('')
-    + (all.length > 8 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
-    || '<div class="hint" style="padding:0 10px">Claude düzenledikçe konular burada çıkar.</div>';
-  $('#tabsM').innerHTML = types.map(([t, , l]) => `<button class="tab${typeOn(t) ? ' on' : ''}" data-type="${t}">${l}</button>`).join('')
-    + `<button class="tab${f.star ? ' on' : ''}" data-star>${ic('star', 'sm')}Yıldızlı</button>`
-    + (f.tag ? `<button class="tab on" data-tag="${esc(f.tag)}">${esc(f.tag)} ${ic('x', 'sm')}</button>` : '')
-    + [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6).filter(([t]) => t !== f.tag).map(([t]) => `<button class="tab" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
-  $('#tabbar').innerHTML = VIEWS.filter(v => v[0] !== 'board').map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}">${ic(icn)}${l}</button>`).join('');
+    + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
+    || '<div class="hint" style="padding:0 10px 8px">Claude düzenledikçe konular burada çıkar.</div>';
 }
 function emptyHtml(icn, h, p, actions = '') {
   return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
@@ -330,14 +334,15 @@ function render() {
   requestAnimationFrame(() => {
     renderQueued = false;
     const items = visible(), none = !alive().length;
-    renderChrome(); renderQinfo();
+    renderChrome(); renderHits();
     for (const v of ['list', 'board', 'gallery', 'topics']) $('#' + v).hidden = none || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
+    $('#boardTools').hidden = none || S.view !== 'board';
     $('#empty').hidden = !none;
     if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul, sonu <b>?</b> ile biten sorular Claude\'a gider.',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
     else if (S.view === 'list') items.length ? renderList(items) : ($('#list').innerHTML = emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. Soru ise sonuna ? koy, Claude\'a sorar.'));
-    else if (S.view === 'board') Board.render(items);
+    else if (S.view === 'board') Board.render(visible(true));
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
     $('#splash').classList.add('gone');
@@ -352,7 +357,7 @@ async function upsert(list, { sync = true } = {}) {
   list.forEach(i => map.set(i.id, i));
   S.items = [...map.values()];
   await DB.putMany('items', list.map(({ ...i }) => i));
-  await Sync.markDirty(list.map(i => monthOf(i.ts)));
+  await Sync.markDirty(list);
   runSearch(); render(); AI.dot();
   if (sync) Sync.schedule();
 }
@@ -366,7 +371,7 @@ async function addFromInput(input) {
   }
   const saved = await saveItems(made);
   await upsert(saved);
-  AI.kick();
+  AI.kick(); setTimeout(() => LinkMeta.run(), 1500);
   return saved;
 }
 async function removeItem(i) { // soft delete; blob kept until undo window passes
@@ -391,14 +396,23 @@ async function itemAction(a, id) {
 
 // ---------- composer ----------
 const isQuestion = t => { URL_RE.lastIndex = 0; const u = URL_RE.test(t); URL_RE.lastIndex = 0; return /\?\s*$/.test(t.trim()) && !u; };
-function clearBox() { const inp = $('#input'); inp.value = ''; S.q = ''; runSearch(); autoGrow(); render(); closeAnswer(); }
+function clearBox() { const inp = $('#input'); inp.value = ''; S.q = ''; S.searchOn = false; runSearch(); autoGrow(); render(); closeAnswer(); }
 function closeAnswer() { $('#answer').hidden = true; }
-function renderQinfo() {
-  const el = $('#qinfo'), q = S.q.trim();
-  if (!q || !S.hits) { el.hidden = true; return; }
-  el.hidden = false;
-  el.innerHTML = `<span>${S.hits.size ? `<b>${S.hits.size}</b> benzer kayıt` : 'Benzer kayıt yok'}</span><span class="muted">·</span>
-    <span class="muted">${isQuestion(q) ? 'Enter: Claude\'a sor' : 'Enter: kaydet'}</span><button class="link-btn" data-clear>Temizle</button>`;
+function renderHits() {
+  const el = $('#hits'), q = S.q.trim();
+  if (S.searchOn && q) {
+    el.hidden = false; el.className = 'qchip';
+    el.innerHTML = `${ic('search', 'sm')}<span>“${esc(q.slice(0, 40))}” · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı kapat">${ic('x', 'sm')}</button>`;
+    return;
+  }
+  if (!q || !S.hits?.size) { el.hidden = true; return; }
+  el.className = 'hits'; el.hidden = false;
+  const top = [...S.hits].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => byId(id)).filter(Boolean);
+  el.innerHTML = top.map(i => {
+    const k = fileKind(i), logo = i.type === 'link' && i.meta?.logo;
+    return `<button class="h-row" data-open="${i.id}"><span class="h-ico ${i.type}-c">${logo ? `<img src="${esc(logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span>
+      <span class="h-t">${hl(titleOf(i))}</span><span class="h-s">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span></button>`;
+  }).join('') + `<div class="h-foot"><span>${isQuestion(q) ? 'Enter: Claude\'a sor' : 'Enter: yeni not olarak kaydet'}</span>${S.hits.size > 0 ? `<button class="link-btn" data-all>${S.hits.size} sonucun hepsini göster</button>` : ''}</div>`;
 }
 function renderAttach() {
   const el = $('#attachList');
@@ -414,13 +428,15 @@ function renderAttach() {
 const updateSend = () => {
   const v = $('#input').value.trim(), q = isQuestion(v);
   $('#saveBtn').disabled = !v && !S.attach.length;
-  $('#askBtn').classList.toggle('hot', q); $('#saveBtn').classList.toggle('dim', q && !S.attach.length);
+  const ask = q && !S.attach.length, b = $('#saveBtn');
+  if (b.classList.contains('ask') !== ask) { b.classList.toggle('ask', ask); b.innerHTML = ic(ask ? 'spark' : 'up', 'sm'); b.title = ask ? 'Claude\'a sor (Enter)' : 'Kaydet (Enter)'; }
+  $('#askBtn').classList.toggle('hot', ask);
 };
 async function save() {
   const inp = $('#input'), text = inp.value.trim(), files = S.attach;
   if (!text && !files.length) return;
   // clear the box first, so anything added while saving isn't lost
-  inp.value = ''; S.attach = []; S.q = ''; runSearch(); renderAttach(); autoGrow();
+  inp.value = ''; S.attach = []; S.q = ''; S.searchOn = false; runSearch(); renderAttach(); autoGrow();
   const r = await addFromInput({ text, files });
   render();
   if (r !== 'dup') toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check');
@@ -429,9 +445,9 @@ function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.he
 
 // ---------- Android back button closes panels instead of leaving the app ----------
 const Back = {
-  open(dlg) { if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } },
+  open(dlg) { if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
   init() {
-    addEventListener('popstate', () => { for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); });
+    addEventListener('popstate', () => { for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); });
     for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
   },
 };
@@ -447,23 +463,31 @@ function openItem(id) {
   const i = byId(id); if (!i) return;
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
   dlg.dataset.id = id;
-  dlg.innerHTML = `<div class="d-body">
+  const yt = ytId(i), media = yt || i.type === 'file' || (i.type === 'link' && i.meta?.image);
+  dlg.classList.toggle('wide', !!media);
+  const lcard = i.type === 'link' ? `<a class="linkcard" href="${esc(i.url)}" target="_blank" rel="noopener">
+        ${i.meta?.image && !ytId(i) ? `<img src="${esc(i.meta.image)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ''}
+        <div class="lc-b">${i.meta?.title ? `<div class="lc-t">${esc(i.meta.title)}</div>` : ''}${i.meta?.description ? `<div class="lc-d">${esc(i.meta.description)}</div>` : ''}
+        <div class="lc-u">${ic('ext', 'sm')}${esc(i.url)}</div></div></a>` : '';
+  dlg.innerHTML = `<div class="d-body" tabindex="-1">
     <div class="d-head"><span class="type ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}${KIND_LABEL[k]}</span><span>·</span><span>${fmtDay(dayKey(i.ts))}, ${fmtTime(i.ts)}</span>
       ${i.source === 'whatsapp' ? '<span>· WhatsApp</span>' : i.source === 'pc' ? '<span>· Bilgisayar</span>' : i.source === 'share' ? '<span>· Paylaşım</span>' : ''}
       <span class="sp"></span><button class="icon-btn" data-act="star" title="Yıldızla">${ic('star', i.starred ? 'fill star-on' : '')}</button><button class="icon-btn" data-act="close" title="Kapat">${ic('x')}</button></div>
+    <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
+    ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+    ${media ? lcard : ''}
+    ${i.type === 'file' ? `<div class="preview" id="filePrev"><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
+    ${media ? '</div><div class="d-info">' : ''}
     <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
     <div id="explainBox">${explainHtml(i)}</div>
-    ${i.type === 'link' ? `<a class="linkcard" href="${esc(i.url)}" target="_blank" rel="noopener">
-        ${i.meta?.image ? `<img src="${esc(i.meta.image)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ''}
-        <div class="lc-b">${i.meta?.title ? `<div class="lc-t">${esc(i.meta.title)}</div>` : ''}${i.meta?.description ? `<div class="lc-d">${esc(i.meta.description)}</div>` : ''}
-        <div class="lc-u">${ic('ext', 'sm')}${esc(i.url)}</div></div></a>` : ''}
-    ${i.type === 'file' ? `<div class="preview" id="filePrev"><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
+    ${media ? '' : lcard}
     <div class="field-label">Not</div>
     <textarea class="d-text" placeholder="Bir şey ekle…">${esc(i.text || '')}</textarea>
     <div class="tags-edit">${(i.tags || []).map(t => `<span class="tagpill">${esc(t)}<button data-untag="${esc(t)}" title="Kaldır">${ic('x', 'sm')}</button></span>`).join('')}
       <input class="tag-in" placeholder="+ konu" enterkeyhint="done"></div>
     ${rel.length ? `<div class="field-label">Bağlantılı · ${rel.length}</div><div class="rel-list">${rel.slice(0, 12).map(r => itemRow(r, { acts: false })).join('')}</div>` : ''}
     <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? 'Claude: yeniden anlat' : 'Claude anlatsın: bu ne, neyle bağlantılı?'}</button>
+    </div>${media ? '</div>' : ''}
     <div class="d-foot">
       <button class="fbtn" data-act="share">${ic('upload')}<span>Paylaş</span></button>
       <button class="fbtn" data-act="copy">${ic('copy')}<span>Kopyala</span></button>
@@ -523,48 +547,67 @@ async function showPreview(i) {
   } else box.innerHTML = `<div class="prev-empty">${ic('file', 'xl')}<span>${esc(i.fileName)} · ${fmtSize(i.size)}</span><span>Bu dosya türü için önizleme yok, indirip açabilirsin.</span></div>`;
 }
 
+// ---------- filter popover (top left) ----------
+const Pop = {
+  init() {
+    $('#filterBtn').onclick = e => { e.stopPropagation(); this.toggle(e.currentTarget); };
+    document.addEventListener('pointerdown', e => { if (!e.target.closest('#filterPop,#filterBtn,[data-tags]')) this.close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') this.close(); });
+  },
+  toggle(anchor) {
+    const p = $('#filterPop'); if (!p.hidden) return this.close();
+    const r = anchor.getBoundingClientRect(); p.hidden = false;
+    if (innerWidth < 900) { p.style.left = r.left + 'px'; p.style.top = r.bottom + 8 + 'px'; }
+    else { p.style.left = r.right + 12 + 'px'; p.style.top = Math.max(12, Math.min(innerHeight - p.offsetHeight - 12, r.top + r.height / 2 - p.offsetHeight / 2)) + 'px'; }
+  },
+  close() { const p = $('#filterPop'); if (p) p.hidden = true; },
+};
+
 // ---------- board ----------
 const Board = {
-  COLW: 248, GAP: 72,
+  COLW: 240, GAP: 64, PER: 4,
+  // Free canvas, like Figma: cards you have moved keep their place (i.pos, synced);
+  // cards you never moved are stacked in day columns to the right of the placed ones.
   render(items) {
     const plane = $('#plane'), board = $('#board');
     plane.querySelectorAll('.bcard,.col-head').forEach(e => e.remove());
     this.ro?.disconnect();
-    const list = items.slice(0, 500).sort((a, b) => a.ts - b.ts);
-    const days = []; let last = '';
-    for (const i of list) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
+    const list = items.slice(0, 600).sort((a, b) => a.ts - b.ts);
+    const placed = list.filter(i => i.pos), free = list.filter(i => !i.pos);
+    let x0 = 0, y0 = 0;
+    if (placed.length) { x0 = Math.max(...placed.map(i => i.pos.x + this.COLW)) + this.GAP * 1.5; y0 = Math.min(...placed.map(i => i.pos.y)); }
     const frag = document.createDocumentFragment(); this.cols = [];
-    const PER = 4; let cx = 0;
-    days.forEach(d => {
-      const x = cx; cx += Math.ceil(d.items.length / PER) * (this.COLW + 20) - 20 + this.GAP;
+    const card = i => {
+      const c = document.createElement('div'), k = fileKind(i), sub = subOf(i);
+      c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '');
+      c.dataset.id = i.id;
+      c.innerHTML = `${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${hl(titleOf(i))}</div></div>
+        ${sub ? `<div class="sub">${hl(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 2, day: !!i.pos })}</div>`;
+      frag.appendChild(c); return c;
+    };
+    for (const i of placed) { const c = card(i); c.style.left = i.pos.x + 'px'; c.style.top = i.pos.y + 'px'; }
+    const days = []; let last = '';
+    for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
+    let cx = x0;
+    for (const d of days) {
+      const x = cx; cx += Math.ceil(d.items.length / this.PER) * (this.COLW + 20) - 20 + this.GAP;
       const h = document.createElement('div'); h.className = 'col-head'; h.innerHTML = `${fmtDay(d.k)}<span class="cnt">${d.items.length}</span>`;
-      h.style.left = x + 'px'; h.style.top = '0px'; frag.appendChild(h);
-      const cards = d.items.map((i, n) => {
-        const c = document.createElement('div'), k = fileKind(i), sub = subOf(i);
-        c.className = 'bcard' + (S.hits?.has(i.id) ? ' hit' : '') + (S.linkFrom === i.id ? ' sel' : '');
-        const colx = x + Math.floor(n / PER) * (this.COLW + 20);
-        c.dataset.id = i.id; c.dataset.colx = colx; c.dataset.sub = Math.floor(n / PER);
-        c.innerHTML = `${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${hl(titleOf(i))}</div></div>
-          ${sub ? `<div class="sub">${hl(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 3 })}</div>`;
-        c.style.left = colx + 'px';
-        frag.appendChild(c); return { c, i };
-      });
-      for (let k = 0; k < cards.length; k += PER) this.cols.push(cards.slice(k, k + PER));
-    });
+      h.style.left = x + 'px'; h.style.top = y0 + 'px'; frag.appendChild(h);
+      const cs = d.items.map((i, n) => { const c = card(i); c.classList.add('auto'); c.style.left = x + Math.floor(n / this.PER) * (this.COLW + 20) + 'px'; return c; });
+      for (let k = 0; k < cs.length; k += this.PER) this.cols.push(cs.slice(k, k + this.PER));
+    }
+    this.y0 = y0;
     plane.appendChild(frag); hookThumbs(plane);
     this.layout();
-    // cards can grow later (fonts, previews) → re-stack so nothing overlaps
+    // auto cards can grow later (fonts, previews) → re-stack so nothing overlaps
     this.ro = new ResizeObserver(() => { if (!this._lr) this._lr = requestAnimationFrame(() => { this._lr = 0; this.layout(); }); });
     plane.querySelectorAll('.bcard').forEach(c => this.ro.observe(c));
-    if (!S.cam) { const w = cx; S.cam = { k: 1, x: Math.min(24, board.clientWidth - w), y: 20 }; }
-    this.apply();
+    if (!S.cam) requestAnimationFrame(() => this.fit(false)); else this.apply();
   },
   layout() {
     for (const col of this.cols || []) {
-      let y = 34;
-      for (const { c, i } of col) {
-        c.style.top = y + 'px'; y += c.offsetHeight + 16;
-      }
+      let y = this.y0 + 30;
+      for (const c of col) { if (!c.classList.contains('auto')) continue; c.style.top = y + 'px'; y += c.offsetHeight + 14; }
     }
     this.wires();
   },
@@ -588,47 +631,107 @@ const Board = {
     }
     svg.innerHTML = `<path d="${d.g}"/><path class="rel" d="${d.rel}"/><path class="man" d="${d.man}"/>`;
   },
-  apply() { const c = S.cam; $('#plane').style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`; },
+  apply() {
+    const c = S.cam; $('#plane').style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`;
+    const b = $('#board'); b.style.backgroundSize = `${24 * c.k}px ${24 * c.k}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
+    const p = $('#zoomPct'); if (p) p.textContent = Math.round(c.k * 100) + '%';
+  },
   zoomAt(px, py, f) {
-    const c = S.cam, k = Math.min(2, Math.max(.5, c.k * f));
+    const c = S.cam, k = Math.min(2.5, Math.max(.2, c.k * f));
     c.x = px - (px - c.x) * (k / c.k); c.y = py - (py - c.y) * (k / c.k); c.k = k; this.apply();
   },
-  fit() {
-    const cards = [...document.querySelectorAll('.bcard')]; if (!cards.length) return;
-    const b = $('#board'); let x2 = 0, y2 = 0;
-    cards.forEach(c => { x2 = Math.max(x2, c.offsetLeft + c.offsetWidth); y2 = Math.max(y2, c.offsetTop + c.offsetHeight); });
-    const k = Math.max(.7, Math.min(1, (b.clientWidth - 48) / x2, (b.clientHeight - 90) / y2));
-    S.cam = { k, x: Math.max(24, (b.clientWidth - x2 * k) / 2), y: 24 };
-    $('#plane').style.transition = 'transform .35s var(--ease)'; this.apply(); setTimeout(() => { $('#plane').style.transition = ''; }, 400);
+  zoomTo(k) { const b = $('#board'); this.animate(() => this.zoomAt(b.clientWidth / 2, b.clientHeight / 2, k / S.cam.k)); },
+  animate(fn) { const p = $('#plane'); p.style.transition = 'transform .3s var(--ease)'; fn(); setTimeout(() => { p.style.transition = ''; }, 320); },
+  fit(anim = true) {
+    const cards = [...document.querySelectorAll('.bcard')], b = $('#board');
+    if (!cards.length) { S.cam = { k: 1, x: 24, y: 72 }; return this.apply(); }
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    cards.forEach(c => { x1 = Math.min(x1, c.offsetLeft); y1 = Math.min(y1, c.offsetTop - 30); x2 = Math.max(x2, c.offsetLeft + c.offsetWidth); y2 = Math.max(y2, c.offsetTop + c.offsetHeight); });
+    const top = 64, bot = 110, W = b.clientWidth - 48, H = b.clientHeight - top - bot;
+    const k = Math.max(.35, Math.min(1, W / (x2 - x1), H / (y2 - y1)));
+    // if it doesn't fit even small, start at the newest (right) end
+    const x = (x2 - x1) * k <= W ? (b.clientWidth - (x2 - x1) * k) / 2 - x1 * k : b.clientWidth - 24 - x2 * k;
+    S.cam = { k, x, y: top - y1 * k };
+    anim ? this.animate(() => this.apply()) : this.apply();
+  },
+  // save where cards were dropped, without re-rendering the board
+  async savePos(list) {
+    const t = now();
+    for (const i of list) i.updatedAt = Math.max(t, (i.updatedAt || 0) + 1);
+    await DB.putMany('items', list.map(({ ...i }) => i));
+    await Sync.markDirty(list); Sync.schedule();
+  },
+  async tidy() {
+    const list = S.items.filter(i => i.pos);
+    if (!list.length) { this.fit(); return toast('Zaten düzenli', 1500, 'check'); }
+    const before = list.map(i => ({ id: i.id, pos: i.pos }));
+    list.forEach(i => { delete i.pos; });
+    await this.savePos(list); S.cam = null; render();
+    toast('Günlere göre dizildi', 5000, 'layers', { label: 'Geri al', fn: async () => {
+      const back = before.map(b => { const i = byId(b.id); if (i) i.pos = b.pos; return i; }).filter(Boolean);
+      await this.savePos(back); render();
+    } });
+  },
+  // first time a card is moved: pin every card where it is now, so nothing else jumps
+  pinAll() {
+    const moved = [];
+    for (const c of document.querySelectorAll('.bcard.auto')) {
+      const i = byId(c.dataset.id); if (!i) continue;
+      i.pos = { x: c.offsetLeft, y: c.offsetTop }; c.classList.remove('auto'); moved.push(i);
+    }
+    document.querySelectorAll('.col-head').forEach(h => h.remove());
+    return moved;
   },
   init() {
-    const b = $('#board'), pts = new Map(); let drag = null, pinch = null;
+    const b = $('#board'), pts = new Map(); let drag = null, pinch = null, space = false, wr = 0;
+    const redraw = () => { if (!wr) wr = requestAnimationFrame(() => { wr = 0; this.wires(); }); };
+    addEventListener('keydown', e => { if (e.code === 'Space' && S.view === 'board' && !e.target.closest('input,textarea') && !document.querySelector('dialog[open]')) { e.preventDefault(); space = true; b.classList.add('space'); } });
+    addEventListener('keyup', e => { if (e.code === 'Space') { space = false; b.classList.remove('space'); } });
     b.addEventListener('pointerdown', e => {
-      if (e.target.closest('.board-tools,.board-legend,.acts')) return;
+      if (e.target.closest('.acts') || e.button === 2) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       b.setPointerCapture(e.pointerId);
-      const card = e.target.closest('.bcard');
-      if (pts.size === 2) { drag = null; const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y) }; return; }
-      drag = { card, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y };
+      if (pts.size === 2) {
+        if (drag?.card && drag.moved) return; // keep dragging the card, ignore the 2nd finger
+        drag?.card?.classList.remove('dragging'); drag = null;
+        const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; return;
+      }
+      const card = space || e.button === 1 ? null : e.target.closest('.bcard');
+      drag = { card, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop };
     });
     b.addEventListener('pointermove', e => {
       if (!pts.has(e.pointerId)) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pinch && pts.size === 2) {
-        const [p, q] = [...pts.values()], d = Math.hypot(p.x - q.x, p.y - q.y), r = b.getBoundingClientRect();
-        this.zoomAt((p.x + q.x) / 2 - r.left, (p.y + q.y) / 2 - r.top, d / pinch.d); pinch.d = d; return;
+      if (pinch && pts.size === 2) { // two fingers: zoom and pan together
+        const [p, q] = [...pts.values()], d = Math.hypot(p.x - q.x, p.y - q.y), mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, r = b.getBoundingClientRect();
+        S.cam.x += mx - pinch.mx; S.cam.y += my - pinch.my;
+        this.zoomAt(mx - r.left, my - r.top, d / pinch.d); Object.assign(pinch, { d, mx, my }); return;
       }
       if (!drag) return;
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+      if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+      if (!drag.moved && drag.card) {
+        drag.pinned = this.pinAll(); this.ro?.disconnect();
+        drag.card.classList.add('dragging'); drag.card.parentNode.appendChild(drag.card); // on top
+      }
       drag.moved = true;
-      b.classList.add('panning'); S.cam.x = drag.cx + dx; S.cam.y = drag.cy + dy; this.apply();
+      if (drag.card) {
+        drag.card.style.left = drag.ox + dx / S.cam.k + 'px'; drag.card.style.top = drag.oy + dy / S.cam.k + 'px'; redraw();
+      } else { b.classList.add('panning'); S.cam.x = drag.cx + dx; S.cam.y = drag.cy + dy; this.apply(); }
     });
     const up = async e => {
       pts.delete(e.pointerId); b.classList.remove('panning');
       if (pts.size < 2) pinch = null;
+      if (pts.size) return;
       const d = drag; drag = null; if (!d) return;
-      if (d.card && !d.moved) openItem(d.card.dataset.id);
+      if (!d.card) return;
+      if (!d.moved) return e.type === 'pointerup' && openItem(d.card.dataset.id);
+      d.card.classList.remove('dragging');
+      const i = byId(d.card.dataset.id); if (!i) return;
+      i.pos = { x: Math.round(d.card.offsetLeft), y: Math.round(d.card.offsetTop) };
+      const list = [...(d.pinned || []).filter(x => x.id !== i.id), i];
+      await this.savePos(list);
+      if (d.pinned?.length) toast('Kartlar artık serbest. "Otomatik diz" ile günlere göre geri dizersin.', 4000, 'board');
     };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
     b.addEventListener('click', e => { const a = e.target.closest('.act'); if (a) { e.stopPropagation(); itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); } });
@@ -637,11 +740,14 @@ const Board = {
       if (e.ctrlKey || e.metaKey) this.zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .01));
       else { S.cam.x -= e.deltaX || (e.shiftKey ? e.deltaY : 0); S.cam.y -= e.shiftKey ? 0 : e.deltaY; this.apply(); }
     }, { passive: false });
-    $('#fitBtn').innerHTML = ic('fit', 'sm') + 'Hepsini göster';
+    $('#fitBtn').innerHTML = ic('fit', 'sm');
+    $('#tidyBtn').innerHTML = ic('layers', 'sm');
     $('#zoomIn').innerHTML = ic('plus', 'sm'); $('#zoomOut').innerHTML = '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
-    const zc = f => { const r = b.getBoundingClientRect(); this.zoomAt(r.width / 2, r.height / 2, f); };
-    $('#zoomIn').onclick = () => zc(1.2); $('#zoomOut').onclick = () => zc(1 / 1.2);
+    const zc = f => { const r = b.getBoundingClientRect(); this.animate(() => this.zoomAt(r.width / 2, r.height / 2, f)); };
+    $('#zoomIn').onclick = () => zc(1.25); $('#zoomOut').onclick = () => zc(1 / 1.25);
+    $('#zoomPct').onclick = () => this.zoomTo(1);
     $('#fitBtn').onclick = () => this.fit();
+    $('#tidyBtn').onclick = () => this.tidy();
   },
 };
 
@@ -667,9 +773,7 @@ const AI = {
   dot() {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
-      d.title = S.bridgeOk ? `Claude bağlı${n ? ` · ${n} kayıt sırada` : ''}` : 'Claude köprüsü kapalı'; }
-    const ml = document.querySelector('#aiStatus .lbl'); if (ml) ml.textContent = S.bridgeOk ? (S.aiBusy ? 'Düzenliyor' : 'Claude hazır') : 'Claude kapalı';
-    const c = $('#aiCount'); if (c) c.textContent = S.bridgeOk ? (S.aiBusy ? 'düzenliyor' : n ? n + ' sırada' : 'bağlı') : 'kapalı';
+      d.title = `Ayarlar · ${S.bridgeOk ? `Claude bağlı${n ? `, ${n} kayıt sırada` : ''}` : 'Claude köprüsü kapalı'}${Cloud.on() ? ' · senkron açık' : ''}`; }
   },
   kick() { clearTimeout(this._t); this._t = setTimeout(() => this.process(), 800); },
   async pullInbox() {
@@ -810,7 +914,7 @@ async function shrinkImage(blob, mime) {
     return out.size < blob.size ? out : blob;
   } catch { return blob; }
 }
-const Sync = {
+const GH = { // old way: a private GitHub repo + token (kept under Advanced)
   repos() { return (S.settings.ghRepo || '').split(/[\s,]+/).filter(Boolean); },
   ready() { return !!(this.repos().length && S.settings.ghToken); },
   async gh(path, opt = {}, accept = 'application/vnd.github+json', repo = this.repos()[0]) {
@@ -917,6 +1021,160 @@ const Sync = {
 };
 
 // ---------- WhatsApp import ----------
+
+// ---------- link preview without the PC bridge ----------
+// Title, short description, logo and image for a saved link, even when Claude's bridge is off.
+// Uses microlink.io's free API (only the link address is sent; ~50 links a day). Can be turned off in Settings.
+const LinkMeta = {
+  async run() {
+    if (this.busy || S.settings.noLinkPreview || !navigator.onLine) return; this.busy = true;
+    try {
+      const todo = S.items.filter(i => i.type === 'link' && !i.deleted && !i.meta && (!i.metaTry || now() - i.metaTry > 864e5)).sort((a, b) => b.ts - a.ts).slice(0, 6);
+      for (const i of todo) {
+        if (S.bridgeOk) break; // the bridge does it (and Claude writes the summary)
+        let meta = null, r;
+        try { r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(i.url), { signal: AbortSignal.timeout(12000) }); } catch { break; }
+        if (r.status === 429) break; // daily limit: try again later
+        const j = await r.json().catch(() => ({}));
+        if (j.status === 'success') { const d = j.data || {}; meta = { title: d.title || '', description: d.description || '', image: d.image?.url, logo: d.logo?.url, site: d.publisher }; }
+        const cur = byId(i.id); if (cur) await upsert([{ ...cur, ...(meta ? { meta } : { metaTry: now() }) }]);
+      }
+    } finally { this.busy = false; }
+  },
+};
+
+// ---------- Cloud: Sign in with Google + sync (Supabase, shared project with Gym/Fluent365) ----------
+// Plain fetch, no SDK: PKCE sign-in, REST for items (table nts_items), Storage for files (bucket nts-files).
+// Row Level Security: each account only reads/writes its own rows (supabase/schema.sql).
+// With the app lock on, items and files are encrypted here before they leave the device.
+const SB = { url: 'https://tsnlhzuhbteqgjvxobbx.supabase.co', key: 'sb_publishable_YCxHNSqoyvr40NvFyK2hpQ_VtkaLOwU' };
+const b64url = u8 => b64enc(u8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const Cloud = {
+  s: null,
+  on() { return !!this.s; },
+  email() { return this.s?.user?.email || ''; },
+  async load() { this.s = (await DB.get('kv', 'sb-session')) || null; },
+  async keep(s) { this.s = s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at || Math.floor(now() / 1000) + (s.expires_in || 3600), user: { id: s.user?.id, email: s.user?.email } } : null; this.s ? await DB.put('kv', this.s, 'sb-session') : await DB.del('kv', 'sb-session'); },
+  async auth(path, body) {
+    const r = await fetch(SB.url + '/auth/v1/' + path, { method: 'POST', headers: { apikey: SB.key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error_description || j.msg || j.message || 'Giriş hatası ' + r.status); e.status = r.status; throw e; }
+    return j;
+  },
+  async signIn() {
+    const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+    try { localStorage.setItem('nts-pkce', JSON.stringify({ verifier, at: now() })); localStorage.removeItem('gym-pkce'); } catch { }
+    const back = location.origin + location.pathname; // never the hash; Supabase must allow-list this
+    location.href = `${SB.url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back)}&code_challenge=${challenge}&code_challenge_method=s256`;
+  },
+  // back from Google with ?code=… → trade it for a session
+  async finish() {
+    const q = new URLSearchParams(location.search), code = q.get('code'), err = q.get('error_description') || q.get('error');
+    if (!code && !err) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    if (err) return toast('Giriş olmadı: ' + err, 5000);
+    let p = null; try { p = JSON.parse(localStorage.getItem('nts-pkce')); localStorage.removeItem('nts-pkce'); } catch { }
+    if (!p?.verifier) return;
+    try {
+      await this.keep(await this.auth('token?grant_type=pkce', { auth_code: code, code_verifier: p.verifier }));
+      const prev = await DB.get('kv', 'sb-uid');
+      if (prev !== this.s.user.id) { await DB.put('kv', this.s.user.id, 'sb-uid'); await DB.del('kv', 'sb-since'); await DB.put('kv', (await DB.all('items')).map(i => i.id), 'sb-dirty'); }
+      setTimeout(() => toast(`Giriş yapıldı: ${this.email()}`, 3000, 'check'), 400);
+    } catch (e) { toast('Giriş tamamlanamadı: ' + e.message, 6000); }
+  },
+  async signOut() {
+    try { await fetch(SB.url + '/auth/v1/logout?scope=local', { method: 'POST', headers: { apikey: SB.key, authorization: 'Bearer ' + this.s?.access_token } }); } catch { }
+    await this.keep(null); GH.status('');
+  },
+  async token() {
+    if (!this.s) throw new Error('Giriş yapılmadı');
+    if (this.s.expires_at * 1000 - 60e3 < now()) {
+      try { await this.keep(await this.auth('token?grant_type=refresh_token', { refresh_token: this.s.refresh_token })); }
+      catch (e) { if (e.status >= 400 && e.status < 500) { await this.keep(null); toast('Oturum bitti, Ayarlar\'dan tekrar giriş yap', 6000); } throw e; }
+    }
+    return this.s.access_token;
+  },
+  async req(path, opt = {}) {
+    const r = await fetch(SB.url + path, { ...opt, headers: { apikey: SB.key, authorization: 'Bearer ' + await this.token(), ...(opt.headers || {}) } });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw new Error(/nts_items|PGRST205|Bucket not found/.test(t) ? 'Supabase\'de Nts tablosu yok (schema.sql çalıştırılmalı)' : `Sunucu ${r.status} ${t.slice(0, 120)}`);
+    }
+    return r;
+  },
+  schedule() { clearTimeout(this._t); this._t = setTimeout(() => this.run(), 1500); },
+  async markDirty(ids) { const d = new Set((await DB.get('kv', 'sb-dirty')) || []); ids.forEach(x => d.add(x)); await DB.put('kv', [...d], 'sb-dirty'); },
+  async pack(i) {
+    if (!Crypt.key) return { data: i, enc: null };
+    return { data: null, enc: b64enc(await Crypt.seal(new TextEncoder().encode(JSON.stringify(i)))) };
+  },
+  async unpack(row) { return row.data || JSON.parse(new TextDecoder().decode(await Crypt.open(b64dec(row.enc)))); },
+  async pull() {
+    const last = (await DB.get('kv', 'sb-since')) || '1970-01-01T00:00:00Z', all = [];
+    let since = new Date(Math.max(0, Date.parse(last) - 120e3)).toISOString(); // small overlap: a slow write from another device isn't skipped
+    for (;;) {
+      const rows = await (await this.req(`/rest/v1/nts_items?select=data,enc,synced_at&synced_at=gt.${encodeURIComponent(since)}&order=synced_at.asc&limit=500`)).json();
+      for (const r of rows) all.push(await this.unpack(r));
+      if (rows.length) since = rows.at(-1).synced_at;
+      if (rows.length < 500) break;
+    }
+    const changed = GH.merge(all);
+    if (changed.length) { await DB.putMany('items', changed); runSearch(); render(); AI.dot(); }
+    await DB.put('kv', since, 'sb-since');
+  },
+  async push() {
+    const dirty = new Set((await DB.get('kv', 'sb-dirty')) || []); if (!dirty.size) return;
+    const map = new Map(S.items.map(i => [i.id, i])), ids = [...dirty].filter(id => map.has(id));
+    for (let k = 0; k < ids.length; k += 200) {
+      const part = ids.slice(k, k + 200);
+      const rows = await Promise.all(part.map(async id => { const i = map.get(id); return { user_id: this.s.user.id, id, updated_at: i.updatedAt || 0, ...(await this.pack(i)) }; }));
+      await this.req('/rest/v1/nts_items?on_conflict=user_id,id', { method: 'POST', headers: { 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
+      // re-read: edits made while this was uploading must stay dirty
+      const left = new Set((await DB.get('kv', 'sb-dirty')) || []); part.forEach(id => left.delete(id)); await DB.put('kv', [...left], 'sb-dirty');
+    }
+    const left = ((await DB.get('kv', 'sb-dirty')) || []).filter(id => map.has(id) || !dirty.has(id)); await DB.put('kv', left, 'sb-dirty');
+  },
+  async uploadFiles() {
+    let n = 0;
+    for (const i of S.items.filter(i => i.type === 'file' && !i.sbPath && !i.deleted && !i.fileSkip)) {
+      const rec = await DB.get('files', i.id); if (!rec) continue;
+      const blob = await shrinkImage(rec.blob, i.mime);
+      if (blob.size > 50e6) { await upsert([{ ...i, fileSkip: true }], { sync: false }); continue; }
+      const path = `${this.s.user.id}/${monthOf(i.ts)}/${i.id}${Crypt.key ? '.enc' : ''}`;
+      const body = Crypt.key ? await Crypt.seal(new Uint8Array(await blob.arrayBuffer())) : blob;
+      await this.req('/storage/v1/object/nts-files/' + path, { method: 'POST', headers: { 'x-upsert': 'true', 'content-type': Crypt.key ? 'application/octet-stream' : (i.mime || 'application/octet-stream') }, body });
+      await upsert([{ ...i, sbPath: path, fileSynced: true }], { sync: false }); n++;
+    }
+    return n;
+  },
+  async downloadFile(i) {
+    const r = await this.req('/storage/v1/object/authenticated/nts-files/' + i.sbPath);
+    return new Blob([await Crypt.open(new Uint8Array(await r.arrayBuffer()))], { type: i.mime || '' });
+  },
+  async run() {
+    if (!this.on() || !navigator.onLine) return;
+    if (this.busy) { this.again = true; return; }
+    this.busy = true; GH.status('Senkronlanıyor…');
+    try {
+      await this.pull();
+      if (await this.uploadFiles()) this.again = true;
+      await this.push();
+      GH.status(`✓ ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt`);
+    } catch (e) { console.warn('cloud', e); GH.status('Hata: ' + e.message); }
+    this.busy = false;
+    if (this.again) { this.again = false; this.schedule(); }
+  },
+};
+// One front door: signed in → Supabase; else the old GitHub repo if set up.
+const Sync = {
+  ready() { return Cloud.on() || GH.ready(); },
+  schedule() { Cloud.on() ? Cloud.schedule() : GH.schedule(); },
+  run() { return Cloud.on() ? Cloud.run() : GH.run(); },
+  async markDirty(list) { await GH.markDirty([...new Set(list.map(i => monthOf(i.ts)))]); await Cloud.markDirty(list.map(i => i.id)); },
+  downloadFile(i) { return i.sbPath ? Cloud.downloadFile(i) : GH.downloadFile(i); },
+};
+
 const WA_LINE = [
   /^‎?\[(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),?\s+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*([AaPp]\.?\s?[Mm]\.?)?\]\s*([^:]+?):\s?([\s\S]*)$/,
   /^‎?(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),?\s+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*([AaPp]\.?\s?[Mm]\.?)?\s+-\s+([^:]+?):\s?([\s\S]*)$/,
@@ -1062,9 +1320,10 @@ const Lock = {
   },
   async disable() { this.conf = null; await DB.del('kv', 'lock'); Crypt.key = null; await this.reupload(); },
   async reupload() { // rewrite everything in the repo in the new form (encrypted / plain)
-    const files = S.items.filter(i => i.type === 'file' && i.fileSynced).map(i => ({ ...i, fileSynced: false }));
+    const files = S.items.filter(i => i.type === 'file' && (i.fileSynced || i.sbPath)).map(i => ({ ...i, fileSynced: false, sbPath: null }));
     if (files.length) await upsert(files, { sync: false });
     await DB.put('kv', {}, 'shas'); await DB.put('kv', [...new Set(S.items.map(i => monthOf(i.ts)))], 'dirty');
+    await DB.put('kv', S.items.map(i => i.id), 'sb-dirty');
     Sync.schedule();
   },
   watch() {
@@ -1127,8 +1386,15 @@ function setTheme(t) {
 }
 function openSettings() {
   const m = $('#menu'), st = S.settings, locked = !!Lock.conf;
-  m.innerHTML = `<div class="d-body">
+  m.innerHTML = `<div class="d-body" tabindex="-1">
     <div class="d-head"><span class="type">${ic('settings', 'sm')}Ayarlar</span><span class="sp"></span><button class="icon-btn sm" data-act="close">${ic('x')}</button></div>
+
+    <div class="set-sec"><h4>Hesap</h4>
+      ${Cloud.on() ? `<div class="set-row" style="cursor:default">${ic('cloud')}<span>${esc(Cloud.email())}<small id="syncMsg">${esc(S.syncMsg || 'Telefon ve bilgisayar aynı kayıtları görür')}</small></span></div>
+        <div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><button class="btn danger" data-do="signout">Çıkış yap</button></div>`
+      : `<p class="hint">Telefonda ve bilgisayarda aynı Google hesabıyla giriş yap, kayıtların ikisinde de görünsün.${locked ? ' Şifre açık olduğu için sunucuya şifreli gider.' : ''}</p>
+        <button class="btn primary wide g-btn" data-do="signin"><svg class="i" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4" stroke="none"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853" stroke="none"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z" fill="#FBBC05" stroke="none"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.4 3-4.1 5.6-4.1z" fill="#EA4335" stroke="none"/></svg>Google ile giriş yap</button>`}
+    </div>
 
     <div class="set-sec"><h4>Kayıtlar</h4>
       <button class="set-row" data-do="wa">${ic('chat')}<span>WhatsApp sohbetini içe aktar<small>WhatsApp'ta sohbet → ⋮ → Dışa aktar → Medya dahil. Çıkan dosyayı seç.</small></span></button>
@@ -1154,6 +1420,7 @@ function openSettings() {
       <div class="set-sec">
         <button class="set-row" data-do="tags">${ic('hash')}<span>Konuları sadeleştir<small>Claude benzer konuları birleştirir</small></span></button>
         <button class="set-row" data-do="organize">${ic('spark')}<span>Bekleyenleri şimdi düzenle</span></button>
+        <button class="set-row" data-do="linkprev">${ic('link')}<span>Link önizlemesi: ${st.noLinkPreview ? 'kapalı' : 'açık'}<small>Claude köprüsü kapalıyken link başlığı ve açıklaması microlink.io'dan gelir (sadece link adresi gider)</small></span></button>
       </div>
       <div class="set-sec"><h4>Claude bağlantısı</h4>
         <p class="hint">Bilgisayardaki Nts köprüsü açıkken Claude aboneliğinle çalışır. Telefonda Tailscale adresini gir. Bilgisayarda kayıt göndermek için: <code>nts "not"</code>, <code>nts dosya.pdf</code>, <code>nts --clip</code>.</p>
@@ -1161,12 +1428,12 @@ function openSettings() {
         <label class="set-field">Köprü anahtarı<input id="set-bridgeToken" type="password" value="${esc(st.bridgeToken || '')}"></label>
         <div class="row"><button class="btn secondary" data-do="test">${ic('cpu', 'sm')}Dene</button><span class="status" id="bridgeMsg">${S.bridgeOk ? `<span class="dot" style="background:var(--ok)"></span>Bağlı` : 'Bağlı değil'}</span></div>
       </div>
-      <div class="set-sec"><h4>Cihazlar arası senkron (GitHub)</h4>
+      <div class="set-sec"><h4>Eski senkron: GitHub reposu</h4>
         <p class="hint">Kayıtlar senin private GitHub reponda yedeklenir, telefon ve bilgisayar aynı şeyi görür.
           <a href="https://github.com/settings/personal-access-tokens/new?name=nts-sync&description=Nts%20sync&contents=write" target="_blank" rel="noopener">Anahtar oluştur</a> (sadece nts-data reposu, Contents: Read and write).</p>
         <label class="set-field">Repo<input id="set-ghRepo" value="${esc(st.ghRepo || '')}" placeholder="kullanici/nts-data"></label>
         <label class="set-field">GitHub anahtarı<input id="set-ghToken" type="password" value="${esc(st.ghToken || '')}" placeholder="github_pat_…"></label>
-        <div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><span class="status" id="syncMsg">${esc(S.syncMsg || (Sync.ready() ? '' : 'Kapalı'))}</span></div>
+        ${Cloud.on() ? '<p class="hint">Google ile giriş yaptığın için bu kullanılmıyor.</p>' : `<div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><span class="status" id="syncMsg">${esc(S.syncMsg || (GH.ready() ? '' : 'Kapalı'))}</span></div>`}
       </div>
     </details>
   </div>`;
@@ -1183,6 +1450,9 @@ function openSettings() {
     else if (d === 'install') { S.installEvt.prompt(); S.installEvt = null; }
     else if (d === 'test') { await saveSettings(); $('#bridgeMsg').textContent = 'Deneniyor…'; const ok = await AI.health(); $('#bridgeMsg').innerHTML = ok ? '<span class="dot" style="background:var(--ok)"></span>Bağlandı' : 'Ulaşılamadı: köprü açık mı, adres ve token doğru mu?'; }
     else if (d === 'sync') { await saveSettings(); Sync.run(); }
+    else if (d === 'linkprev') { st.noLinkPreview = !st.noLinkPreview; await DB.put('kv', S.settings, 'settings'); openSettings(); if (!st.noLinkPreview) LinkMeta.run(); }
+    else if (d === 'signin') { await saveSettings(); Cloud.signIn(); }
+    else if (d === 'signout') { await Cloud.signOut(); toast('Çıkış yapıldı. Kayıtlar bu cihazda duruyor.', 3000); openSettings(); }
     else if (d === 'lock-on') {
       const p = $('#set-pass').value, p2 = $('#set-pass2').value;
       if (p.length < 6) return toast('Şifre en az 6 karakter olmalı');
@@ -1196,12 +1466,9 @@ function openSettings() {
 
 // ---------- wiring ----------
 function wire() {
-  for (const [id, icn] of [['#askBtn', 'spark'], ['#saveBtn', 'up'], ['#clipIco', 'clip'], ['#settingsBtn', 'settings']]) $(id).innerHTML = ic(icn, id === '#askBtn' ? 'sm' : '');
-  $('#askBtn').insertAdjacentHTML('beforeend', '<span>Sor</span>');
-  $('#saveBtn').insertAdjacentHTML('beforeend', '<span class="d-lbl">Kaydet</span>');
-  $('#settingsSide').innerHTML = ic('settings') + '<span class="lbl">Ayarlar</span>';
+  for (const [id, icn] of [['#askBtn', 'spark'], ['#saveBtn', 'up'], ['#clipIco', 'plus'], ['#setIco', 'settings']]) $(id).innerHTML = ic(icn, 'sm');
 
-  $('#saveBtn').onclick = save;
+  $('#saveBtn').onclick = () => { const v = $('#input').value; isQuestion(v) && !S.attach.length ? AI.ask(v) : save(); };
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
   let st;
@@ -1227,7 +1494,8 @@ function wire() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && S.undo && !e.target.closest('input,textarea')) { e.preventDefault(); undoDelete(); return; }
     if (e.target.closest('input,textarea') || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
     if (e.key === '/' || e.key === 'n') { e.preventDefault(); inp.focus(); }
-    else if (e.key === 'z' && false) { }
+    else if (S.view === 'board' && e.shiftKey && e.code === 'Digit1') Board.fit();
+    else if (S.view === 'board' && e.shiftKey && e.code === 'Digit0') Board.zoomTo(1);
   });
   const comp = $('#composer'); let dragN = 0;
   addEventListener('dragenter', e => { if (e.dataTransfer?.types?.includes('Files')) { dragN++; comp.classList.add('drag'); } });
@@ -1248,19 +1516,25 @@ function wire() {
     if (e.target.closest('[data-copy]')) return copyText($('#answer .txt')?.innerText || '');
     if (e.target.closest('[data-close]')) closeAnswer();
   };
-  $('#qinfo').onclick = e => { if (e.target.closest('[data-clear]')) clearBox(); };
+  $('#hits').onclick = e => {
+    if (e.target.closest('[data-clear]')) return clearBox();
+    if (e.target.closest('[data-all]')) { S.searchOn = true; S.cam = null; return render(); }
+    const o = e.target.closest('[data-open]'); if (o) openItem(o.dataset.open);
+  };
 
   const onFilter = e => {
     const b = e.target.closest('button'); if (!b) return; const f = S.filter;
     if (b.dataset.view) { setView(b.dataset.view); return; }
+    if ('tags' in b.dataset) { Pop.toggle(b); return; }
     if (b.dataset.type) { f.type = b.dataset.type; f.star = false; if (b.dataset.type === 'all') f.tag = null; }
     else if ('star' in b.dataset) f.star = !f.star;
     else if (b.dataset.tag) f.tag = f.tag === b.dataset.tag ? null : b.dataset.tag;
     else if ('alltags' in b.dataset) { S.allTags = !S.allTags; return render(); }
     else return;
-    S.limit = 300; render(); scrollTo({ top: 0, behavior: 'smooth' });
+    S.limit = 300; S.cam = null; Pop.close(); render(); scrollTo({ top: 0, behavior: 'smooth' });
   };
-  for (const id of ['#viewSwitch', '#sideFilters', '#sideTags', '#tabsM', '#tabbar']) $(id).onclick = onFilter;
+  for (const id of ['#viewSwitch', '#rail', '#popTypes', '#sideTags']) $(id).onclick = onFilter;
+  Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
     const a = e.target.closest('.act'); if (a) { e.stopPropagation(); return itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); }
     const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
@@ -1269,8 +1543,7 @@ function wire() {
     const it = e.target.closest('[data-id]'); if (it) openItem(it.dataset.id);
   });
 
-  $('#settingsBtn').onclick = openSettings; $('#settingsSide').onclick = openSettings;
-  $('#aiStatus').onclick = openSettings; $('#aiStatusSide').onclick = openSettings;
+  $('#settingsBtn').onclick = openSettings;
   $('#waInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importWhatsApp(f).catch(err => toast('Hata: ' + err.message)); } };
   $('#backupInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importBackup(f).catch(err => toast('Hata: ' + err.message)); } };
 
@@ -1281,7 +1554,7 @@ function wire() {
   Board.init(); Back.init();
 }
 function setView(v) {
-  S.view = v; try { localStorage.setItem('hn-view', v); } catch { }
+  S.view = v; S.cam = null; try { localStorage.setItem('hn-view', v); } catch { }
   render();
 }
 async function reloadFromDB() {
@@ -1300,13 +1573,16 @@ async function reloadFromDB() {
     await DB.put('kv', S.settings, 'settings'); history.replaceState(null, '', location.pathname);
     setTimeout(() => toast('Claude köprüsü ayarlandı', 2500, 'check'), 500);
   }
+  await Cloud.load();
   if (await Lock.load()) await Lock.show();
+  await Cloud.finish();
   Lock.watch();
   S.items = await DB.all('items'); S.items.forEach(indexItem);
   wire(); render();
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
-  Sync.run(); setInterval(() => Sync.schedule(), 120000);
+  setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
+  Sync.run(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();
