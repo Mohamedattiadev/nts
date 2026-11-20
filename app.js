@@ -842,6 +842,15 @@ async function reloadFromDB() {
   setTheme(document.documentElement.dataset.theme);
   try { const v = localStorage.getItem('hn-view'); if (v) { S.view = v; document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.view === v)); } } catch { }
   await loadSettings();
+  // one-tap setup link: #bridge=<token>&url=<bridgeUrl>  (hash never reaches the server)
+  const hp = new URLSearchParams(location.hash.slice(1));
+  if (hp.get('bridge')) {
+    S.settings.bridgeToken = hp.get('bridge');
+    if (hp.get('url')) S.settings.bridgeUrl = hp.get('url');
+    await DB.put('kv', S.settings, 'settings');
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => toast('Claude köprüsü ayarlandı ✓'), 500);
+  }
   S.items = await DB.all('items'); S.items.forEach(indexItem);
   wire(); render();
   const p = new URLSearchParams(location.search);

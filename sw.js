@@ -1,4 +1,4 @@
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg'];
