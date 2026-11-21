@@ -1,7 +1,7 @@
-const VERSION = 'v9';
+const VERSION = 'v17';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './db.js', './manifest.webmanifest',
-  './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg'];
+  './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg', './icons/sc-note.png', './icons/sc-todo.png', './icons/sc-lock.png'];
 importScripts('./db.js');
 
 self.addEventListener('install', e => {
@@ -41,4 +41,12 @@ self.addEventListener('fetch', e => {
     try { return (await Promise.race([net, slow.then(h => h || net)])) || await net; }
     catch { return (await cached()) || Response.error(); }
   })());
+});
+// a reminder tapped on the phone opens the app on the to-dos
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(x => 'focus' in x); if (c) { c.postMessage({ view: 'todo' }); return c.focus(); }
+    return self.clients.openWindow('./?view=todo');
+  }));
 });

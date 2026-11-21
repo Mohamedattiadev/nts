@@ -48,3 +48,24 @@ create policy "nts files: update" on storage.objects for update to authenticated
   using (bucket_id = 'nts-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "nts files: delete" on storage.objects for delete to authenticated
   using (bucket_id = 'nts-files' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Heavy parts of an item (readable copy of a link, PDF text, text read from images, Claude's explanation,
+-- conversation messages) live here, so nts_items rows stay small and the first sync on a phone takes seconds.
+-- The app downloads these in the background. Same shape and rules as nts_items.
+create table if not exists public.nts_heavy (
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id         text not null,
+  data       jsonb,
+  enc        text,
+  updated_at bigint not null default 0,
+  synced_at  timestamptz not null default now(),
+  primary key (user_id, id)
+);
+create index if not exists nts_heavy_synced on public.nts_heavy (user_id, synced_at);
+drop trigger if exists nts_touch on public.nts_heavy;
+create trigger nts_touch before insert or update on public.nts_heavy for each row execute function public.nts_touch();
+alter table public.nts_heavy enable row level security;
+drop policy if exists "nts heavy: own" on public.nts_heavy;
+create policy "nts heavy: own" on public.nts_heavy for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+revoke all on public.nts_heavy from anon;
+grant select, insert, update, delete on public.nts_heavy to authenticated;

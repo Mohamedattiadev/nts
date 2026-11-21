@@ -44,9 +44,16 @@
   </div>
   <!-- desktop: small vertical toolbar, left middle -->
   <nav class="rail d-only" id="rail" aria-label="Filtre"></nav>
+  <div class="rail-tab d-only" id="railTab" hidden></div>
   <div id="filterPop" class="pop" hidden>
+    <div class="side-label" id="savedLabel" hidden>Kayıtlı aramalar</div>
+    <div id="popSaved" class="nav"></div>
     <div class="side-label m-only-b">Göster</div>
     <div id="popTypes" class="nav m-only-b"></div>
+    <div class="side-label d-only-b">Listeler</div>
+    <div id="popLists" class="nav d-only-b"></div>
+    <div class="side-label" id="srcLabel" hidden>Kaynak</div>
+    <div id="popSrc" class="nav"></div>
     <div class="side-label">Renk ve sıra</div>
     <div id="sideMarks"></div>
     <div class="side-label" id="projLabel" hidden>Projeler</div>
@@ -64,8 +71,10 @@
     <div id="gallery" class="gallery" hidden></div>
     <div id="topics" class="list" hidden></div>
     <div id="todo" class="todo" hidden></div>
+    <div id="study" class="study" hidden></div>
     <div id="board" class="board" hidden>
       <div id="plane" class="plane"><svg id="wires" class="wires"></svg><svg id="ink" class="ink"></svg></div>
+      <div id="months" class="months-grid" hidden></div>
     </div>
     <div id="empty" class="empty" hidden></div>
   </main>
@@ -75,6 +84,8 @@
     <button id="zoomOut" class="tool" title="Uzaklaş"></button>
     <button id="zoomPct" class="tool pct" title="%100'e dön"></button>
     <button id="zoomIn" class="tool" title="Yakınlaş"></button>
+    <button id="boardBtn" class="tool range" title="Hangi pano"></button>
+    <button id="rangeBtn" class="tool range" title="Panoda hangi zaman"></button>
     <button id="fitBtn" class="tool" title="Hepsini göster (Shift+1)"></button>
     <button id="tidyBtn" class="tool" title="Otomatik diz: günlere göre"></button>
   </div>
@@ -88,9 +99,9 @@
       <div class="c-row">
         <label class="c-btn" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
         <textarea id="input" rows="1" placeholder="Not, link ya da soru yaz…" enterkeyhint="send" autocomplete="off"></textarea>
-        <button id="askBtn" class="c-btn" title="Claude'a sor"></button>
         <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
       </div>
+      <div id="cHint" class="c-hint" hidden></div>
     </section>
   </div>
 </div>

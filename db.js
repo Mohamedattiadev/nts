@@ -33,6 +33,9 @@ const DB = {
   putMany: (store, vals) => tx(store, 'readwrite', s => { vals.forEach(v => s.put(v)); }),
   del: (store, key) => tx(store, 'readwrite', s => s.delete(key)),
   clear: store => tx(store, 'readwrite', s => s.clear()),
+  // items by time (index 'ts'): the recent ones first, the rest in big batches (one round trip per batch)
+  since: ts => tx('items', 'readonly', s => s.index('ts').getAll(IDBKeyRange.lowerBound(ts))),
+  older: (ts, after, n) => tx('items', 'readonly', s => s.index('ts').getAll(after == null ? IDBKeyRange.upperBound(ts, true) : IDBKeyRange.bound(after, ts, false, true), n)),
 };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
