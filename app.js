@@ -537,7 +537,7 @@ function render(force) {
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
     $('#boardTools').hidden = none || S.view !== 'board';
-    $('#pal').hidden = none || S.view !== 'board' || (innerWidth >= 900 && !S.palOpen); // desktop: slides out of the rail
+    $('#pal').hidden = none || S.view !== 'board' || !S.palOpen; // desktop: slides out of the rail; phone: opens from the pen button (98)
     Rail.place();
     $('#empty').hidden = !none || S.view === 'todo';
     if (S.view === 'todo') Todo.render();
@@ -2045,6 +2045,8 @@ const Ink = {
     const pal = $('#pal');
     pal.innerHTML = TOOLS.map(([t, icn, l]) => `<button class="tool" data-tool="${t}" title="${l}" aria-label="${l}">${ic(icn, 'sm')}</button>`).join('')
       + `<button class="tool inkc" data-inkc title="Renk" aria-label="Renk"><span></span></button>`;
+    $('#boardTools').insertAdjacentHTML('afterbegin', `<button id="penBtn" class="tool m-only" title="Çizim araçları" aria-label="Çizim araçları">${ic('pen', 'sm')}</button>`);
+    $('#penBtn').onclick = () => { const o = !S.palOpen; if (o) S.tool = 'pen'; Rail.pal(o); this.chrome(); }; // 98: phone palette only from here
     pal.onclick = e => { const b = e.target.closest('button'); if (!b) return; if ('inkc' in b.dataset) { const ks = Object.keys(INK_COLORS); S.ink = ks[(ks.indexOf(S.ink) + 1) % ks.length]; } else this.use(b.dataset.tool); this.chrome(); };
     addEventListener('keydown', e => {
       if (S.view !== 'board' || e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') || document.querySelector('dialog[open]')) return;
@@ -2058,6 +2060,7 @@ const Ink = {
     const b = $('#board'); b.dataset.tool = S.tool;
     $('#pal').querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('on', x.dataset.tool === S.tool));
     $('#pal .inkc span').style.background = INK_COLORS[S.ink];
+    const pb = $('#penBtn'); if (pb) { pb.classList.toggle('on', !!S.palOpen); pb.setAttribute('aria-pressed', S.palOpen ? 'true' : 'false'); }
   },
   at(e) { const r = $('#board').getBoundingClientRect(); return [Math.round((e.clientX - r.left - S.cam.x) / S.cam.k), Math.round((e.clientY - r.top - S.cam.y) / S.cam.k)]; },
   start(e) {
@@ -2338,8 +2341,10 @@ const Board = {
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
     ms.forEach(m => { x1 = Math.min(x1, m.x); y1 = Math.min(y1, m.y - 30); x2 = Math.max(x2, m.x + m.w); y2 = Math.max(y2, m.y + (m.auto ? m.h : Math.min(m.h, 300))); });
     const top = 64, bot = 110, W = b.clientWidth - 48, H = b.clientHeight - top - bot;
-    let k = Math.max(innerWidth < 900 ? .7 : .35, Math.min(1, W / (x2 - x1), H / (y2 - y1))); // phone: never smaller than readable
-    if ((x2 - x1) * k > W * 3 && (S.boardRange === 'all' || S.boardRange?.[0] === 'y')) k = Math.max(this.minK(), Math.min(this.FAR * .9, W / (x2 - x1))); // a long range: months on one screen
+    const phone = innerWidth < 900;
+    let k = phone ? 1 : Math.max(.35, Math.min(1, W / (x2 - x1), H / (y2 - y1))); // 98 phone: full size, the days scroll sideways from the newest
+    if (phone && (x2 - x1) <= W) k = Math.max(.7, Math.min(1, W / (x2 - x1)));
+    if (!phone && (x2 - x1) * k > W * 3 && (S.boardRange === 'all' || S.boardRange?.[0] === 'y')) k = Math.max(this.minK(), Math.min(this.FAR * .9, W / (x2 - x1))); // a long range: months on one screen
     // if it doesn't fit even small, start at the newest (right) end
     const x = (x2 - x1) * k <= W ? (b.clientWidth - (x2 - x1) * k) / 2 - x1 * k : b.clientWidth - 24 - x2 * k;
     S.cam = { k, x, y: top - y1 * k };

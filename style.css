@@ -1079,3 +1079,12 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 .ap-row code { font-size: 11.5px; color: var(--text-2); background: var(--surface-2); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
 .ap-warn { color: var(--c-red); }
 @media (max-width: 420px) { .ap-row code { display: none; } }
+/* 98: phone board - one quiet row (pen · board · time · fit), the palette opens from the pen button above it */
+@media (max-width: 899px) {
+  #tidyBtn { display: none; }
+  #penBtn.on { background: var(--accent-soft); color: var(--accent); }
+  #penBtn { border-radius: 7px; }
+  .board-tools.pal { animation: palUp .15s var(--ease); }
+}
+@keyframes palUp { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .board-tools.pal { animation: none !important; } }

@@ -320,7 +320,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         etkin olan düğme. İki seçenek: "Sadece bu cihazdan" (IndexedDB, Cache Storage, localStorage; Google oturumu kapanır) ve "Her yerden"
         (bu cihaz + Supabase'deki nts_items/nts_heavy satırları ve nts-files depolaması). GitHub repoları silinmez (söyle, linkini göster).
         Önce otomatik yedek dosyası indirmeyi öner. Sahte Supabase ile test et, gerçek veriye dokunma.
-- [ ] 98. **Telefonda pano görünümü çok kötü** (ekran görüntüsü 390 px): kartlar okunmayacak kadar küçük, yatay çizim paleti ve pano araçları
+- [x] 98. (2026-11-21: telefonda %100 yakınlık, en yeni gün sağda, günler yana kayar (az kayıt sığarsa en az %70); palet yalnız yeni kalem düğmesiyle açılır (kalem seçili gelir, tekrar basınca kapanır, Seç'e döner); araçlar tek satır: kalem · pano · zaman · sığdır (Düzenle telefonda gizli); kutuyla çakışma yok; 390×844 + 360×740 açık/koyu) **Telefonda pano görünümü çok kötü** (ekran görüntüsü 390 px): kartlar okunmayacak kadar küçük, yatay çizim paleti ve pano araçları
         içeriğin üstünde, kutu ile araçlar sıkışık. Telefonda: varsayılan yakınlık en az %70 ve en yeni günden başla, çizim paleti sadece kalem
         düğmesine basınca açılsın (tek yüzen düğme), pano araçları tek satırda sade (pano seçici + zaman + sığdır), kutuyla çakışma yok,
         gün sütunları tam genişlik (yatay kaydır). 390×844 ve 360×740, açık + koyu.
