@@ -5,9 +5,9 @@ Nts projesine devam et: /home/ati/Attia-Pro/Projects/hizli_note (uygulama **Nts*
 ~/.claude/skills/parallel-claude-sessions.
 
 SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
-- [ ] 86 pano araçları kutuyla çakışıyor + çalışmayan düğmeler
-- [ ] 89 logo (.mark) koyu tema, boy, hiza, accent rengi
-- [ ] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">"
+- [x] 86 pano araçları kutuyla çakışıyor + çalışmayan düğmeler (8b1e792)
+- [x] 89 logo (.mark) koyu tema, boy, hiza, accent rengi (8b1e792)
+- [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [ ] 90 çizimde titreme + genel yumuşak geçişler
 - [ ] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`)
 - [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
@@ -31,6 +31,13 @@ KURALLAR (sahip):
 TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve bu dosyayı güncelle (bitenler / kalanlar / tam sıradaki
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
+
+TAM SIRADAKİ ADIM: 90'dan başla (Ink.end() → canlı path'i silmeden kalıcıya çevir, Ink.render() `#ink`'i baştan kurmasın; sonra yumuşak geçişler),
+sonra 87. Bu iki madde bitince [ ] kalmaz → handoff yapma, sahibe özet + sorular.
+
+BİLGİ (2026-11-21, 2. oturum): 86/88/89 bitti (8b1e792, sw v19). Panoda `body.board-view .dock` artık `--bt-w` (araç genişliği, JS ölçer)
+ile sola kayıp daralıyor. setView aynı görünüme tekrar geçince kamerayı silmiyor. Logo inline SVG (.mk-b/.mk-l/.mk-d), sol çubuk kapanınca
+palet CSS ile (body.rail-off .board-tools.pal) gizleniyor, #railTab'da yalnız ">" var.
 
 BİLGİ (önceki oturum, 2026-11-21): 56–65, 74, 76–85 bitti (son commit 572b090, sw v18). Çakışma ölçümü: 1440 px altında kutu ile
 `#boardTools` çakışıyor (1366: 9 px, 1280: 52 px, 1100: 142 px). Logo = beyaz zeminli mesaj balonu (icons/icon.svg, sahip B'yi seçti);
