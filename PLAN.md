@@ -318,7 +318,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         Bu arada "Paylaş → Nts" yolunun (share_target) Android'de metin için çalıştığını da doğrula. iPhone'da seçim menüsüne ekleme yok.
 
 ## S. Sahibin 7. geri bildirimi (2026-11-21)
-- [ ] 97. **Tüm verileri sil** (Ayarlar → Gelişmiş, en altta kırmızı): onay penceresi (tarayıcı confirm değil, kendi penceremiz), "SİL" yazınca
+- [x] 97. (2026-11-21: Ayarlar → Gelişmiş en altta kırmızı satır → kendi penceremiz: "Önce yedek indir", Sadece bu cihazdan / Her yerden (girişsizken kapalı), "SİL" yazınca düğme açılır; her yerden: nts-files klasörleri tek tek listelenip toplu silinir, nts_heavy (yoksa geçer), nts_items; sonra oturum kapanır, IndexedDB + Cache Storage + localStorage temizlenir, yeniden açılır; bulut silme hata verirse cihaza dokunulmaz; GitHub repoları silinmez, linki gösterilir; sahte Supabase ile 4 yapılandırmada denendi) **Tüm verileri sil** (Ayarlar → Gelişmiş, en altta kırmızı): onay penceresi (tarayıcı confirm değil, kendi penceremiz), "SİL" yazınca
         etkin olan düğme. İki seçenek: "Sadece bu cihazdan" (IndexedDB, Cache Storage, localStorage; Google oturumu kapanır) ve "Her yerden"
         (bu cihaz + Supabase'deki nts_items/nts_heavy satırları ve nts-files depolaması). GitHub repoları silinmez (söyle, linkini göster).
         Önce otomatik yedek dosyası indirmeyi öner. Sahte Supabase ile test et, gerçek veriye dokunma.

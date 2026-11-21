@@ -1088,3 +1088,15 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 }
 @keyframes palUp { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .board-tools.pal { animation: none !important; } }
+/* 97: delete everything */
+.wp-row, .wp-row .i, .wp-t, .wp-t .i { color: var(--danger); }
+.wp-bk { align-self: flex-start; }
+.wp-opts { display: grid; gap: 8px; }
+.wp-o { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.wp-o:has(input:checked) { border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); background: color-mix(in srgb, var(--danger) 7%, transparent); }
+.wp-o.off { opacity: .55; cursor: default; }
+.wp-o input { margin-top: 3px; accent-color: var(--danger); }
+.wp-o span { display: grid; gap: 2px; } .wp-o small { color: var(--text-2); font-size: 12.5px; line-height: 1.4; }
+.wp-go { background: #dc2626; color: #fff; border: 0; font-weight: 600; }
+.wp-go:disabled { opacity: .45; cursor: not-allowed; }
+.wp-msg { color: var(--text); font-weight: 600; }

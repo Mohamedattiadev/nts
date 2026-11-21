@@ -1542,6 +1542,69 @@ const AiPick = {
   },
 };
 
+// ---------- 97: delete everything (our own confirm window: type SİL; this device only, or also the cloud) ----------
+const Wipe = {
+  open() {
+    let d = $('#wipe');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'wipe'; d.className = 'drawer modal narrow'; d.setAttribute('aria-label', 'Tüm verileri sil'); document.body.appendChild(d);
+      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
+      d.addEventListener('input', () => this.check());
+      d.addEventListener('change', () => this.check());
+      d.addEventListener('click', e => {
+        if (e.target === d || e.target.closest('[data-x]')) return d.close();
+        if (e.target.closest('[data-backup]')) return exportBackup();
+        if (e.target.closest('[data-go]')) this.run(d.querySelector('[name=wscope]:checked')?.value === 'all');
+      });
+    }
+    const n = alive().length, cloud = Cloud.on(), gh = Repo.link();
+    d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type wp-t">${ic('trash', 'sm')}Tüm verileri sil</span><span class="sp"></span><button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
+      <p class="hint">${n} kayıt, dosyalar ve ayarlar silinir. <b>Geri alınamaz.</b></p>
+      <button class="btn secondary wp-bk" data-backup>${ic('down', 'sm')}Önce yedek indir</button>
+      <div class="wp-opts" role="radiogroup">
+        <label class="wp-o"><input type="radio" name="wscope" value="here" checked><span><b>Sadece bu cihazdan</b><small>Bu tarayıcıdaki kayıtlar, dosyalar, önbellek ve ayarlar. ${cloud ? 'Google oturumu kapanır; buluttaki kayıtlar durur.' : ''}</small></span></label>
+        <label class="wp-o${cloud ? '' : ' off'}"><input type="radio" name="wscope" value="all" ${cloud ? '' : 'disabled'}><span><b>Her yerden</b><small>${cloud ? `Bu cihaz + buluttaki (${esc(Cloud.email())}) kayıtlar ve dosyalar. Başka cihazda açık kalan kopyalar orada durur; orada da sil.` : 'Google ile giriş yapınca seçilebilir.'}</small></span></label>
+      </div>
+      ${gh ? `<p class="hint">GitHub repolarındaki dosyalar silinmez (nts-files-…). İstersen <a href="https://github.com/${esc(gh.login || '')}?tab=repositories&q=nts-files" target="_blank" rel="noopener">GitHub'da</a> kendin sil.</p>` : ''}
+      <label class="set-field"><span>Onaylamak için <b>SİL</b> yaz</span><input id="wipeTxt" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="SİL"></label>
+      <p class="hint wp-msg" id="wipeMsg" hidden></p>
+      <div class="row" style="justify-content:flex-end"><button class="btn secondary" data-x>Vazgeç</button><button class="btn wp-go" data-go disabled>Sil</button></div></div>`;
+    Back.open(d); setTimeout(() => $('#wipeTxt')?.focus(), 50);
+  },
+  ok: v => v.trim().toLocaleUpperCase('tr') === 'SİL',
+  check() { const d = $('#wipe'), all = d.querySelector('[name=wscope]:checked')?.value === 'all', b = d.querySelector('[data-go]'); b.disabled = !this.ok($('#wipeTxt').value) || this.busy; b.textContent = all ? 'Her yerden sil' : 'Bu cihazdan sil'; },
+  async run(all) {
+    if (this.busy || !this.ok($('#wipeTxt').value)) return;
+    this.busy = true; this.check(); const msg = $('#wipeMsg'); msg.hidden = false;
+    try {
+      if (all && Cloud.on()) {
+        const uid = Cloud.s.user.id, del = { method: 'DELETE', headers: { prefer: 'return=minimal' } };
+        msg.textContent = 'Buluttaki dosyalar siliniyor…'; await this.rmFiles(uid + '/');
+        msg.textContent = 'Buluttaki kayıtlar siliniyor…';
+        try { await Cloud.req(`/rest/v1/nts_heavy?user_id=eq.${uid}`, del); } catch { } // the table may not exist
+        await Cloud.req(`/rest/v1/nts_items?user_id=eq.${uid}`, del);
+      }
+      msg.textContent = 'Bu cihaz temizleniyor…';
+      if (Cloud.on()) await Cloud.signOut();
+      clearTimeout(Cloud._t); S.items = [];
+      for (const st of ['items', 'files', 'kv']) await DB.clear(st);
+      try { for (const k of await caches.keys()) await caches.delete(k); } catch { }
+      try { localStorage.clear(); sessionStorage.clear(); localStorage.setItem('hn-tour', '1'); localStorage.setItem('hn-ai', '1'); } catch { } // no tour / AI question again right after
+      msg.textContent = 'Silindi. Yeniden açılıyor…'; setTimeout(() => location.replace(location.pathname), 700);
+    } catch (e) { this.busy = false; msg.textContent = 'Silinemedi: ' + e.message + '. Bu cihazdakilere dokunulmadı.'; this.check(); }
+  },
+  async rmFiles(prefix) { // storage has no "delete folder": list it (folders recursively) and remove in batches
+    const files = [], dirs = [];
+    for (let off = 0; ; off += 1000) {
+      const r = await (await Cloud.req('/storage/v1/object/list/nts-files', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, offset: off }) })).json();
+      for (const o of r) (o.id ? files : dirs).push(prefix + o.name);
+      if (r.length < 1000) break;
+    }
+    for (const d of dirs) await this.rmFiles(d + '/');
+    for (let i = 0; i < files.length; i += 500) await Cloud.req('/storage/v1/object/nts-files', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prefixes: files.slice(i, i + 500) }) });
+  },
+};
+
 const Tour = {
   steps() {
     const phone = innerWidth < 900;
@@ -3545,6 +3608,7 @@ function openSettings(page = 'main') {
         <label class="set-field">GitHub anahtarı<input id="set-ghToken" type="password" value="${esc(st.ghToken || '')}" placeholder="github_pat_…"></label>
         ${Cloud.on() ? '<p class="hint">Google ile giriş yaptığın için bu kullanılmıyor.</p>' : `<div class="row"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button><span class="status" id="syncMsg">${esc(S.syncMsg || (GH.ready() ? '' : 'Kapalı'))}</span></div>`}
       </div>
+      <div class="set-sec"><button class="set-row wp-row" data-do="wipe">${ic('trash')}<span>Tüm verileri sil<small>Bu cihazdan ya da her yerden; önce yedek indirmeni önerir</small></span></button></div>
     </details>`;
   const move = `${head('Kayıtları taşı', true)}
     <div class="set-sec">
@@ -3579,6 +3643,7 @@ function openSettings(page = 'main') {
     else if (d === 'import') $('#backupInput').click();
     else if (d === 'bookmarks') $('#bmInput').click();
     else if (d === 'export') { m.close(); exportBackup(); }
+    else if (d === 'wipe') { m.close(); setTimeout(() => Wipe.open(), 250); }
     else if (d === 'exportmd') { m.close(); exportMarkdown(); }
     else if (d === 'organize') { m.close(); if (await AI.health()) { AI.process(); toast('' + aiName() + ' düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }
     else if (d === 'tags') { m.close(); AI.cleanTags(); }
