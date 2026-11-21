@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#ffffff"/><g transform="translate(256.0 256.0) scale(4.9) translate(-52.5 -41)"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M61 25.5H39a12.5 12.5 0 0 0-12.5 12.5v17a12.5 12.5 0 0 0 12.5 12.5h17.5a12.5 12.5 0 0 0 12.5-12.5v-8" stroke="#262a33" stroke-width="3.3"/>
-  <path d="M35 37h21M35 43.5h17M35 50h13" stroke="#262a33" stroke-width="2.9699999999999998"/>
-  <path d="M35 61.2c5-2 10.5-1.8 15.5-.8" stroke="#f5a524" stroke-width="2.8049999999999997"/>
-  <g transform="translate(51.6 60.4) rotate(-58)">
-    <path d="M6 -4.2H27a4.2 4.2 0 0 1 0 8.4H6z" fill="#f5a524" stroke="#262a33" stroke-width="2.64"/>
-    <path d="M23 -4.2v8.4" stroke="#262a33" stroke-width="2.64"/>
-    <path d="M0 0 6 -4.2v8.4z" fill="#ffffff" stroke="#262a33" stroke-width="2.64"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#fff"/>
+  <g transform="translate(50 50) scale(.8) translate(-50 -50)">
+  <path d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z" fill="none" stroke="#23262e" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M34 38h30M34 52h18" stroke="#c2410c" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="79" cy="21" r="10" fill="#f5a524" stroke="#fff" stroke-width="4"/>
   </g>
-  <path d="M71 14.5c.9 5.4 2.5 7.1 7.9 8-5.4.9-7 2.6-7.9 8-.9-5.4-2.5-7.1-7.9-8 5.4-.9 7-2.6 7.9-8z" fill="#f5a524" stroke="#f5a524" stroke-width="1.2"/>
-</g></g></svg>
+</svg>
