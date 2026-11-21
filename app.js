@@ -366,7 +366,7 @@ const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i
 function actsHtml(i) {
   return `<div class="acts">
     ${Read.readable(i) && (i.type !== 'link' || i.read) ? `<button class="act" data-a="read" title="Okuma sayfasında aç">${ic('book', 'sm')}Oku</button>` : ''}
-    <button class="act ai" data-a="explain" title="Claude anlatsın">${ic('spark', 'sm')}Anlat</button>
+    <button class="act ai" data-a="explain" title="${aiName()} anlatsın">${ic('spark', 'sm')}Anlat</button>
     <button class="act" data-a="copy" title="Kopyala">${ic('copy', 'sm')}</button>
     <button class="act" data-a="star" title="Yıldızla">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}</button>
     ${i.type === 'link' ? `<button class="act" data-a="open" title="Linki aç">${ic('ext', 'sm')}</button>` : ''}
@@ -404,7 +404,7 @@ function renderList(items, append = false) {
     let html = '', open = false;
     for (const i of list) {
       const dk = dayKey(i.ts);
-      if (dk !== lastDay) { if (open) html += '</div>'; open = false; html += `<div class="day">${fmtDay(dk)}<span class="cnt">${counts[dk]}</span>${Summ.day(dk) ? `<span class="d-sum" title="Claude'un özeti">${esc(Summ.day(dk))}</span>` : ''}</div>`; lastDay = dk; lastGroup = null; }
+      if (dk !== lastDay) { if (open) html += '</div>'; open = false; html += `<div class="day">${fmtDay(dk)}<span class="cnt">${counts[dk]}</span>${Summ.day(dk) ? `<span class="d-sum" title="${aiOf()} özeti">${esc(Summ.day(dk))}</span>` : ''}</div>`; lastDay = dk; lastGroup = null; }
       if (i.group !== lastGroup || !open) { if (open) html += '</div>'; html += '<div class="group">'; open = true; lastGroup = i.group; }
       html += itemRow(i);
     }
@@ -464,7 +464,7 @@ function renderTopics(items) {
   el.innerHTML = sorted.slice(0, 80).map(([t, arr]) => `<section class="topic">
     <button class="topic-head" data-tag="${esc(t)}">${t === '(etiketsiz)' ? 'Etiketsiz' : `<span class="muted">#</span>${esc(t)}`}<span class="n">${arr.length}</span><span class="more">Tümü ${ic('chev', 'sm')}</span></button>
     <div class="group">${arr.slice(0, 4).map(i => itemRow(i)).join('')}</div></section>`).join('')
-    || emptyHtml('hash', 'Henüz konu yok', 'Claude kayıtları düzenledikçe konular burada toplanır.');
+    || emptyHtml('hash', 'Henüz konu yok', '' + aiName() + ' kayıtları düzenledikçe konular burada toplanır.');
   hookThumbs(el);
 }
 
@@ -514,7 +514,7 @@ function renderChrome() {
     <button class="side-row${S.sortPrio ? ' on' : ''}" data-sortprio>${ic('flag')}<span class="lbl">Önce yüksek öncelik</span><span class="n">${S.sortPrio ? ic('check', 'sm') : ''}</span></button>`;
   $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">${ic('hash', 'sm')}</span><span class="lbl">${esc(t)}</span><span class="n">${n || ''}</span></button>`).join('')
     + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
-    || '<div class="hint" style="padding:0 10px 8px">Claude düzenledikçe konular burada çıkar.</div>';
+    || '<div class="hint" style="padding:0 10px 8px">' + aiName() + ' düzenledikçe konular burada çıkar.</div>';
 }
 function emptyHtml(icn, h, p, actions = '') {
   return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
@@ -527,7 +527,7 @@ function render(force) {
   requestAnimationFrame(() => {
     renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, S.searchOn, S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, S.allTags, JSON.stringify(S.settings?.lists || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, S.searchOn, S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     renderHits(); if (same && S.view !== 'todo') return;
     const items = visible(), none = !alive().length;
@@ -539,9 +539,9 @@ function render(force) {
     $('#pal').hidden = none || S.view !== 'board' || (innerWidth >= 900 && !S.palOpen); // desktop: slides out of the rail
     $('#empty').hidden = !none || S.view === 'todo';
     if (S.view === 'todo') Todo.render();
-    else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul. <b>Tab</b> ile Claude\'a sorma moduna geçersin.',
+    else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul. <b>Tab</b> ile ' + aiTo() + ' sorma moduna geçersin.',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
-    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. Claude\'a sormak için <b>Tab</b>\'a bas.'));
+    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
     else if (S.view === 'board') { // typing in the box doesn't rebuild the board: only data, filters or a real search do
       const key = [S.items, JSON.stringify(S.filter), S.sortPrio, S.searchOn && S.q, S.searchOn && S.hits, S.linkFrom];
       if (!S.cam || !Board._key || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
@@ -655,7 +655,7 @@ function renderHits() {
   const top = [...S.hits].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => byId(id)).filter(Boolean);
   if (S.hitSel >= top.length) S.hitSel = top.length - 1;
   const hint = S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç · <kbd>Esc</kbd> kapat'
-    : askMode() ? '<kbd>Enter</kbd> Claude\'a sor · <kbd>Tab</kbd> not moduna dön · <kbd>↓</kbd> sonuçlara in' : '<kbd>Enter</kbd> not olarak kaydet · <kbd>Tab</kbd> Claude\'a sor · <kbd>↓</kbd> sonuçlara in';
+    : askMode() ? '<kbd>Enter</kbd> ' + aiTo() + ' sor · <kbd>Tab</kbd> not moduna dön · <kbd>↓</kbd> sonuçlara in' : '<kbd>Enter</kbd> not olarak kaydet · <kbd>Tab</kbd> ' + aiTo() + ' sor · <kbd>↓</kbd> sonuçlara in';
   show('hits', `<div class="h-label">Kayıtlar</div>` + top.map((i, n) => {
     const k = fileKind(i), logo = i.type === 'link' && i.meta?.logo;
     return `<button class="h-row${n === S.hitSel ? ' sel' : ''}" data-open="${i.id}"><span class="h-ico ${i.type}-c">${logo ? `<img src="${esc(logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span>
@@ -683,16 +683,16 @@ const updateSend = () => {
   if (b.dataset.k !== key) {
     b.dataset.k = key; b.classList.toggle('ask', ask);
     b.innerHTML = ask ? `${ic('spark', 'sm')}<span>Sor</span>` : ic('up', 'sm'); b.classList.toggle('round', !ask);
-    b.setAttribute('aria-label', ask ? 'Claude\'a sor' : 'Kaydet');
-    b.title = ask ? 'Claude\'a sor (Enter) · Tab: not moduna dön' : 'Kaydet (Enter) · Tab: Claude\'a sor';
+    b.setAttribute('aria-label', ask ? '' + aiTo() + ' sor' : 'Kaydet');
+    b.title = ask ? '' + aiTo() + ' sor (Enter) · Tab: not moduna dön' : 'Kaydet (Enter) · Tab: ' + aiTo() + ' sor';
     $('#composer').classList.toggle('ask-mode', ask);
-    $('#input').placeholder = ask ? 'Claude\'a sor: "geçen hafta ne kaydettim?"' : 'Not, link ya da soru yaz…';
+    $('#input').placeholder = ask ? '' + aiTo() + ' sor: "geçen hafta ne kaydettim?"' : 'Not, link ya da soru yaz…';
   }
   const touch = matchMedia('(hover: none)').matches, h = $('#cHint'), tip = ask ? 'not' : ((touch ? v : isQuestion(v)) && !S.attach.length ? 'ask' : ''); // no Tab key on a phone: the chip is the way in
   if (h.dataset.k !== tip) {
     h.dataset.k = tip; h.hidden = !tip;
-    h.innerHTML = tip === 'ask' ? `<button data-mode="ask">${phone ? '' : '<kbd>Tab</kbd>'}${ic('spark', 'sm')}Claude'a sor</button>`
-      : tip === 'not' ? `<span class="m-on">${ic('spark', 'sm')}Claude'a soruyorsun</span><button data-mode="note">${phone ? '' : '<kbd>Tab</kbd>'}Not olarak kaydet</button>` : '';
+    h.innerHTML = tip === 'ask' ? `<button data-mode="ask">${phone ? '' : '<kbd>Tab</kbd>'}${ic('spark', 'sm')}${aiTo()} sor</button>`
+      : tip === 'not' ? `<span class="m-on">${ic('spark', 'sm')}${aiTo()} soruyorsun</span><button data-mode="note">${phone ? '' : '<kbd>Tab</kbd>'}Not olarak kaydet</button>` : '';
   }
 };
 const submitBox = () => { const v = $('#input').value; if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
@@ -723,8 +723,8 @@ const Back = {
 
 // ---------- detail drawer ----------
 function explainHtml(i) {
-  if (S.explaining.has(i.id)) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">Claude inceliyor…</div><div class="skel" style="width:92%"></div><div class="skel" style="width:70%"></div></div></div>`;
-  if (i.explain?.text) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">Claude'un açıklaması</div>${esc(i.explain.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div></div>`;
+  if (S.explaining.has(i.id)) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">${aiName()} inceliyor…</div><div class="skel" style="width:92%"></div><div class="skel" style="width:70%"></div></div></div>`;
+  if (i.explain?.text) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">${aiOf()} açıklaması</div>${esc(i.explain.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div></div>`;
   if (i.summary) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">Özet</div>${esc(i.summary)}</div></div>`;
   return '';
 }
@@ -743,7 +743,7 @@ function tagRowHtml(i) {
       <div class="tp-row"><span class="tp-l">Görev</span>${i.todo ? `<label class="t-line"><input type="checkbox" data-tdone ${i.todo.done ? 'checked' : ''}><span>${i.todo.done ? 'Bitti' : 'Yapılacak'}</span></label>
         <input type="datetime-local" class="t-due-in" aria-label="Tarih" value="${i.todo.due ? (i.todo.due.includes('T') ? i.todo.due : i.todo.due + 'T09:00') : ''}">
         <button class="link-btn" data-act="untodo">Çıkar</button>` : `<button class="lchip" data-act="mktodo">${ic('plus', 'sm')}Görev yap</button>`}</div>
-      ${boardNames().length ? `<div class="tp-row"><span class="tp-l">Panolar</span><div class="tp-chips">${boardNames().map(n => `<button class="lchip${(i.boards || []).includes(n) || i.project === n ? ' on' : ''}" data-tboard="${esc(n)}"${i.project === n ? ' title="Claude bu projeye koydu"' : ''}>${ic('folder', 'sm')}${esc(n)}</button>`).join('')}</div></div>` : ''}
+      ${boardNames().length ? `<div class="tp-row"><span class="tp-l">Panolar</span><div class="tp-chips">${boardNames().map(n => `<button class="lchip${(i.boards || []).includes(n) || i.project === n ? ' on' : ''}" data-tboard="${esc(n)}"${i.project === n ? ` title="${aiName()} bu projeye koydu"` : ''}>${ic('folder', 'sm')}${esc(n)}</button>`).join('')}</div></div>` : ''}
       <div class="tp-row"><span class="tp-l">Listeler</span><div class="tp-chips">${LISTS.filter(([k]) => !listHidden(k)).map(([k, icn]) => `<button class="lchip${(i.lists || []).includes(k) ? ' on' : ''}" data-tlist="${k}">${ic(icn, 'sm')}${esc(listName(k))}</button>`).join('')}</div></div>
     </div>` : ''}`;
 }
@@ -795,7 +795,7 @@ function openItem(id) {
       return `<button class="rel-chip" data-rel="${r.id}" title="${esc(titleOf(r))}"><span class="${r.type}-c">${ic(rk === 'text' ? 'note' : rk, 'sm')}</span><span class="t">${esc(titleOf(r))}</span></button>`; }).join('')}</div>` : ''}
     ${Read.readable(i) ? `<button class="btn secondary wide" data-act="read">${ic('book', 'sm')}${i.type !== 'link' ? 'Okuma sayfasında aç' : i.read ? `Oku · ${Reader.minutes(i)} dk` : 'Okunur kopyasını al ve oku'}</button>` : ''}
     ${(i.highlights || []).length ? `<div class="field-label">İşaretlediklerin · ${i.highlights.length}</div><div class="hl-list">${i.highlights.map(h => `<blockquote>${esc(h.text)}</blockquote>`).join('')}</div>` : ''}
-    <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? 'Claude: yeniden anlat' : 'Claude anlatsın: bu ne, neyle bağlantılı?'}</button>
+    <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? '' + aiName() + ': yeniden anlat' : '' + aiName() + ' anlatsın: bu ne, neyle bağlantılı?'}</button>
     </div>${media ? '</div>' : ''}
     <div class="d-foot m-only-b">
       <button class="fbtn" data-act="share">${ic('share')}<span>Paylaş</span></button>
@@ -1235,7 +1235,7 @@ const Read = {
         <button class="icon-btn" data-rp="prev" title="Önceki (←)" aria-label="Önceki" ${n <= 0 ? 'disabled' : ''}>${ic('chev', 'flip')}</button>
         <button class="icon-btn" data-rp="next" title="Sonraki (→)" aria-label="Sonraki" ${n >= this.ids.length - 1 ? 'disabled' : ''}>${ic('chev')}</button>
         ${i.type === 'link' ? `<a class="icon-btn" href="${esc(i.url)}" target="_blank" rel="noopener" title="Sayfayı aç" aria-label="Sayfayı aç">${ic('ext')}</a>` : ''}
-        <button class="btn ${this.side ? 'ai' : 'ghost'} sm" data-rp="side" aria-expanded="${!!this.side}">${ic('spark', 'sm')}Claude'a sor${hs.length ? ` · ${hs.length} işaret` : ''}</button></div>
+        <button class="btn ${this.side ? 'ai' : 'ghost'} sm" data-rp="side" aria-expanded="${!!this.side}">${ic('spark', 'sm')}${aiTo()} sor${hs.length ? ` · ${hs.length} işaret` : ''}</button></div>
       <div class="rp-wrap${this.side ? ' side' : ''}"><div class="rp-main"><article class="rp-doc r-body"><h1>${esc(i.read?.title || titleOf(i))}</h1>${this.body(i)}</article>
         <p class="hint rp-tip">Bir yeri seç → <b>İşaretle</b>. İşaretlediklerin aramada da çıkar.</p></div>
       ${this.side ? `<aside class="rp-side">
@@ -1337,8 +1337,8 @@ const Busy = {
     if (!el) { el = document.createElement('div'); el.id = 'busy'; el.className = 'busy'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
     const all = [...this.jobs.values()], on = all.length > 0;
     el.classList.toggle('on', on);
-    if (on) el.innerHTML = `<span class="b-spark">${ic('spark', 'sm')}</span><span class="b-t">Claude ${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1} iş` : ''}</span>`;
-    el.title = on ? 'Claude arka planda çalışıyor: ' + all.join(', ') : '';
+    if (on) el.innerHTML = `<span class="b-spark">${ic('spark', 'sm')}</span><span class="b-t">${aiName()} ${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1} iş` : ''}</span>`;
+    el.title = on ? '' + aiName() + ' arka planda çalışıyor: ' + all.join(', ') : '';
   },
 };
 
@@ -1414,7 +1414,7 @@ const Vault = {
   draw() {
     const d = $('#vault'), v = this.item(); if (!d) return;
     if (!v) d.innerHTML = `<div class="d-body" tabindex="-1">${this.head('Şifrelerim')}
-      <p class="hint">Şifrelerin, kart ve kapı kodların için ayrı bir kasa. Kendi ana şifresiyle açılır, bu cihazda şifrelenir; sunucuya sadece şifreli hali gider. Claude ve arama içini hiç görmez.</p>
+      <p class="hint">Şifrelerin, kart ve kapı kodların için ayrı bir kasa. Kendi ana şifresiyle açılır, bu cihazda şifrelenir; sunucuya sadece şifreli hali gider. ${aiName()} ve arama içini hiç görmez.</p>
       <form class="v-form" data-f="setup"><label class="set-field">Ana şifre<input name="p1" type="password" autocomplete="new-password" placeholder="en az 8 karakter" required minlength="8"></label>
         <label class="set-field">Ana şifre tekrar<input name="p2" type="password" autocomplete="new-password" required></label>
         <div class="callout warn">${ic('lock')}<div class="c-b">Bu şifreyi unutursan kasadaki bilgiler geri gelmez. Kimse (biz dahil) açamaz.</div></div>
@@ -1492,16 +1492,55 @@ const Vault = {
 };
 
 // ---------- first-run tour: 6 short steps, each one lights up a part of the screen ----------
+// ---------- 87: which AI answers (Claude / Codex / Gemini): asked once, changeable in Settings; the bridge runs that CLI ----------
+const AIS = { claude: ['Claude', "Claude'a", "Claude'un", 'Anthropic · Claude Code', 'claude -p'], codex: ['Codex', "Codex'e", "Codex'in", 'OpenAI · Codex CLI', 'codex exec'], gemini: ['Gemini', "Gemini'ye", "Gemini'nin", 'Google · Gemini CLI', 'gemini -p'] };
+function aiKey() { return AIS[S.settings?.ai] ? S.settings.ai : 'claude'; }
+function aiName() { return AIS[aiKey()][0]; }
+function aiTo() { return AIS[aiKey()][1]; } // "Claude'a sor"
+function aiOf() { return AIS[aiKey()][2]; } // "Claude'un özeti"
+const AiPick = {
+  asked() { try { return !!localStorage.getItem('hn-ai'); } catch { return true; } },
+  maybe(then) { if (this.asked()) return then?.(); setTimeout(() => { if (document.querySelector('dialog[open]') || $('#lock:not([hidden])')) return then?.(); this.open(then); }, 700); },
+  open(then) {
+    let d = $('#aipick');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'aipick'; d.className = 'drawer modal narrow'; d.setAttribute('aria-label', 'Yapay zekâ seç'); document.body.appendChild(d);
+      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; try { localStorage.setItem('hn-ai', '1'); } catch { } const f = this.then; this.then = null; f && setTimeout(f, 300); });
+      d.addEventListener('click', async e => {
+        if (e.target === d || e.target.closest('[data-x]')) return d.close();
+        const b = e.target.closest('[data-ai]'); if (b) { await this.set(b.dataset.ai); this.draw(); }
+        if (e.target.closest('[data-ok]')) d.close();
+      });
+    }
+    this.then = then; this.draw(); Back.open(d);
+  },
+  draw() {
+    const d = $('#aipick'), cur = aiKey(), have = S.aiHave;
+    d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type">${ic('spark', 'sm')}Yapay zekâ</span><span class="sp"></span><button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
+      <h3 class="ap-h">Hangi yapay zekâyı kullanıyorsun?</h3>
+      <p class="hint">Kayıtlarını o düzenler, sorularını o cevaplar. Bilgisayarındaki aboneliğinle çalışır; sonra Ayarlar'dan değiştirebilirsin.</p>
+      <div class="ap-list" role="radiogroup">${Object.entries(AIS).map(([k, [n, , , who, cmd]]) => `<button class="ap-row${k === cur ? ' on' : ''}" data-ai="${k}" role="radio" aria-checked="${k === cur}">
+        <span class="ap-dot"></span><span class="ap-t"><b>${n}</b><small>${who}${have ? (have[k] ? ' · bu bilgisayarda kurulu' : ' · <span class="ap-no">kurulu değil</span>') : ''}</small></span><code>${cmd}</code></button>`).join('')}</div>
+      ${have && !have[cur] ? `<p class="hint ap-warn">${aiName()} bu bilgisayarda kurulu değil. Kurana kadar cevap veremez; istersen başka birini seç.</p>` : ''}
+      <div class="row" style="justify-content:flex-end"><button class="btn primary" data-ok>Tamam</button></div></div>`;
+  },
+  async set(k) {
+    if (!AIS[k]) return;
+    S.settings.ai = k; S.settings.aiChosen = true; await DB.put('kv', S.settings, 'settings');
+    render(); updateSend(); AI.dot(); AI.pushAi();
+  },
+};
+
 const Tour = {
   steps() {
     const phone = innerWidth < 900;
     return [
       ['#composer', 'Tek kutu', 'Yaz, link ya da resim yapıştır, dosya bırak. <b>Enter</b> kaydeder. Yazarken kayıtların arasında da arar.'],
-      ['#composer', 'Claude\'a sor', '<b>Tab</b> ile "Sor" moduna geç (telefonda kutunun altındaki "Claude\'a sor"): "geçen hafta kaydettiğim PDF neydi?" Claude kayıtlarını da kendisi düzenler.'],
+      ['#composer', '' + aiTo() + ' sor', '<b>Tab</b> ile "Sor" moduna geç (telefonda kutunun altındaki "' + aiTo() + ' sor"): "geçen hafta kaydettiğim PDF neydi?" ' + aiName() + ' kayıtlarını da kendisi düzenler.'],
       [phone ? '#filterBtn' : '#rail', 'Neye bakmak istersin', 'Linkler, notlar, fotoğraflar ve <b>Yapılacaklar</b>. Listeler, konular ve Şifrelerim <b>⋯</b> altında; çubuğu <b>[</b> ile gizlersin.'],
       ['#viewSwitch', 'Pano, liste, galeri', 'Panoda kartları sürükleyip istediğin yere koy, boş yere çift tıklayıp not yaz, kalemle çiz.'],
-      ['#settingsBtn', 'Telefon ve bilgisayar', 'Ayarlar\'dan <b>Google ile gir</b>: iki cihaz da aynı kayıtları görür. Claude bağlantısı da burada.'],
-      [null, 'Hazırsın', 'Kendine bir not at, gerisini Nts ve Claude halleder. Bu turu Ayarlar → "Nasıl kullanılır?"dan tekrar açabilirsin.'],
+      ['#settingsBtn', 'Telefon ve bilgisayar', 'Ayarlar\'dan <b>Google ile gir</b>: iki cihaz da aynı kayıtları görür. ' + aiName() + ' bağlantısı da burada.'],
+      [null, 'Hazırsın', 'Kendine bir not at, gerisini Nts ve ' + aiName() + ' halleder. Bu turu Ayarlar → "Nasıl kullanılır?"dan tekrar açabilirsin.'],
     ];
   },
   start() {
@@ -1901,7 +1940,7 @@ const Todo = {
       <form class="t-add"><span class="t-add-ic">${ic('plus', 'sm')}</span><input placeholder="${innerWidth < 600 ? 'Görev ekle… (yarın 10:30 dişçi)' : 'Görev ekle… (ör. yarın 10:30 dişçi, cuma rapor)'}" enterkeyhint="done" aria-label="Görev ekle"><span class="t-add-due" hidden></span></form>
       ${open.length ? this.GROUPS.filter(([g]) => by.get(g).length).map(([g, l]) => `<div class="t-group ${g}"><div class="t-gh">${l}<span>${by.get(g).length}</span></div>
           <div class="todo-list">${by.get(g).map(i => this.row(i, ++n)).join('')}</div></div>`).join('')
-        : emptyHtml('todo', 'Yapılacak bir şey yok', 'Yukarıya bir görev yaz ya da ana kutuya <b>- süt al</b> gibi satırlar gir. Claude da "yarın 10:30 diş randevusu" gibi notları kendisi görev yapar.')}
+        : emptyHtml('todo', 'Yapılacak bir şey yok', 'Yukarıya bir görev yaz ya da ana kutuya <b>- süt al</b> gibi satırlar gir. ' + aiName() + ' da "yarın 10:30 diş randevusu" gibi notları kendisi görev yapar.')}
       ${done.length ? `<details class="todo-done"${this.showDone ? ' open' : ''}><summary>${ic('chev', 'sm')}Bitenler · ${done.length}<span class="sp"></span><button class="link-btn" data-tclear>Bitenleri temizle</button></summary><div class="todo-list">${done.map((i, k) => this.row(i, k + 1)).join('')}</div></details>` : ''}`;
     if (focus != null) { const inp = el.querySelector('.t-add input'); inp.value = focus; inp.focus(); this.preview(inp); }
   },
@@ -2251,7 +2290,7 @@ const Board = {
     const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && (i.project === n || (i.boards || []).includes(n))).length;
     p.innerHTML = `<div class="side-label">Panolar</div><button class="side-row${cur === 'main' ? ' on' : ''}" data-board="main">${ic('board', 'sm')}<span class="lbl">Genel</span></button>`
       + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
-      + `<form class="new-board"><input placeholder="+ Yeni pano (ör. ev)" aria-label="Yeni pano adı" maxlength="40"></form><p class="hint" style="padding:4px 9px">Claude bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
+      + `<form class="new-board"><input placeholder="+ Yeni pano (ör. ev)" aria-label="Yeni pano adı" maxlength="40"></form><p class="hint" style="padding:4px 9px">${aiName()} bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
     p.hidden = false; const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, r.right - p.offsetWidth) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 8) + 'px';
   },
   go(name) { S.board = name === 'main' ? null : name; try { localStorage.setItem('hn-board', S.board || ''); } catch { } S.cam = null; render(); },
@@ -2450,15 +2489,22 @@ const AI = {
   },
   async health() {
     const { bridgeUrl, bridgeToken } = S.settings; // a direct address first (this PC, Tailscale), else through Supabase
-    if (bridgeUrl) try { await this.raw(bridgeUrl, bridgeToken, '/health', null, 4000); S.via = 'direct'; this.setOk(true); return true; } catch { }
-    if (Relay.can()) try { await Relay.call('/health', null, 7000); S.via = 'relay'; this.setOk(true); return true; } catch { }
+    if (bridgeUrl) try { this.aiSeen(await this.raw(bridgeUrl, bridgeToken, '/health', null, 4000)); S.via = 'direct'; this.setOk(true); return true; } catch { }
+    if (Relay.can()) try { this.aiSeen(await Relay.call('/health', null, 7000)); S.via = 'relay'; this.setOk(true); return true; } catch { }
     S.via = null; this.setOk(false); return false;
   },
+  // 87: the bridge says which CLIs it has and which one it runs; a device that never chose follows the bridge, a chosen one sets it
+  aiSeen(h) {
+    if (!h || !h.have) return; S.aiHave = h.have;
+    if (!S.settings.aiChosen && AIS[h.ai] && h.ai !== aiKey()) { S.settings.ai = h.ai; DB.put('kv', S.settings, 'settings'); render(); }
+    else if (S.settings.aiChosen && h.ai !== aiKey()) setTimeout(() => this.pushAi(), 0);
+  },
+  async pushAi() { if (!S.bridgeOk && !S.via) return; try { const r = await this.call('/ai-conf', { ai: aiKey() }, 8000); if (r && r.installed === false) toast(`${aiName()} bu bilgisayarda kurulu değil`, 4000, 'cpu'); } catch { } },
   setOk(ok) { const ch = ok !== S.bridgeOk; S.bridgeOk = ok; this.dot(); if (ch) render(); if (ok) { this.kick(); this.pullInbox(); setTimeout(() => Reader.background(), 8000); setTimeout(() => this.ocrBackfill(), 20000); setTimeout(() => Summ.run(), 45000); this.pullImports(); if (ch) { Snapshot.schedule(); BridgeLink.publish(); RelayConf.publish(); } } },
   dot() {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
-      d.title = `Ayarlar · ${S.bridgeOk ? `Claude bağlı${n ? `, ${n} kayıt sırada` : ''}` : 'Claude köprüsü kapalı'}${Cloud.on() ? ' · senkron açık' : ''}`; }
+      d.title = `Ayarlar · ${S.bridgeOk ? `${aiName()} bağlı${n ? `, ${n} kayıt sırada` : ''}` : `${aiName()} köprüsü kapalı`}${Cloud.on() ? ' · senkron açık' : ''}`; }
   },
   kick() { clearTimeout(this._t); this._t = setTimeout(() => this.process(), 800); },
   async pullInbox() {
@@ -2533,7 +2579,7 @@ const AI = {
   async ask(q) {
     q = q.replace(/^\?\s*/, '').trim(); if (!q) return this.suggest();
     const box = $('#answer'); box.hidden = false; document.body.classList.add('answering');
-    const head = `<div class="a-head">${ic('spark', 'sm')}<span>Claude</span><span class="q">· ${esc(q)}</span><button data-copy title="Cevabı kopyala" style="margin-left:auto">${ic('copy', 'sm')}</button><button data-close title="Kapat" style="margin-left:0">${ic('x', 'sm')}</button></div>`;
+    const head = `<div class="a-head">${ic('spark', 'sm')}<span>${aiName()}</span><span class="q">· ${esc(q)}</span><button data-copy title="Cevabı kopyala" style="margin-left:auto">${ic('copy', 'sm')}</button><button data-close title="Kapat" style="margin-left:0">${ic('x', 'sm')}</button></div>`;
     if (!S.bridgeOk && !(await this.health())) { box.innerHTML = head + `<div class="txt">${claudeOff()}</div>`; return; }
     box.innerHTML = head + '<div class="skel" style="width:90%"></div><div class="skel" style="width:75%"></div><div class="skel" style="width:55%"></div>';
     try {
@@ -2544,7 +2590,7 @@ const AI = {
   },
   suggest() {
     const box = $('#answer'); box.hidden = false;
-    box.innerHTML = `<div class="a-head">${ic('spark', 'sm')}<span>Claude'a sor</span><button data-close title="Kapat">${ic('x', 'sm')}</button></div>
+    box.innerHTML = `<div class="a-head">${ic('spark', 'sm')}<span>${aiTo()} sor</span><button data-close title="Kapat">${ic('x', 'sm')}</button></div>
       <div class="sugg">${['Bu hafta neler kaydettim?', 'Yapmam gereken işler neler?', 'Bakmadığım önemli linkler hangileri?', 'Hangi konular üzerine en çok şey biriktirmişim?']
         .map(q => `<button data-q="${esc(q)}">${ic('search', 'sm')}${esc(q)}</button>`).join('')}</div>`;
     $('#input').focus();
@@ -2567,7 +2613,7 @@ const AI = {
     if (!S.bridgeOk && !(await this.health())) return toast(claudeOff(), 3200, 'cpu');
     const counts = new Map(); alive().forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
     if (!counts.size) return toast('Henüz etiket yok');
-    toast('Claude etiketleri topluyor…', 60000, 'spark');
+    toast('' + aiName() + ' etiketleri topluyor…', 60000, 'spark');
     try {
       const r = await this.call('/tags', { tags: [...counts] });
       const map = new Map((r.map || []).map(x => [x.from, (x.to || '').toLowerCase().replace(/^#/, '').trim()]));
@@ -3108,7 +3154,7 @@ async function importWhatsApp(file) {
     toast(`İçeri alınıyor… ${Math.min(k + 200, out.length)}/${out.length}`, 60000);
   }
   const nConv = out.filter(i => !i.parent).length;
-  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk ? ' · Claude düzenliyor' : ''}`, 5000, 'check');
+  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
   Sync.schedule(); AI.kick();
 }
 const byIdIn = (list, id) => list.find(x => x.id === id);
@@ -3157,7 +3203,7 @@ async function exportMarkdown() {
     if (i.ocr) body.push('## Resimdeki yazı', '', i.ocr, '');
     if (i.highlights?.length) body.push('## İşaretlediklerim', '', ...i.highlights.map(h => `> ${h.text}\n`), '');
     if (i.todo?.subs?.length) body.push('## Alt görevler', '', ...i.todo.subs.map(x => `- [${x.done ? 'x' : ' '}] ${x.t}`), '');
-    if (i.explain?.text) body.push('## Claude', '', i.explain.text, '');
+    if (i.explain?.text) body.push('## ' + aiName(), '', i.explain.text, '');
     if (i.read?.blocks?.length) body.push('## Okunur kopya', '', ...i.read.blocks.map(b => b.t === 'h' ? `### ${b.x}` : b.t === 'li' ? `- ${b.x}` : b.t === 'q' ? `> ${b.x}` : b.x).join('\n\n').split('\n'), '');
     zip.file(`Nts/${day.slice(0, 7)}/${name}.md`, fm.concat(body).join('\n'));
   }
@@ -3307,7 +3353,7 @@ const BridgeLink = {
     const b = byId('bridge'); if (!b || b.deleted || !b.token) return;
     if (S.settings.bridgeToken === b.token && (!b.url || S.settings.bridgeUrl === b.url) && S.bridgeOk) return;
     if (b.url) S.settings.bridgeUrl = b.url; S.settings.bridgeToken = b.token; await DB.put('kv', S.settings, 'settings');
-    if (await AI.health()) toast('Claude bağlandı', 2200, 'check');
+    if (await AI.health()) toast('' + aiName() + ' bağlandı', 2200, 'check');
   },
 };
 
@@ -3416,13 +3462,13 @@ const contrastText = hex => { const n = parseInt(hex.slice(1), 16), l = (.299 * 
 const onPhone = () => /Android|iPhone|iPad/.test(navigator.userAgent);
 const BRIDGE_CMD = 'systemctl --user start hizli-note-bridge';
 // one plain sentence for "Claude is off", depending on the device
-const claudeOff = () => onPhone() ? 'Bilgisayar kapalı ya da köprü çalışmıyor.' : 'Claude bağlı değil: bilgisayardaki Nts köprüsü kapalı. Ayarlar → Claude.';
+const claudeOff = () => onPhone() ? 'Bilgisayar kapalı ya da köprü çalışmıyor.' : '' + aiName() + ' bağlı değil: bilgisayardaki Nts köprüsü kapalı. Ayarlar → ' + aiName() + '.';
 function claudeBlock() {
   const n = S.items.filter(i => i.pending && !i.deleted).length;
-  if (S.bridgeOk) return `<div class="set-row static">${ic('cpu')}<span><span class="dot ok"></span>Claude bağlı<small>${n ? `${n} kayıt sırada, arka planda düzenleniyor` : 'Kayıtları düzenler, sorularına cevap verir (kutuda Tab)'}${S.via === 'relay' ? ' · bilgisayar üzerinden, şifreli' : ''}</small></span></div>`
-    + (BridgeLink.local() && Cloud.on() ? '<p class="hint">Telefonda aynı Google hesabıyla gir: bilgisayar açıkken Claude telefonda da çalışır, ek kurulum yok.</p>'
-      : BridgeLink.local() && !Cloud.on() ? '<p class="hint">Telefonun da bağlanması için burada Google ile gir; telefon aynı hesapla girince Claude kendiliğinden bağlanır.</p>' : '');
-  return `<div class="set-row static">${ic('cpu')}<span><span class="dot off"></span>Claude bağlı değil<small>${onPhone() ? (byId('bridge') ? 'Bilgisayar kapalı ya da köprü çalışmıyor. Bilgisayar açılınca kendiliğinden bağlanır.' : 'Bilgisayardaki Nts\'yi bir kez aynı Google hesabıyla aç; telefon kendiliğinden bağlanır.') : 'Bilgisayardaki Nts köprüsü çalışmıyor.'}</small></span></div>
+  if (S.bridgeOk) return `<div class="set-row static">${ic('cpu')}<span><span class="dot ok"></span>${aiName()} bağlı<small>${n ? `${n} kayıt sırada, arka planda düzenleniyor` : 'Kayıtları düzenler, sorularına cevap verir (kutuda Tab)'}${S.via === 'relay' ? ' · bilgisayar üzerinden, şifreli' : ''}</small></span></div>`
+    + (BridgeLink.local() && Cloud.on() ? '<p class="hint">Telefonda aynı Google hesabıyla gir: bilgisayar açıkken ' + aiName() + ' telefonda da çalışır, ek kurulum yok.</p>'
+      : BridgeLink.local() && !Cloud.on() ? '<p class="hint">Telefonun da bağlanması için burada Google ile gir; telefon aynı hesapla girince ' + aiName() + ' kendiliğinden bağlanır.</p>' : '');
+  return `<div class="set-row static">${ic('cpu')}<span><span class="dot off"></span>${aiName()} bağlı değil<small>${onPhone() ? (byId('bridge') ? 'Bilgisayar kapalı ya da köprü çalışmıyor. Bilgisayar açılınca kendiliğinden bağlanır.' : 'Bilgisayardaki Nts\'yi bir kez aynı Google hesabıyla aç; telefon kendiliğinden bağlanır.') : 'Bilgisayardaki Nts köprüsü çalışmıyor.'}</small></span></div>
     ${onPhone() ? `<div class="row"><button class="btn secondary" data-do="test">${ic('cpu', 'sm')}Tekrar dene</button><span class="status" id="bridgeMsg"></span></div>`
     : `<div class="cmd"><code>${BRIDGE_CMD}</code><button class="btn secondary" data-do="copycmd">${ic('copy', 'sm')}Kopyala</button></div>
       <p class="hint">Köprüyü başlatmak için bunu terminale yapıştır. Sonra "Bağlan"a bas.</p>
@@ -3457,19 +3503,20 @@ function openSettings(page = 'main') {
         <label class="sw custom${cur === 'custom' ? ' on' : ''}" title="Özel renk" style="--c:${cur === 'custom' ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)'}"><input type="color" id="accentPick" value="${(() => { try { const v = localStorage.getItem('hn-accent'); return v?.startsWith('#') ? v : '#e8590c'; } catch { return '#e8590c'; } })()}"></label></div></div>
       ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle<small>Ana ekrana ekle, Paylaş menüsünde çıksın</small></span></button>` : ''}
     </div>
-    <div class="set-sec"><h4>Claude</h4>
+    <div class="set-sec"><h4>Yapay zekâ</h4>
+      <button class="set-row" data-do="aipick">${ic('spark')}<span>Kullanılan: ${aiName()}<small>Claude, Codex ya da Gemini: kayıtları düzenleyen ve soruları cevaplayan</small></span>${ic('chev', 'sm')}</button>
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
     <div class="set-sec">
       <button class="set-row" data-do="tour">${ic('spark')}<span>Nasıl kullanılır?<small>6 adımlık kısa tur</small></span>${ic('chev', 'sm')}</button>
-      <button class="set-row" data-do="lists">${ic('flag')}<span>Listeler<small>Claude'un doldurduğu listelerin adı ve görünürlüğü</small></span>${ic('chev', 'sm')}</button>
+      <button class="set-row" data-do="lists">${ic('flag')}<span>Listeler<small>${aiOf()} doldurduğu listelerin adı ve görünürlüğü</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="move">${ic('upload')}<span>Kayıtları taşı<small>WhatsApp'tan içe aktar, yedek indir, yedekten geri yükle</small></span>${ic('chev', 'sm')}</button>
     </div>
     <details class="adv"><summary>${ic('chev', 'sm')}Gelişmiş</summary>
       <div class="set-sec">
-        <button class="set-row" data-do="tags">${ic('hash')}<span>Konuları sadeleştir<small>Claude benzer konuları birleştirir</small></span></button>
+        <button class="set-row" data-do="tags">${ic('hash')}<span>Konuları sadeleştir<small>${aiName()} benzer konuları birleştirir</small></span></button>
         <button class="set-row" data-do="organize">${ic('spark')}<span>Bekleyenleri şimdi düzenle</span></button>
-        <button class="set-row" data-do="linkprev">${ic('link')}<span>Link önizlemesi: ${st.noLinkPreview ? 'kapalı' : 'açık'}<small>Claude köprüsü kapalıyken link başlığı Nts'nin kendi servisinden gelir (giriş yaptıysan), yoksa microlink.io'dan (sadece link adresi gider)</small></span></button>
+        <button class="set-row" data-do="linkprev">${ic('link')}<span>Link önizlemesi: ${st.noLinkPreview ? 'kapalı' : 'açık'}<small>${aiName()} köprüsü kapalıyken link başlığı Nts'nin kendi servisinden gelir (giriş yaptıysan), yoksa microlink.io'dan (sadece link adresi gider)</small></span></button>
       </div>
       <div class="set-sec"><h4>Eski senkron: GitHub reposu</h4>
         <p class="hint">Kayıtlar senin private GitHub reponda yedeklenir.
@@ -3488,7 +3535,7 @@ function openSettings(page = 'main') {
       <button class="set-row" data-do="bookmarks">${ic('star')}<span>Tarayıcı yer imlerini içe aktar<small>Chrome/Firefox: Yer imleri → Dışa aktar (HTML). Klasörler konu olur, aynı link iki kez eklenmez.</small></span></button>
     </div>`;
   const listsPage = `${head('Listeler', true)}
-    <p class="hint">Claude her kaydı uygun listeye koyar. Bir kaydı elle taşırsan Claude o kayda dokunmaz. Yapılacaklar her zaman açık.</p>
+    <p class="hint">${aiName()} her kaydı uygun listeye koyar. Bir kaydı elle taşırsan ${aiName()} o kayda dokunmaz. Yapılacaklar her zaman açık.</p>
     <div class="set-sec">${LISTS.map(([k, icn, def]) => `<div class="set-line">${ic(icn)}<input class="list-name" data-lname="${k}" value="${esc(listName(k))}" placeholder="${def}" aria-label="${def} adı">
       <label class="switch" title="Sol çubukta göster"><input type="checkbox" data-lshow="${k}" ${listHidden(k) ? '' : 'checked'}><span></span></label></div>`).join('')}</div>`;
   const wasOpen = m.open;
@@ -3506,13 +3553,14 @@ function openSettings(page = 'main') {
     if (d === 'wa') $('#waInput').click();
     else if (d === 'move') openSettings('move');
     else if (d === 'lists') openSettings('lists');
+    else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
     else if (d === 'tour') { m.close(); setTimeout(() => Tour.start(), 250); }
     else if (d === 'back') openSettings();
     else if (d === 'import') $('#backupInput').click();
     else if (d === 'bookmarks') $('#bmInput').click();
     else if (d === 'export') { m.close(); exportBackup(); }
     else if (d === 'exportmd') { m.close(); exportMarkdown(); }
-    else if (d === 'organize') { m.close(); if (await AI.health()) { AI.process(); toast('Claude düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }
+    else if (d === 'organize') { m.close(); if (await AI.health()) { AI.process(); toast('' + aiName() + ' düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }
     else if (d === 'tags') { m.close(); AI.cleanTags(); }
     else if (d === 'light' || d === 'dark') { setTheme(d); openSettings(); }
     else if (d === 'install') { S.installEvt.prompt(); S.installEvt = null; }
@@ -3714,7 +3762,7 @@ const Boot = {
   if (hp.get('bridge')) {
     S.settings.bridgeToken = hp.get('bridge'); if (hp.get('url')) S.settings.bridgeUrl = hp.get('url');
     await DB.put('kv', S.settings, 'settings'); history.replaceState(null, '', location.pathname);
-    setTimeout(() => toast('Claude köprüsü ayarlandı', 2500, 'check'), 500);
+    setTimeout(() => toast('' + aiName() + ' köprüsü ayarlandı', 2500, 'check'), 500);
   }
   await Cloud.load();
   if (await Lock.load()) await Lock.show();
@@ -3740,6 +3788,6 @@ const Boot = {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
-  Tour.maybe(); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000);
+  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();

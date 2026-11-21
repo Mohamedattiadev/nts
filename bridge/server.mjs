@@ -24,10 +24,13 @@ function loadConfig() {
   conf.origins ??= ['https://mohamedattiadev.github.io'];
   conf.askModel ??= 'sonnet';
   conf.organizeModel ??= 'haiku';
+  conf.ai ??= 'claude'; // 87: which CLI answers (claude | codex | gemini), chosen in the app
   writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 });
   return conf;
 }
 const conf = loadConfig();
+// systemd starts us with a short PATH: add the usual per-user bin folders so `codex` / `gemini` from npm -g are found (87)
+process.env.PATH = [...new Set([...(process.env.PATH || '').split(':'), ...['.local/bin', '.npm-global/bin', '.bun/bin', '.volta/bin', '.deno/bin'].map(d => join(homedir(), d)), '/usr/local/bin'].filter(Boolean))].join(':');
 
 // the address phones use: a `tailscale serve` entry that points at this bridge (cached for a minute)
 let remoteCache = { at: 0, url: null };
@@ -65,9 +68,48 @@ function ackInbox(ids) {
   writeInbox(keep);
 }
 
-// ---- claude runner (one job at a time) ----
+// ---- AI runner (one job at a time): Claude Code, Codex or Gemini CLI (87) ----
+const AIS = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+const which = cmd => new Promise(ok => execFile('sh', ['-c', `command -v ${cmd}`], { timeout: 3000 }, e => ok(!e)));
+let haveCache = { at: 0, v: null };
+async function haveAIs() {
+  if (Date.now() - haveCache.at < 60e3 && haveCache.v) return haveCache.v;
+  const v = {}; for (const k of Object.keys(AIS)) v[k] = await which(k);
+  haveCache = { at: Date.now(), v }; return v;
+}
 let chain = Promise.resolve();
-function runClaude({ prompt, system, schema, model, readDir }) {
+function runClaude(opts) { return conf.ai === 'codex' || conf.ai === 'gemini' ? runOther(conf.ai, opts) : runClaudeCli(opts); }
+// Codex / Gemini have no loose-schema flag like claude --json-schema: the schema goes into the prompt and the JSON is cut out of the reply
+const pickJson = t => { const s = String(t).replace(/^```(?:json)?\s*|\s*```$/g, '').trim(); try { return JSON.parse(s); } catch { } const a = s.indexOf('{'), b = s.lastIndexOf('}'); return JSON.parse(s.slice(a, b + 1)); };
+function runOther(ai, { prompt, system, schema, readDir }) {
+  const job = chain.then(() => new Promise((resolve, reject) => {
+    const full = `${system}\n\n${schema ? `Reply with ONLY one JSON object (no prose, no code fence) that matches this JSON schema:\n${JSON.stringify(schema)}\n\n` : ''}${prompt}`;
+    const imgs = readDir ? [...new Set(prompt.match(new RegExp(WORK_DIR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/[\\w.-]+', 'g')) || [])] : [];
+    const outFile = join(WORK_DIR, `last-${rid()}.txt`);
+    const [cmd, args] = ai === 'codex'
+      ? ['codex', ['exec', '--skip-git-repo-check', '--ephemeral', '-s', 'read-only', '-C', WORK_DIR, '-o', outFile, ...imgs.flatMap(f => ['-i', f]), '-']]
+      : ['gemini', ['--output-format', 'json', '-p', 'Follow the instructions given on standard input.']];
+    const p = spawn(cmd, args, { cwd: WORK_DIR, stdio: ['pipe', 'pipe', 'pipe'] });
+    let out = '', err = '';
+    const timer = setTimeout(() => { p.kill('SIGKILL'); reject(new Error(`${ai} timeout`)); }, 240000);
+    p.stdout.on('data', d => out += d); p.stderr.on('data', d => err += d);
+    p.on('error', e => { clearTimeout(timer); reject(new Error(e.code === 'ENOENT' ? `${AIS[ai]} bu bilgisayarda kurulu değil. Kur ya da Ayarlar'dan başka bir yapay zekâ seç.` : e.message)); });
+    p.on('close', code => {
+      clearTimeout(timer);
+      try {
+        let text = out;
+        if (ai === 'codex') { text = existsSync(outFile) ? readFileSync(outFile, 'utf8') : ''; try { unlinkSync(outFile); } catch { } }
+        else { const j = JSON.parse(out); if (j.error) throw new Error(j.error.message || 'gemini error'); text = j.response ?? ''; }
+        if (!text.trim()) throw new Error('empty');
+        resolve(schema ? pickJson(text) : text.trim());
+      } catch { reject(new Error(`${ai} exit ${code}: ${(err || out).slice(-400)}`)); }
+    });
+    p.stdin.end(full);
+  }));
+  chain = job.catch(() => {});
+  return job;
+}
+function runClaudeCli({ prompt, system, schema, model, readDir }) {
   const job = chain.then(() => new Promise((resolve, reject) => {
     const args = ['-p', '--model', model, '--output-format', 'json', '--tools', readDir ? 'Read' : '',
       ...(readDir ? ['--allowedTools', `Read(${readDir}/**)`, '--max-turns', '12'] : []),
@@ -273,7 +315,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -386,7 +428,13 @@ http.createServer(async (req, res) => {
       body = JSON.parse(raw || '{}');
     }
     const t = Date.now();
-    if (req.url === '/health') return send(res, 200, { ok: true, models: [conf.askModel, conf.organizeModel] }, origin);
+    if (req.url === '/health') return send(res, 200, { ok: true, models: [conf.askModel, conf.organizeModel], ai: conf.ai, have: await haveAIs() }, origin);
+    if (req.url === '/ai-conf' && req.method === 'POST') { // 87: the app's choice of AI
+      const ai = String(body.ai || ''); if (!AIS[ai]) return send(res, 400, { error: 'unknown ai' }, origin);
+      const have = await haveAIs();
+      if (ai !== conf.ai) { conf.ai = ai; writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 }); console.log(`ai → ${ai}`); }
+      return send(res, 200, { ok: true, ai, installed: !!have[ai] }, origin);
+    }
     if (req.url === '/inbox' && req.method === 'GET') return send(res, 200, readInbox(), origin);
     if (req.url === '/inbox' && req.method === 'POST') { const e = addInbox(body); console.log(`inbox +1 (${e.files.length} dosya)`); return send(res, 200, { ok: true, id: e.id }, origin); }
     if (req.url === '/inbox/ack') { ackInbox(body.ids || []); return send(res, 200, { ok: true }, origin); }
