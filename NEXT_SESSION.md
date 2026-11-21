@@ -34,7 +34,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla) (c7e6d5e)
 - [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
 - [x] 94a+94b View Transitions geçişleri + dokunma geri bildirimi (be289c8)
-- [ ] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme
+- [x] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme (9164705)
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
 - [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
 - [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
@@ -53,7 +53,7 @@ KURALLAR (sahip):
 - Sunucu: `curl -s 127.0.0.1:8790` çalışmıyorsa `python3 -m http.server 8790 --bind 127.0.0.1` (arka planda). Köprü http://localhost:8787;
   gerçek köprüyle testte lib.mjs `bridge:true` (gelen kutusu, snapshot, import kuyruğu korunur). Gerçek GitHub/Supabase'e yazma, taklit et.
 - Her maddeyi bitirince PLAN.md'de [ ] → [x] (kısa not + tarih), bu dosyada da [x] + commit hash. Kararını veremediğin şeyi en sona biriktir.
-- sw.js VERSION'ı her sürümde artır (şu an v30; commit'ten hemen önce tekrar oku).
+- sw.js VERSION'ı her sürümde artır (şu an v32; commit'ten hemen önce tekrar oku).
 - COMMIT: sahip istemiyor → commit mesajına "Co-Authored-By: Claude" ve Claude imzası EKLEME. Sadece kendi dosyalarını `git add` et.
   Commit + push için ayrıca izin bekleme (sahip verdi). Push'tan sonra Pages'te yeni sw VERSION'ın açıldığını kontrol et.
 - Yeni, tekrar eden bir yöntem öğrenirsen ~/.claude/skills altına yaz.
@@ -62,8 +62,17 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 94a+94b (View Transitions: setView'da document.startViewTransition, kayıt penceresi karttan büyür; :active küçülme +
-navigator.vibrate kısa titreşim kaydet/görev bitti/sil), sonra 94c+94d. Sonra handoff.
+TAM SIRADAKİ ADIM: listenin başındaki 103a (görünüm değişince arama listesi kapansın + açıkken galeri önizlemesi gizlensin; setView
+artık View Transition içinde render ediyor, kapatmayı setView'un başına koy) ve 92b (gün başlığı hiçbir yakınlıkta kesilmesin + günler arası
+çizgi). Sonra handoff.
+
+BİLGİ (2026-11-21, 6. oturum): 94a+94b (be289c8, v31) ve 94c+94d (9164705, v32) bitti. setView: değişince `document.startViewTransition(render)`
+(html.vt sınıfı sadece geçişte #main'e view-transition-name verir; render bir kare SONRA olur, S.view hemen değişir); destek yoksa eski .vin.
+`Morph` (app.js, Back'in üstünde): openItem'da Morph.open(dlg,id) tıklanan karttan WAAPI ile büyütür, dlg'ye .morph (CSS giriş animasyonunu
+kapatır, kapanınca kalkar); Morph.close(dlg) karta küçülüp sonra dlg.close() — ×, Esc (oncancel preventDefault), dışına tık, Sil bunu
+kullanır; Android geri tuşu hâlâ direkt kapatır (102'de bakılabilir). `reduced()` ve `haptic(ms)` (yalnız pointer:coarse) yardımcıları
+orada; kaydet 8, görev bitti 12, sil (removeItem) 14 ms. Ink.move: getCoalescedEvents + rAF (d.raf, d.r). thumbIO: .loading iskelet +
+img.decode() sonra ekler. Başka bir oturum PLAN/NEXT_SESSION'a 104–106 maddelerini yazıyor: düzenlemeden önce dosyayı yeniden oku.
 
 BİLGİ (2026-11-21, 5. oturum): 98/97/88c bitti (sw v30). 98: Board.fit telefonda (innerWidth<900) k=1, en yeni gün sağda (içerik
 ekrana sığarsa en az .7); #penBtn (.m-only, Ink.init #boardTools'un başına ekler) paleti açar + kalemi seçer, #pal artık her genişlikte
