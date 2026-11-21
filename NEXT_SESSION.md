@@ -23,13 +23,17 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
 - [ ] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
+- [ ] 106a zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
+- [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown)
+- [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
+- [ ] 106d etkileşimli parçalar (geri sayım, ilerleme, onay listesi ilerlemesi, CSV grafik)
 - [x] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test (cbc629e)
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
 - [x] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c. (001f6f0)
 - [x] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`) (3df1968)
 - [x] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla) (c7e6d5e)
 - [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
-- [ ] 94a+94b View Transitions geçişleri + dokunma geri bildirimi
+- [x] 94a+94b View Transitions geçişleri + dokunma geri bildirimi (be289c8)
 - [ ] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
 - [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)

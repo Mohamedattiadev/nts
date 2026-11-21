@@ -402,5 +402,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (h) her şey anında + çevrimdışı; sadece doğrudan cevap ve "Yapay zekâ ile ara" köprü ister.
         Sahibin ölçütü: teknolojiden anlamayan biri ilk denemede bulmalı → 3 persona ile 15 gerçekçi arama cümlesi (tr/en/ar) testi.
 
+- [ ] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
+        (a) zengin kart önizlemeleri: link büyük görsel + site rengi; YouTube/Spotify/Vimeo/harita kartta oynar (tıklayınca iframe, önce
+            küçük resim); PDF ilk sayfa kapak; kod dosyası renkli (küçük, sonradan yüklenen vurgulayıcı); WhatsApp sohbeti balonlarla;
+        (b) zengin not düzenleyici: "/" blok menüsü (başlık, madde, onay listesi, alıntı, kod, tablo, resim, ayırıcı), Markdown kısayolları
+            yazarken dönüşür (**kalın**, - madde, [ ] , # başlık), yapıştırılan HTML temizlenir; saklama yine Markdown (senkron/arama/Claude bozulmaz);
+            okuma görünümü ve kart önizlemesi aynı biçimi gösterir; geri al/yinele;
+        (c) daha canlı görünüm (ölçülü): pano kartında kapak resmi, üst çubuk/menülerde hafif cam efekti, boş durumlarda küçük çizimler,
+            renkler daha belirgin ama sakin; açık + koyu; kontrast AA;
+        (d) etkileşimli parçalar: geri sayım ("sınava 12 gün"), ilerleme çubuğu, onay listesi ilerlemesi (3/7), CSV'den grafik.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
