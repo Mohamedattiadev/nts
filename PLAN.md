@@ -389,5 +389,17 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         is:yıldızlı/is:starred, VEYA/OR/أو, dün/yesterday/أمس …); anlamsal model üç dili birlikte bilen çok dilli model (fatura ↔ invoice ↔ فاتورة).
         Birim testlerinde her dilden örnek. Arayüz yazıları Türkçe kalır.
 
+- [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
+        (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);
+            önce cihazda kurallarla (tr/en/ar), çözemezse yapay zekâ; sözdizimi (104d) sadece isteyene;
+        (b) doğrudan cevap kartı: soru gibi aramalarda en üstte kısa cevap + kaynak kayıt ("Kümeste 12 sensör var" → kayda git);
+        (c) asla boş sonuç yok: "Bunu mu demek istedin", en yakınlar, anlamca benzerler, "Yapay zekâ ile ara";
+        (d) niyet tahmini: soru sözcüğü / "?" → Sor modunu öner (zorlamadan);
+        (e) sesle arama: mikrofon (Web Speech, tr/ar/en), telefonda büyük dokunma alanı; desteklenmiyorsa düğme gizli;
+        (f) resimle arama: ekran görüntüsünü yapıştır → OCR yazısıyla/benzer görsellerle bul;
+        (g) kullandıkça öğren: bir aramadan sonra açılan kayıtlar benzer aramada üstte (yerel, cihazda);
+        (h) her şey anında + çevrimdışı; sadece doğrudan cevap ve "Yapay zekâ ile ara" köprü ister.
+        Sahibin ölçütü: teknolojiden anlamayan biri ilk denemede bulmalı → 3 persona ile 15 gerçekçi arama cümlesi (tr/en/ar) testi.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
