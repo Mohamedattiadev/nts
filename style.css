@@ -1064,10 +1064,6 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 #ink path { transition: opacity .15s; }
 /* the board tools sit on the box's centre line (box 48 px, tools 38 px, both 18 px from the bottom before) */
 @media (min-width: 900px) { .board-tools:not(.pal) { bottom: calc(23px + env(safe-area-inset-bottom)); } }
-/* LaTeX in the wide item window and the reader: the view fills the preview and scrolls inside (it was clipped, no scroll) */
-.wide .preview > .tex-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.wide .preview > .tex-view > .tex-bar { flex: none; }
-.wide .preview > .tex-view > .doc.tex, .wide .preview > .tex-view > .tex-raw { flex: 1; min-height: 0; max-height: none; overflow: auto; }
 
 /* 87: AI picker */
 .ap-h { font-size: 18px; font-weight: 650; margin: 2px 0 -6px; }
@@ -1084,6 +1080,10 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 .ap-row code { font-size: 11.5px; color: var(--text-2); background: var(--surface-2); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
 .ap-warn { color: var(--c-red); }
 @media (max-width: 420px) { .ap-row code { display: none; } }
+/* LaTeX in the wide item window and the reader: the view fills the preview and scrolls inside (it was clipped, no scroll) */
+.wide .preview > .tex-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wide .preview > .tex-view > .tex-bar { flex: none; }
+.wide .preview > .tex-view > .doc.tex, .wide .preview > .tex-view > .tex-raw { flex: 1; min-height: 0; max-height: none; overflow: auto; }
 /* 98: phone board - one quiet row (pen · board · time · fit), the palette opens from the pen button above it */
 @media (max-width: 899px) {
   #tidyBtn { display: none; }
