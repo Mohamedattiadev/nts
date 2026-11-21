@@ -9,8 +9,8 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 89 logo (.mark) koyu tema, boy, hiza, accent rengi (8b1e792)
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
-- [ ] 103a görünüm değişince arama listesi kapansın; arama listesi açıkken galeri önizleme paneli gizlensin (üst üste binme)
-- [ ] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür
+- [x] 103a görünüm değişince arama listesi kapansın; arama listesi açıkken galeri önizleme paneli gizlensin (üst üste binme) (0667a1e)
+- [x] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür (0667a1e)
 - [x] 98 telefonda pano görünümü çok kötü (383a3a7)
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
@@ -64,9 +64,15 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: listenin başındaki 103a (görünüm değişince arama listesi kapansın + açıkken galeri önizlemesi gizlensin; setView
-artık View Transition içinde render ediyor, kapatmayı setView'un başına koy) ve 92b (gün başlığı hiçbir yakınlıkta kesilmesin + günler arası
-çizgi). Sonra handoff.
+TAM SIRADAKİ ADIM: 101 TELEFON ÖNCE (phone-audit.mjs yaz: 4 boyut × 2 tema, tüm ekranlar/pencereler; hataları 0'a indir; PLAN 101),
+sonra 102 (hareket kuralları). Sonra handoff.
+
+BİLGİ (2026-11-21, 7. oturum): 103a+92b bitti (0667a1e, v33). 103a: `S.hitsOff` + `hideHits()` (app.js closeAnswer üstünde); setView
+değişince ve Back.open (her dialog) çağırır; renderHits hitsOff'ta listeyi kapatır (qchip değil); kutuya yazınca/focus olunca geri açılır.
+CSS: `body:has(#hits.hits:not([hidden]):not(.closing)) .peek` opacity 0. 92b: `Board.fitHeads()` (cull sonunda): başlık genişliği bir kez
+ölçülür (hd._lf tam, hd._ls kısa), ekrandaki bant genişliğine göre '' / .sh (kısa) / .vert (bandın üstünde sideways-lr); .col-head'te artık
+max-width/ellipsis yok; .far'da bantlar kalır; `.day-band::before` gün arası çizgi, genişlik max(1px, 1px*--ik). Pano k<~.14'te ay ızgarası
+(başlık yok). style.css'teki yabancı LaTeX taşıması hâlâ commit'lenmemiş (update-index yöntemiyle ayrı stage'lendi).
 
 BİLGİ (2026-11-21, 6. oturum): 94a+94b (be289c8, v31) ve 94c+94d (9164705, v32) bitti. setView: değişince `document.startViewTransition(render)`
 (html.vt sınıfı sadece geçişte #main'e view-transition-name verir; render bir kare SONRA olur, S.view hemen değişir); destek yoksa eski .vin.
