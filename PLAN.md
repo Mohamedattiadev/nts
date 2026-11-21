@@ -291,6 +291,8 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         + **92b (açık)** (sahip, ekran görüntüsü) uzaklaşınca başlık "BU… 3" diye kesiliyor: gün başlığı hiçbir yakınlıkta kesilmesin (ellipsis yok),
         uzaktayken ters ölçekle (`--hs`) okunur boyda kalsın, sütundan taşarsa yanındaki sütunun üstüne değil kendi bandının içinde
         kısalmadan dursun (gerekirse "20 Kas" gibi kısa biçim + sayı). %10–%200 arası tara, ekran görüntüsü.
+        + (sahip, uzak görünüm ekran görüntüsü) günler arasında ayrım görünmüyor: her gün kendi zemin bandında (dönüşümlü ton, Bugün accent
+        tonlu) + aralarında ince dikey çizgi; ayrım HER yakınlıkta görünür (uzakta kaybolmaz, çizgi ≥ 1 px ekranda).
 - [ ] 93. **Yapay zekâya pano hazırlat:** kutuya "poultrycare için pano hazırla" / "yazılımla ilgili ipuçlarını topla" yazınca seçili yapay zekâ
         (87) tüm kayıtlardan ilgilileri seçer, yeni proje panosu açar (`boards` + `posBy`), kartları başlıklı gruplara dizer (ör. Belgeler /
         Linkler / Görevler / Fikirler / Kişiler), en üste kısa özet yapışkan notu koyar; tek tıkla geri alınır. Köprüde yeni uç (`/board-plan`,
@@ -346,6 +348,12 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         aralarında ≥ 8 px; (5) güvenli alan: çentik/alt çubuk; (6) her pencere/menü/sayfa: açılır ve Android geri tuşu, dışına dokunma, aşağı
         kaydırma, × ile kapanır, kapanınca arkada artık iz/kilitli kaydırma kalmaz. Sonuç tablosunu `design/ux-review.md`'ye "(c) telefon"
         olarak yaz, hepsini 0'a indir, öncesi/sonrası ekran görüntüsü. Bundan sonra her arayüz işinde phone-audit 0 hata olmadan "bitti" deme.
+
+- [ ] 102. **Hareket kuralları: tamamen akıcı, zıplama yok** (sahip): açılan her şey geldiği yere geri döner (kayıt penceresi tıklanan karta
+        küçülür, menü düğmesine toplanır, panel kenarına kayar); öğe eklenince/silinince/sıralama değişince diğerleri yeni yerine FLIP ile
+        kayar, hiçbir şey birden yukarı/aşağı zıplamaz (yükleme, resim gelince, bildirim çıkınca da). Süre 150–250 ms, tek easing, sadece
+        transform/opacity, 60 fps; `prefers-reduced-motion` kapalı. Doğrulama: Playwright'ta `PerformanceObserver('layout-shift')` her
+        ekranda ~0 (beklenmeyen kayma), açıp kapama videosu/kare dizisiyle bak; telefonda da (101'in denetimine ekle).
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
