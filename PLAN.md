@@ -377,6 +377,12 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (e) sıralama: başlıkta tam eşleşme > yıldızlı > sık açılan > yeni; sonuçlar türe göre gruplu + sayılı;
         (f) kutu boşken: son aramalar, kayıtlı aramalar, sık konular; (g) ifadeler: #etiket, proje:ad, "tam ifade", -hariç.
         10k kayıtta tuş başına < 50 ms (anlamsal kısım arka planda, sonuçlar gelince yumuşakça eklenir). Telefonda da.
+        **104d–g ÇOK ÖNEMLİ (sahip): tam dikkat, yapılabilecek her şey.** Arama dili (tek ayrıştırıcı, testli):
+        regex `/…/i` (hatalıysa çökmez, uyarır; ReDoS'a karşı zaman/uzunluk sınırı), joker `poul*` `f?tura`, mantık `VEYA`/`|`, `-hariç`,
+        parantez, "tam ifade"; alanlar başlık: metin: url:/site: dosya: uzantı: etiket:/# proje: sohbet: kaynak:; tarih: 2024-03 / 2024-01..2024-03 /
+        >2025-06 / son:7g / dün / geçen hafta; is:yıldızlı/görev/bitti/bakılmadı/silindi, has:resim/not/link/pdf; boyut:>5mb; sırala:yeni/eski/alaka.
+        Yazarken otomatik tamamlama (etiket: → etiketler, proje: → projeler, sohbet: → sohbetler); kutunun yanında "?" sözdizimi kartı (örnekli).
+        Anlamsal arama + "Yapay zekâ ile ara". Kayıtlı aramalar (64) bu dili saklar. Birim testleri: ayrıştırıcı için ≥ 60 örnek (node ile, tools/test/).
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

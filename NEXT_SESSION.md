@@ -16,7 +16,10 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
-- [ ] 104d+104e+104f+104g anlamsal arama (cihazda model), sıralama + gruplar, boş kutu önerileri, ifadeler
+- [ ] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/)
+- [ ] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri
+- [ ] 104f ÇOK ÖNEMLİ anlamsal arama: cihazda çok dilli gömme modeli (Worker, IndexedDB vektörler, ~25 MB bir kez) + "Yapay zekâ ile ara"
+- [ ] 104g ÇOK ÖNEMLİ uçtan uca: 10k kayıtta tuş < 50 ms, telefonda da, kayıtlı aramalar yeni dili saklar; ekran görüntüleri + PLAN notu
 - [x] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test (cbc629e)
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
 - [x] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c. (001f6f0)
