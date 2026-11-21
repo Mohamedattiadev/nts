@@ -770,25 +770,25 @@ dialog.reader .d-body { gap: 10px; }
 @keyframes bump { 40% { transform: scale(1.25); color: var(--accent); } }
 
 /* ---------- rail: fold away + drawing palette sliding out of it (desktop) ---------- */
-.rail { transition: transform .25s var(--ease), opacity .2s; }
-/* 88: folding goes in steps: the rail leaves, the palette stays a moment and slides out, then only the small > tab is left; > brings both back */
+/* 88b: folding is one quick step (~150 ms): the rail leaves, the drawing palette stays on the board and slides into the rail's place,
+   a small > sits exactly where < was (--rt-top, Rail.place) - above the palette; > brings the rail back */
+.rail { transition: transform .15s var(--ease), opacity .15s; }
 .rail .r-fold { height: 22px; color: var(--muted); } .rail .r-fold .i { transform: rotate(180deg); }
-body.rail-off .rail { transform: translate(-90px, -50%); opacity: 0; pointer-events: none; }
-.rail-tab { position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 30; flex-direction: column; gap: 2px; padding: 4px 3px; border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-left: 0; box-shadow: var(--shadow-sm); animation: tabIn .25s var(--ease) .45s both; }
+body.rail-off .rail { transform: translate(-60px, -50%); opacity: 0; pointer-events: none; }
+.rail-tab { position: fixed; left: 16px; top: var(--rt-top, 50%); z-index: 31; flex-direction: column; padding: 4px; border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow-sm); animation: tabIn .15s var(--ease) both; }
 .rail-tab[hidden] { display: none !important; }
-.rail-tab button { width: 28px; height: 32px; border-radius: 7px; display: grid; place-items: center; color: var(--text-2); }
-.rail-tab button:hover { background: var(--surface-2); color: var(--text); } .rail-tab button.on { color: var(--accent); background: var(--accent-soft); }
+.rail-tab button { width: 34px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: var(--muted); }
+.rail-tab button:hover { background: var(--surface-2); color: var(--text); }
 .rail-tab [data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: var(--text); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; pointer-events: none; }
-@keyframes tabIn { from { transform: translate(-100%, -50%); opacity: 0; } }
+@keyframes tabIn { from { opacity: 0; } }
 .rail .pal-tab { margin-top: 2px; }
 .d-only-b { display: block; }
 @media (min-width: 900px) {
-  .board-tools.pal { left: 70px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; animation: palIn .22s var(--ease); }
-  .board-tools.pal { transition: transform .25s var(--ease) .08s, opacity .2s .08s, visibility 0s; }
-  body.rail-off .board-tools.pal { transform: translate(-150px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
-    transition: transform .28s var(--ease) .22s, opacity .2s .3s, visibility 0s .5s; }
+  .board-tools.pal { left: 70px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; animation: palIn .15s var(--ease); transition: transform .15s var(--ease); }
+  body.rail-off .board-tools.pal { transform: translate(-54px, -50%); }
   @keyframes palIn { from { opacity: 0; transform: translate(-14px, -50%); } }
+  body.rail-off .board-tools.pal { animation: none; }
 }
 @media (max-width: 899px) { .d-only-b { display: none !important; } }
 

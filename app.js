@@ -492,7 +492,7 @@ function renderChrome() {
     + Saved.list().slice(0, 4).map(v => `<button class="${Saved.same(v) ? 'on' : ''}" data-saved="${v.id}" data-tip="${esc(v.name)}" aria-label="Kayıtlı arama: ${esc(v.name)}"><span class="sv-ab">${esc([...v.name.replace(/^[#\s]+/, '')].slice(0, 2).join(''))}</span></button>`).join('')
     + `<button class="${moreOn ? 'on' : ''}" data-tags data-tip="${f.list && S.view !== 'todo' ? esc(listName(f.list)) : f.tag ? '#' + esc(f.tag) : 'Daha fazla: listeler, konular, şifrelerim'}" aria-label="Daha fazla">${ic('dots')}</button>`
     + (board ? `<button class="pal-tab${S.palOpen ? ' on' : ''}" data-paltab data-tip="${S.palOpen ? 'Çizim araçlarını kapat' : 'Çizim araçları'}" aria-label="Çizim araçları" aria-expanded="${!!S.palOpen}">${ic('pen', 'sm')}</button>` : '');
-  $('#railTab').innerHTML = `<button data-fold data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}</button>`; // 88: only >, the palette folds away with the rail
+  $('#railTab').innerHTML = `<button data-fold data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}</button>`; // 88b: only >, where < was; the palette stays
   const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && !i.seenAt && (i.type !== 'link' || i.read)).length;
   $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
@@ -537,6 +537,7 @@ function render(force) {
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
     $('#boardTools').hidden = none || S.view !== 'board';
     $('#pal').hidden = none || S.view !== 'board' || (innerWidth >= 900 && !S.palOpen); // desktop: slides out of the rail
+    Rail.place();
     $('#empty').hidden = !none || S.view === 'todo';
     if (S.view === 'todo') Todo.render();
     else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul. <b>Tab</b> ile ' + aiTo() + ' sorma moduna geçersin.',
@@ -1351,7 +1352,16 @@ const Rail = {
   },
   apply() {
     document.body.classList.toggle('rail-off', !!S.railOff); $('#railTab').hidden = !S.railOff;
-    document.body.classList.toggle('pal-open', !!S.palOpen);
+    document.body.classList.toggle('pal-open', !!S.palOpen); this.place();
+  },
+  // 88b: the > tab sits exactly where the rail's < was (and so above the palette, which stays on the board)
+  place() {
+    requestAnimationFrame(() => {
+      const r = $('#rail').getBoundingClientRect(), p = $('#pal'), pr = !p.hidden && p.getBoundingClientRect();
+      let top = r.height ? r.top : innerHeight / 2 - 15;
+      if (pr && pr.height) top = Math.min(top, pr.top - 36);
+      document.body.style.setProperty('--rt-top', Math.max(8, Math.round(top)) + 'px');
+    });
   },
   fold() { S.railOff = !S.railOff; Pop.close(); try { localStorage.setItem('hn-rail', S.railOff ? 'off' : ''); } catch { } this.apply(); render(); },
   pal(open = !S.palOpen) { S.palOpen = open; if (!open) Ink.use('select'); try { localStorage.setItem('hn-pal', open ? '1' : ''); } catch { } this.apply(); render(); },
