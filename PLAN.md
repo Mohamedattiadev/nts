@@ -403,6 +403,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (h) her şey anında + çevrimdışı; sadece doğrudan cevap ve "Yapay zekâ ile ara" köprü ister.
         Sahibin ölçütü: teknolojiden anlamayan biri ilk denemede bulmalı → 3 persona ile 15 gerçekçi arama cümlesi (tr/en/ar) testi.
 
+- [ ] 106-0. **ÖNCE ÖRNEK SAYFASI, sonra yapım** (sahip: "önce bana birkaç örnek göster, bu olur bu hayır"): `design/rich-ui.html`
+        (tek dosya, uygulamanın renkleri/fontu, açık+koyu, telefon genişliğinde de) — 106a–e'nin her biri için 2–3 farklı canlı örnek
+        (gerçekçi Türkçe/Arapça/İngilizce örnek verilerle: link kartı varyantları, gömülü video, PDF kapak, WhatsApp balonları, "/" menülü düzenleyici,
+        kapaklı pano kartı, cam efekti, geri sayım/ilerleme parçaları, zengin yapay zekâ cevabı). Her örneğin altında ✓ Olur / ✗ Olmaz + not kutusu;
+        seçimler kaydedilir ve "Seçimlerimi gönder" tek tıkla JSON'u `design/rich-ui-secimler.json`'a yazdırır (köprünün /inbox'una değil: sayfa
+        indirme ile verir, sahip dosyayı klasöre koyar) ya da yayınlanmış bir Artifact sayfası olarak (kalıcı oy saklama ile) paylaşılır.
+        Sahibe linki ver ve DUR ([?] bekle). 106a–e sadece ✓ alan örneklerle yapılır.
 - [ ] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
         (a) zengin kart önizlemeleri: link büyük görsel + site rengi; YouTube/Spotify/Vimeo/harita kartta oynar (tıklayınca iframe, önce
             küçük resim); PDF ilk sayfa kapak; kod dosyası renkli (küçük, sonradan yüklenen vurgulayıcı); WhatsApp sohbeti balonlarla;
