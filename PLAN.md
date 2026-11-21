@@ -52,14 +52,22 @@ Bitince maddenin başındaki `[ ]` → `[x]`. Commit/push sadece sahip söyleyin
 
 - [x] 14. **Yazı kutusundaki ikonlar tam ortalı değil** (`feedback-23`): `+`, ✦ ve ↑ yazı satırıyla aynı hizada değil.
         Tek satırda hepsi dikey ortada; kutu büyüdükçe (çok satır) düğmeler altta hizalı kalsın. Ekran görüntüsünde yakından kontrol et.
-- [ ] 15. **Sahibin kararı (2026-11-20):** "Not" ve "Sor" modu arasında **Tab** ile geçilsin; "sonu ? ise sorar" fikri iyi
+- [x] 15. **Sahibin kararı (2026-11-20):** "Not" ve "Sor" modu arasında **Tab** ile geçilsin; "sonu ? ise sorar" fikri iyi
         ama çok hassas olmasın (sonu ? ile biten bir not yanlışlıkla Claude'a gitmesin): ? ile bitince otomatik sorma, sadece
-        "Tab: Claude'a sor" ipucu çıksın. ✦ ve ↑ yerine anlaşılır tek düğme. Aşağıdaki eski not bilgi için:
+        "Tab: Claude'a sor" ipucu çıksın. ✦ ve ↑ yerine anlaşılır tek düğme.
+        **KESİN ÇÖZÜLECEK (sahip, 2026-11-20, ekran görüntüsü):** yazı soru olunca kutunun sağında yan yana **iki tane ✦ düğmesi**
+        çıkıyor (biri koyu ✦ "Claude'a sor", öbürü turuncu ✦ gönder). İkisi aynı görünüyor, hangisi ne belli değil. Hiçbir durumda
+        iki benzer düğme olmasın: tek düğme, üstünde yazı ("Kaydet" / "Claude'a sor"), telefonda ikon + kısa yazı. Ekran görüntüsüyle
+        4 durumda (açık/koyu × not/soru) kontrol et. Aşağıdaki eski not bilgi için:
        **Kutudaki düğmeler kafa karıştırıyor** (`feedback-23`): ↑ ok "kaydet" diye anlaşılmıyor, ✦ (Claude) düğmesi
         ne olduğu belli değil. Çözüm önerisi: ayrı ✦ düğmesini kaldır; sağda tek, yazılı düğme: normalde "Kaydet",
         yazı soruysa (sonu `?`) "Claude'a sor" olur ve rengi değişir. Kutunun içinde ya da altında küçük ipucu:
         "Enter: kaydet · sonu ? ise Claude'a sorar". Telefonda yazı sığmazsa ikon + kısa yazı ("Kaydet" / "Sor").
         İstersen solda küçük bir seçici: "Not | Sor" (sorma modunu `?` beklemeden açar). Sahibe 2 seçeneği ekran görüntüsüyle göster.
+- [x] 15a. **"Kaydet" yazısı fazla geliyor** (sahip, 2026-11-20, ekran görüntüsü): not modunda yazılı düğme yerine daha sade,
+        uygun bir ikon (yuvarlak, gönder oku; ipucu "Kaydet (Enter)"). Sor modunda turuncu "✦ Sor" kalsın ki ikisi karışmasın.
+- [x] 19a. **Panoda yazı aracı hatası** (sahip, 2026-11-20, ekran görüntüsü): Yazı (T) ile yazılan yazı silgiyle silinmiyor,
+        büyütülüp küçültülemiyor. Silgi yazıyı da silsin; seçince köşeden tutup boyutu değişsin (ve taşınabilsin).
 
 ## E. Yeni özellikler
 - [x] 16. **Otomatik yapılacaklar listesi (numaralı: 1- 2- 3-).** Claude her yeni kaydı düzenlerken görev mi diye bakar
@@ -98,44 +106,47 @@ Bitince maddenin başındaki `[ ]` → `[x]`. Commit/push sadece sahip söyleyin
        30 sn sonra panoyu temizle), şifre üretici. Birkaç dakika boşta kalınca kendini kilitler.
 
 ## G. Sahibin 2. geri bildirimi (2026-11-20, ekran görüntüleri sohbette)
-- [ ] 29. **Liste + sağdaki önizleme kartı ortalı dursun:** önizleme çıkınca liste ile kart birlikte ekranın ortasına gelsin
+- [x] 29. **Liste + sağdaki önizleme kartı ortalı dursun:** önizleme çıkınca liste ile kart birlikte ekranın ortasına gelsin
         (liste sola kaysın, kart listenin hemen yanında), kart ekranın kenarına yapışmasın.
-- [ ] 30. **Logo sıfırdan:** `design/logo-source.png`a benzer (yuvarlak köşeli not, çizgiler, turuncu kalem + dalga + parıltı)
+- [x] 29a. **Galeride önizleme kartı bozuk** (sahip, 2026-11-20, ekran görüntüsü): resim kartın içine sığmıyor, başlık ve
+        açıklamanın üstüne taşıyor (yazı resmin altında kalıyor); kart galerideki kartların üstüne biniyor. Resim kendi kutusunda
+        (`object-fit: contain`, en fazla ~%55 yükseklik), yazı onun altında; kart galeri kartlarını örtmesin (boş tarafa ya da yanına).
+- [x] 30. **Logo sıfırdan:** `design/logo-source.png`a benzer (yuvarlak köşeli not, çizgiler, turuncu kalem + dalga + parıltı)
         ama elle temiz çizilmiş, dengeli kalınlıklar; küçük boyda (24px sol üst, sekme ikonu) da net okunsun. Mevcut hâli kötü.
-- [ ] 31. **Şifrelerim formu kaydırmadan sığsın** (yeni kayıt penceresi): alanlar sıkı, not alanı küçük, Vazgeç/Kaydet hep görünür.
-- [ ] 32. **Kayıt penceresi hataları:** resimli/dosyalı kayıtta sağ sütunda başlık özetin altında kalıp kesiliyor, "Claude anlatsın"
+- [x] 31. **Şifrelerim formu kaydırmadan sığsın** (yeni kayıt penceresi): alanlar sıkı, not alanı küçük, Vazgeç/Kaydet hep görünür.
+- [x] 32. **Kayıt penceresi hataları:** resimli/dosyalı kayıtta sağ sütunda başlık özetin altında kalıp kesiliyor, "Claude anlatsın"
         alttan kesiliyor; sağ sütun düzeni bir tık karışık (renk, öncelik, görev, listeler, konu hepsi alt alta): sadeleştir,
         örn. tek "Etiketle" satırı (renk noktası + öncelik + listeler bir menüde), başlık her zaman en üstte ve tam görünür.
-- [ ] 33. **Paylaş düğmesi** üst çubukta anlaşılmıyor (ok ikonu): ikon + ipucu netleşsin.
-- [ ] 34. **Daha çok dosya türü önizlensin:** .md (biçimli), .txt/.toc/.log/.csv/.json/kod (metin), .docx (metin çıkar),
+- [x] 33. **Paylaş düğmesi** üst çubukta anlaşılmıyor (ok ikonu): ikon + ipucu netleşsin.
+- [x] 34. **Daha çok dosya türü önizlensin:** .md (biçimli), .txt/.toc/.log/.csv/.json/kod (metin), .docx (metin çıkar),
         .xlsx/.csv (tablo), .pptx (slayt metni); bilinmeyen türde de metin gibi okumayı dene.
-- [ ] 35. **Claude tamamen kendiliğinden bağlansın, "Elle ayarla" kalksın.** PC'de zaten oto; telefonda da: köprü kendi
+- [x] 35. **Claude tamamen kendiliğinden bağlansın, "Elle ayarla" kalksın.** PC'de zaten oto; telefonda da: köprü kendi
         Tailscale adresini ve anahtarını Google hesabına (Supabase, şifreli) yazar, telefon giriş yapınca oradan alır.
-- [ ] 36. **README:** tek komutla her şey kurulsun (`curl … | bash` ya da `./install.sh`: köprü servisi, nts komutu, MCP kaydı,
+- [x] 36. **README:** tek komutla her şey kurulsun (`curl … | bash` ya da `./install.sh`: köprü servisi, nts komutu, MCP kaydı,
         Tailscale ipucu); kısa, ekran görüntülü, iyi bir README.
-- [ ] 37. **Ayarlar Hesap bölümü:** "Google ile giriş yap" ve "Şifre koy" yan yana, düğmelerde yazı ortalı.
-- [ ] 38. **"- " ile yazınca hemen yapılacaklara düşsün ve hızlı olsun** (şu an yavaş hissettiriyor): anında listeye ekle, kısa
+- [x] 37. **Ayarlar Hesap bölümü:** "Google ile giriş yap" ve "Şifre koy" yan yana, düğmelerde yazı ortalı.
+- [x] 38. **"- " ile yazınca hemen yapılacaklara düşsün ve hızlı olsun** (şu an yavaş hissettiriyor): anında listeye ekle, kısa
         animasyon, "Yapılacaklara eklendi · Göster" bildirimi. Claude da sahibin eklediği kayıtlarda görev görürse ekler (var, kontrol et).
-- [ ] 39. **Arama sonuçları açılır menüsü yavaş ve sert:** yumuşak açılma/kapanma animasyonu, sonuçlar yazarken titremesin.
-- [ ] 40. **Sol çubuk açılıp kapanabilsin** (toggle) ve daha kısa olsun (az kullanılanlar bir "Daha fazla" altına).
-- [ ] 41. **Çizim paleti sol çubuktan açılsın:** sol çubuğun sağ kenarında küçük bir ">" oku; basınca çizim araçları yandan kayarak çıkar.
-- [ ] 42. **Modlar:** "Okuma ve araştırma" modu (okuma görünümü, işaretlemeler, Claude'a sorma, kaynakları yan yana) ve
+- [x] 39. **Arama sonuçları açılır menüsü yavaş ve sert:** yumuşak açılma/kapanma animasyonu, sonuçlar yazarken titremesin.
+- [x] 40. **Sol çubuk açılıp kapanabilsin** (toggle) ve daha kısa olsun (az kullanılanlar bir "Daha fazla" altına).
+- [x] 41. **Çizim paleti sol çubuktan açılsın:** sol çubuğun sağ kenarında küçük bir ">" oku; basınca çizim araçları yandan kayarak çıkar.
+- [x] 42. **Modlar:** "Okuma ve araştırma" modu (okuma görünümü, işaretlemeler, Claude'a sorma, kaynakları yan yana) ve
         "Yazma ve çizim" modu (geniş yazı alanı + pano/çizim araçları). Üstte tek tıkla geçiş.
 
 ## H. Sahibin seçtiği öneriler (2026-11-20)
-- [ ] 43. **Görev hatırlatması:** saati gelen görev için PC'de köprü masaüstü bildirimi (`notify-send`), telefonda uygulama açıkken bildirim.
-- [ ] 44. **Resim/PDF içinde arama:** Claude düzenlerken resimdeki ve taranmış PDF'teki yazıyı da çıkarıp `ocr` alanına koyar, arama onu da tarar.
-- [ ] 45. **Çöp kutusu (30 gün):** silinen kayıtlar 30 gün "Çöp" listesinde, geri al / kalıcı sil; sonra kendiliğinden temizlenir.
-- [ ] 46. **Markdown / Obsidian'a dışa aktar:** her kayıt bir `.md` (ön bilgi: tarih, konu, link) + dosyalar `attachments/`, tek zip.
-- [ ] 47. **Ana ekran kısayolları:** manifest `shortcuts`: "Yeni not", "Yapılacaklar", "Şifrelerim" (ikona uzun basınca).
+- [x] 43. **Görev hatırlatması:** saati gelen görev için PC'de köprü masaüstü bildirimi (`notify-send`), telefonda uygulama açıkken bildirim.
+- [x] 44. **Resim/PDF içinde arama:** Claude düzenlerken resimdeki ve taranmış PDF'teki yazıyı da çıkarıp `ocr` alanına koyar, arama onu da tarar.
+- [x] 45. **Çöp kutusu (30 gün):** silinen kayıtlar 30 gün "Çöp" listesinde, geri al / kalıcı sil; sonra kendiliğinden temizlenir.
+- [x] 46. **Markdown / Obsidian'a dışa aktar:** her kayıt bir `.md` (ön bilgi: tarih, konu, link) + dosyalar `attachments/`, tek zip.
+- [x] 47. **Ana ekran kısayolları:** manifest `shortcuts`: "Yeni not", "Yapılacaklar", "Şifrelerim" (ikona uzun basınca).
 
 ## I. Büyük veri: dosyalar için GitHub repoları + WhatsApp 1 GB içe aktarma (sahip, 2026-11-20)
-- [ ] 48. **Depolama ayrımı:** yazılar/kayıt bilgisi Supabase'de (küçük, hızlı senkron); dosyalar (resim, video, PDF) sahibin
+- [x] 48. **Depolama ayrımı:** yazılar/kayıt bilgisi Supabase'de (küçük, hızlı senkron); dosyalar (resim, video, PDF) sahibin
         **private GitHub repolarında** `nts-files-1`, dolunca (~900 MB) `nts-files-2`, `-3` … kendiliğinden açılır ve bağlanır.
         Eski GitHub senkronunda yarısı var (`checkSize` + köprüde `/new-repo`), eksik: her yeni repo için elle token.
-- [ ] 49. **GitHub'ı bir kez bağla:** Ayarlar → "GitHub'ı bağla" (Supabase GitHub girişi, `repo` izni). Anahtar Google hesabına
+- [x] 49. **GitHub'ı bir kez bağla:** Ayarlar → "GitHub'ı bağla" (Supabase GitHub girişi, `repo` izni). Anahtar Google hesabına
         şifreli kaydedilir; telefon da Google ile girince otomatik alır. Repoları uygulama açar, elle hiçbir şey yok.
-- [ ] 50. **WhatsApp içe aktarma köprüde (PC):** `nts import whatsapp.zip`: önce deneme raporu (kaç mesaj/foto/video, sıkıştırınca
+- [x] 50. **WhatsApp içe aktarma köprüde (PC):** `nts import whatsapp.zip`: önce deneme raporu (kaç mesaj/foto/video, sıkıştırınca
         kaç MB), sonra içe aktarma: aynı dosyayı bir kez al (hash), fotoğrafları küçült (~1600 px), büyük videolarda seçenek
         (sakla / sadece küçük resim), parça parça yükle, kaldığı yerden devam et. Claude geceleri gruplar halinde düzenler.
 
@@ -144,6 +155,106 @@ videolar dahil tamamı saklanır. GitHub'da tek dosya en çok 100 MB → 95 MB't
 yeniden kodlanır (H.264, kalite korunarak çözünürlük/bit hızı düşürülür); orijinal PC'de `~/.local/share/nts/originals/` altında kalır.
 Fotoğraflar küçültülür (~1600 px, webp/jpg) ama orijinali de istenirse aynı yerde. Repo ~900 MB olunca sıradaki repo açılır.
 PC'de `gh` girişli (Mohamedattiadev) → köprü repoları `gh` ile açabilir; telefon için madde 49'daki bağlantı gerekir.
+
+## J. Çok veriyle pano (2023'ten beri WhatsApp, binlerce kayıt) — sahip, 2026-11-20
+Ölçüm (10.000 sahte kayıt, masaüstü): arama 10 ms, liste 0,3 sn (ilk 300 kayıt) sorunsuz; **pano 1,4–1,7 sn ve sadece
+en yeni 600 kartı gösteriyor**, eskiler panoda hiç yok. Yapılacaklar:
+- [x] 51. **WhatsApp mesajlarını grupla:** arka arkaya gelen mesajlar (aynı gün, aralarında ~30 dk'dan az) tek kayıt olur
+        ("12 Mart 2024 · 14 mesaj"), fotoğraflar o kaydın içinde galeri. 8.000 mesaj → birkaç yüz kayıt.
+- [x] 52. **İçe aktarılanlar "Arşiv"e:** WhatsApp/yer imi içe aktarımları listede, galeride ve aramada var ama panoyu doldurmaz;
+        istenen kayıt panoya sürüklenir ya da "Panoya koy" ile gelir.
+- [x] 53. **Pano çalışma alanı olsun, arşiv değil:** varsayılan son 30 gün + panoya koyduğun/taşıdığın kartlar; üstte zaman
+        seçici (Bu hafta / Bu ay / 2024 / Tümü).
+- [x] 54. **Anlamsal yakınlaştırma:** uzaklaşınca günler ay kutularına toplanır ("Mart 2024 · 312 kayıt" + küçük resim mozaiği),
+        yaklaşınca günlere, sonra kartlara açılır. 2,5 yıl tek ekranda okunur kalır.
+- [x] 55. **Sadece görünen kartları çiz (sanallaştırma):** ekranın dışındakiler DOM'da olmasın; panoda 10.000 kayıtta bile
+        ~200 kart, açılış 0,3 sn altı. Listede de aynı (sonsuz kaydırma + aya atla takvimi).
+- [x] 56. **(2026-11-21 doğrulandı: proje panosunda taşı → posBy bellekte + IndexedDB'de, yenileyince yerinde; önceki test yanlış fonksiyonu çağırıyordu.) (Büyük kısmı yapıldı 2026-11-21: pano seçici Genel/projeler/yeni pano, pano başına ayrı konum `posBy`, kayıt penceresinde "Panolar", liste/galeride yapışkan gün/ay başlıkları, galeride "Tarihe git". KALAN: proje panosunda kart taşıyınca `posBy` kaydı testte görünmedi, kontrol et + ekran görüntüsü.)** **Proje panoları:** birden fazla pano (ör. poultrycare, ev, öğrenme); Claude'un proje/konusuna göre kartları önerir.
+        Liste ve galeride yıl/ay başlıkları yapışkan, "tarihe git" ile 2023'e tek tık.
+
+## K. Hız ve düzen (araştırma: IndexedDB toplu okuma, Postgres jsonb/index, tuval culling) — 2026-11-20
+Ölçüm (10.000 kayıt): IndexedDB'den yükle + indeksle 0,18 sn, arama 10 ms → veritabanı darboğaz değil; darboğaz pano (J).
+Sunucuda sorgu tek: "şu tarihten beri değişenler", index'i var `(user_id, synced_at)`; filtre/arama cihazda. Kilit açıkken
+veri şifreli olduğu için sunucu zaten indeksleyemez. Tam normalizasyon gerekmiyor (filtrelenen alan sunucuda yok).
+- [x] 57. **Ağır alanları ayır:** `read` (okunur kopya), `content` (PDF metni), `ocr`, uzun `explain` → ayrı tablo `nts_heavy`
+        (user_id, id, data/enc), sadece açılınca indirilir. `nts_items` satırları küçük kalır → telefonda ilk senkron saniyeler.
+- [x] 58. **IndexedDB:** `ts` index'i; açılışta önce son 60 gün (getAll + IDBKeyRange), gerisi boşta toplu `getAll(range, 500)`
+        ile; arama indeksini Web Worker'da kur (ana iş parçacığı donmasın). 50k+ kayıtta FlexSearch ya da SQLite WASM (FTS5) değerlendir.
+- [x] 59. **Küçük resimler repoda:** her foto/video/PDF için ~20 KB webp önizleme `thumbs/` altında; galeri ve pano onları
+        indirir, orijinal sadece açınca. Önizlemeler cihazda Cache Storage'da.
+- [x] 60. (2026-11-21: "Tarihe git" içinde yıl ısı haritası, güne tıkla → o gün; liste/galeride sağ kenarda zaman kaydırıcısı) **Yıl takvimi (ısı haritası):** GitHub katkı takvimi gibi; hangi gün çok kayıt var renkle belli, güne tıkla → o gün.
+        Liste/galeride yapışkan yıl/ay başlıkları + sağ kenarda zaman kaydırıcısı (2023 → bugün tek sürükleme).
+- [x] 61. (2026-11-21: köprüde /summaries, gizli+senkronlu `summaries` kaydı, liste gün başlığında ve panodaki ay ızgarasında) **Gün ve ay özetleri:** Claude her gün/ay başlığına tek satır yazar ("12 Mart: poultrycare demo, 3 fatura, annemle konuşma").
+- [x] 62. (2026-11-21: listenin başında "Geçen yıl bugün / N yıl önce bugün" kartı, Göster + bugün gizle; ayrı bir haftalık özet ekranı yok) **"Geçen yıl bugün"** kartı (varsa) ve haftalık özet içinde.
+- [x] 63. (2026-11-21: ⋯ menüsünde "Kaynak": WhatsApp sohbetleri, Bilgisayar, Telefon, Yer imleri; yeni kayıtlar cihazını `dev` ile tutar) **Kaynağa ve kişiye göre filtre:** WhatsApp sohbet adı / kişi, yer imleri, PC, telefon; filtre çipleri.
+- [x] 64. (2026-11-21: "Sabitle" düğmesi, gizli+senkronlu `saved` kaydı, sol çubukta ilk iki harf + ⋯ menüsünde "Kayıtlı aramalar") **Kaydedilmiş aramalar:** bir aramayı/filtreyi sol çubuğa sabitle ("2024 faturalar", "poultrycare linkleri").
+
+## L. Tam UI/UX incelemesi (özellikle UX) — sahip, 2026-11-20
+- [x] 65. **Baştan sona UX incelemesi**, iki kez (**(a) 2026-11-20, (b) 2026-11-21 → `design/ux-review.md`**; (b): kritik yok, 5 önemli düzeltildi): (a) 15 ve 29–42 bittikten sonra, (b) en sonda tekrar.
+        - **Görev bazlı yürüyüş** (telefon 390×844 + masaüstü 1366×768, Playwright ile gerçekten tıklayarak, her adımın ekran
+          görüntüsü): ilk açılış + tur, not kaydet, link kaydet, foto/dosya ekle, bul (arama), Claude'a sor, görev ekle/bitir,
+          panoda taşı/çiz, kayıt penceresi, şifrelerim, ayarlar, Google girişi, içe aktarma. Her görev için tık sayısı ve takıldığı yer.
+        - **3 persona** (önceki turdaki gibi): sabırsız telefon kullanıcısı, çok kayıtlı masaüstü kullanıcısı, teknolojiden
+          anlamayan biri. Her biri için "nerede kafası karıştı" listesi.
+        - **Kontrol listesi:** Nielsen'in 10 ilkesi; tutarlı Türkçe sözcükler (aynı şeye hep aynı ad); boş / yükleniyor / hata
+          durumları; geri alınabilirlik; dokunma hedefleri ≥ 44 px; klavye ile tam kullanım + görünür odak; ekran okuyucu
+          etiketleri; renk kontrastı (açık + koyu, WCAG AA); animasyonlar yumuşak ama `prefers-reduced-motion`'a uyuyor;
+          hissedilen hız (her işlemde 100 ms içinde görsel tepki).
+        - **Çıktı:** `design/ux-review.md`: öncelikli sorun listesi (kritik / önemli / küçük), her biri ekran görüntüsüyle;
+          sonra kritik ve önemlileri düzelt, düzeltme öncesi/sonrası ekran görüntüsü.
+
+## M. Sahibin 3. geri bildirimi (2026-11-20, ekran görüntüleri sohbette)
+- [x] 66. **"Yaz" modu kalksın:** pano + soldaki kalem paleti zaten bunu yapıyor; kutunun kocaman büyümesine de gerek yok.
+- [x] 67. **"Oku" modu baştan:** şu hâli kötü (resim bölmede kaydırma çubuğuyla sıkışıyor, liste + boş bölme). Okumaya daha uygun bir şey:
+        sadece okunacak şeyler (makale, PDF, uzun not, belge), sakin tek sütun okuma sayfası, işaretleme, kaynaklar arası geçiş,
+        "Claude'a sor" yan panelde. Üstteki "Oku / Yaz" yerine daha iyi bir giriş (ör. kayıt penceresinde ve listede "Oku" düğmesi,
+        okunacaklar listesi).
+- [x] 68. **"Daha fazla" (⋯) menüsü çok aşağıda açılıyor:** düğmenin hizasından yukarı doğru ya da ekranın ortasında, tamamı görünsün.
+- [x] 69. **Yapılacaklar eksik hissettiriyor, büyüt:** hızlı ekleme satırı sayfanın içinde, bugün / yaklaşan / tarihsiz grupları, tarih ve
+        öncelik seçme, alt görevler ya da not, tekrar eden görevler, bitenlerin düzgün görünümü, boş durum.
+- [x] 70. **Kutuya yazarken panodaki kartlar yenileniyor (titriyor):** yazarken pano yeniden çizilmesin; arama sadece vurgulasın
+        (sınıf değiştir), kartları baştan kurma.
+- [x] 71. **Kart renk etiketi kötü görünüyor** (kırmızı seçince solda kalın, yuvarlak köşeye taşan şerit): daha zarif bir gösterim
+        (ince üst çizgi ya da küçük renk noktası + hafif arka plan tonu), panoda, listede, galeride aynı.
+- [x] 72. **Oku/Yaz yerine daha iyi bir şey** (66 + 67 ile birlikte): üstte sadece Pano / Liste / Galeri kalsın.
+- [x] 73. **Claude çalışırken görünsün** (sahip, 2026-11-20): Claude arka planda bir şey yaparken (kayıt düzenleme, okunur kopya,
+        açıklama, soru) ekranda belli olsun: küçük, sakin bir "Claude çalışıyor · 3 kayıt düzenleniyor" göstergesi, bitince kaybolur.
+- [x] 74. (2026-11-21, sahip "evet": Supabase Realtime yayını üzerinden röle — mesajlar köprü anahtarıyla AES-GCM şifreli, hiçbir şey saklanmıyor, tablo gerekmiyor; köprü /relay-conf ile kanalı öğrenir; ayarlardaki tailscale satırı kalktı; install.sh Tailscale istemiyor) **Tailscale'siz telefon bağlantısı (sahibe sorulacak):** telefon soruyu/işi Supabase'e (Google hesabı) yazar, PC'deki köprü
+        oradan alıp cevabı geri yazar (Realtime ile anında). Bilgisayar açıkken Tailscale gerekmez. Ayarlardaki `tailscale serve`
+        komutu kalkar. Sahip "Tailscale'e ne gerek var?" diye sordu.
+
+## N. Sahibin 4. geri bildirimi (2026-11-21)
+- [x] 75. Pano araçları dağınıktı (Genel ^ / Son 30 gün): gruplar ayrıldı, küçük aşağı ok. Ayarlar ikonu tam ortalandı.
+- [x] 76. (2026-11-21: sarı zeminli B uygulandı ama sahip beğenmedi → 80) **Logo hâlâ beğenilmedi** ("logoyu halletmedin daha"): sahibe ne beğenmediğini sor (2-3 seçenek çiz, ekran görüntüsüyle göster),
+        sekme ikonu + sol üst `.mark` + PNG'ler + manifest birlikte değişsin; önbellek için `sw.js` VERSION artır.
+- [x] 77. (2026-11-21: geniş ekranda galeride sağa sabit önizleme paneli, ızgara ona yer bırakıyor) **Galeride önizleme kartı yandaki kartın üstüne biniyor** (sahip, 2026-11-21, ekran görüntüsü): üzerine gelince açılan kart
+        sağdaki kartı örttüğü için bir sonraki karta geçilemiyor. Çözüm: galeride kart boş tarafa (sağda yer yoksa solda, ikisi de yoksa
+        kartın altına/üstüne) ya da sabit bir sağ panelde açılsın; fare kartın üstüne gelince kart kapanmasın ama altındaki kart da
+        hover alabilsin (pointer-events), ya da liste gibi galeri+kart birlikte kaysın. Ekran görüntüsüyle 3 kart arka arkaya hover dene.
+- [x] 78. (2026-11-21: tüm satırlar 18 px ikon kutusu + sağda sabit genişlikte tabular sayı, 0 gizli) **"Okuma listesi" satırı çok kötü** (⋯ menüsü, ekran görüntüsü): sayı ile yazı arasındaki boşluk/hiza, ikon, yazı tipi
+        diğer satırlarla tutarsız. Menüdeki tüm satırlar aynı hizada, sayılar sağda sabit genişlikte, boş sayılar (0) gizli.
+- [x] 79. (2026-11-21: Tex modülü — .toc numaralı + sayfa numaralı içindekiler, .tex bölüm/liste/tablo/dipnot/kaynak/ref, KaTeX cdnjs sadece açılınca, "Ham metin" düğmesi; kayıt penceresi + okuma sayfası) **LaTeX dosyaları biçimli görünsün** (sahip: "neden latex çevirmiyor"): .tex, .toc, .aux/.bbl gibi dosyalar ham metin
+        görünüyor. .toc → başlık numarası, başlık ve sayfa numarasıyla düzgün bir içindekiler listesi (\contentsline{section}{\numberline{1}…}{5});
+        .tex → bölümler/alt bölümler başlık, \textbf/\emph, itemize/enumerate, tablo ve matematik (KaTeX ya da MathJax CDN'den, sadece
+        açılınca yüklensin) ile okunur görünüm; ham metne geçiş düğmesi. Okuma sayfasında da aynı.
+- [ ] 80. **Logo sıfırdan** (sahip, 2026-11-21: "logo çok kötü, sıfırdan yapacaktın; neden arkası sarı, diğerlerine benzemiyor"): kısayol
+        ikonlarıyla (sc-note/todo/lock: beyaz zemin, tek kalın sembol, #c2410c / #23262e / #f5a524) aynı aileden, kaynağın kopyası değil.
+- [x] 81. (2026-11-21: pano geçmişi — çizgi, silgi ve yapışkan not için Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y) **Çizimde Ctrl+Z çalışmıyor** (sahip, 2026-11-21): panoda kalemle çizince Ctrl+Z son çizgiyi geri alsın, Ctrl+Shift+Z / Ctrl+Y yinelesin.
+
+## O. Otomatik ve akıllı senkron (sahip, 2026-11-21; Fluent365'teki "telefonda 3/6, bilgisayarda 1/6" hatasından ders)
+Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama kendisi akıllıca karar verir
+(skill `supabase-google-auth` §5). Nts zaten kayıt bazında birleştiriyor ve Realtime ile anında çekiyor; kalan açıklar:
+- [ ] 82. **Çıkarken hemen gönder:** `visibilitychange` (hidden) ve `pagehide` olunca bekleyen değişiklik (`Cloud.schedule` 1,5 sn
+        zamanlayıcısı) beklemeden gönderilsin. Telefon arka planda zamanlayıcıyı durdurur; son yazılan not diğer cihaza ancak telefon
+        tekrar açılınca gider. Şu an sadece geri dönünce (`visible`) senkron var (app.js ~3614).
+- [ ] 83. **Pencere odağında çek:** masaüstünde sekme görünür kalıp başka pencereden dönünce (`focus`) de çek (10 sn aralıkla sınırla);
+        Realtime bağlantısı kopmuşsa (uyku, ağ değişimi) yeniden bağlansın.
+- [ ] 84. **Aynı kayıt iki cihazda değiştiyse soru yok, akıllı birleştir:** şu an kayıt bazında daha yeni olan kazanıyor olabilir
+        (`GH.merge`, kontrol et). Alan bazında birleştir: metin daha yeni olan, etiketler/projeler/panolar birleşim, görev bitti
+        bilgisi "bitti" kazanır, silinen kayıt (mezar taşı) daha yeniyse silinmiş kalır. Kaybolan taraf `Snapshot`'ta kalsın.
+- [ ] 85. **İki cihaz testi:** telefonda not yaz ve uygulamayı hemen kapat → bilgisayarda (aynı hesap) not görünür; iki cihazda
+        çevrimdışı aynı kaydı değiştir → ikisi de birleşir, soru çıkmaz. Playwright ile iki profil + sahte Supabase (Gym'in
+        `tools/test/cloud.mjs` örneği).
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
