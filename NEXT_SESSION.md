@@ -10,6 +10,12 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">"
 - [ ] 90 çizimde titreme + genel yumuşak geçişler
 - [ ] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`)
+- [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
+- [ ] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih)
+- [ ] 94a+94b View Transitions geçişleri + dokunma geri bildirimi
+- [ ] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme
+- [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
+- [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
 
 KURALLAR (sahip):
 - Vanilla JS, derleme yok, arayüz Türkçe. Her arayüz değişikliğinden sonra Playwright ile ekran görüntüsü (masaüstü 1366x768 + telefon
