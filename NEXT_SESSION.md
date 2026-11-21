@@ -72,3 +72,4 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 99a galeri gerçekten görsel (masonry, yazısız)
 - [ ] 99b Takvim görünümü
 - [ ] 99c Konular görünümü (sütun başına konu/proje, sürükle taşı)
+- [ ] 100 Yapılacaklar 3 sütun: Yapılacak · Yapılıyor · Bitti (PLAN 100)

@@ -327,5 +327,10 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (c) Konular görünümü: proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
         Üstteki görünüm seçici: Pano · Liste · Galeri · Takvim · Konular (telefonda simge, sığmazsa "⋯").
 
+- [ ] 100. **Yapılacaklar 3 sütun (kanban):** Yapılacak · Yapılıyor · Bitti (sahip onayladı). Masaüstü: yan yana sütunlar, kartı sürükle
+        (klavyeyle de taşınır). Telefon: üstte 3 sekme + kartı yana kaydırınca sonraki sütuna. Bugün/yaklaşan/tarihsiz grupları, tarih,
+        öncelik, tekrar "Yapılacak" içinde aynen kalır. "Bitti" son 7 gün, gerisi "Eskiler" altında katlı. Yeni alan `todo.doing` (geriye uyumlu:
+        done → Bitti, diğerleri → Yapılacak); senkron birleştirmede (mergeItem) done > doing > yapılacak. Bildirimler bozulmasın.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
