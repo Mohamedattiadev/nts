@@ -1049,3 +1049,5 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 @keyframes bornIn { from { opacity: 0; transform: scale(.92); } }
 .bcard.gone { transition: opacity .15s, transform .15s; opacity: 0; transform: scale(.9); pointer-events: none; }
 #ink path { transition: opacity .15s; }
+/* the board tools sit on the box's centre line (box 48 px, tools 38 px, both 18 px from the bottom before) */
+@media (min-width: 900px) { .board-tools:not(.pal) { bottom: calc(23px + env(safe-area-inset-bottom)); } }
