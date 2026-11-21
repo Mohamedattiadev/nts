@@ -288,6 +288,9 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [x] 92. (2026-11-21: her gün tek yumuşak bant (dönüşümlü ton), Bugün ana renkte bant + başlık, "Dün · 20 Kasım Cuma", iç sütun aralığı 12 px / günler arası 76 px; uzak görünümde bant kapalı) **Bugün ile dün yan yana ayırt edilmiyor:** gün sütunlarına hafif zemin bandı (günler dönüşümlü ton) ya da ince dikey ayırıcı,
         "Bugün" ana renkle vurgulu, başlıkta tarih + hafta günü ("Dün · 20 Kasım Cuma"), bir günün alt sütunları (4'erli) tek blok gibi dursun
         (aradaki boşluk küçük, günler arası boşluk büyük). Masaüstü + telefon, açık + koyu.
+        + (sahip, ekran görüntüsü) uzaklaşınca başlık "BU… 3" diye kesiliyor: gün başlığı hiçbir yakınlıkta kesilmesin (ellipsis yok),
+        uzaktayken ters ölçekle (`--hs`) okunur boyda kalsın, sütundan taşarsa yanındaki sütunun üstüne değil kendi bandının içinde
+        kısalmadan dursun (gerekirse "20 Kas" gibi kısa biçim + sayı). %10–%200 arası tara, ekran görüntüsü.
 - [ ] 93. **Yapay zekâya pano hazırlat:** kutuya "poultrycare için pano hazırla" / "yazılımla ilgili ipuçlarını topla" yazınca seçili yapay zekâ
         (87) tüm kayıtlardan ilgilileri seçer, yeni proje panosu açar (`boards` + `posBy`), kartları başlıklı gruplara dizer (ör. Belgeler /
         Linkler / Görevler / Fikirler / Kişiler), en üste kısa özet yapışkan notu koyar; tek tıkla geri alınır. Köprüde yeni uç (`/board-plan`,
