@@ -11,13 +11,13 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
 - [ ] 103a görünüm değişince arama listesi kapansın; arama listesi açıkken galeri önizleme paneli gizlensin (üst üste binme)
 - [ ] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür
-- [ ] 98 telefonda pano görünümü çok kötü (önce bu; PLAN 98)
+- [x] 98 telefonda pano görünümü çok kötü (383a3a7)
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b)
-- [ ] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test
+- [x] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test (cbc629e)
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
-- [ ] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c.
+- [x] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c. (001f6f0)
 - [x] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`) (3df1968)
 - [x] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla) (c7e6d5e)
 - [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
@@ -40,7 +40,7 @@ KURALLAR (sahip):
 - Sunucu: `curl -s 127.0.0.1:8790` çalışmıyorsa `python3 -m http.server 8790 --bind 127.0.0.1` (arka planda). Köprü http://localhost:8787;
   gerçek köprüyle testte lib.mjs `bridge:true` (gelen kutusu, snapshot, import kuyruğu korunur). Gerçek GitHub/Supabase'e yazma, taklit et.
 - Her maddeyi bitirince PLAN.md'de [ ] → [x] (kısa not + tarih), bu dosyada da [x] + commit hash. Kararını veremediğin şeyi en sona biriktir.
-- sw.js VERSION'ı her sürümde artır (şu an v24; commit'ten hemen önce tekrar oku).
+- sw.js VERSION'ı her sürümde artır (şu an v30; commit'ten hemen önce tekrar oku).
 - COMMIT: sahip istemiyor → commit mesajına "Co-Authored-By: Claude" ve Claude imzası EKLEME. Sadece kendi dosyalarını `git add` et.
   Commit + push için ayrıca izin bekleme (sahip verdi). Push'tan sonra Pages'te yeni sw VERSION'ın açıldığını kontrol et.
 - Yeni, tekrar eden bir yöntem öğrenirsen ~/.claude/skills altına yaz.
@@ -49,8 +49,16 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 98 (telefonda pano, PLAN 98), sonra 97 (Tüm verileri sil), vakit kalırsa 88c (">" paletin sağından; Rail.place +
-.rail-tab CSS, style.css 88b bloğu). Sonra handoff.
+TAM SIRADAKİ ADIM: 94a+94b (View Transitions: setView'da document.startViewTransition, kayıt penceresi karttan büyür; :active küçülme +
+navigator.vibrate kısa titreşim kaydet/görev bitti/sil), sonra 94c+94d. Sonra handoff.
+
+BİLGİ (2026-11-21, 5. oturum): 98/97/88c bitti (sw v30). 98: Board.fit telefonda (innerWidth<900) k=1, en yeni gün sağda (içerik
+ekrana sığarsa en az .7); #penBtn (.m-only, Ink.init #boardTools'un başına ekler) paleti açar + kalemi seçer, #pal artık her genişlikte
+yalnız S.palOpen ile görünür; telefonda #tidyBtn gizli. 97: `Wipe` (app.js, `const Tour` üstünde), #wipe dialog; rmFiles storage
+klasörlerini /object/list ile özyinelemeli gezip DELETE {prefixes} ile siler; sonra Cloud.signOut, DB.clear(items/files/kv), caches,
+localStorage (hn-tour/hn-ai geri yazılır), location.replace. 88c: Rail.place railOff+palet açıksa #railTab.ear + --rt-left (16+palet
+genişliği-1). style.css'teki yabancı LaTeX taşıması hâlâ commit'lenmemiş: kendi bloğunu `git show HEAD:style.css > x; sed -n '/^\/\* <blok>/,$p'
+style.css >> x; git update-index --cacheinfo 100644,$(git hash-object -w x),style.css` ile ayrı stage'le.
 
 BİLGİ (2026-11-21, 4. oturum): 88b/91/92 bitti (sw v27). Rail.place() "<" konumunu ölçüp --rt-top ile ">" sekmesini aynı yere koyar;
 rail-off'ta palet kalır (translateX -54px). 91'in kökü: render() vkey'i `S.items` KİMLİĞİNE bakar → kayıtları yerinde değiştirip
