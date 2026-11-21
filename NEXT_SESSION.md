@@ -8,7 +8,8 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 86 pano araçları kutuyla çakışıyor + çalışmayan düğmeler (8b1e792)
 - [x] 89 logo (.mark) koyu tema, boy, hiza, accent rengi (8b1e792)
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
-- [ ] 90 çizimde titreme + genel yumuşak geçişler
+- [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
+- [ ] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü.
 - [ ] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`)
 - [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
 - [ ] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih)
