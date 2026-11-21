@@ -123,7 +123,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 107b Android ana ekran widget'ı (96'dan sonra)
 - [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
-- [ ] 107g+107h şablonlar + günlük modu
+- [ ] 107g şablonlar (toplantı, alışveriş, seyahat, kitap; "/" menüsü + kendi şablonunu kaydet) — günlük modu (107h) sahip istemedi
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
