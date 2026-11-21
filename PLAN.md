@@ -307,5 +307,20 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         `assetlinks.json` (`.well-known`, Pages'te), imzalı APK `docs/` değil Releases'e; sahibe kurulum: APK'yı telefona at, kur.
         Bu arada "Paylaş → Nts" yolunun (share_target) Android'de metin için çalıştığını da doğrula. iPhone'da seçim menüsüne ekleme yok.
 
+## S. Sahibin 7. geri bildirimi (2026-11-21)
+- [ ] 97. **Tüm verileri sil** (Ayarlar → Gelişmiş, en altta kırmızı): onay penceresi (tarayıcı confirm değil, kendi penceremiz), "SİL" yazınca
+        etkin olan düğme. İki seçenek: "Sadece bu cihazdan" (IndexedDB, Cache Storage, localStorage; Google oturumu kapanır) ve "Her yerden"
+        (bu cihaz + Supabase'deki nts_items/nts_heavy satırları ve nts-files depolaması). GitHub repoları silinmez (söyle, linkini göster).
+        Önce otomatik yedek dosyası indirmeyi öner. Sahte Supabase ile test et, gerçek veriye dokunma.
+- [ ] 98. **Telefonda pano görünümü çok kötü** (ekran görüntüsü 390 px): kartlar okunmayacak kadar küçük, yatay çizim paleti ve pano araçları
+        içeriğin üstünde, kutu ile araçlar sıkışık. Telefonda: varsayılan yakınlık en az %70 ve en yeni günden başla, çizim paleti sadece kalem
+        düğmesine basınca açılsın (tek yüzen düğme), pano araçları tek satırda sade (pano seçici + zaman + sığdır), kutuyla çakışma yok,
+        gün sütunları tam genişlik (yatay kaydır). 390×844 ve 360×740, açık + koyu.
+- [ ] 99. **Görünümler birbirine benzemesin + yeni görünümler** (sahip: "galeri ve liste birbirine benziyor, başka view var mı?"):
+        (a) Galeri gerçekten görsel olsun: yazısız büyük küçük resimler (masonry, oranları korunan), başlık sadece üzerine gelince; metin kaydı yok;
+        (b) Takvim görünümü: ay ızgarası, her günde kayıt sayısı + 2-3 küçük resim/başlık, güne tıkla → o gün (ısı haritasının büyük hali);
+        (c) Konular görünümü: proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
+        Üstteki görünüm seçici: Pano · Liste · Galeri · Takvim · Konular (telefonda simge, sığmazsa "⋯").
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

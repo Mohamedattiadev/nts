@@ -9,6 +9,8 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 89 logo (.mark) koyu tema, boy, hiza, accent rengi (8b1e792)
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
+- [ ] 98 telefonda pano görünümü çok kötü (önce bu; PLAN 98)
+- [ ] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test
 - [ ] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü.
 - [x] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`) (3df1968)
 - [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
@@ -60,3 +62,6 @@ BİLGİ (önceki oturum, 2026-11-21): 56–65, 74, 76–85 bitti (son commit 572
 `#ink` innerHTML'ini baştan kuruyor (titremenin sebebi). Sol çubuk: Rail.fold / #railTab (index.html), palet #pal.
 Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supabase CLI yok, sahibin girişi lazım), gerçek "GitHub'ı bağla"
 (uygulamada sahip yapar), gerçek WhatsApp sohbet zip'i (Downloads'taki zip sohbet değil, sadece 3 foto), 3/3a/3b + 74 gerçek cihaz testi (sahip yapacak).
+- [ ] 99a galeri gerçekten görsel (masonry, yazısız)
+- [ ] 99b Takvim görünümü
+- [ ] 99c Konular görünümü (sütun başına konu/proje, sürükle taşı)
