@@ -25,9 +25,9 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
 - [ ] 106a zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
-- [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown)
+- [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
 - [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
-- [ ] 106d etkileşimli parçalar (geri sayım, ilerleme, onay listesi ilerlemesi, CSV grafik)
+- [?] 106d etkileşimli parçalar: sahip kararsız → 106-0 örnek sayfasında göster, sadece ✓ alırsa yap
 - [ ] 106e zengin yapay zekâ cevapları (OpenUI fikri, vanilla): izinli parça şeması → kartlar, tablo, zaman çizelgesi, onay listesi, grafik, eylem düğmeleri (PLAN 106e)
 - [x] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test (cbc629e)
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
@@ -114,7 +114,6 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 (uygulamada sahip yapar), gerçek WhatsApp sohbet zip'i (Downloads'taki zip sohbet değil, sadece 3 foto), 3/3a/3b + 74 gerçek cihaz testi (sahip yapacak).
 - [ ] 99a galeri gerçekten görsel (masonry, yazısız)
 - [ ] 99b Takvim görünümü
-- [ ] 99c Konular görünümü (sütun başına konu/proje, sürükle taşı)
 - [ ] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100)
 - [ ] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)
 - [ ] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
@@ -122,7 +121,6 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 107b Android ana ekran widget'ı (96'dan sonra)
 - [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
-- [ ] 107g şablonlar (toplantı, alışveriş, seyahat, kitap; "/" menüsü + kendi şablonunu kaydet) — günlük modu (107h) sahip istemedi
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme

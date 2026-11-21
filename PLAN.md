@@ -331,7 +331,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [ ] 99. **Görünümler birbirine benzemesin + yeni görünümler** (sahip: "galeri ve liste birbirine benziyor, başka view var mı?"):
         (a) Galeri gerçekten görsel olsun: yazısız büyük küçük resimler (masonry, oranları korunan), başlık sadece üzerine gelince; metin kaydı yok;
         (b) Takvim görünümü: ay ızgarası, her günde kayıt sayısı + 2-3 küçük resim/başlık, güne tıkla → o gün (ısı haritasının büyük hali);
-        (c) Konular görünümü: proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
+        (c) ~~Konular görünümü~~ KALDIRILDI (sahip: gerek yok; yerine 93 yapay zekâ panoları): proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
         Üstteki görünüm seçici: Pano · Liste · Galeri · Takvim · Konular (telefonda simge, sığmazsa "⋯").
 
 - [ ] 100. **(KÜÇÜLTÜLDÜ, sahip: 3 sütun yok) Yapılacaklar basit liste kalır, isteyen göreve küçük "Yapılıyor" etiketi koyar (listede üstte, ince işaret); `todo.doing`, birleştirmede done > doing.** Eski metin: Yapılacak · Yapılıyor · Bitti (sahip onayladı). Masaüstü: yan yana sütunlar, kartı sürükle
@@ -413,12 +413,12 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [ ] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
         (a) zengin kart önizlemeleri: link büyük görsel + site rengi; YouTube/Spotify/Vimeo/harita kartta oynar (tıklayınca iframe, önce
             küçük resim); PDF ilk sayfa kapak; kod dosyası renkli (küçük, sonradan yüklenen vurgulayıcı); WhatsApp sohbeti balonlarla;
-        (b) zengin not düzenleyici: "/" blok menüsü (başlık, madde, onay listesi, alıntı, kod, tablo, resim, ayırıcı), Markdown kısayolları
+        (b) (sahip: TAM hâliyle kalsın, tablo + "/" menüsü dahil) zengin not düzenleyici: "/" blok menüsü (başlık, madde, onay listesi, alıntı, kod, tablo, resim, ayırıcı), Markdown kısayolları
             yazarken dönüşür (**kalın**, - madde, [ ] , # başlık), yapıştırılan HTML temizlenir; saklama yine Markdown (senkron/arama/Claude bozulmaz);
             okuma görünümü ve kart önizlemesi aynı biçimi gösterir; geri al/yinele;
         (c) daha canlı görünüm (ölçülü): pano kartında kapak resmi, üst çubuk/menülerde hafif cam efekti, boş durumlarda küçük çizimler,
             renkler daha belirgin ama sakin; açık + koyu; kontrast AA;
-        (d) etkileşimli parçalar: geri sayım ("sınava 12 gün"), ilerleme çubuğu, onay listesi ilerlemesi (3/7), CSV'den grafik.
+        (d) [?] KARARSIZ (sahip) → 106-0 örnek sayfasında göster, ✓ alırsa yap: etkileşimli parçalar: geri sayım ("sınava 12 gün"), ilerleme çubuğu, onay listesi ilerlemesi (3/7), CSV'den grafik.
         (e) **zengin yapay zekâ cevapları (OpenUI fikri, kütüphanesi değil)** (sahip: "openui var"): thesysdev/openui (MIT) React + Zod +
             derleme istiyor → Nts'e almıyoruz; fikrini vanilla JS ile uygula: köprü cevabı izinli parçalar şemasıyla döner (--json-schema;
             Codex/Gemini'de şema desteğini kontrol et, yoksa JSON'u doğrula), uygulama sadece bilinen parçaları çizer: kayıt kartları, tablo, zaman
@@ -435,7 +435,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             Telegram "Kaydedilen Mesajlar" (JSON) — WhatsApp içe aktarımı gibi önizleme + gruplama;
         (e) doğal dille hatırlatma: "yarın 9'da annemi ara" → görev + bildirim; bildirimde "1 saat ertele / yarın" düğmeleri;
         (f) kendiliğinden toparlama: aynı link/benzer not → "birleştireyim mi?" (geri alınır), kırık link işareti, aylardır açılmayanları arşive öner;
-        (g) şablonlar: toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
+        (g) ~~şablonlar~~ KALDIRILDI (sahip): toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
         (h) ~~günlük modu~~ — KALDIRILDI (sahip: "gerek yok, kullanıcı orada kalmıyor, notunu atıp sonra bakıyor");
         (i) ~~birlikte kullanma~~ KALDIRILDI (sahip, "hızlı at, sonra bul" fikrine uymuyor): not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
         (j) dışa aktarma: panoyu PDF; Obsidian/Markdown klasörüyle eşitleme (köprü üzerinden, PC'de klasör);
