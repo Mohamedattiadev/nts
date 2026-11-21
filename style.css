@@ -1108,3 +1108,16 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
   .rail-tab.ear button { width: 18px; height: 34px; border-radius: 0 6px 6px 0; }
   @keyframes earIn { from { opacity: 0; transform: translateX(-6px); } }
 }
+/* 94a: view change = View Transition on #main only (the floating chrome does not blink); the item window grows from the card (Morph) */
+html.vt #main { view-transition-name: main; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-old(main) { animation: vtOut .14s cubic-bezier(.4,0,1,1) both; }
+::view-transition-new(main) { animation: vtIn .2s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes vtOut { to { opacity: 0; } }
+@keyframes vtIn { from { opacity: 0; transform: translateY(6px); } }
+dialog.morph[open] { animation: none; }
+dialog.morph.shut::backdrop { opacity: 0; transition: opacity .18s; }
+/* 94b: touch feedback - a small press-in on everything tappable (transform only) */
+.icon-btn:active, .chip:active, .fbtn:active, .seg button:active, .rel-chip:active { transform: scale(.94); }
+.item:active, .tile:active { transform: scale(.985); }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(main), ::view-transition-new(main) { animation: none; } .icon-btn:active, .chip:active, .fbtn:active, .seg button:active, .rel-chip:active, .item:active, .tile:active { transform: none; } }

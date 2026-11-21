@@ -300,6 +300,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [ ] 94. **Daha native his + hız** (sahip: "daha native, daha hızlı, daha efektli olsun"):
         (a) görünüm geçişleri View Transitions API ile (Pano↔Liste↔Galeri, kayıt penceresi tıklanan karttan büyüyerek açılır/kapanır);
         (b) dokunma geri bildirimi: `:active` hafif küçülme, telefonda kısa titreşim (kaydet, görev bitti, sil), yalnız transform/opacity animasyonu;
+        ✓ (a)+(b) 2026-11-21: görünüm değişimi View Transition (yalnız #main solar/belirir, üst öğeler kıpırdamaz; destek yoksa eski .vin); kayıt penceresi tıklanan karttan büyür, ×/Esc/dışına tık/Sil ile karta küçülerek döner (kart görünmüyorsa aşağı kayar) — `Morph`; :active küçülme (düğme, çip, satır, galeri kutusu); telefonda titreşim: kaydet 8 ms, görev bitti 12 ms, sil 14 ms (`haptic`); reduced-motion hepsini kapatır.
         (c) kalem: `getCoalescedEvents()` + `requestAnimationFrame` ile pürüzsüz çizgi, uzun çizimde canvas katmanı;
         (d) resimler `decode()` sonrası yumuşak belirsin, iskelet yükleme her yerde;
         (e) açılış: ilk ekranda gerekmeyen modülleri (LaTeX, şifreler, içe aktarma, okuma, KaTeX) sonradan yükle, kabuk SW'den anında;

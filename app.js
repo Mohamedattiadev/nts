@@ -582,7 +582,7 @@ async function addFromInput(input) {
   return saved;
 }
 async function removeItem(i) { // to the trash for 30 days (whole item + file kept), then gone for good
-  S.undo = { ...i };
+  S.undo = { ...i }; haptic(14);
   await upsert([{ ...i, deleted: true, deletedAt: now() }]);
   toast('Çöp kutusuna taşındı', 6000, 'trash', { label: 'Geri al', fn: undoDelete });
 }
@@ -710,9 +710,42 @@ async function save() {
   }
   const r = await addFromInput({ text, files });
   render();
-  if (r !== 'dup') toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check');
+  if (r !== 'dup') { haptic(); toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check'); }
 }
 function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, innerHeight * .4) + 'px'; updateSend(); }
+
+// ---------- 94: native feel - the item window grows out of the tapped card and shrinks back; short haptic ticks ----------
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const haptic = (ms = 8) => { try { if (matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(ms); } catch { } };
+const Morph = {
+  tap: null, // the element the last pointerdown landed on, so the window opens from the card actually tapped
+  init() { document.addEventListener('pointerdown', e => { this.tap = e.target.closest?.('[data-id],[data-open],[data-topen]') || null; }, true); },
+  src(id) {
+    const ok = el => { if (!el?.isConnected || el.closest('dialog')) return false; const r = el.getBoundingClientRect(); return r.width > 8 && r.height > 8 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth; };
+    const t = this.tap, tid = t && (t.dataset.id || t.dataset.open || t.dataset.topen);
+    if (tid === id && ok(t)) return t;
+    return [...document.querySelectorAll(`[data-id="${CSS.escape(id)}"],[data-open="${CSS.escape(id)}"]`)].find(ok) || null;
+  },
+  frames(dlg, el) { // transform that puts the window on top of the card
+    const r = dlg.getBoundingClientRect(), s = el.getBoundingClientRect();
+    const dx = s.left + s.width / 2 - (r.left + r.width / 2), dy = s.top + s.height / 2 - (r.top + r.height / 2);
+    return `translate(${dx}px, ${dy}px) scale(${Math.max(.08, s.width / r.width)}, ${Math.max(.08, s.height / r.height)})`;
+  },
+  open(dlg, id) {
+    if (reduced() || !dlg.animate) return;
+    const el = this.src(id); dlg._src = el ? id : null; if (!el) return;
+    dlg.classList.add('morph'); dlg.addEventListener('close', () => dlg.classList.remove('morph'), { once: true }); // stays on while open, or the CSS entry animation would replay
+    dlg.animate([{ transform: this.frames(dlg, el), opacity: .5 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  },
+  close(dlg) { // back into the card if it is still on screen, else down/out; then the real close
+    if (dlg._closing || !dlg.open) return;
+    if (reduced() || !dlg.animate) return dlg.close();
+    const el = dlg._src && this.src(dlg._src); dlg._closing = true; dlg.classList.add('morph', 'shut');
+    const to = el ? { transform: this.frames(dlg, el), opacity: 0 } : { transform: 'translateY(24px)', opacity: 0 };
+    dlg.animate([{ transform: 'none', opacity: 1 }, to], { duration: el ? 200 : 160, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' })
+      .finished.catch(() => { }).finally(() => { dlg._closing = false; dlg.close(); dlg.getAnimations().forEach(a => a.cancel()); dlg.classList.remove('morph', 'shut'); });
+  },
+};
 
 // ---------- Android back button closes panels instead of leaving the app ----------
 const Back = {
@@ -822,9 +855,9 @@ function openItem(id) {
   dlg._commit = commit;
   dlg.onclick = async e => {
     const act = e.target.closest('[data-act]')?.dataset.act, row = e.target.closest('.item');
-    if (e.target === dlg || act === 'close') { await commit(); dlg.close(); }
+    if (e.target === dlg || act === 'close') { await commit(); Morph.close(dlg); }
     else if (act === 'star') { await commit(); await toggleStar(i.id); openItem(i.id); }
-    else if (act === 'del') { dlg.close(); await removeItem(i); }
+    else if (act === 'del') { Morph.close(dlg); await removeItem(i); }
     else if (act === 'share') shareItem(byId(i.id));
     else if (act === 'explain') { await commit(); AI.explain(i.id); }
     else if (act === 'download') itemAction('download', i.id);
@@ -847,8 +880,8 @@ function openItem(id) {
   dlg.querySelector('[data-tdone]')?.addEventListener('change', async () => { await commit(); await Todo.toggle(i.id); openItem(i.id); });
   dlg.querySelector('.t-due-in')?.addEventListener('change', async e => { await commit(); const c = byId(i.id); await upsert([{ ...c, todo: { ...c.todo, due: validDue(e.target.value) || undefined, user: true } }]); });
   dlg.querySelector('.tag-in').onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await commit(); openItem(i.id); } };
-  dlg.oncancel = () => { commit(); };
-  Back.open(dlg);
+  dlg.oncancel = e => { commit(); e.preventDefault(); Morph.close(dlg); };
+  const was = dlg.open; Back.open(dlg); if (!was) Morph.open(dlg, id);
   requestAnimationFrame(fit);
   if (i.type === 'file') showPreview(i);
 }
@@ -2035,6 +2068,7 @@ const Todo = {
   async toggle(id) {
     const i = byId(id); if (!i?.todo) return;
     const done = !i.todo.done, list = [{ ...i, todo: { ...i.todo, done, doneAt: done ? now() : undefined } }];
+    if (done) haptic(12);
     if (done && i.todo.repeat && !i.todo.next) { // a repeating task: the next one appears right away
       const base = new Date(i.todo.due ? (i.todo.due.includes('T') ? i.todo.due : i.todo.due + 'T09:00') : now()), r = i.todo.repeat;
       r === 'daily' ? base.setDate(base.getDate() + 1) : r === 'weekly' ? base.setDate(base.getDate() + 7) : base.setMonth(base.getMonth() + 1);
@@ -3812,12 +3846,16 @@ function wire() {
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
   addEventListener('online', () => { Sync.schedule(); Live.check(); });
-  Board.init(); Back.init();
+  Board.init(); Back.init(); Morph.init();
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
   const ch = v !== S.view;
   if (ch) S.cam = null; S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
+  if (ch && document.startViewTransition && !reduced()) { // 94a: the old view cross-fades into the new one, the floating chrome stays still
+    const h = document.documentElement; h.classList.add('vt');
+    try { document.startViewTransition(() => render()).finished.finally(() => h.classList.remove('vt')); return; } catch { h.classList.remove('vt'); }
+  }
   render();
   if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change
 }
