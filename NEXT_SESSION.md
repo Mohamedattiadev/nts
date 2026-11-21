@@ -16,6 +16,13 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
 - [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
+- [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
+- [ ] 95e Ctrl+K komut paleti
+- [ ] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası)
+- [ ] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?"
+- [ ] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
+- [ ] 95f salt okunur paylaşılan pano linki (gizlilik: sadece seçilen pano, istenince kapatılır)
+- [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
 - Vanilla JS, derleme yok, arayüz Türkçe. Her arayüz değişikliğinden sonra Playwright ile ekran görüntüsü (masaüstü 1366x768 + telefon
