@@ -383,6 +383,11 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         >2025-06 / son:7g / dün / geçen hafta; is:yıldızlı/görev/bitti/bakılmadı/silindi, has:resim/not/link/pdf; boyut:>5mb; sırala:yeni/eski/alaka.
         Yazarken otomatik tamamlama (etiket: → etiketler, proje: → projeler, sohbet: → sohbetler); kutunun yanında "?" sözdizimi kartı (örnekli).
         Anlamsal arama + "Yapay zekâ ile ara". Kayıtlı aramalar (64) bu dili saklar. Birim testleri: ayrıştırıcı için ≥ 60 örnek (node ile, tools/test/).
+        **3 DİL (sahip): Arapça + İngilizce + Türkçe yazabilmeli ve arayabilmeli.** Giriş alanları ve gösterilen metin `dir="auto"` (Arapça
+        sağdan sola, karışık satırda bidi bozulmaz); Arapça normalleştirme: hareke + tatvil yok say, أ إ آ→ا, ة→ه, ى→ي, Arapça/Farsça rakam→0-9;
+        Türkçe İ/ı büyük-küçük doğru, şğüöç yazılmasa da bul; arama dili anahtar sözcükleri üç dilde (tarih:/date:/تاريخ:, etiket:/tag:/وسم:,
+        is:yıldızlı/is:starred, VEYA/OR/أو, dün/yesterday/أمس …); anlamsal model üç dili birlikte bilen çok dilli model (fatura ↔ invoice ↔ فاتورة).
+        Birim testlerinde her dilden örnek. Arayüz yazıları Türkçe kalır.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
