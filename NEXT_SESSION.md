@@ -43,11 +43,12 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 94a+94b (View Transitions + dokunma geri bildirimi), sonra 94c+94d, vakit kalırsa 94e+94f. Sonra handoff.
+TAM SIRADAKİ ADIM: 98 (telefonda pano, PLAN 98), sonra 97 (Tüm verileri sil), vakit kalırsa 88c (">" paletin sağından; Rail.place +
+.rail-tab CSS, style.css 88b bloğu). Sonra handoff.
 
 BİLGİ (2026-11-21, 4. oturum): 88b/91/92 bitti (sw v27). Rail.place() "<" konumunu ölçüp --rt-top ile ">" sekmesini aynı yere koyar;
-rail-off'ta palet kalır (translateX -54px). 91'in kökü: render() vkey'i  KİMLİĞİNE bakar → kayıtları yerinde değiştirip
-render() çağırmak hiçbir şey çizmez; değiştirdikten sonra . 92: Board.layout gün başına .day-band (içinde
+rail-off'ta palet kalır (translateX -54px). 91'in kökü: render() vkey'i `S.items` KİMLİĞİNE bakar → kayıtları yerinde değiştirip
+render() çağırmak hiçbir şey çizmez; değiştirdikten sonra `S.items = [...S.items]`. 92: Board.layout gün başına .day-band (içinde
 .col-head), Board.IN=12 iç aralık, GAP=76; fmtDay0d(key) tarih+gün adı. style.css'te başka oturuma ait commit'lenmemiş LaTeX bloğu
 taşıması duruyor (dokunma; git update-index ile kendi parçanı ayrı commit'le).
 
