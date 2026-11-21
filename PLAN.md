@@ -362,6 +362,9 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             (Sor = seçili yapay zekâ, 87). Yazı (placeholder), gönder simgesi ve Enter moda göre: Not = kaydet; Ara = sonuçlar açık, Enter ilk sonucu
             açar, "hepsini göster"; Sor = yapay zekâya sor. Not modunda sonuç listesi açılmaz, sadece "4 benzer kayıt" çipi (tekrar kaydetmeyi önler).
             Kısayol: Tab modlar arasında döner, "/" Ara, başta "?" Sor. Telefonda dokunarak seçilir, son mod hatırlanır. Turu ve ipuçlarını güncelle.
+            Ara modu CANLI (sahip): Enter beklemeden her harfte (~100 ms) süzer; sayfa da süzülür (liste/galeri sadece eşleşenler, panoda
+            eşleşmeyenler solar), kutunun üstünde "poul · 4 kayıt ×" çipi; harf silince sonuçlar geri gelir. Enter = ilk sonucu aç, ↑↓ gez,
+            Esc temizle. 10k kayıtta da akıcı (bench.mjs ile ölç, tuş başına < 50 ms).
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
