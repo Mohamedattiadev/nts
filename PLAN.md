@@ -275,6 +275,11 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [x] 88b. (2026-11-21: tek adım 150 ms; çubuk gider, palet panoda kalıp çubuğun yerine kayar, ">" tam "<"nin yerinde (Rail.place → --rt-top), palet kapalıysa yalnız ">") **88 düzeltmesi** (sahip, 2026-11-21): "tam kapatmak değil" — kapanınca sol filtre çubuğu gider, çizim paleti panoda kalır,
         "<" düğmesinin yerinde (paletin üstünde) küçük ">" durur (aynı yere tıkla: kapat/aç); palet kapalıysa yalnız ">". Animasyon ~150 ms, şu an çok yavaş.
 
+- [ ] 88c. **">" sekmesi paletin SAĞINDAN çıksın, üstünde değil** (sahip, ekran görüntüsü 2026-11-21): çubuk kapalıyken ">" şu an paletin
+        üstünde ayrı bir kutu gibi duruyor. Paletin sağ kenarına yapışık, sanki paletten dışarı çıkan küçük bir kulakçık/sekme olsun
+        (paletle aynı zemin + kenarlık, dikeyde paletin ortasında veya üst köşesinde, aradaki çizgi yok). Palet kapalıysa ">" yine sol
+        kenarda tek başına. Masaüstü açık + koyu, ekran görüntüsü.
+
 ## R. Sahibin 6. geri bildirimi (2026-11-21)
 - [x] 91. (2026-11-21: kanıtlandı — kayıtta pos silinmiş ama kart 3000 px'te kalıyordu: render() `S.items` kimliği aynı diye erken çıkıyordu; tidy ve Geri al artık diziyi yeniliyor; ana pano + proje panosu (posBy) + Geri al Playwright'ta denendi) **"Düzenle" (katman düğmesi) "Günlere göre dizildi" diyor ama hiçbir şey dizilmiyor** (ekran görüntüsü: "Dün" etiketli taşınmış
         kart Bugün sütununda kaldı). Şüphe: `Board.tidy()` → `setPos(i, undefined)` + `savePos` kayıtları yerinde değiştiriyor, `S.items`
