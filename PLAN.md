@@ -303,6 +303,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         ✓ (a)+(b) 2026-11-21: görünüm değişimi View Transition (yalnız #main solar/belirir, üst öğeler kıpırdamaz; destek yoksa eski .vin); kayıt penceresi tıklanan karttan büyür, ×/Esc/dışına tık/Sil ile karta küçülerek döner (kart görünmüyorsa aşağı kayar) — `Morph`; :active küçülme (düğme, çip, satır, galeri kutusu); telefonda titreşim: kaydet 8 ms, görev bitti 12 ms, sil 14 ms (`haptic`); reduced-motion hepsini kapatır.
         (c) kalem: `getCoalescedEvents()` + `requestAnimationFrame` ile pürüzsüz çizgi, uzun çizimde canvas katmanı;
         (d) resimler `decode()` sonrası yumuşak belirsin, iskelet yükleme her yerde;
+        ✓ (c)+(d) 2026-11-21: kalem getCoalescedEvents ile aradaki tüm noktaları alır, path kare başına bir kez çizilir (rAF), pano dikdörtgeni çizim başına bir kez ölçülür; küçük resimler hazırlanırken parıltılı iskelet (.loading), decode() bitince tek yumuşak geçiş; Peek büyük resmi de decode sonrası belirir. Canvas katmanı gerekmedi (SVG + rAF akıcı); uzun çizimde yavaşlık görülürse eklenir.
         (e) açılış: ilk ekranda gerekmeyen modülleri (LaTeX, şifreler, içe aktarma, okuma, KaTeX) sonradan yükle, kabuk SW'den anında;
             hedef telefonda ilk ekran < 300 ms, her dokunuşa < 100 ms tepki (Playwright ile ölç, bench.log'a yaz);
         (f) PWA: uygulama ikonunda bekleyen görev sayısı (Badging API), masaüstünde `display_override: window-controls-overlay`.

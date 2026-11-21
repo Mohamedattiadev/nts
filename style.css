@@ -1121,3 +1121,7 @@ dialog.morph.shut::backdrop { opacity: 0; transition: opacity .18s; }
 .icon-btn:active, .chip:active, .fbtn:active, .seg button:active, .rel-chip:active { transform: scale(.94); }
 .item:active, .tile:active { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) { ::view-transition-old(main), ::view-transition-new(main) { animation: none; } .icon-btn:active, .chip:active, .fbtn:active, .seg button:active, .rel-chip:active, .item:active, .tile:active { transform: none; } }
+/* 94d: thumbnails - shimmer skeleton until the image is decoded, then one soft fade */
+.loading::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--surface-3), transparent); background-size: 200% 100%; animation: shimmer 1.2s infinite; opacity: .7; pointer-events: none; }
+img.fadein { opacity: 0; transition: opacity .25s; } img.fadein.ok { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .loading::after { animation: none; } }

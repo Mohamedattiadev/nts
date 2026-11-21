@@ -351,10 +351,12 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   if (!e.isIntersecting) return;
   thumbIO.unobserve(e.target);
   const i = byId(e.target.dataset.tid); if (!i) return;
-  const u = await Prev.thumb(i); if (!u) return;
+  e.target.classList.add('loading'); // 94d: skeleton shimmer while the thumbnail is made/fetched
+  const u = await Prev.thumb(i).catch(() => null); if (!u) return e.target.classList.remove('loading');
   const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.decoding = 'async';
-  img.onload = () => img.classList.add('ok'); img.onerror = () => img.remove(); img.src = u;
-  e.target.appendChild(img);
+  img.onerror = () => img.remove(); img.src = u;
+  (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
+    .then(() => { e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
 }), { rootMargin: '400px' });
 function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
   const k = fileKind(i);
@@ -1740,7 +1742,7 @@ const Peek = {
     el.style.top = Math.max(64, Math.min(innerHeight - el.offsetHeight - 96, r.top + r.height / 2 - el.offsetHeight / 2)) + 'px';
     return this.media(i);
   },
-  async media(i) { const url = await Prev.thumb(i); if (url && this.id === i.id) { const box = this.el.querySelector('.pk-media'); if (box) box.innerHTML = `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer">`; } },
+  async media(i) { const url = await Prev.thumb(i); if (url && this.id === i.id) { const box = this.el.querySelector('.pk-media'); if (box) { const im = new Image(); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.className = 'fadein'; im.src = url; im.decode().catch(() => { }).then(() => { box.replaceChildren(im); requestAnimationFrame(() => im.classList.add('ok')); }); } } },
   mark(row) { document.querySelectorAll('.tile.peeked').forEach(t => t !== row && t.classList.remove('peeked')); row?.classList.add('peeked'); },
   // gallery on a wide screen with a mouse: the panel stays docked on the right and shows the last tile you pointed at
   dock() {
@@ -2161,7 +2163,7 @@ const Ink = {
     $('#pal .inkc span').style.background = INK_COLORS[S.ink];
     const pb = $('#penBtn'); if (pb) { pb.classList.toggle('on', !!S.palOpen); pb.setAttribute('aria-pressed', S.palOpen ? 'true' : 'false'); }
   },
-  at(e) { const r = $('#board').getBoundingClientRect(); return [Math.round((e.clientX - r.left - S.cam.x) / S.cam.k), Math.round((e.clientY - r.top - S.cam.y) / S.cam.k)]; },
+  at(e, r = $('#board').getBoundingClientRect()) { return [Math.round((e.clientX - r.left - S.cam.x) / S.cam.k), Math.round((e.clientY - r.top - S.cam.y) / S.cam.k)]; },
   start(e) {
     const t = S.tool;
     if (t === 'note' || t === 'text') { if (e.target.closest('.bcard')) return null; this.sticky(t, e); this.use('select'); return { ink: 'done' }; }
@@ -2173,13 +2175,17 @@ const Ink = {
   move(d, e) {
     if (d.ink === 'erase') return this.erase(e);
     if (!d.pts) return;
-    const p = this.at(e), last = d.pts.at(-1);
-    if (d.ink === 'pen') { if (Math.hypot(p[0] - last[0], p[1] - last[1]) * S.cam.k < 2) return; d.pts.push(p); }
-    else d.pts[1] = p;
-    d.live.setAttribute('d', this.path(d.ink, d.pts));
+    const r = d.r || (d.r = $('#board').getBoundingClientRect());
+    if (d.ink === 'pen') { // 94c: every point the pen sent between frames (coalesced), drawn once per frame
+      let n = 0;
+      for (const ce of (e.getCoalescedEvents?.() || []).concat(e)) { const p = this.at(ce, r), last = d.pts.at(-1); if (Math.hypot(p[0] - last[0], p[1] - last[1]) * S.cam.k < 1.5) continue; d.pts.push(p); n++; }
+      if (!n) return;
+    } else d.pts[1] = this.at(e, r);
+    if (!d.raf) d.raf = requestAnimationFrame(() => { d.raf = 0; if (d.live.isConnected) d.live.setAttribute('d', this.path(d.ink, d.pts)); });
   },
   async end(d) {
     if (!d.pts) return;
+    if (d.raf) { cancelAnimationFrame(d.raf); d.raf = 0; }
     const [a, b2] = [d.pts[0], d.pts.at(-1)];
     if (d.pts.length < 2 || (d.ink !== 'pen' && Math.hypot(b2[0] - a[0], b2[1] - a[1]) < 6)) { d.live.remove(); return; }
     const t = now();
