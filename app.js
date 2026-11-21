@@ -1355,13 +1355,15 @@ const Rail = {
     document.body.classList.toggle('rail-off', !!S.railOff); $('#railTab').hidden = !S.railOff;
     document.body.classList.toggle('pal-open', !!S.palOpen); this.place();
   },
-  // 88b: the > tab sits exactly where the rail's < was (and so above the palette, which stays on the board)
+  // 88b/88c: rail folded + palette open → the > is an ear on the palette's right edge (same surface, no seam);
+  // palette closed → the > alone where the rail's < was
   place() {
     requestAnimationFrame(() => {
-      const r = $('#rail').getBoundingClientRect(), p = $('#pal'), pr = !p.hidden && p.getBoundingClientRect();
-      let top = r.height ? r.top : innerHeight / 2 - 15;
-      if (pr && pr.height) top = Math.min(top, pr.top - 36);
-      document.body.style.setProperty('--rt-top', Math.max(8, Math.round(top)) + 'px');
+      const r = $('#rail').getBoundingClientRect(), p = $('#pal'), pr = !p.hidden && p.getBoundingClientRect(), bs = document.body.style;
+      const ear = !!(S.railOff && pr && pr.height && innerWidth >= 900); $('#railTab').classList.toggle('ear', ear);
+      if (ear) { bs.setProperty('--rt-left', 16 + Math.round(pr.width) - 1 + 'px'); bs.setProperty('--rt-top', Math.round(pr.top + 8) + 'px'); return; } // 16: the palette's folded left (70 - 54), not mid-slide
+      bs.removeProperty('--rt-left');
+      bs.setProperty('--rt-top', Math.max(8, Math.round(r.height ? r.top : innerHeight / 2 - 15)) + 'px');
     });
   },
   fold() { S.railOff = !S.railOff; Pop.close(); try { localStorage.setItem('hn-rail', S.railOff ? 'off' : ''); } catch { } this.apply(); render(); },
