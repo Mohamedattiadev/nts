@@ -556,13 +556,13 @@ function render(force) {
 
 // ---------- data changes ----------
 async function upsert(list, { sync = true } = {}) {
-  const t = now();
+  const t = now(), base = new Map(list.map(i => [i.id, byId(i.id)?.updatedAt || 0])); // the version this edit started from (84)
   for (const i of list) { i.updatedAt = Math.max(t, (i.updatedAt || 0) + 1); indexItem(i); }
   const map = new Map(S.items.map(i => [i.id, i]));
   list.forEach(i => map.set(i.id, i));
   S.items = [...map.values()];
   await DB.putMany('items', list.map(({ ...i }) => i));
-  await Sync.markDirty(list);
+  await Sync.markDirty(list, base);
   runSearch(); render(); AI.dot();
   if (sync) Sync.schedule();
   Snapshot.schedule();
@@ -1613,6 +1613,19 @@ const Peek = {
   },
 };
 
+// the same item changed on two devices: the newer side's text/fields, sets combine, "done" wins, a newer delete stays deleted
+function mergeItem(l, r) {
+  const [a, b] = (r.updatedAt || 0) >= (l.updatedAt || 0) ? [r, l] : [l, r], m = { ...b, ...a };
+  if (!a.deleted) {
+    for (const k of ['tags', 'boards', 'lists']) { const u = [...new Set([...(a[k] || []), ...(b[k] || [])])]; if (u.length) m[k] = u; }
+    if (a.posBy || b.posBy) m.posBy = { ...(b.posBy || {}), ...(a.posBy || {}) };
+    if (a.highlights || b.highlights) { const h = new Map(); [...(b.highlights || []), ...(a.highlights || [])].forEach(x => h.set(x.id, x)); m.highlights = [...h.values()]; }
+    if (a.todo && b.todo && (a.todo.done || b.todo.done)) m.todo = { ...b.todo, ...a.todo, done: true, doneAt: a.todo.doneAt || b.todo.doneAt };
+    if (a.starred || b.starred) m.starred = a.starred ?? b.starred;
+  }
+  m.updatedAt = Math.max(l.updatedAt || 0, r.updatedAt || 0) + 1;
+  return m;
+}
 function markSeen(i) { if (!i.seenAt && (i.type === 'link' || i.type === 'file')) upsert([{ ...i, seenAt: now() }]); }
 // once a week: a gentle reminder of what was saved and never opened
 function weeklyUnseen() {
@@ -2606,9 +2619,20 @@ const GH = { // old way: a private GitHub repo + token (kept under Advanced)
   async markDirty(months) {
     const d = new Set((await DB.get('kv', 'dirty')) || []); months.forEach(m => d.add(m)); await DB.put('kv', [...d], 'dirty');
   },
-  merge(remote) {
+  merge(remote, { dirty, base } = {}) {
     const local = new Map(S.items.map(i => [i.id, i])), changed = [];
-    for (const x of remote) { const l = local.get(x.id); if (!l || (x.updatedAt || 0) > (l.updatedAt || 0)) { Cloud.keepHeavy(x, l); changed.push(x); local.set(x.id, x); } }
+    for (let x of remote) {
+      const l = local.get(x.id);
+      if (l && dirty?.has(x.id)) { // changed here and not sent yet (84): never ask, decide
+        const b = base?.[x.id];
+        if (b != null && (x.updatedAt || 0) <= b) continue; // the server still has what this edit started from (or our own echo)
+        if (JSON.stringify(x) === JSON.stringify(l)) continue;
+        Cloud.keepHeavy(x, l); const m = mergeItem(l, x); if (base) base[x.id] = x.updatedAt || 0; // merged: the server's copy is the new start
+        (Cloud._lost ||= []).push({ at: now(), id: x.id, local: l, remote: x });
+        changed.push(m); local.set(x.id, m); continue; // stays dirty: the merged version goes up on this run's push
+      }
+      if (!l || (x.updatedAt || 0) > (l.updatedAt || 0)) { Cloud.keepHeavy(x, l); changed.push(x); local.set(x.id, x); }
+    }
     if (changed.length) { changed.forEach(x => { indexItem(x); if (x.purged) DB.del('files', x.id); }); S.items = [...local.values()]; } // trash keeps the file until it is purged
     return changed;
   },
@@ -2793,15 +2817,26 @@ const Cloud = {
     return this.s.access_token;
   },
   async req(path, opt = {}) {
-    const r = await fetch(SB.url + path, { ...opt, headers: { apikey: SB.key, authorization: 'Bearer ' + await this.token(), ...(opt.headers || {}) } });
+    const ka = this._ka && typeof opt.body === 'string' && opt.body.length < 60000;
+    const r = await fetch(SB.url + path, { ...opt, ...(ka ? { keepalive: true } : {}), headers: { apikey: SB.key, authorization: 'Bearer ' + await this.token(), ...(opt.headers || {}) } });
     if (!r.ok) {
       const t = await r.text().catch(() => '');
       throw new Error(/nts_items|PGRST205|Bucket not found/.test(t) ? 'Supabase\'de Nts tablosu yok (schema.sql çalıştırılmalı)' : `Sunucu ${r.status} ${t.slice(0, 120)}`);
     }
     return r;
   },
-  schedule() { clearTimeout(this._t); this._t = setTimeout(() => this.run(), 1500); },
-  async markDirty(ids) { const d = new Set((await DB.get('kv', 'sb-dirty')) || []); ids.forEach(x => d.add(x)); await DB.put('kv', [...d], 'sb-dirty'); },
+  schedule() { clearTimeout(this._t); this._t = setTimeout(() => { this._t = null; this.run(); }, 1500); },
+  async markDirty(ids, base) {
+    const d = new Set((await DB.get('kv', 'sb-dirty')) || []), b = (await DB.get('kv', 'sb-base')) || {};
+    for (const x of ids) { if (!d.has(x) && base?.has(x)) b[x] = base.get(x); d.add(x); } // first unsynced edit: remember where it started
+    await DB.put('kv', [...d], 'sb-dirty'); await DB.put('kv', b, 'sb-base');
+  },
+  // 82: leaving the app (phone to background, tab closed) sends what is waiting right away, keepalive so it survives the close
+  async flush() {
+    if (!this.on()) return; const waiting = !!this._t; clearTimeout(this._t); this._t = null;
+    if (!waiting && !((await DB.get('kv', 'sb-dirty')) || []).length) return; // nothing to send
+    this._ka = true; try { await this.run(); } finally { this._ka = false; }
+  },
   // heavy parts go to nts_heavy (if the table exists): item rows stay small, the phone's first sync is fast
   HEAVY: ['read', 'content', 'ocr', 'explain'],
   split(i) {
@@ -2850,7 +2885,9 @@ const Cloud = {
       if (rows.length) since = rows.at(-1).synced_at;
       if (rows.length < 500) break;
     }
-    const changed = GH.merge(all);
+    const dirty = new Set((await DB.get('kv', 'sb-dirty')) || []), base = (await DB.get('kv', 'sb-base')) || {};
+    const changed = GH.merge(all, { dirty, base }); await DB.put('kv', base, 'sb-base');
+    if (this._lost?.length) { const l = ((await DB.get('kv', 'sb-lost')) || []).concat(this._lost).slice(-50); this._lost = []; await DB.put('kv', l, 'sb-lost'); }
     if (changed.length) { await DB.putMany('items', changed); runSearch(); render(); AI.dot(); if (changed.some(i => i.id === 'bridge')) BridgeLink.adopt(); }
     await DB.put('kv', since, 'sb-since');
   },
@@ -2868,7 +2905,9 @@ const Cloud = {
       const rows = await Promise.all(parts.map(async p => ({ user_id: this.s.user.id, id: p.i.id, updated_at: p.i.updatedAt || 0, ...(await this.pack(p.light)) })));
       await this.req('/rest/v1/nts_items?on_conflict=user_id,id', { method: 'POST', headers: { 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
       // re-read: edits made while this was uploading must stay dirty
-      const left = new Set((await DB.get('kv', 'sb-dirty')) || []); part.forEach(id => left.delete(id)); await DB.put('kv', [...left], 'sb-dirty');
+      const left = new Set((await DB.get('kv', 'sb-dirty')) || []), b = (await DB.get('kv', 'sb-base')) || {};
+      part.forEach(id => { left.delete(id); if (map.get(id)?.updatedAt === byId(id)?.updatedAt) delete b[id]; }); // edited again meanwhile: keep its start
+      await DB.put('kv', [...left], 'sb-dirty'); await DB.put('kv', b, 'sb-base');
     }
     const left = ((await DB.get('kv', 'sb-dirty')) || []).filter(id => map.has(id) || !dirty.has(id)); await DB.put('kv', left, 'sb-dirty');
     return ids.length > 0;
@@ -2928,7 +2967,7 @@ const Live = {
       this.send(this.topic(), 'phx_join', { config: { broadcast: { self: false }, presence: { key: '' }, private: false } });
       clearInterval(this.hb); this.hb = setInterval(() => this.send('phoenix', 'heartbeat', {}), 25e3);
     };
-    ws.onmessage = e => { try { const m = JSON.parse(e.data);
+    ws.onmessage = e => { this.last = now(); try { const m = JSON.parse(e.data);
       if (m.event === 'phx_reply' && m.topic === this.topic()) this.joined = m.payload?.status === 'ok';
       else if (m.event === 'broadcast' && m.payload?.event === 'changed') Cloud.schedule();
       else if (m.event === 'broadcast' && m.payload?.event === 'relay-res') Relay.onRes(m.payload.payload); } catch { } };
@@ -2939,6 +2978,12 @@ const Live = {
   },
   stop() { this.stopped = true; clearInterval(this.hb); const ws = this.ws; this.ws = null; try { ws?.close(); } catch { } },
   ping() { this.send(this.topic(), 'broadcast', { type: 'broadcast', event: 'changed', payload: {} }); },
+  // 83: after sleep or a network change the socket can look open but be dead (no heartbeat replies): reconnect
+  check() {
+    if (!Cloud.on() || this.stopped && this.ws) return;
+    if (!this.ws || this.ws.readyState > 1) { this.ws = null; return this.start(); }
+    if (this.ws.readyState === 1 && now() - (this.last || now()) > 60e3) { try { this.ws.close(); } catch { } }
+  },
   async ready(ms = 5000) { this.start(); for (let t = 0; t < ms && !(this.ws?.readyState === 1 && this.joined); t += 100) await new Promise(r => setTimeout(r, 100)); return this.ws?.readyState === 1 && this.joined; },
 };
 // 74: the phone reaches the PC's bridge through the same Realtime channel when there is no direct address (no Tailscale).
@@ -2971,7 +3016,7 @@ const Sync = {
   ready() { return Cloud.on() || GH.ready(); },
   schedule() { Cloud.on() ? Cloud.schedule() : Repo.on() ? (clearTimeout(this._r), this._r = setTimeout(() => Repo.uploadFiles(), 2500)) : GH.schedule(); },
   run() { return Cloud.on() ? Cloud.run() : Repo.on() ? Repo.uploadFiles() : GH.run(); },
-  async markDirty(list) { await GH.markDirty([...new Set(list.map(i => monthOf(i.ts)))]); await Cloud.markDirty(list.map(i => i.id)); },
+  async markDirty(list, base) { await GH.markDirty([...new Set(list.map(i => monthOf(i.ts)))]); await Cloud.markDirty(list.map(i => i.id), base); },
   downloadFile(i) { return i.sbPath ? Cloud.downloadFile(i) : GH.downloadFile(i); },
 };
 
@@ -3611,8 +3656,12 @@ function wire() {
 
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; });
   addEventListener('appinstalled', () => toast('Yüklendi. Artık Paylaş menüsünde var.', 3000, 'check'));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!Lock.conf || Crypt.key)) { reloadFromDB(); AI.health(); Sync.schedule(); Live.start(); } });
-  addEventListener('online', () => { Sync.schedule(); Live.start(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!Lock.conf || Crypt.key)) { reloadFromDB(); AI.health(); Sync.schedule(); Live.check(); } });
+  // 82: going to the background / closing sends what is waiting now; 83: coming back to the window pulls (at most every 10 s)
+  document.addEventListener('visibilitychange', () => { if (document.hidden) Cloud.flush(); });
+  addEventListener('pagehide', () => Cloud.flush());
+  addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
+  addEventListener('online', () => { Sync.schedule(); Live.check(); });
   Board.init(); Back.init();
 }
 function setView(v) {

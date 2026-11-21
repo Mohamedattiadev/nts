@@ -237,22 +237,22 @@ veri şifreli olduğu için sunucu zaten indeksleyemez. Tam normalizasyon gerekm
         görünüyor. .toc → başlık numarası, başlık ve sayfa numarasıyla düzgün bir içindekiler listesi (\contentsline{section}{\numberline{1}…}{5});
         .tex → bölümler/alt bölümler başlık, \textbf/\emph, itemize/enumerate, tablo ve matematik (KaTeX ya da MathJax CDN'den, sadece
         açılınca yüklensin) ile okunur görünüm; ham metne geçiş düğmesi. Okuma sayfasında da aynı.
-- [ ] 80. **Logo sıfırdan** (sahip, 2026-11-21: "logo çok kötü, sıfırdan yapacaktın; neden arkası sarı, diğerlerine benzemiyor"): kısayol
+- [x] 80. (2026-11-21: sahip B — mesaj balonu — seçti) **Logo sıfırdan** (sahip, 2026-11-21: "logo çok kötü, sıfırdan yapacaktın; neden arkası sarı, diğerlerine benzemiyor"): kısayol
         ikonlarıyla (sc-note/todo/lock: beyaz zemin, tek kalın sembol, #c2410c / #23262e / #f5a524) aynı aileden, kaynağın kopyası değil.
 - [x] 81. (2026-11-21: pano geçmişi — çizgi, silgi ve yapışkan not için Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y) **Çizimde Ctrl+Z çalışmıyor** (sahip, 2026-11-21): panoda kalemle çizince Ctrl+Z son çizgiyi geri alsın, Ctrl+Shift+Z / Ctrl+Y yinelesin.
 
 ## O. Otomatik ve akıllı senkron (sahip, 2026-11-21; Fluent365'teki "telefonda 3/6, bilgisayarda 1/6" hatasından ders)
 Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama kendisi akıllıca karar verir
 (skill `supabase-google-auth` §5). Nts zaten kayıt bazında birleştiriyor ve Realtime ile anında çekiyor; kalan açıklar:
-- [ ] 82. **Çıkarken hemen gönder:** `visibilitychange` (hidden) ve `pagehide` olunca bekleyen değişiklik (`Cloud.schedule` 1,5 sn
+- [x] 82. (2026-11-21: gizlenince/pagehide `Cloud.flush()`, keepalive istekler) **Çıkarken hemen gönder:** `visibilitychange` (hidden) ve `pagehide` olunca bekleyen değişiklik (`Cloud.schedule` 1,5 sn
         zamanlayıcısı) beklemeden gönderilsin. Telefon arka planda zamanlayıcıyı durdurur; son yazılan not diğer cihaza ancak telefon
         tekrar açılınca gider. Şu an sadece geri dönünce (`visible`) senkron var (app.js ~3614).
-- [ ] 83. **Pencere odağında çek:** masaüstünde sekme görünür kalıp başka pencereden dönünce (`focus`) de çek (10 sn aralıkla sınırla);
+- [x] 83. (2026-11-21: `focus` → en çok 10 sn'de bir çek; `Live.check()` ölü soketi yeniden bağlar) **Pencere odağında çek:** masaüstünde sekme görünür kalıp başka pencereden dönünce (`focus`) de çek (10 sn aralıkla sınırla);
         Realtime bağlantısı kopmuşsa (uyku, ağ değişimi) yeniden bağlansın.
-- [ ] 84. **Aynı kayıt iki cihazda değiştiyse soru yok, akıllı birleştir:** şu an kayıt bazında daha yeni olan kazanıyor olabilir
+- [x] 84. (2026-11-21: `sb-base` ile düzenlemenin başladığı sürüm; gerçek çakışmada `mergeItem` alan bazında birleştirir, kaybeden `sb-lost`'ta) **Aynı kayıt iki cihazda değiştiyse soru yok, akıllı birleştir:** şu an kayıt bazında daha yeni olan kazanıyor olabilir
         (`GH.merge`, kontrol et). Alan bazında birleştir: metin daha yeni olan, etiketler/projeler/panolar birleşim, görev bitti
         bilgisi "bitti" kazanır, silinen kayıt (mezar taşı) daha yeniyse silinmiş kalır. Kaybolan taraf `Snapshot`'ta kalsın.
-- [ ] 85. **İki cihaz testi:** telefonda not yaz ve uygulamayı hemen kapat → bilgisayarda (aynı hesap) not görünür; iki cihazda
+- [x] 85. (2026-11-21: Playwright iki profil + sahte Supabase + routeWebSocket; 4 senaryo geçti) **İki cihaz testi:** telefonda not yaz ve uygulamayı hemen kapat → bilgisayarda (aynı hesap) not görünür; iki cihazda
         çevrimdışı aynı kaydı değiştir → ikisi de birleşir, soru çıkmaz. Playwright ile iki profil + sahte Supabase (Gym'in
         `tools/test/cloud.mjs` örneği).
 
