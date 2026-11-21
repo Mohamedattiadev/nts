@@ -1375,7 +1375,11 @@ const Pop = {
       if (r.top - 8 > innerHeight - h - 12) { p.style.top = Math.max(12, r.bottom - h + 8) + 'px'; p.style.transformOrigin = 'left bottom'; }
     }
   },
-  close() { const p = $('#filterPop'); if (p) p.hidden = true; },
+  close() { // 90: fade out instead of vanishing
+    const p = $('#filterPop'); if (!p || p.hidden || p.classList.contains('closing')) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { p.hidden = true; return; }
+    p.classList.add('closing'); setTimeout(() => { p.classList.remove('closing'); p.hidden = true; }, 120);
+  },
 };
 
 // ---------- Şifrelerim: a private vault with its own master password ----------
@@ -2024,11 +2028,12 @@ const Ink = {
   },
   async end(d) {
     if (!d.pts) return;
-    d.live.remove();
     const [a, b2] = [d.pts[0], d.pts.at(-1)];
-    if (d.pts.length < 2 || (d.ink !== 'pen' && Math.hypot(b2[0] - a[0], b2[1] - a[1]) < 6)) return;
+    if (d.pts.length < 2 || (d.ink !== 'pen' && Math.hypot(b2[0] - a[0], b2[1] - a[1]) < 6)) { d.live.remove(); return; }
     const t = now();
     const it = { id: newId(), type: 'draw', shape: d.ink, pts: d.pts, color: S.ink, ts: t, createdAt: t, tags: [], pending: false };
+    // 90: the live path becomes the saved one in place (no remove + rebuild = no flash)
+    d.live.dataset.did = it.id; d.live.setAttribute('d', this.path(it.shape, it.pts)); d.live._k = this.key(it);
     this.rec({ add: it.id }); await upsert([it]);
   },
   // 81: Ctrl+Z / Ctrl+Shift+Z (Ctrl+Y) on the board: strokes, erased strokes and sticky notes
@@ -2050,7 +2055,7 @@ const Ink = {
     const hit = S.items.find(i => i.type === 'draw' && !i.deleted && i.pts?.length > 1 && lines(i).some(([a, b]) => seg(a, b) < tol));
     if (hit) { document.querySelector(`[data-did="${hit.id}"]`)?.remove(); this.rec({ del: hit.id }); removeItem(hit); return; }
     const card = document.elementsFromPoint(e.clientX, e.clientY).map(el => el.closest?.('.bcard.sticky')).find(Boolean), it = card && byId(card.dataset.id);
-    if (it && !it.deleted && !this._gone?.has(it.id)) { (this._gone ||= new Set()).add(it.id); card.remove(); this.rec({ del: it.id }); removeItem(it); } // written on the board: the eraser takes it
+    if (it && !it.deleted && !this._gone?.has(it.id)) { (this._gone ||= new Set()).add(it.id); card.classList.add('gone'); setTimeout(() => card.remove(), 160); this.rec({ del: it.id }); removeItem(it); } // written on the board: the eraser takes it
   },
   path(shape, pts) {
     const [a, b] = [pts[0], pts.at(-1)];
@@ -2065,10 +2070,20 @@ const Ink = {
     return d + `L${b[0]},${b[1]}`;
   },
   render() {
+    // 90: diff by id instead of rebuilding innerHTML, so existing strokes never blink
     const svg = $('#ink'); if (!svg) return;
-    svg.innerHTML = S.items.filter(i => i.type === 'draw' && !i.deleted && i.pts?.length > 1)
-      .map(i => `<path data-did="${i.id}" class="k-${i.shape}" style="stroke:${INK_COLORS[i.color] || INK_COLORS.ink}" d="${this.path(i.shape, i.pts)}"/>`).join('');
+    const want = new Map();
+    for (const i of S.items) if (i.type === 'draw' && !i.deleted && i.pts?.length > 1) want.set(i.id, i);
+    const have = new Map();
+    for (const el of [...svg.children]) { const id = el.dataset.did; if (!id) continue; if (!want.has(id) || have.has(id)) el.remove(); else have.set(id, el); }
+    for (const [id, i] of want) {
+      let el = have.get(id); const k = this.key(i);
+      if (el && el._k === k) continue;
+      if (!el) { el = document.createElementNS('http://www.w3.org/2000/svg', 'path'); el.dataset.did = id; svg.appendChild(el); }
+      el.setAttribute('class', 'k-' + i.shape); el.style.stroke = INK_COLORS[i.color] || INK_COLORS.ink; el.setAttribute('d', this.path(i.shape, i.pts)); el._k = k;
+    }
   },
+  key(i) { return i.shape + '|' + i.color + '|' + i.pts.length + '|' + i.pts.at(-1); },
   async sticky(kind, e) {
     const [x, y] = this.at(e), t = now();
     const at = { x: x - (kind === 'text' ? 4 : 90), y: y - (kind === 'text' ? 14 : 40) };
@@ -2177,7 +2192,7 @@ const Board = {
     const inside = m => m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + m.h > v.y1;
     for (const [id, m] of this.M) {
       const el = this.mounted.get(id);
-      if (inside(m)) { if (!el) { const c = this.card(m.i); if (m.auto) { c.classList.add('auto'); c.style.height = m.h + 'px'; } c.style.left = m.x + 'px'; c.style.top = m.y + 'px'; frag.appendChild(c); this.mounted.set(id, c); fresh.push(c); } }
+      if (inside(m)) { if (!el) { const c = this.card(m.i); if (m.auto) { c.classList.add('auto'); c.style.height = m.h + 'px'; } if (now() - (m.i.createdAt || 0) < 1500) c.classList.add('born'); c.style.left = m.x + 'px'; c.style.top = m.y + 'px'; frag.appendChild(c); this.mounted.set(id, c); fresh.push(c); } }
       else if (el && !el.classList.contains('dragging') && !el.querySelector('[contenteditable="true"],[contenteditable="plaintext-only"]')) { el.remove(); this.mounted.delete(id); }
     }
     for (const h of this.heads) {
@@ -3666,8 +3681,10 @@ function wire() {
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
-  if (v !== S.view) S.cam = null; S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
+  const ch = v !== S.view;
+  if (ch) S.cam = null; S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
   render();
+  if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change
 }
 async function reloadFromDB() {
   const items = await DB.all('items');

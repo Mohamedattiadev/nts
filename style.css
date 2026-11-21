@@ -1038,3 +1038,14 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
   .scrub.idle:not(.drag) { opacity: 0; pointer-events: none; }
 }
 @media (max-width: 899px) { .hits .h-foot .link-btn { min-height: 40px; padding: 0 6px; } }
+
+/* 90: soft motion (transform/opacity only; prefers-reduced-motion turns it off above) */
+.vin { animation: viewIn .22s var(--ease); }
+@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } }
+#board.vin { animation-name: fade-bg; }
+.pop.closing { animation: popOut .12s ease-in forwards; pointer-events: none; }
+@keyframes popOut { to { opacity: 0; transform: translateY(-3px) scale(.98); } }
+.bcard.born { animation: bornIn .26s var(--ease); }
+@keyframes bornIn { from { opacity: 0; transform: scale(.92); } }
+.bcard.gone { transition: opacity .15s, transform .15s; opacity: 0; transform: scale(.9); pointer-events: none; }
+#ink path { transition: opacity .15s; }

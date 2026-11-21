@@ -268,7 +268,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         kalsın, sonra palet de kayıp yalnız küçük ">" sekmesi kalsın (yumuşak, sıralı animasyon); ">" ile hepsi geri gelsin.
 - [x] 89. (2026-11-21: satır içi SVG, koyu temada koyu zemin, çizgiler + nokta accent rengi; logo, görünüm seçici, ayarlar masaüstünde hepsi 36 px aynı hizada) **Logo (.mark):** koyu temada arkası beyaz kalıyor → koyu olsun; diğer üst öğelere göre çok küçük ve hizasız → onlarla aynı boy
         (36–40 px) ve aynı dikey hizada; içindeki turuncu/sarı ana renge (accent) göre değişsin (inline SVG, CSS değişkenleri).
-- [ ] 90. **Çizimde 0,1 sn yanıp sönme + genel akıcılık:** kalemle çizgiyi bitirince canlı çizgi silinip pano yeniden çizildiği için
+- [x] 90. (2026-11-21: Ink.end() canlı path'i yerinde kalıcıya çeviriyor, Ink.render() id ile fark alıyor → çizerken hiçbir path silinmiyor (Playwright: 3 çizgi, 0 silme); görünüm değişince yumuşak giriş, filtre menüsü kayarak kapanır, panoya yeni kart büyüyerek gelir, silgiyle silinen not küçülerek gider; reduced-motion kapatır) **Çizimde 0,1 sn yanıp sönme + genel akıcılık:** kalemle çizgiyi bitirince canlı çizgi silinip pano yeniden çizildiği için
         kısa bir titreme var. Bitince çizgi yerinde kalsın (canlı path kalıcıya dönüşsün, `#ink` baştan kurulmasın). Genel olarak yumuşak
         geçişler ekle: görünüm değişimi, panel/menü aç-kapa, kart ekleme/silme, sol çubuk; `prefers-reduced-motion`'a uy, 60 fps.
 
