@@ -641,6 +641,7 @@ async function itemAction(a, id) {
 // ---------- composer ----------
 const isQuestion = t => { URL_RE.lastIndex = 0; const u = URL_RE.test(t); URL_RE.lastIndex = 0; return /\?\s*$/.test(t.trim()) && !u; };
 function clearBox() { const inp = $('#input'); inp.value = ''; S.q = ''; S.searchOn = false; runSearch(); autoGrow(); render(); closeAnswer(); }
+function hideHits() { S.hitsOff = true; S.hitSel = -1; renderHits(); }
 function closeAnswer() { $('#answer').hidden = true; document.body.classList.remove('answering'); }
 function renderHits() {
   const el = $('#hits'), q = S.q.trim();
@@ -652,7 +653,7 @@ function renderHits() {
     el.hidden = false;
   };
   if (S.searchOn && q) return show('qchip', `${ic('search', 'sm')}<span>“${esc(q.slice(0, 40))}” · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı kapat">${ic('x', 'sm')}</button>`);
-  if (!q || !S.hits?.size) {
+  if (!q || !S.hits?.size || S.hitsOff) { // 103a: hitsOff = the page changed; the text stays, the list comes back on typing/focus
     if (el.hidden || el.classList.contains('closing')) return;
     el.classList.add('closing'); el._ht = setTimeout(() => { el.hidden = true; el.classList.remove('closing'); el._html = ''; }, 140); return;
   }
@@ -751,7 +752,7 @@ const Morph = {
 
 // ---------- Android back button closes panels instead of leaving the app ----------
 const Back = {
-  open(dlg) { if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
+  open(dlg) { hideHits(); if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
   init() {
     addEventListener('popstate', () => { for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); });
     for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
@@ -2364,7 +2365,18 @@ const Board = {
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
     if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t))); }
+    this.fitHeads();
     this.wires();
+  },
+  // 92b: a day head is never cut. Full label if it fits its band on screen, else the short one ("20 Kas 3"), else it stands vertically in the band
+  fitHeads() {
+    const k = S.cam?.k || 1, far = k < .7, s = Math.max(k, 1);
+    for (const h of this.heads) {
+      const e = this.mountedHeads.get(h.k), hd = e?.firstChild; if (!hd) continue;
+      if (hd._lf == null) { hd.classList.remove('sh', 'vert'); hd._lf = hd.offsetWidth; hd.classList.add('sh'); hd._ls = hd.offsetWidth; hd.classList.remove('sh'); hd._m = ''; }
+      const room = h.w * k, m = !far && hd._lf * s <= room ? '' : hd._ls * s <= room ? 'sh' : 'vert';
+      if (m !== hd._m) { hd._m = m; hd.classList.toggle('sh', !!m); hd.classList.toggle('vert', m === 'vert'); }
+    }
   },
   layout() { this.wires(); },
   box(el) { return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }; },
@@ -3726,10 +3738,10 @@ function wire() {
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
   let st;
   inp.addEventListener('input', () => {
-    autoGrow(); clearTimeout(st); S.hitSel = -1;
+    autoGrow(); clearTimeout(st); S.hitSel = -1; S.hitsOff = false;
     st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.limit = 300; runSearch(); render(); }, 80);
   });
-  inp.addEventListener('focus', () => document.body.classList.add('typing'));
+  inp.addEventListener('focus', () => { document.body.classList.add('typing'); if (S.hitsOff && !document.querySelector('dialog[open]')) { S.hitsOff = false; renderHits(); } });
   inp.addEventListener('blur', () => document.body.classList.remove('typing'));
   inp.addEventListener('keydown', e => {
     const rows = $('#hits').classList.contains('hits') && !$('#hits').hidden ? [...$('#hits').querySelectorAll('.h-row')] : [];
@@ -3857,7 +3869,7 @@ function wire() {
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
   const ch = v !== S.view;
-  if (ch) S.cam = null; S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
+  if (ch) { S.cam = null; hideHits(); } S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
   if (ch && document.startViewTransition && !reduced()) { // 94a: the old view cross-fades into the new one, the floating chrome stays still
     const h = document.documentElement; h.classList.add('vt');
     try { document.startViewTransition(() => render()).finished.finally(() => h.classList.remove('vt')); return; } catch { h.classList.remove('vt'); }

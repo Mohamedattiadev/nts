@@ -314,10 +314,11 @@ mark { background: var(--hit-soft); color: inherit; border-radius: 3px; padding:
 .wires path.rel { stroke: var(--accent); stroke-dasharray: 4 5; opacity: .6; }
 .wires path.man { stroke: var(--hit); stroke-width: 2; }
 .col-head { position: absolute; font-weight: 600; color: var(--muted); font-size: 12px; white-space: nowrap; display: flex; gap: 8px; text-transform: uppercase; letter-spacing: .04em;
-  transform-origin: 0 100%; transform: scale(var(--hs, 1)); max-width: calc(var(--w, 240px) / var(--hs, 1)); overflow: hidden; }
-.col-head .l, .col-head .s { overflow: hidden; text-overflow: ellipsis; }
-.col-head .s, .far .col-head .l { display: none; }
-.far .col-head .s { display: inline; }
+  transform-origin: 0 100%; transform: scale(var(--hs, 1)); }
+.col-head .s, .col-head.sh .l { display: none; }
+.col-head.sh .s { display: inline; }
+/* 92b: band too narrow even for the short label - the label stands up just above its own band (reads bottom to top), never over cards or a neighbour */
+.day-band > .col-head.vert { writing-mode: vertical-rl; writing-mode: sideways-lr; top: auto; bottom: 100%; left: 50%; transform-origin: 0 100%; transform: scale(var(--hs, 1)) translate(-50%, -4px); }
 .far .col-head { color: var(--text); }
 .col-head .cnt { font-weight: 400; color: var(--muted); }
 .day-band { position: absolute; z-index: -1; pointer-events: none; border-radius: 16px; background: color-mix(in srgb, var(--text) 2.5%, transparent); }
@@ -326,7 +327,11 @@ mark { background: var(--hit-soft); color: inherit; border-radius: 3px; padding:
 .day-band > .col-head { left: 12px; top: 12px; }
 .day-band.today > .col-head, .day-band.today > .col-head .cnt { color: var(--accent); }
 .col-head .dt { font-weight: 500; text-transform: none; letter-spacing: 0; }
-.far .day-band, .board.months .day-band { background: none; box-shadow: none; }
+.board.months .day-band { background: none; box-shadow: none; }
+.far .day-band { background: color-mix(in srgb, var(--text) 5%, transparent); } .far .day-band.alt { background: color-mix(in srgb, var(--text) 9%, transparent); }
+.far .day-band.today { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+/* 92b: a thin line in the middle of the gap between two days, at least 1 screen px at any zoom (--ik = 1/zoom) */
+.day-band::before { content: ''; position: absolute; left: -26px; top: 0; bottom: 0; width: max(1px, calc(1px * var(--ik, 1))); background: var(--line-2); transform: translateX(-50%); }
 /* zoomed out (<70%): every card shows its date in readable size */
 .b-date { display: none; position: absolute; left: 0; top: 0; z-index: 2; transform-origin: 0 0; transform: scale(var(--hs, 1));
   max-width: calc(100% / var(--hs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1125,3 +1130,6 @@ dialog.morph.shut::backdrop { opacity: 0; transition: opacity .18s; }
 .loading::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--surface-3), transparent); background-size: 200% 100%; animation: shimmer 1.2s infinite; opacity: .7; pointer-events: none; }
 img.fadein { opacity: 0; transition: opacity .25s; } img.fadein.ok { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .loading::after { animation: none; } }
+/* 103a: while the search list is open, floating cards (gallery peek) step aside so nothing overlaps */
+.peek { transition: opacity .15s; }
+body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-events: none; }
