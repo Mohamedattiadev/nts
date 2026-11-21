@@ -10,7 +10,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
 - [ ] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü.
-- [ ] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`)
+- [x] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`) (3df1968)
 - [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
 - [ ] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih)
 - [ ] 94a+94b View Transitions geçişleri + dokunma geri bildirimi
@@ -31,7 +31,7 @@ KURALLAR (sahip):
 - Sunucu: `curl -s 127.0.0.1:8790` çalışmıyorsa `python3 -m http.server 8790 --bind 127.0.0.1` (arka planda). Köprü http://localhost:8787;
   gerçek köprüyle testte lib.mjs `bridge:true` (gelen kutusu, snapshot, import kuyruğu korunur). Gerçek GitHub/Supabase'e yazma, taklit et.
 - Her maddeyi bitirince PLAN.md'de [ ] → [x] (kısa not + tarih), bu dosyada da [x] + commit hash. Kararını veremediğin şeyi en sona biriktir.
-- sw.js VERSION'ı her sürümde artır (şu an v18; commit'ten hemen önce tekrar oku).
+- sw.js VERSION'ı her sürümde artır (şu an v24; commit'ten hemen önce tekrar oku).
 - COMMIT: sahip istemiyor → commit mesajına "Co-Authored-By: Claude" ve Claude imzası EKLEME. Sadece kendi dosyalarını `git add` et.
   Commit + push için ayrıca izin bekleme (sahip verdi). Push'tan sonra Pages'te yeni sw VERSION'ın açıldığını kontrol et.
 - Yeni, tekrar eden bir yöntem öğrenirsen ~/.claude/skills altına yaz.
@@ -40,8 +40,15 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 90'dan başla (Ink.end() → canlı path'i silmeden kalıcıya çevir, Ink.render() `#ink`'i baştan kurmasın; sonra yumuşak geçişler),
-sonra 87. Bu iki madde bitince [ ] kalmaz → handoff yapma, sahibe özet + sorular.
+TAM SIRADAKİ ADIM: 88b (Rail.fold / body.rail-off CSS, style.css sonundaki 88 bloğu; palet kalsın, ">" "<"nin yerinde, ~150 ms),
+sonra 91 (önce Playwright ile kanıtla: taşınmış kart + Düzenle → sütununa dönüyor mu), vakit kalırsa 92. Sonra handoff.
+
+BİLGİ (2026-11-21, 3. oturum): 90 bitti (006f87f): Ink.render() artık id ile fark alıyor (path._k anahtarı), Ink.end() canlı path'i
+kalıcıya çeviriyor; yumuşak geçişler: .vin (setView), .pop.closing (Pop.close), .bcard.born / .bcard.gone. 87 bitti (3df1968, sw v24):
+aiName()/aiTo()/aiOf() (app.js, `const Tour` üstünde) — yeni arayüz metninde "Claude" yazma, bunları kullan; AiPick.maybe() turdan önce
+bir kez (localStorage hn-ai); köprüde conf.ai + POST /ai-conf, /health → {ai, have}; runClaude() seçime göre runOther('codex'|'gemini')
+çağırır (şema prompt'a, JSON cevaptan kesilir). lib.mjs artık hn-ai=1 koyar (`aipick:true` ile kapatılır). Paralel bir oturum da
+aynı ağaçta commit atıyor (LaTeX, logo): `git add` öncesi `git diff` ile yabancı parça var mı bak.
 
 BİLGİ (2026-11-21, 2. oturum): 86/88/89 bitti (8b1e792, sw v19). Panoda `body.board-view .dock` artık `--bt-w` (araç genişliği, JS ölçer)
 ile sola kayıp daralıyor. setView aynı görünüme tekrar geçince kamerayı silmiyor. Logo inline SVG (.mk-b/.mk-l/.mk-d), sol çubuk kapanınca
