@@ -27,6 +27,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown)
 - [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
 - [ ] 106d etkileşimli parçalar (geri sayım, ilerleme, onay listesi ilerlemesi, CSV grafik)
+- [ ] 106e zengin yapay zekâ cevapları (OpenUI fikri, vanilla): izinli parça şeması → kartlar, tablo, zaman çizelgesi, onay listesi, grafik, eylem düğmeleri (PLAN 106e)
 - [x] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test (cbc629e)
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
 - [x] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c. (001f6f0)

@@ -412,6 +412,11 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (c) daha canlı görünüm (ölçülü): pano kartında kapak resmi, üst çubuk/menülerde hafif cam efekti, boş durumlarda küçük çizimler,
             renkler daha belirgin ama sakin; açık + koyu; kontrast AA;
         (d) etkileşimli parçalar: geri sayım ("sınava 12 gün"), ilerleme çubuğu, onay listesi ilerlemesi (3/7), CSV'den grafik.
+        (e) **zengin yapay zekâ cevapları (OpenUI fikri, kütüphanesi değil)** (sahip: "openui var"): thesysdev/openui (MIT) React + Zod +
+            derleme istiyor → Nts'e almıyoruz; fikrini vanilla JS ile uygula: köprü cevabı izinli parçalar şemasıyla döner (--json-schema;
+            Codex/Gemini'de şema desteğini kontrol et, yoksa JSON'u doğrula), uygulama sadece bilinen parçaları çizer: kayıt kartları, tablo, zaman
+            çizelgesi, onay listesi, küçük grafik, cevap kartı, eylem düğmeleri (Pano yap / Göreve çevir / Kaydet / Aç). Bilinmeyen parça → düz metin.
+            Akış (stream) varsa parçalar geldikçe çizilsin. Telefon önce.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
