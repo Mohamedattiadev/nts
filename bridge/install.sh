@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nts PC setup: bridge as a user service, `hn` command, "Send to Nts" in file managers, Tailscale HTTPS for the phone.
+# Nts PC setup: bridge as a user service, `hn` command, "Send to Nts" in file managers, the phone through Supabase (Google sign-in).
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 NODE="$(command -v node)"
@@ -54,9 +54,4 @@ SVC
 chmod +x ~/.local/share/kio/servicemenus/hizli-note.desktop
 update-desktop-database ~/.local/share/applications 2>/dev/null || true
 
-# Phone access over Tailscale (HTTPS, only your own devices)
-if command -v tailscale >/dev/null; then tailscale serve --bg --https=8788 http://127.0.0.1:8787 || echo "Tailscale için bir kez: sudo tailscale serve --bg --https=8788 http://127.0.0.1:8787"; tailscale serve status || true; fi
-
-echo
-echo "Kuruldu. Token: $(node -p "require('$HOME/.config/hizli-note/bridge.json').token")"
-echo "Kısayol için Hyprland binds'e ekle:  bind = SUPER SHIFT, N, exec, hn --clip"
+echo "Köprü kuruldu. Kısayol için Hyprland binds'e ekle:  bind = SUPER SHIFT, N, exec, nts --clip"

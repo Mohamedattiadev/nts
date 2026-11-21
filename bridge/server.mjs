@@ -29,6 +29,22 @@ function loadConfig() {
 }
 const conf = loadConfig();
 
+// the address phones use: a `tailscale serve` entry that points at this bridge (cached for a minute)
+let remoteCache = { at: 0, url: null };
+function remoteUrl() {
+  if (Date.now() - remoteCache.at < 60e3) return Promise.resolve(remoteCache.url);
+  return new Promise(res => execFile('tailscale', ['serve', 'status', '--json'], { timeout: 4000 }, (err, out) => {
+    let url = conf.remoteUrl || null;
+    if (!url && !err) try {
+      const web = JSON.parse(out || '{}').Web || {};
+      for (const [host, v] of Object.entries(web)) {
+        if (Object.values(v.Handlers || {}).some(h => new RegExp(`^https?://(127\\.0\\.0\\.1|localhost):${conf.port}/?$`).test(h.Proxy || ''))) { url = 'https://' + host.replace(/:443$/, ''); break; }
+      }
+    } catch { }
+    remoteCache = { at: Date.now(), url }; res(url);
+  }));
+}
+
 // ---- inbox: things sent from this PC (hn CLI, file manager, hotkey) until a device picks them up ----
 const INBOX = join(CONF_DIR, 'inbox'), INBOX_IDX = join(INBOX, 'index.json');
 mkdirSync(INBOX, { recursive: true });
@@ -82,7 +98,7 @@ const localTime = ts => new Date(ts).toLocaleString('sv-SE', { hour12: false }).
 const compact = items => items.map(i => ({
   id: i.id, date: i.ts ? localTime(i.ts) : undefined, type: i.type,
   title: i.title || undefined, text: (i.text || '').slice(0, 1500) || undefined, url: i.url || undefined,
-  file: i.fileName || undefined, content: i.content ? i.content.slice(0, 3000) : undefined, image: i._imgPath || undefined,
+  file: i.fileName || undefined, content: i.content ? i.content.slice(0, 3000) : undefined, image: i._imgPath || undefined, ocr: i.ocr ? i.ocr.slice(0, 1500) : undefined,
   tags: i.tags?.length ? i.tags : undefined, summary: i.summary || undefined,
   page: i.meta ? [i.meta.title, i.meta.description].filter(Boolean).join(' — ').slice(0, 400) : undefined,
 }));
@@ -103,6 +119,7 @@ const ORGANIZE_SCHEMA = {
             due: { type: 'string', description: 'local date "YYYY-MM-DD" or date-time "YYYY-MM-DDTHH:mm" if a day/time is stated or clearly implied (yarın, cuma, 10:30), resolved from "Now"; omit if none' } } },
         lists: { type: 'array', items: { type: 'string', enum: ['bakilacak', 'begendim', 'onemli'] },
           description: 'smart lists, zero or more: bakilacak = to read/watch/check later (articles, videos, tools to try); begendim = something the person liked/inspiration (designs, quotes, products); onemli = important to keep (documents, IDs, contracts, receipts, passwords hints, key decisions)' },
+        ocr: { type: 'string', description: 'ONLY for an "image" file (photo, screenshot, scanned page): the readable text you see in it, verbatim, in reading order (signs, receipts, documents, UI text), max ~1500 characters; empty string if there is no text' },
         project: { type: 'string', description: 'name of a clear ongoing project or product this belongs to (lowercase, e.g. poultrycare), reuse an existing project name; omit if none' },
       } } },
   },
@@ -130,6 +147,17 @@ async function organize(items, existingTags, projects = []) {
   finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
 }
 
+// text inside images (photos, screenshots, scanned PDF pages) for search, for items organized before this existed
+const OCR_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['id', 'text'],
+  properties: { id: { type: 'string' }, text: { type: 'string', description: 'all readable text in the image, verbatim, reading order, max ~1500 chars; empty string if none' } } } } } };
+async function ocr(items) {
+  for (const i of items) { const p = join(WORK_DIR, `ocr-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
+  const system = 'You read text in images. For each item, open its "image" file with the Read tool and copy the readable text verbatim (any language), in reading order. Do not describe the image. Empty string if there is no text. Output only per schema.';
+  const prompt = `Items:\n${JSON.stringify(items.map(i => ({ id: i.id, image: i._imgPath })))}`;
+  try { return await runClaude({ prompt, system, schema: OCR_SCHEMA, model: conf.organizeModel, readDir: WORK_DIR }); }
+  finally { for (const i of items) try { unlinkSync(i._imgPath); } catch { } }
+}
+
 const TAGS_SCHEMA = {
   type: 'object', required: ['map'],
   properties: { map: { type: 'array', items: { type: 'object', required: ['from', 'to'],
@@ -155,6 +183,17 @@ async function ask(question, items) {
     'Be concise and plain, list items when asked, mention dates/times when useful. "content" is the text inside a PDF. If nothing matches, say so. Answer in the question\'s language. Never describe your own process.';
   const prompt = `Now: ${localTime(Date.now())}\nQuestion: ${question}\n\nItems:\n${JSON.stringify(compact(items))}`;
   return runClaude({ prompt, system, schema: ASK_SCHEMA, model: conf.askModel });
+}
+
+// one line per day / month for the list's day headers and the board's month grid (61)
+const SUM_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'line'],
+  properties: { key: { type: 'string' }, line: { type: 'string', description: 'one short line, max ~90 characters, in Turkish' } } } } } };
+async function summaries(groups) {
+  const system = 'You write one-line summaries of a person\'s day or month from the things they saved to themselves (notes, links, files, chats). ' +
+    'For each group write ONE short, plain Turkish line (max ~90 characters) naming the main things, like a diary index: "poultrycare demo, 3 fatura, annemle konuşma". ' +
+    'No dates and no total item count (both are shown already), no "bu gün"/"bugün", no full sentences about yourself, no emojis. Group similar items ("4 link: yapay zeka"). Output only per schema.';
+  const prompt = `Groups:\n${JSON.stringify(groups.map(g => ({ key: g.key, items: (g.items || []).slice(0, 40).map(i => ({ type: i.type, title: (i.title || '').slice(0, 120) || undefined, text: (i.text || '').slice(0, 200) || undefined, tags: i.tags?.length ? i.tags : undefined, chat: i.chat || undefined })) })))}`;
+  return runClaude({ prompt, system, schema: SUM_SCHEMA, model: conf.organizeModel });
 }
 
 // ---- link metadata ----
@@ -231,6 +270,49 @@ async function article(url) {
   return { title, image, byline, site, blocks, words: blocks.reduce((n, b) => n + b.x.split(/\s+/).length, 0), at: Date.now() };
 }
 
+// ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
+// Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
+// device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
+const RELAY_PATHS = new Set(['/health', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries']);
+const RELAY_CHUNK = 180000;
+const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
+async function relayKey() {
+  if (relay.keyFor !== conf.token) { relay.keyFor = conf.token; relay.key = await crypto.subtle.importKey('raw', await crypto.subtle.digest('SHA-256', new TextEncoder().encode('nts-relay:' + conf.token)), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  return relay.key;
+}
+async function relaySeal(obj) { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await relayKey(), new TextEncoder().encode(JSON.stringify(obj)))); return Buffer.concat([iv, ct]).toString('base64'); }
+async function relayOpen(b64) { const b = Buffer.from(b64, 'base64'); return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.subarray(0, 12) }, await relayKey(), b.subarray(12)))); }
+function relaySend(event, payload) { if (relay.ws?.readyState === 1) relay.ws.send(JSON.stringify({ topic: relay.topic, event: 'broadcast', payload: { type: 'broadcast', event, payload }, ref: String(++relay.ref), join_ref: '1' })); }
+async function relayReply(id, obj) { const s = await relaySeal(obj), n = Math.max(1, Math.ceil(s.length / RELAY_CHUNK)); for (let k = 0; k < n; k++) relaySend('relay-res', { id, k, n, d: s.slice(k * RELAY_CHUNK, (k + 1) * RELAY_CHUNK) }); }
+async function relayReq(m) {
+  if (!m || typeof m.id !== 'string' || typeof m.d !== 'string' || !(m.n >= 1 && m.n <= 60) || !(m.k >= 0 && m.k < m.n)) return;
+  let e = relay.parts.get(m.id); if (!e) relay.parts.set(m.id, e = { got: [], at: Date.now() }); e.got[m.k] = m.d;
+  if (e.got.filter(x => x != null).length < m.n) return; relay.parts.delete(m.id);
+  let req; try { req = await relayOpen(e.got.join('')); } catch { return; } // not sealed with our token: not for us, say nothing
+  if (!RELAY_PATHS.has(req.path)) return relayReply(m.id, { status: 404, body: { error: 'not allowed' } });
+  try {
+    const r = await fetch(`http://127.0.0.1:${conf.port}${req.path}`, { method: req.body ? 'POST' : 'GET', headers: { authorization: 'Bearer ' + conf.token, 'content-type': 'application/json' }, body: req.body ? JSON.stringify(req.body) : undefined, signal: AbortSignal.timeout(200000) });
+    await relayReply(m.id, { status: r.status, body: await r.json().catch(() => ({})) });
+    if (req.path !== '/health') console.log(`relay ${req.path} ${r.status}`);
+  } catch (err) { await relayReply(m.id, { status: 500, body: { error: err.message } }); }
+}
+function relayStart() {
+  const c = conf.relay; if (!c?.url || !c?.key || !c?.uid || relay.ws || typeof WebSocket === 'undefined') return;
+  relay.topic = 'realtime:nts-' + c.uid;
+  const ws = relay.ws = new WebSocket(c.url.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' + encodeURIComponent(c.key) + '&vsn=1.0.0');
+  ws.onopen = () => {
+    relay.retry = 0;
+    ws.send(JSON.stringify({ topic: relay.topic, event: 'phx_join', payload: { config: { broadcast: { self: false }, presence: { key: '' }, private: false } }, ref: String(++relay.ref), join_ref: '1' }));
+    clearInterval(relay.hb); relay.hb = setInterval(() => { if (ws.readyState === 1) ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++relay.ref) })); }, 25e3);
+    console.log('relay: telefon Supabase üzerinden bağlanabilir');
+  };
+  ws.onmessage = e => { try { const m = JSON.parse(e.data); if (m.event === 'broadcast' && m.payload?.event === 'relay-req') relayReq(m.payload.payload); } catch { } };
+  ws.onerror = () => { };
+  ws.onclose = () => { clearInterval(relay.hb); if (relay.ws === ws) { relay.ws = null; setTimeout(relayStart, Math.min(60e3, 2e3 * 2 ** relay.retry++)); } };
+}
+function relayRestart() { const w = relay.ws; relay.ws = null; try { w?.close(); } catch { } relay.retry = 0; relayStart(); }
+setInterval(() => { for (const [id, e] of relay.parts) if (Date.now() - e.at > 120e3) relay.parts.delete(id); }, 60e3).unref();
+
 // ---- http ----
 function send(res, code, body, origin) {
   res.writeHead(code, {
@@ -243,7 +325,7 @@ function send(res, code, body, origin) {
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const API = /^\/(health|meta|article|organize|ask|tags|inbox|new-repo|config|snapshot)(\/|$)/;
+const API = /^\/(health|meta|article|organize|ask|tags|ocr|inbox|new-repo|config|snapshot|gh-token|import-items)(\/|$)/;
 function serveStatic(req, res) {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   const file = join(APP_DIR, p === '/' ? 'index.html' : p);
@@ -252,6 +334,26 @@ function serveStatic(req, res) {
 }
 
 const allowed = o => o && (conf.origins.includes(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o));
+
+// ---- task reminders on this PC: the app's snapshot has the to-dos; a desktop notification when one is due ----
+const NOTIFIED = join(CONF_DIR, 'notified.json');
+function remindTick() {
+  try {
+    const f = join(CONF_DIR, 'snapshot.json'); if (!existsSync(f)) return;
+    const { items = [] } = JSON.parse(readFileSync(f, 'utf8')), done = new Set(existsSync(NOTIFIED) ? JSON.parse(readFileSync(NOTIFIED, 'utf8')) : []);
+    const t = Date.now(); let changed = false;
+    for (const i of items) {
+      const d = i.todo; if (!d || d.done || !d.due) continue;
+      const at = new Date(d.due.includes('T') ? d.due : d.due + 'T09:00').getTime(), key = i.id + '@' + d.due;
+      if (at > t || t - at > 6 * 3600e3 || done.has(key)) continue; // due now (not older than 6 h)
+      done.add(key); changed = true;
+      execFile('notify-send', ['-a', 'Nts', '-i', 'appointment-soon', '-u', 'normal', 'Nts · görev zamanı', d.text || i.title || 'Görev'], () => { });
+      console.log('hatırlatma:', d.text || i.title);
+    }
+    if (changed) writeFileSync(NOTIFIED, JSON.stringify([...done].slice(-2000)));
+  } catch (e) { console.warn('remind', e.message); }
+}
+setInterval(remindTick, 60e3); setTimeout(remindTick, 5000);
 
 http.createServer(async (req, res) => {
   const origin = allowed(req.headers.origin) ? req.headers.origin : null;
@@ -266,8 +368,15 @@ http.createServer(async (req, res) => {
   if (req.method === 'GET' && !API.test(req.url)) return serveStatic(req, res);
   if (req.url === '/config') { // token only for the app on this computer: served from here, or any http://localhost:* page
     const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.origin || '');
-    if (req.headers['sec-fetch-site'] === 'same-origin' || local) return send(res, 200, { token: conf.token }, local ? req.headers.origin : null);
+    if (req.headers['sec-fetch-site'] === 'same-origin' || local) return send(res, 200, { token: conf.token, remote: await remoteUrl() }, local ? req.headers.origin : null);
     return send(res, 403, { error: 'this computer only' });
+  }
+  if (req.url === '/gh-token') { // GitHub key from the local `gh` login, for this computer's app only (same rule as /config)
+    const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.origin || '');
+    if (!(req.headers['sec-fetch-site'] === 'same-origin' || local)) return send(res, 403, { error: 'this computer only' });
+    const run = args => new Promise(ok => execFile('gh', args, { timeout: 8000 }, (e, o) => ok(e ? '' : String(o).trim())));
+    const token = await run(['auth', 'token']), login = token ? await run(['api', 'user', '--jq', '.login']) : '';
+    return send(res, token ? 200 : 404, token ? { token, login } : { error: 'gh girişi yok: gh auth login' }, local ? req.headers.origin : null);
   }
   if (req.headers.authorization !== `Bearer ${conf.token}`) return send(res, 401, { error: 'bad token' }, origin);
   try {
@@ -310,7 +419,18 @@ http.createServer(async (req, res) => {
       console.log(`organize ${body.items?.length} items ${Date.now() - t}ms`);
       return send(res, 200, r, origin);
     }
+    if (req.url === '/import-items' && req.method === 'GET') { const f = join(CONF_DIR, 'import-queue.json'); return send(res, 200, existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')).slice(0, 500) : [], origin); }
+    if (req.url === '/import-items/ack') { const f = join(CONF_DIR, 'import-queue.json'), ids = new Set(body.ids || []); if (existsSync(f)) writeFileSync(f, JSON.stringify(JSON.parse(readFileSync(f, 'utf8')).filter(i => !ids.has(i.id))), { mode: 0o600 }); return send(res, 200, { ok: true }, origin); }
+    if (req.url === '/ocr') { const r = await ocr((body.items || []).slice(0, 8)); console.log(`ocr ${body.items?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/tags') { const r = await cleanTags((body.tags || []).slice(0, 300)); console.log(`tags ${body.tags?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+    if (req.url === '/relay-conf' && req.method === 'POST') { // the PC app (signed in) tells the bridge which Realtime channel the phone uses
+      const { url, key, uid } = body || {};
+      if (!(/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url || '') || (process.env.NTS_RELAY_DEV && /^http:\/\/127\.0\.0\.1:\d+$/.test(url || ''))) || !/^[\w-]{10,200}$/.test(key || '') || !/^[0-9a-f-]{36}$/.test(uid || '')) return send(res, 400, { error: 'bad relay config' }, origin);
+      const same = conf.relay?.url === url && conf.relay?.key === key && conf.relay?.uid === uid;
+      if (!same) { conf.relay = { url, key, uid }; writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 }); relayRestart(); }
+      return send(res, 200, { ok: true, on: relay.ws?.readyState === 1 }, origin);
+    }
+    if (req.url === '/summaries') { const r = await summaries((body.groups || []).slice(0, 24)); console.log(`summaries ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));
       console.log(`ask "${String(body.question).slice(0, 60)}" ${Date.now() - t}ms`);
@@ -324,6 +444,7 @@ http.createServer(async (req, res) => {
 }).listen(conf.port, '127.0.0.1', () => {
   console.log(`Nts bridge → http://localhost:${conf.port}  (uygulama da burada açılır)`);
   console.log(`Token: ${conf.token}`);
-  console.log(`Telefon için: sudo tailscale serve --bg --https=8788 http://127.0.0.1:${conf.port}  → https://<pc>.<tailnet>.ts.net:8788`);
+  console.log('Telefon: aynı Google hesabıyla girince Supabase üzerinden bağlanır (Tailscale gerekmez).');
+  relayStart();
   console.log(`Ayarlar: ${CONF_FILE}`);
 });

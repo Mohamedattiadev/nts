@@ -1,38 +1,48 @@
+<div align="center">
+
+<img src="icons/icon.svg" width="72" alt="Nts">
+
 # Nts
 
-WhatsApp'ta kendine attığın link, not ve dosyaları tek yerde topla. Uygulama tarihe göre dizer, Claude ile düzenler ve sorularını cevaplar.
+Kendine attığın link, not, foto ve dosyalar tek yerde. Claude düzenler, sen sorarsın.
 
-**Uygulama:** https://mohamedattiadev.github.io/nts/
+[![Uygulamayı aç](https://img.shields.io/badge/Uygulamay%C4%B1_a%C3%A7-D9480F?style=for-the-badge)](https://mohamedattiadev.github.io/nts/)
+[![Kurulum](https://img.shields.io/badge/Bilgisayara_kur-161413?style=for-the-badge)](#kurulum)
 
-- **Kaydet:** yapıştır, yaz ya da dosya bırak. Android'de herhangi bir uygulamadan **Paylaş → Nts**. Bilgisayarda `hn`.
-- **Görünümler:** Liste (gün gün), Board (sonsuz whiteboard, bağlantılar ok olarak), Galeri, Konular.
-- **Arama:** anında çalışır, Türkçe karakter ve küçük yazım hatalarını tolere eder. `?` ile başlarsan Claude'a sorar.
-- **AI:** yeni kayıtlara başlık, özet ve etiket koyar, bağlantılı olanları bulur. Senin Claude aboneliğinle çalışır (bilgisayardaki `claude` CLI üzerinden).
-- **WhatsApp içe aktarma:** Sohbet → ⋮ → Diğer → Sohbeti dışa aktar → Medya dahil. Çıkan .zip'i Menü → WhatsApp ile içeri al. Tekrar içeri alınca çift kayıt oluşmaz.
-- **Senkron:** private bir GitHub reposuna otomatik yedeklenir (`items/YYYY-MM.json`, `files/YYYY-MM/…`). Resimler yüklemeden önce küçültülür. Repo dolunca `-2`, `-3`… reposuna geçer.
+<img src="docs/board.jpg" width="820" alt="Pano">
 
-## Gizlilik
-- **Site herkese açık ama veriler değil.** github.io'daki sadece uygulamanın kodu. Notların senin cihazında (tarayıcı veritabanı) ve senin **private** reponda duruyor. Siteyi başkası açarsa boş bir uygulama görür.
-- **Kilit + uçtan uca şifreleme:** Ayarlar → Gizlilik'ten şifre koy. Uygulama açılırken şifre ister (5 dk arka planda kalınca tekrar kilitlenir). GitHub'a giden her şey AES-256-GCM ile şifrelenir. GitHub dahil kimse okuyamaz. Şifreyi unutursan yedek açılamaz.
-- Claude'a sadece "Düzenle / Sor / Açıkla" kullanınca ilgili kayıtlar gider.
+</div>
 
-## Bilgisayar kurulumu (bir kez)
-```bash
-bash bridge/install.sh            # köprü servisi, hn komutu, dosya yöneticisine "Nts'a gönder"
-sudo tailscale serve --bg --https=8788 http://127.0.0.1:8787   # telefondan erişim (sadece senin cihazların)
-```
-PC'de uygulamayı **http://localhost:8787** adresinden aç (köprü sunar, izin gerekmez, token kendiliğinden gelir). Brave/Chrome menüsünden "Uygulamayı yükle" ile masaüstü uygulaması yapabilirsin.
+## Ne yapar
+- **Tek kutu:** yaz, link ya da resim yapıştır, dosya bırak, **Enter** kaydeder. Yazarken kayıtlarının arasında da arar.
+- **Claude'a sor:** kutuda **Tab** ile "Sor" moduna geç: "geçen hafta kaydettiğim PDF neydi?". Claude yeni kayıtlara başlık, özet, konu koyar, görevleri ve listeleri doldurur.
+- **Görünümler:** Pano (sürükle, çiz, not yapıştır), Liste, Galeri, Yapılacaklar. Word, Excel, PowerPoint, PDF, Markdown içinde önizleme.
+- **Telefon + bilgisayar:** ikisinde de Google ile gir, kayıtlar anında senkron. Android'de herhangi bir uygulamadan **Paylaş → Nts**.
+- **Şifrelerim:** ayrı ana şifreli kasa, cihazda şifrelenir, Claude ve arama içini görmez.
 
-Hyprland kısayolu (panodakini gönderir): `bind = SUPER SHIFT, N, exec, hn --clip`
+<p align="center"><img src="docs/list.jpg" width="560" alt="Liste ve önizleme"> <img src="docs/phone.jpg" width="190" alt="Telefon"></p>
+
+## Kurulum
+Bilgisayarda (Linux, Node.js 20+, [Claude Code](https://claude.com/claude-code) girişli) tek komut:
 
 ```bash
-hn "bir not ya da https://link"   # metin
-hn rapor.pdf foto.jpg            # dosyalar
-hn --clip                        # pano (metin, resim ya da kopyalanmış dosyalar)
+curl -fsSL https://raw.githubusercontent.com/Mohamedattiadev/nts/main/install.sh | bash
 ```
-PC'den gönderilenler köprüde bekler. Uygulama açık olan ilk cihaz (telefon ya da PC) onları alır, senkron da diğerine taşır.
 
-## Telefonda
-1. Siteyi Chrome'da aç → ⋮ → **Uygulamayı yükle**.
-2. Menü → Claude köprüsü: adres `https://<pc>.<tailnet>.ts.net:8788`, token `~/.config/hizli-note/bridge.json` içinde. Telefonda Tailscale açık olmalı.
-3. Menü → GitHub senkronu: repo `Mohamedattiadev/nts-data`. Token: fine-grained, sadece bu repo, Contents: Read and write.
+Bu komut şunları kurar: Claude köprüsü (arka plan servisi), `nts` komutu, dosya yöneticisinde "Nts'a gönder", Claude Code için Nts MCP sunucusu ve telefon erişimi.
+
+Sonra **http://localhost:8787** adresini aç ve Google ile gir. Telefonda aynı Google hesabıyla girince Claude kendiliğinden bağlanır: bilgisayar açıkken istekler Supabase üzerinden şifreli gider, Tailscale gerekmez.
+
+```bash
+nts "bir not ya da https://link"   # metin
+nts rapor.pdf foto.jpg            # dosyalar
+nts --clip                        # panodaki metin, resim ya da dosyalar
+```
+
+<details><summary><b>Gizlilik</b></summary>
+
+- github.io'da sadece uygulamanın kodu var. Kayıtların cihazında ve kendi Google hesabına bağlı senkronda durur; başkası siteyi açarsa boş bir uygulama görür.
+- Ayarlar → Hesap → **Şifre koy**: uygulama açılırken şifre sorar, sunucuya giden her şey AES-256-GCM ile şifrelenir.
+- Claude senin aboneliğinle, senin bilgisayarındaki `claude` üzerinden çalışır; kayıtların başka bir sunucuya gitmez.
+
+</details>

@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join, basename } from 'node:path';
 
+if (process.argv[2] === 'import') { await import('./import.mjs'); process.exit(0); } // nts import whatsapp.zip [--yes]
 const conf = JSON.parse(readFileSync(join(homedir(), '.config/hizli-note/bridge.json'), 'utf8'));
 const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
   mp3: 'audio/mpeg', ogg: 'audio/ogg', opus: 'audio/ogg', m4a: 'audio/mp4', wav: 'audio/wav', pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', zip: 'application/zip',
