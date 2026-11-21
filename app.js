@@ -492,8 +492,7 @@ function renderChrome() {
     + Saved.list().slice(0, 4).map(v => `<button class="${Saved.same(v) ? 'on' : ''}" data-saved="${v.id}" data-tip="${esc(v.name)}" aria-label="Kayıtlı arama: ${esc(v.name)}"><span class="sv-ab">${esc([...v.name.replace(/^[#\s]+/, '')].slice(0, 2).join(''))}</span></button>`).join('')
     + `<button class="${moreOn ? 'on' : ''}" data-tags data-tip="${f.list && S.view !== 'todo' ? esc(listName(f.list)) : f.tag ? '#' + esc(f.tag) : 'Daha fazla: listeler, konular, şifrelerim'}" aria-label="Daha fazla">${ic('dots')}</button>`
     + (board ? `<button class="pal-tab${S.palOpen ? ' on' : ''}" data-paltab data-tip="${S.palOpen ? 'Çizim araçlarını kapat' : 'Çizim araçları'}" aria-label="Çizim araçları" aria-expanded="${!!S.palOpen}">${ic('pen', 'sm')}</button>` : '');
-  $('#railTab').innerHTML = `<button data-fold data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}</button>`
-    + (board ? `<button class="${S.palOpen ? 'on' : ''}" data-paltab data-tip="Çizim araçları" aria-label="Çizim araçları">${ic('pen', 'sm')}</button>` : '');
+  $('#railTab').innerHTML = `<button data-fold data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}</button>`; // 88: only >, the palette folds away with the rail
   const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && !i.seenAt && (i.type !== 'link' || i.read)).length;
   $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
@@ -2369,9 +2368,9 @@ const Board = {
     $('#fitBtn').innerHTML = ic('fit', 'sm');
     $('#tidyBtn').innerHTML = ic('layers', 'sm');
     $('#zoomIn').innerHTML = ic('plus', 'sm'); $('#zoomOut').innerHTML = '<svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
-    const zc = f => { const r = b.getBoundingClientRect(); this.animate(() => this.zoomAt(r.width / 2, r.height / 2, f)); };
+    const zc = f => { if (!S.cam) this.fit(false); if (!S.cam) return; const r = b.getBoundingClientRect(); this.animate(() => this.zoomAt(r.width / 2, r.height / 2, f)); };
     $('#zoomIn').onclick = () => zc(1.25); $('#zoomOut').onclick = () => zc(1 / 1.25);
-    $('#zoomPct').onclick = () => this.zoomTo(1);
+    $('#zoomPct').onclick = () => { if (!S.cam) this.fit(false); if (S.cam) this.zoomTo(1); };
     $('#fitBtn').onclick = () => this.fit();
     $('#rangeBtn').onclick = e => this.rangeMenu(e.currentTarget);
     $('#boardBtn').onclick = e => this.boardMenu(e.currentTarget);
@@ -3212,7 +3211,7 @@ const Lock = {
     return new Promise(resolve => {
       let el = $('#lock');
       if (!el) { el = document.createElement('div'); el.id = 'lock'; el.className = 'lock'; document.body.appendChild(el); }
-      el.innerHTML = `<form class="lock-card"><span class="mark lg"></span><h2>Nts kilitli</h2><p>Devam etmek için şifreni gir.</p>
+      el.innerHTML = `<form class="lock-card"><span class="mark lg">${$('.hud-l .mark')?.innerHTML || ''}</span><h2>Nts kilitli</h2><p>Devam etmek için şifreni gir.</p>
         <input type="password" autocomplete="current-password" placeholder="Şifre" autofocus><div class="lock-err"></div>
         <button class="btn primary">Kilidi aç</button></form>`;
       el.hidden = false; $('#splash').classList.add('gone');
@@ -3531,6 +3530,7 @@ function wire() {
   S.mode = 'note'; updateSend(); addEventListener('resize', updateSend);
   $('#saveBtn').onclick = submitBox;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
+  new ResizeObserver(() => { const w = $('#boardTools').offsetWidth; if (w) document.documentElement.style.setProperty('--bt-w', w + 'px'); }).observe($('#boardTools'));
   $('#cHint').onclick = e => { const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
@@ -3666,7 +3666,7 @@ function wire() {
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
-  S.view = v; S.cam = null; try { localStorage.setItem('hn-view', v); } catch { }
+  if (v !== S.view) S.cam = null; S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
   render();
 }
 async function reloadFromDB() {

@@ -257,16 +257,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         `tools/test/cloud.mjs` örneği).
 
 ## P. Sahibin 5. geri bildirimi (2026-11-21, ekran görüntüleri sohbette)
-- [ ] 86. **Pano alt araçları kutuyla üst üste biniyor + bazıları çalışmıyor:** 1440 px'in altında (1366'da 9 px, 1280'de 52 px, 1100'de
+- [x] 86. (2026-11-21: panoda kutu araçların soluna kayıp/daralıyor, 900–1920 px çakışma 0; asıl bozuk düğmeler: aynı görünüme tekrar geçince kamera boş kalıyordu → − / % / + hata veriyordu, düzeldi; sığdır, düzenle, pano/zaman seçici denendi) **Pano alt araçları kutuyla üst üste biniyor + bazıları çalışmıyor:** 1440 px'in altında (1366'da 9 px, 1280'de 52 px, 1100'de
         142 px) `#boardTools` (− % + · Genel · Son 30 gün · sığdır · düzenle) kutunun gönder düğmesinin üstüne biniyor. Dar ekranda
         araçlar kutunun üstüne/yanına çekilsin ya da kutu kısalsın; hiçbir genişlikte çakışma olmasın (1024–1920 tara). Sonra her düğmeyi
         tek tek dene (yakınlaştır/uzaklaştır, % tıklayınca %100, pano seçici, zaman seçici, sığdır, düzenle) ve çalışmayanı düzelt.
 - [ ] 87. **İlk açılışta yapay zekâ seçimi:** kullanıcı ilk girişte Claude / Codex / Gemini (/ başka) seçsin; kutunun yazısı, "X'e sor"
         çipi, Tab ipucu, ayarlar ve tur metinleri seçilene göre değişsin; Ayarlar'dan değiştirilebilsin. Köprü seçilen CLI'yi çalıştırsın
         (`claude -p`, `codex exec`, `gemini -p`; kurulu değilse kibarca söyle). Varsayılan Claude; mevcut kullanıcıya soru bir kez çıksın.
-- [ ] 88. **Sol çubuk kapanınca:** şu an [> | kalem] kutusu paletin yanında kalıyor (çirkin). Kapatınca önce o kutu kalksın ve yalnız palet
+- [x] 88. (2026-11-21: sıralı: çubuk gider → palet bir an kalır, kayar → yalnız ">" sekmesi; sekmede kalem yok; ">" ikisini geri getirir) **Sol çubuk kapanınca:** şu an [> | kalem] kutusu paletin yanında kalıyor (çirkin). Kapatınca önce o kutu kalksın ve yalnız palet
         kalsın, sonra palet de kayıp yalnız küçük ">" sekmesi kalsın (yumuşak, sıralı animasyon); ">" ile hepsi geri gelsin.
-- [ ] 89. **Logo (.mark):** koyu temada arkası beyaz kalıyor → koyu olsun; diğer üst öğelere göre çok küçük ve hizasız → onlarla aynı boy
+- [x] 89. (2026-11-21: satır içi SVG, koyu temada koyu zemin, çizgiler + nokta accent rengi; logo, görünüm seçici, ayarlar masaüstünde hepsi 36 px aynı hizada) **Logo (.mark):** koyu temada arkası beyaz kalıyor → koyu olsun; diğer üst öğelere göre çok küçük ve hizasız → onlarla aynı boy
         (36–40 px) ve aynı dikey hizada; içindeki turuncu/sarı ana renge (accent) göre değişsin (inline SVG, CSS değişkenleri).
 - [ ] 90. **Çizimde 0,1 sn yanıp sönme + genel akıcılık:** kalemle çizgiyi bitirince canlı çizgi silinip pano yeniden çizildiği için
         kısa bir titreme var. Bitince çizgi yerinde kalsın (canlı path kalıcıya dönüşsün, `#ink` baştan kurulmasın). Genel olarak yumuşak

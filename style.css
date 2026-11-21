@@ -54,8 +54,15 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-
 
 /* ---------- layout: the canvas is the whole screen, chrome floats ---------- */
 .app { min-height: 100dvh; }
-.mark { width: 24px; height: 24px; border-radius: 7px; background: #fff url("icons/icon.svg") center / 100% no-repeat; flex: none; box-shadow: var(--shadow-sm); }
-[data-theme="light"] .mark { box-shadow: 0 0 0 1px var(--line), var(--shadow-sm); }
+/* 89: the logo is inline SVG so it follows the theme (dark tile in dark mode) and the accent colour; same 36 px as the other top controls */
+.mark { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); display: grid; place-items: center; flex: none; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+.mark svg { width: 100%; height: 100%; display: block; }
+.mark .mk-b { fill: none; stroke: var(--text); stroke-width: 8; stroke-linejoin: round; }
+.mark .mk-l { stroke: var(--accent); stroke-width: 8; stroke-linecap: round; }
+.mark .mk-d { fill: var(--accent); stroke: var(--surface); stroke-width: 4; }
+[data-theme="dark"] .mark { background: var(--surface-2); border-color: #3a3a45; }
+[data-theme="dark"] .mark .mk-d { stroke: var(--surface-2); }
+@media (min-width: 900px) { #settingsBtn { width: 36px; height: 36px; } #viewSwitch button { height: 28px; } }
 .float { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3);
   border: 1px solid var(--line); box-shadow: 0 1px 2px rgb(0 0 0 / .06), 0 6px 20px rgb(0 0 0 / .08); }
 [data-theme="dark"] .float { box-shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); }
@@ -121,6 +128,11 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-
 .dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 25;
   width: min(600px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .dock > * { pointer-events: auto; }
+/* 86: on the board the right-hand tools take ~380 px; on narrower desktops slide/shrink the box left so they never overlap */
+@media (min-width: 900px) {
+  body.board-view .dock { --dw: min(600px, calc(100vw - var(--bt-w, 380px) - 60px)); width: var(--dw);
+    left: min(50%, calc(100vw - var(--bt-w, 380px) - 28px - var(--dw) / 2)); }
+}
 .composer { background: var(--surface); border: 1px solid var(--line-2); border-radius: 24px; padding: 6px; transition: border-color .15s, box-shadow .2s;
   box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 8px 28px rgb(0 0 0 / .1); }
 [data-theme="dark"] .composer { background: var(--surface-2); border-color: #3a3a45; box-shadow: 0 0 0 1px rgb(255 255 255 / .03), 0 10px 30px rgb(0 0 0 / .55); }
@@ -758,20 +770,23 @@ dialog.reader .d-body { gap: 10px; }
 
 /* ---------- rail: fold away + drawing palette sliding out of it (desktop) ---------- */
 .rail { transition: transform .25s var(--ease), opacity .2s; }
+/* 88: folding goes in steps: the rail leaves, the palette stays a moment and slides out, then only the small > tab is left; > brings both back */
 .rail .r-fold { height: 22px; color: var(--muted); } .rail .r-fold .i { transform: rotate(180deg); }
 body.rail-off .rail { transform: translate(-90px, -50%); opacity: 0; pointer-events: none; }
 .rail-tab { position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 30; flex-direction: column; gap: 2px; padding: 4px 3px; border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-left: 0; box-shadow: var(--shadow-sm); animation: tabIn .25s var(--ease); }
+  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-left: 0; box-shadow: var(--shadow-sm); animation: tabIn .25s var(--ease) .45s both; }
 .rail-tab[hidden] { display: none !important; }
 .rail-tab button { width: 28px; height: 32px; border-radius: 7px; display: grid; place-items: center; color: var(--text-2); }
 .rail-tab button:hover { background: var(--surface-2); color: var(--text); } .rail-tab button.on { color: var(--accent); background: var(--accent-soft); }
 .rail-tab [data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: var(--text); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; pointer-events: none; }
-@keyframes tabIn { from { transform: translate(-100%, -50%); } }
+@keyframes tabIn { from { transform: translate(-100%, -50%); opacity: 0; } }
 .rail .pal-tab { margin-top: 2px; }
 .d-only-b { display: block; }
 @media (min-width: 900px) {
   .board-tools.pal { left: 70px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; animation: palIn .22s var(--ease); }
-  body.rail-off .board-tools.pal { left: 40px; }
+  .board-tools.pal { transition: transform .25s var(--ease) .08s, opacity .2s .08s, visibility 0s; }
+  body.rail-off .board-tools.pal { transform: translate(-150px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
+    transition: transform .28s var(--ease) .22s, opacity .2s .3s, visibility 0s .5s; }
   @keyframes palIn { from { opacity: 0; transform: translate(-14px, -50%); } }
 }
 @media (max-width: 899px) { .d-only-b { display: none !important; } }
