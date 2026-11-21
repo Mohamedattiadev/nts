@@ -285,7 +285,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         kart Bugün sütununda kaldı). Şüphe: `Board.tidy()` → `setPos(i, undefined)` + `savePos` kayıtları yerinde değiştiriyor, `S.items`
         dizisi yenilenmiyor → `visible()` önbelleği / `Board._key` / `Board.M` eski kalıyor (kural: items dizisi hep yenilenir, yerinde
         değiştirilmez). Proje panosunda `posBy` için de aynı. Taşınmış kart + Düzenle → kart kendi günüyle aynı sütuna dönmeli; Playwright ile kanıtla.
-- [ ] 92. **Bugün ile dün yan yana ayırt edilmiyor:** gün sütunlarına hafif zemin bandı (günler dönüşümlü ton) ya da ince dikey ayırıcı,
+- [x] 92. (2026-11-21: her gün tek yumuşak bant (dönüşümlü ton), Bugün ana renkte bant + başlık, "Dün · 20 Kasım Cuma", iç sütun aralığı 12 px / günler arası 76 px; uzak görünümde bant kapalı) **Bugün ile dün yan yana ayırt edilmiyor:** gün sütunlarına hafif zemin bandı (günler dönüşümlü ton) ya da ince dikey ayırıcı,
         "Bugün" ana renkle vurgulu, başlıkta tarih + hafta günü ("Dün · 20 Kasım Cuma"), bir günün alt sütunları (4'erli) tek blok gibi dursun
         (aradaki boşluk küçük, günler arası boşluk büyük). Masaüstü + telefon, açık + koyu.
 - [ ] 93. **Yapay zekâya pano hazırlat:** kutuya "poultrycare için pano hazırla" / "yazılımla ilgili ipuçlarını topla" yazınca seçili yapay zekâ

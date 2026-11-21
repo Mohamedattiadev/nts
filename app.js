@@ -90,6 +90,7 @@ const memoDay = fn => { const m = new Map(); let today = ''; return key => { con
 const shortDay = memoDay(key => { const t = fmtDay(key); if (t === 'Bugün' || t === 'Dün') return t; const [y, m, d] = key.split('-').map(Number); return (y !== new Date().getFullYear() ? F_SDY : F_SD).format(new Date(y, m - 1, d)); });
 const fmtTime = ts => F_TIME.format(ts);
 const fmtDay = memoDay(fmtDay0);
+const fmtDay0d = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }); }; // 92: the date behind "Bugün" / "Dün"
 function fmtDay0(key) {
   const today = dayKey(now()), yest = dayKey(now() - 864e5);
   if (key === today) return 'Bugün'; if (key === yest) return 'Dün';
@@ -2158,7 +2159,7 @@ const Ink = {
 
 // ---------- board ----------
 const Board = {
-  COLW: 240, GAP: 64, PER: 4,
+  COLW: 240, GAP: 76, PER: 4, IN: 12, // IN: between a day's own columns (small), GAP: between days (big) - 92
   // Free canvas, like Figma: cards you have moved keep their place (i.pos, synced);
   // cards you never moved are stacked in day columns to the right of the placed ones.
   // card height without the DOM (title ≤ 2 lines, text ≤ 3 lines, meta 1 line): 10,000 cards are laid out in memory
@@ -2184,7 +2185,7 @@ const Board = {
   // right of the placed ones. Only the cards on screen (+ a margin) are in the DOM.
   render(items) {
     const plane = $('#plane');
-    plane.querySelectorAll('.bcard,.col-head').forEach(e => e.remove());
+    plane.querySelectorAll('.bcard,.col-head,.day-band').forEach(e => e.remove());
     const list = items.slice().sort((a, b) => a.ts - b.ts);
     const placed = list.filter(posOf), free = list.filter(i => !posOf(i) && !i.sticky);
     Ink.render();
@@ -2196,12 +2197,12 @@ const Board = {
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
-    let cx = x0;
-    for (const d of days) {
-      const x = cx; cx += Math.ceil(d.items.length / this.PER) * (this.COLW + 20) - 20 + this.GAP;
-      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cx - x - this.GAP / 2 });
+    let cx = x0; const today = dayKey(now());
+    for (const [n0, d] of days.entries()) {
+      const x = cx, cw = Math.ceil(d.items.length / this.PER) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
       const ys = [];
-      d.items.forEach((i, n) => { const col = Math.floor(n / this.PER), h = this.est(i), y = ys[col] ?? y0 + 30; ys[col] = y + h + 14; this.M.set(i.id, { i, x: x + col * (this.COLW + 20), y, w: this.COLW, h, auto: true }); });
+      d.items.forEach((i, n) => { const col = Math.floor(n / this.PER), h = this.est(i), y = ys[col] ?? y0 + 30; ys[col] = y + h + 14; this.M.set(i.id, { i, x: x + col * (this.COLW + this.IN), y, w: this.COLW, h, auto: true }); });
+      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...ys) - y0, alt: n0 % 2, today: d.k === today });
     }
     // months for the far-out view: each spans its days' columns
     this.months = []; for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
@@ -2246,8 +2247,12 @@ const Board = {
     }
     for (const h of this.heads) {
       const el = this.mountedHeads.get(h.k), inn = h.x < v.x2 && h.x + h.w > v.x1;
-      if (inn && !el) { const e = document.createElement('div'); e.className = 'col-head'; e.innerHTML = `<span class="l">${fmtDay(h.k)}</span><span class="s">${shortDay(h.k)}</span><span class="cnt">${h.n}</span>`;
-        e.style.left = h.x + 'px'; e.style.top = h.y + 'px'; e.style.setProperty('--w', h.w + 'px'); frag.appendChild(e); this.mountedHeads.set(h.k, e); }
+      if (inn && !el) { // 92: each day is one soft band (alternating tone, today in the accent) with its head on top: "Dün · 20 Kasım Cuma"
+        const e = document.createElement('div'), l = fmtDay(h.k), rel = l === 'Bugün' || l === 'Dün';
+        e.className = 'day-band' + (h.alt ? ' alt' : '') + (h.today ? ' today' : '');
+        e.innerHTML = `<div class="col-head"><span class="l">${l}${rel ? `<span class="dt"> · ${fmtDay0d(h.k)}</span>` : ''}</span><span class="s">${shortDay(h.k)}</span><span class="cnt">${h.n}</span></div>`;
+        Object.assign(e.style, { left: h.x - 12 + 'px', top: h.y - 12 + 'px', width: h.w + 24 + 'px', height: h.h + 20 + 'px' }); e.style.setProperty('--w', h.w + 'px');
+        frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
     if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t))); }

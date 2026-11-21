@@ -320,6 +320,13 @@ mark { background: var(--hit-soft); color: inherit; border-radius: 3px; padding:
 .far .col-head .s { display: inline; }
 .far .col-head { color: var(--text); }
 .col-head .cnt { font-weight: 400; color: var(--muted); }
+.day-band { position: absolute; z-index: -1; pointer-events: none; border-radius: 16px; background: color-mix(in srgb, var(--text) 2.5%, transparent); }
+.day-band.alt { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.day-band.today { background: color-mix(in srgb, var(--accent) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+.day-band > .col-head { left: 12px; top: 12px; }
+.day-band.today > .col-head, .day-band.today > .col-head .cnt { color: var(--accent); }
+.col-head .dt { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.far .day-band, .board.months .day-band { background: none; box-shadow: none; }
 /* zoomed out (<70%): every card shows its date in readable size */
 .b-date { display: none; position: absolute; left: 0; top: 0; z-index: 2; transform-origin: 0 0; transform: scale(var(--hs, 1));
   max-width: calc(100% / var(--hs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
