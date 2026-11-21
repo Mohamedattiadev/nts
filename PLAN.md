@@ -355,5 +355,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         transform/opacity, 60 fps; `prefers-reduced-motion` kapalı. Doğrulama: Playwright'ta `PerformanceObserver('layout-shift')` her
         ekranda ~0 (beklenmeyen kayma), açıp kapama videosu/kare dizisiyle bak; telefonda da (101'in denetimine ekle).
 
+- [ ] 103. **Arama listesi + tek kutu modları** (sahip, ekran görüntüleri):
+        (a) Görünüm/sayfa değişince (Pano/Liste/Galeri, yapılacaklar, ayarlar, kayıt penceresi) açık arama sonuç listesi kapansın; yazı kutuda
+            kalabilir, yeni sayfada sadece süzme/vurgu. Arama listesi açıkken galeri önizleme paneli (ve başka yüzen kartlar) gizlensin, üst üste binmesin.
+        (b) Tek kutuda kaydet / ara / sor karışık (sahip: "oturtamadık"). Kutunun solunda her zaman görünen mod seçici: ✎ Not · 🔍 Ara · ✦ Sor
+            (Sor = seçili yapay zekâ, 87). Yazı (placeholder), gönder simgesi ve Enter moda göre: Not = kaydet; Ara = sonuçlar açık, Enter ilk sonucu
+            açar, "hepsini göster"; Sor = yapay zekâya sor. Not modunda sonuç listesi açılmaz, sadece "4 benzer kayıt" çipi (tekrar kaydetmeyi önler).
+            Kısayol: Tab modlar arasında döner, "/" Ara, başta "?" Sor. Telefonda dokunarak seçilir, son mod hatırlanır. Turu ve ipuçlarını güncelle.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
