@@ -276,7 +276,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         "<" düğmesinin yerinde (paletin üstünde) küçük ">" durur (aynı yere tıkla: kapat/aç); palet kapalıysa yalnız ">". Animasyon ~150 ms, şu an çok yavaş.
 
 ## R. Sahibin 6. geri bildirimi (2026-11-21)
-- [ ] 91. **"Düzenle" (katman düğmesi) "Günlere göre dizildi" diyor ama hiçbir şey dizilmiyor** (ekran görüntüsü: "Dün" etiketli taşınmış
+- [x] 91. (2026-11-21: kanıtlandı — kayıtta pos silinmiş ama kart 3000 px'te kalıyordu: render() `S.items` kimliği aynı diye erken çıkıyordu; tidy ve Geri al artık diziyi yeniliyor; ana pano + proje panosu (posBy) + Geri al Playwright'ta denendi) **"Düzenle" (katman düğmesi) "Günlere göre dizildi" diyor ama hiçbir şey dizilmiyor** (ekran görüntüsü: "Dün" etiketli taşınmış
         kart Bugün sütununda kaldı). Şüphe: `Board.tidy()` → `setPos(i, undefined)` + `savePos` kayıtları yerinde değiştiriyor, `S.items`
         dizisi yenilenmiyor → `visible()` önbelleği / `Board._key` / `Board.M` eski kalıyor (kural: items dizisi hep yenilenir, yerinde
         değiştirilmez). Proje panosunda `posBy` için de aynı. Taşınmış kart + Düzenle → kart kendi günüyle aynı sütuna dönmeli; Playwright ile kanıtla.

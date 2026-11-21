@@ -2352,10 +2352,10 @@ const Board = {
     if (!list.length) { this.fit(); return toast('Zaten düzenli', 1500, 'check'); }
     const before = list.map(i => ({ id: i.id, pos: posOf(i) }));
     list.forEach(i => setPos(i, undefined));
-    await this.savePos(list); S.cam = null; render();
+    await this.savePos(list); S.items = [...S.items]; S.cam = null; render(); // 91: a new array, or render() sees "same items" and keeps the old board
     toast('Günlere göre dizildi', 5000, 'layers', { label: 'Geri al', fn: async () => {
       const back = before.map(b => { const i = byId(b.id); if (i) setPos(i, b.pos); return i; }).filter(Boolean);
-      await this.savePos(back); render();
+      await this.savePos(back); S.items = [...S.items]; render();
     } });
   },
   init() {
