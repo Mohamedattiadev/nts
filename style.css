@@ -1052,3 +1052,7 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 #ink path { transition: opacity .15s; }
 /* the board tools sit on the box's centre line (box 48 px, tools 38 px, both 18 px from the bottom before) */
 @media (min-width: 900px) { .board-tools:not(.pal) { bottom: calc(23px + env(safe-area-inset-bottom)); } }
+/* LaTeX in the wide item window and the reader: the view fills the preview and scrolls inside (it was clipped, no scroll) */
+.wide .preview > .tex-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wide .preview > .tex-view > .tex-bar { flex: none; }
+.wide .preview > .tex-view > .doc.tex, .wide .preview > .tex-view > .tex-raw { flex: 1; min-height: 0; max-height: none; overflow: auto; }
