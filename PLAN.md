@@ -425,5 +425,23 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             çizelgesi, onay listesi, küçük grafik, cevap kartı, eylem düğmeleri (Pano yap / Göreve çevir / Kaydet / Aç). Bilinmeyen parça → düz metin.
             Akış (stream) varsa parçalar geldikçe çizilsin. Telefon önce.
 
+- [ ] 107. **Genel öneriler (sahip onayladı 2026-11-21), telefon önce + phone-audit 0:**
+        (a) "Gelen kutusunu temizle" kartları (telefon): günde bir, kartlar tek tek; sağ = sakla, sol = sil (geri alınır), yukarı = göreve çevir,
+            aşağı = arşiv; masaüstünde ok tuşları; kaç kart kaldı sayacı;
+        (b) Android ana ekran widget'ı (96'daki TWA paketiyle): yeni not, sesli not, son kayıtlar;
+        (c) her yerden gönderme: e-posta adresine yazılan Nts'e (Supabase Edge Function + gelen e-posta servisi) ve Telegram botu
+            (köprüde ya da Edge Function'da; sadece sahibin hesabı, gizli anahtar);
+        (d) başka uygulamalardan taşıma: Google Keep (Takeout JSON), Apple Notes (HTML dışa aktarım), Notion (Markdown zip), Evernote (.enex),
+            Telegram "Kaydedilen Mesajlar" (JSON) — WhatsApp içe aktarımı gibi önizleme + gruplama;
+        (e) doğal dille hatırlatma: "yarın 9'da annemi ara" → görev + bildirim; bildirimde "1 saat ertele / yarın" düğmeleri;
+        (f) kendiliğinden toparlama: aynı link/benzer not → "birleştireyim mi?" (geri alınır), kırık link işareti, aylardır açılmayanları arşive öner;
+        (g) şablonlar: toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
+        (h) günlük modu: güne bir sayfa (o günün kayıtları + yapay zekâ özeti + kendi satırların);
+        (i) birlikte kullanma: not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
+        (j) dışa aktarma: panoyu PDF; Obsidian/Markdown klasörüyle eşitleme (köprü üzerinden, PC'de klasör);
+        (k) erişilebilirlik ayarları: yazı boyutu (4 adım), yüksek kontrast, büyük dokunma modu, hareketi azalt anahtarı;
+        (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
+        (m) ilk açılışta "örnek verilerle dene" (30 sn), sonra tek tıkla örnekleri sil.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

@@ -111,3 +111,15 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 99b Takvim görünümü
 - [ ] 99c Konular görünümü (sütun başına konu/proje, sürükle taşı)
 - [ ] 100 Yapılacaklar 3 sütun: Yapılacak · Yapılıyor · Bitti (PLAN 100)
+- [ ] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)
+- [ ] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
+- [ ] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
+- [ ] 107b Android ana ekran widget'ı (96'dan sonra)
+- [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
+- [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
+- [ ] 107g+107h şablonlar + günlük modu
+- [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
+- [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
+- [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
+- [ ] 107i birlikte kullanma (paylaşım, aile listesi; RLS) — sahibe Supabase SQL gerekecek, en sona sor
+- [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor
