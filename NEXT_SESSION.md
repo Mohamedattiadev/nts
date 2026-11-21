@@ -44,7 +44,6 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası)
 - [ ] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?"
 - [ ] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
-- [ ] 95f salt okunur paylaşılan pano linki (gizlilik: sadece seçilen pano, istenince kapatılır)
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
@@ -116,7 +115,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 99a galeri gerçekten görsel (masonry, yazısız)
 - [ ] 99b Takvim görünümü
 - [ ] 99c Konular görünümü (sütun başına konu/proje, sürükle taşı)
-- [ ] 100 Yapılacaklar 3 sütun: Yapılacak · Yapılıyor · Bitti (PLAN 100)
+- [ ] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100)
 - [ ] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)
 - [ ] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
 - [ ] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
@@ -127,5 +126,4 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
-- [ ] 107i birlikte kullanma (paylaşım, aile listesi; RLS) — sahibe Supabase SQL gerekecek, en sona sor
 - [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor

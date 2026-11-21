@@ -309,7 +309,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (f) PWA: uygulama ikonunda bekleyen görev sayısı (Badging API), masaüstünde `display_override: window-controls-overlay`.
 - [ ] 95. **Öneriler (sahip onayladı 2026-11-21, ayrı ayrı yap: 95a–95g):** sesli not (basılı tut → kaydet → yapay zekâ yazıya döker); sabah özeti bildirimi
         (dün kaydettiklerin + bugünkü görevler); okuma listesinde "3 gün sonra tekrar göster"; ekran görüntüsünde tarih görünce "göreve çevireyim mi";
-        Ctrl+K komut paleti (her şeye tek yerden); salt okunur paylaşılabilir pano linki; tarayıcı eklentisi (sağ tık → Nts'e gönder);
+        Ctrl+K komut paleti (her şeye tek yerden); ~~salt okunur paylaşılabilir pano linki~~ (95f KALDIRILDI, sahip); tarayıcı eklentisi (sağ tık → Nts'e gönder);
         gerçek native gerekirse aynı kodla Tauri (masaüstü) / Capacitor (telefon) sarmalayıcı.
         95a sesli not · 95b sabah özeti bildirimi · 95c okuma listesinde "3 gün sonra tekrar" · 95d resimde tarih → "göreve çevir?"
         · 95e Ctrl+K komut paleti · 95f salt okunur paylaşılan pano linki · 95g tarayıcı eklentisi (sağ tık → Nts'e gönder).
@@ -334,7 +334,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (c) Konular görünümü: proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
         Üstteki görünüm seçici: Pano · Liste · Galeri · Takvim · Konular (telefonda simge, sığmazsa "⋯").
 
-- [ ] 100. **Yapılacaklar 3 sütun (kanban):** Yapılacak · Yapılıyor · Bitti (sahip onayladı). Masaüstü: yan yana sütunlar, kartı sürükle
+- [ ] 100. **(KÜÇÜLTÜLDÜ, sahip: 3 sütun yok) Yapılacaklar basit liste kalır, isteyen göreve küçük "Yapılıyor" etiketi koyar (listede üstte, ince işaret); `todo.doing`, birleştirmede done > doing.** Eski metin: Yapılacak · Yapılıyor · Bitti (sahip onayladı). Masaüstü: yan yana sütunlar, kartı sürükle
         (klavyeyle de taşınır). Telefon: üstte 3 sekme + kartı yana kaydırınca sonraki sütuna. Bugün/yaklaşan/tarihsiz grupları, tarih,
         öncelik, tekrar "Yapılacak" içinde aynen kalır. "Bitti" son 7 gün, gerisi "Eskiler" altında katlı. Yeni alan `todo.doing` (geriye uyumlu:
         done → Bitti, diğerleri → Yapılacak); senkron birleştirmede (mergeItem) done > doing > yapılacak. Bildirimler bozulmasın.
@@ -437,7 +437,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (f) kendiliğinden toparlama: aynı link/benzer not → "birleştireyim mi?" (geri alınır), kırık link işareti, aylardır açılmayanları arşive öner;
         (g) şablonlar: toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
         (h) ~~günlük modu~~ — KALDIRILDI (sahip: "gerek yok, kullanıcı orada kalmıyor, notunu atıp sonra bakıyor");
-        (i) birlikte kullanma: not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
+        (i) ~~birlikte kullanma~~ KALDIRILDI (sahip, "hızlı at, sonra bul" fikrine uymuyor): not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
         (j) dışa aktarma: panoyu PDF; Obsidian/Markdown klasörüyle eşitleme (köprü üzerinden, PC'de klasör);
         (k) erişilebilirlik ayarları: yazı boyutu (4 adım), yüksek kontrast, büyük dokunma modu, hareketi azalt anahtarı;
         (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
