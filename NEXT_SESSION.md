@@ -10,6 +10,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
 - [ ] 98 telefonda pano görünümü çok kötü (önce bu; PLAN 98)
+- [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test
 - [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
 - [ ] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c.
@@ -29,6 +30,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
+- TELEFON ÖNCE (sahip, 2026-11-21): her arayüz işi telefonda (360/390 px) kusursuz olmadan bitmez; 101'den sonra phone-audit.mjs her işte 0 hata.
 - Vanilla JS, derleme yok, arayüz Türkçe. Her arayüz değişikliğinden sonra Playwright ile ekran görüntüsü (masaüstü 1366x768 + telefon
   390x844, açık + koyu), görüntüye bakmadan "bitti" deme, konsol hatası olmasın, `node --check app.js` geçsin. Testlerde hn-tour=1 (lib.mjs yapıyor).
 - Sunucu: `curl -s 127.0.0.1:8790` çalışmıyorsa `python3 -m http.server 8790 --bind 127.0.0.1` (arka planda). Köprü http://localhost:8787;

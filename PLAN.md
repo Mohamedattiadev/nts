@@ -332,5 +332,17 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         öncelik, tekrar "Yapılacak" içinde aynen kalır. "Bitti" son 7 gün, gerisi "Eskiler" altında katlı. Yeni alan `todo.doing` (geriye uyumlu:
         done → Bitti, diğerleri → Yapılacak); senkron birleştirmede (mergeItem) done > doing > yapılacak. Bildirimler bozulmasın.
 
+- [ ] 101. **Telefon önce: tüm uygulama telefonda kusursuz** (sahip, 2026-11-21: "phone çok önemli, conflict / üst üste / boş / görünmeyen /
+        yarım kalan olmasın, açılan sekme ve kapanması kolay olsun"). Önce otomatik telefon denetimi yaz (`phone-audit.mjs`, skill'e ekle):
+        360×740, 375×667 (iPhone SE), 390×844, 412×915 × açık/koyu; ekranlar: pano, liste, galeri, takvim/konular (varsa), yapılacaklar,
+        kayıt penceresi (not/link/resim/PDF/LaTeX), okuma sayfası, ⋯ menü, Tarihe git, ayarlar (tüm alt sayfalar), şifrelerim, çöp kutusu,
+        Claude cevabı, arama sonuçları, bildirim (toast) açıkken, klavye açıkken (visualViewport küçült).
+        Ölçülecekler: (1) üst üste binme: görünür sabit/yüzen öğelerin kesişimi + tıklanabilir öğenin üstünü başka öğe kapatıyor mu
+        (`elementFromPoint` merkezde kendisi mi); (2) taşma/kesilme: öğe ekran dışında ya da `scrollWidth > clientWidth` (yatay kaydırma yok),
+        yazı ellipsis olmadan kesiliyor mu; (3) boş görünen alan: içeriksiz kutular, boş durum metni var mı; (4) dokunma hedefi ≥ 44 px ve
+        aralarında ≥ 8 px; (5) güvenli alan: çentik/alt çubuk; (6) her pencere/menü/sayfa: açılır ve Android geri tuşu, dışına dokunma, aşağı
+        kaydırma, × ile kapanır, kapanınca arkada artık iz/kilitli kaydırma kalmaz. Sonuç tablosunu `design/ux-review.md`'ye "(c) telefon"
+        olarak yaz, hepsini 0'a indir, öncesi/sonrası ekran görüntüsü. Bundan sonra her arayüz işinde phone-audit 0 hata olmadan "bitti" deme.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
