@@ -443,5 +443,10 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
         (m) ilk açılışta "örnek verilerle dene" (30 sn), sonra tek tıkla örnekleri sil.
 
+- [ ] 108. **Bağlı kartlar arasındaki çizgiler kötü** (sahip, ekran görüntüleri): şu an dar boşlukta dik iniyor, kartların arkasından/üstünden
+        geçiyor, birbirine karışıyor. Çözüm: en yakın kenarlardan çıkan yumuşak eğri (bezier), kart gövdesini delmez (aradaki kartın kenarından
+        dolaş ya da o kısım çok silik); normalde çok silik/gizli, karta gelince/seçince o kartın bağlantıları belirgin + renkli + uçlarda nokta;
+        uzaklaşınca çizgi yok, sadece kartta "🔗 3"; Board.wires() sadece görünen kartlar için, kaydırırken akıcı (rAF). Masaüstü + telefon (dokununca göster).
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
