@@ -11,11 +11,11 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
 - [ ] 98 telefonda pano görünümü çok kötü (önce bu; PLAN 98)
 - [ ] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test
-- [ ] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü.
+- [x] 88b sol çubuk kapanışı DÜZELT (sahip, ekran görüntüleri): kapanınca filtre çubuğu gider, çizim paleti KALIR (panoda), "<" düğmesinin durduğu yerde (paletin üstünde) küçük ">" görünür; palet açık değilse yalnız ">". Kapanış/açılış ~150 ms (şu an çok yavaş), iki adım bekletmeden. Masaüstü açık+koyu, ekran görüntüsü. (ce05177)
 - [ ] 88c ">" sekmesi paletin SAĞINDAN çıksın (paletin üstünde ayrı kutu değil; paletle aynı zemin, yapışık kulakçık). PLAN 88c.
 - [x] 87 ilk açılışta Claude / Codex / Gemini seçimi (köprü de; bridge/server.mjs değişince `systemctl --user restart hizli-note-bridge`) (3df1968)
-- [ ] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla)
-- [ ] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih)
+- [x] 91 "Düzenle" dizmiyor (Board.tidy yerinde değiştiriyor, S.items yenilenmiyor — PLAN 91'deki şüpheyi önce kanıtla) (c7e6d5e)
+- [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
 - [ ] 94a+94b View Transitions geçişleri + dokunma geri bildirimi
 - [ ] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
@@ -43,8 +43,13 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 88b (Rail.fold / body.rail-off CSS, style.css sonundaki 88 bloğu; palet kalsın, ">" "<"nin yerinde, ~150 ms),
-sonra 91 (önce Playwright ile kanıtla: taşınmış kart + Düzenle → sütununa dönüyor mu), vakit kalırsa 92. Sonra handoff.
+TAM SIRADAKİ ADIM: 94a+94b (View Transitions + dokunma geri bildirimi), sonra 94c+94d, vakit kalırsa 94e+94f. Sonra handoff.
+
+BİLGİ (2026-11-21, 4. oturum): 88b/91/92 bitti (sw v27). Rail.place() "<" konumunu ölçüp --rt-top ile ">" sekmesini aynı yere koyar;
+rail-off'ta palet kalır (translateX -54px). 91'in kökü: render() vkey'i  KİMLİĞİNE bakar → kayıtları yerinde değiştirip
+render() çağırmak hiçbir şey çizmez; değiştirdikten sonra . 92: Board.layout gün başına .day-band (içinde
+.col-head), Board.IN=12 iç aralık, GAP=76; fmtDay0d(key) tarih+gün adı. style.css'te başka oturuma ait commit'lenmemiş LaTeX bloğu
+taşıması duruyor (dokunma; git update-index ile kendi parçanı ayrı commit'le).
 
 BİLGİ (2026-11-21, 3. oturum): 90 bitti (006f87f): Ink.render() artık id ile fark alıyor (path._k anahtarı), Ink.end() canlı path'i
 kalıcıya çeviriyor; yumuşak geçişler: .vin (setView), .pop.closing (Pop.close), .bcard.born / .bcard.gone. 87 bitti (3df1968, sw v24):
