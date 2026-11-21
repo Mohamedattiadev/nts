@@ -9,6 +9,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 89 logo (.mark) koyu tema, boy, hiza, accent rengi (8b1e792)
 - [x] 88 sol çubuk kapanınca sıralı animasyon → yalnız ">" (8b1e792)
 - [x] 90 çizimde titreme + genel yumuşak geçişler (006f87f)
+- [ ] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not)
 - [ ] 98 telefonda pano görünümü çok kötü (önce bu; PLAN 98)
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 97 Tüm verileri sil + kendi onay penceremiz ("SİL" yaz), bu cihaz / her yerden; sahte Supabase ile test
