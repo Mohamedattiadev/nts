@@ -365,6 +365,18 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             Ara modu CANLI (sahip): Enter beklemeden her harfte (~100 ms) süzer; sayfa da süzülür (liste/galeri sadece eşleşenler, panoda
             eşleşmeyenler solar), kutunun üstünde "poul · 4 kayıt ×" çipi; harf silince sonuçlar geri gelir. Enter = ilk sonucu aç, ↑↓ gez,
             Esc temizle. 10k kayıtta da akıcı (bench.mjs ile ölç, tuş başına < 50 ms).
+            TİTREME YOK (sahip): yazarken liste/galeri/pano baştan çizilmez (innerHTML yok); eşleşmeyenler sınıfla solup gizlenir, kalanlar
+            FLIP ile kayarak toplanır, kaydırma yerinde kalır, resimler yeniden yüklenmez; harf silince geri gelenler de yumuşak.
+
+- [ ] 104. **Akıllı arama** (sahip: "akıllı search olmalı, ona özel şeyler düşünülmeli"; 103b'den sonra):
+        (a) doğal dil süzgeçleri: "geçen hafta / mart 2024 / dün" → tarih, "pdf / foto / link / video" → tür, "whatsapp annem / telefon" → kaynak;
+            kutunun üstünde çip, × ile kalkar; (b) yazım hatası + Türkçe harf toleransı ("faturra", "sut", "gorev");
+        (c) her yerde ara: OCR, PDF metni, okunur kopya, LaTeX, WhatsApp mesajları; sonuçta eşleşen yer vurgulu kısa alıntı;
+        (d) anlamsal arama: cihazda küçük çok dilli gömme modeli (transformers.js, ~25 MB, bir kez iner, veri dışarı gitmez; Worker'da,
+            vektörler IndexedDB'de) → "fatura" "makbuz/invoice" bulur; az sonuçta "Yapay zekâ ile ara" düğmesi (seçili yapay zekâ);
+        (e) sıralama: başlıkta tam eşleşme > yıldızlı > sık açılan > yeni; sonuçlar türe göre gruplu + sayılı;
+        (f) kutu boşken: son aramalar, kayıtlı aramalar, sık konular; (g) ifadeler: #etiket, proje:ad, "tam ifade", -hariç.
+        10k kayıtta tuş başına < 50 ms (anlamsal kısım arka planda, sonuçlar gelince yumuşakça eklenir). Telefonda da.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
