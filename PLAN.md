@@ -448,5 +448,52 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         dolaş ya da o kısım çok silik); normalde çok silik/gizli, karta gelince/seçince o kartın bağlantıları belirgin + renkli + uçlarda nokta;
         uzaklaşınca çizgi yok, sadece kartta "🔗 3"; Board.wires() sadece görünen kartlar için, kaydırırken akıcı (rAF). Masaüstü + telefon (dokununca göster).
 
+## T. Sahibin 8. geri bildirimi (2026-11-22)
+Hatalar (önce bunlar, telefon önce):
+- [ ] 109. **Pano hataları**: (a) yakınlaştır/uzaklaştır bazen çalışmıyor (tekerlek, +/−, iki parmak — kök nedeni bul);
+        (b) taşınan kartlar bazen kendiliğinden kötü yerlere gidiyor, özellikle bilgisayar ↔ telefon arasında (senkronda konum birleştirme:
+        x/y için updatedAt alan bazında, eski konum yenisini ezmesin; Board.tidy / fit konumu kaydetmesin); (c) içerik ekleyen düğmeler
+        (ataç, kaydet, dosya, yapıştır) bazen saçmalıyor — hepsini tek tek dene, kök nedenleri yaz; (d) günler arası çizgi HİÇ görünmüyor
+        (92b'deki .day-band::before telefon/masaüstü, açık/koyu, her yakınlıkta gerçekten görünür olsun, ekran görüntüsüyle kanıtla).
+- [ ] 110. **Senkron sadeleşsin** ("bi tık karışık"): kullanıcı ne olduğunu tek bakışta anlasın (tek durum noktası: ✓ eşit / ↻ gönderiyor /
+        ! sorun + dokununca açıklama); iki cihaz testi (twodevice.mjs) konum + düzenleme + silme senaryolarıyla.
+- [ ] 111. **Açık tema telefonda çalışmıyor** — nedenini bul (prefers-color-scheme, meta theme-color, hn-theme), düzelt, 4 boyutta dene.
+- [ ] 112. **Derin kullanıcı testi** ("teyze de kullanabilsin"): her düğmeye tek tek bas (masaüstü + telefon), beklenen sonucu yaz,
+        çalışmayan/kafa karıştıran her şeyi düzelt; eksik akıcılık (geçiş, geri bildirim) ekle. Sonuç `design/ux-review.md` "(d) düğme düğme".
+- [ ] 113. **Hizalar**: (a) sol çubuktan çıkan ">" sekmesi çubuğun DİKEY ORTASINDA olsun (üstte değil); (b) logo ile sol çubuk aynı hizada değil, hizala.
+Arayüz:
+- [ ] 114. **Liste ve galeri kartlarında etiket**: şu an sadece ad + tarih; etiketleri de uygun simgeyle göster (#iş → çanta vb., yoksa #);
+        önerilen ekler: tür simgesi (link/PDF/resim), kaynak (WhatsApp/telefon/PC), görev ise tarih çipi, bağlantı sayısı "🔗 3" — sade kalsın.
+- [ ] 115. **Üstteki görünüm seçici (Pano · Liste · Galeri…) kendini gizlesin**: 10 sn üzerine gelinmezse yumuşakça yukarı kayıp gizlenir,
+        fare üst kenara yaklaşınca / telefonda yukarı kaydırınca geri iner (reduced-motion: anında). Klavyeyle odaklanınca da görünür.
+- [ ] 116. **Logo boş duruyor → pano seçici**: sağ alttaki pano çubuğundaki (Genel vb.) pano seçimi logoya taşınsın: logo + pano adı, dokununca
+        panolar listesi (yeni pano, yeniden adlandır). Sağ alttaki çubuk sadeleşir.
+- [ ] 117. **Yazı kutusu üstündeki şeyleri görünür bıraksın**: panoda bir kartın üstündeyken kutu, logo, yan çubuklar, üstteki seçici ve ayarlar
+        o kartı kapatıyorsa saydamlaşsın/kenara kaçsın (imleç ya da kart altında kalınca opaklık düşer, üzerine gelince geri gelir); kutu her zaman
+        net okunur kalsın.
+- [ ] 118. **Kutu modları ve ipuçları** (103b ile birlikte): placeholder anlaşılır bir cümle olsun: "Not yaz · - görev · ? yapay zekâya sor · / ara";
+        küçük tuş ipucu (Tab ile mod değiştir: `Tab`); başa yazılan işarete göre (- / ? / ve sonra eklenenler) gönder düğmesinin simgesi değişsin
+        (✎ not, ☐ görev, ✦ sor, 🔍 ara), renk uygunsa değişsin yoksa aynı kalsın.
+- [ ] 119. **Uzaklaşınca anlamlı çizim (çok önemli, sahip: "bütün gücünü ver")**: çok uzaklaşınca kartlar okunmuyor; o yakınlıkta panoda
+        güzel, tatlı, el çizimi havasında katman: kesik çizgili çerçeve/daireler ile kart kümelerini sarmak, kümeye başlık ("İş", "Aile"),
+        kümeler arasında oklar "bu bununla ilgili" (etiket, bağlantı, proje, yapay zekâ benzerliği). Yaklaşınca yumuşakça kaybolur. Önce
+        `design/zoomout.html` örnek sayfası (2–3 stil), sahip seçsin; sonra yapım. 108 ve 92b ile uyumlu, uzakta da 60 fps.
+- [ ] 120. **Yapay zekâ imleci (Figma imleçleri gibi)**: Claude/Codex/Gemini bir şey yaparken (düzenle, pano hazırla 93, etiketle) panoda kendi
+        imleci görünsün, kartları onunla taşısın/çizsin; imlecin yanında küçük ad etiketi ("Claude"), rengi yapay zekânın logo rengi (Claude
+        turuncu, Gemini mavi, Codex yeşil/siyah). Kullanıcının kendi imleci de aynı güzel tasarımda (isteğe bağlı, ayarlardan). reduced-motion: atla.
+- [ ] 121. **Cam (liquid glass) görünüm ayarı**: Ayarlar → Görünüm'de aç/kapat; tüm yüzen yüzeyler (kutu, çubuklar, pencereler) iPhone gibi
+        bulanık cam; AA kontrast korunur, yavaş telefonda otomatik kapalı. İlk tanıtımın (tur) sonunda da sorulsun: yan yana 2 küçük örnek
+        (Düz / Cam), seçer; sonra Ayarlar'dan değiştirebilir.
+- [ ] 122. **İlk tanıtımda giriş seçimi**: "Google ile giriş yap" (önerilen: telefon ve bilgisayar aynı kayıtları görür) ya da "Misafir olarak
+        devam et" (bu cihazda kalır, senkron yok, sonra Ayarlar'dan girebilir). Atla/İleri akışı içinde, sahte Supabase ile test.
+Fikir (yeri belli değil, önce öneri):
+- [ ] 123. **Kasa kilidi gibi yuvarlak çarklar**: kasa şifresi kadranları gibi döner sayılı halkalar → tarih seçici (yıl · ay · gün halkaları) ve
+        bir halka da etiketler için. Önerilen yer: "Tarihe git" ve görev tarihi seçici (telefonda parmakla çevir), etiket halkası süzgeçte.
+        Önce `design/dial.html` örneği, sahibe sor.
+Site:
+- [ ] 124. **Tanıtım sayfası (landing page)**: Igrek (Project_manager_suit) sitesi kalitesinde, animasyonlu, kısa video/GIF'li, uçuşan
+        yapay zekâ imleçleri (120); şimdilik uygulama yalnız web olduğu için "Uygulamayı aç" bağlantısı; GitHub README'ye düğmeyle eklenir
+        (github-readme skill). Ayrı klasör `site/`, Pages'te `/nts/site/` ya da kök.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

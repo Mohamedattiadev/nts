@@ -12,10 +12,14 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 103a görünüm değişince arama listesi kapansın; arama listesi açıkken galeri önizleme paneli gizlensin (üst üste binme) (0667a1e)
 - [x] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür (0667a1e)
 - [x] 98 telefonda pano görünümü çok kötü (383a3a7)
+- [ ] 111 açık tema telefonda çalışmıyor (PLAN T, sahip 8. geri bildirim — önce)
+- [ ] 109 pano hataları: zoom bazen çalışmıyor, kartlar cihazlar arasında kötü yere kayıyor, içerik ekleme düğmeleri, gün arası çizgi hiç görünmüyor
+- [ ] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
+- [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
 - [ ] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil
 - [ ] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri
@@ -38,6 +42,18 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
 - [x] 94a+94b View Transitions geçişleri + dokunma geri bildirimi (be289c8)
 - [x] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme (9164705)
+- [ ] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon)
+- [ ] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
+- [ ] 114 liste/galeri kartlarında etiket + simge
+- [ ] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
+- [ ] 116 logo = pano seçici (sağ alttan taşı)
+- [ ] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
+- [ ] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer)
+- [ ] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi)
+- [ ] 121 cam görünüm ayarı + turun sonunda Düz/Cam seçimi
+- [ ] 122 turda Google ile giriş / Misafir seçimi
+- [ ] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor)
+- [ ] 124 tanıtım sayfası (site/) + README düğmesi
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
 - [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
 - [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
