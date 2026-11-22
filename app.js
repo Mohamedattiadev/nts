@@ -1397,9 +1397,10 @@ const Rail = {
     requestAnimationFrame(() => {
       const r = $('#rail').getBoundingClientRect(), p = $('#pal'), pr = !p.hidden && p.getBoundingClientRect(), bs = document.body.style;
       const ear = !!(S.railOff && pr && pr.height && innerWidth >= 900); $('#railTab').classList.toggle('ear', ear);
-      if (ear) { bs.setProperty('--rt-left', 16 + Math.round(pr.width) - 1 + 'px'); bs.setProperty('--rt-top', Math.round(pr.top + 8) + 'px'); return; } // 16: the palette's folded left (70 - 54), not mid-slide
+      const th = $('#railTab').offsetHeight || 32; // 113: the > sits on the vertical middle of what it opens (rail, or the palette it hangs on)
+      if (ear) { bs.setProperty('--rt-left', 16 + Math.round(pr.width) - 1 + 'px'); bs.setProperty('--rt-top', Math.round(pr.top + pr.height / 2 - th / 2) + 'px'); return; } // 16: the palette's folded left (70 - 54), not mid-slide
       bs.removeProperty('--rt-left');
-      bs.setProperty('--rt-top', Math.max(8, Math.round(r.height ? r.top : innerHeight / 2 - 15)) + 'px');
+      bs.setProperty('--rt-top', Math.max(8, Math.round(r.height ? r.top + r.height / 2 - th / 2 : innerHeight / 2 - th / 2)) + 'px');
     });
   },
   fold() { S.railOff = !S.railOff; Pop.close(); try { localStorage.setItem('hn-rail', S.railOff ? 'off' : ''); } catch { } this.apply(); render(); },

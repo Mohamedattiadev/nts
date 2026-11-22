@@ -55,7 +55,7 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-
 /* ---------- layout: the canvas is the whole screen, chrome floats ---------- */
 .app { min-height: 100dvh; }
 /* 89: the logo is inline SVG so it follows the theme (dark tile in dark mode) and the accent colour; same 36 px as the other top controls */
-.mark { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); display: grid; place-items: center; flex: none; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+.mark { width: 44px; height: 44px; border-radius: 12px; background: var(--surface); display: grid; place-items: center; flex: none; border: 1px solid var(--line); box-shadow: var(--shadow-sm); } /* 113: as wide as the rail below it, so both share one left edge and one centre line */
 .mark svg { width: 24px; height: 24px; display: block; } /* about the size of the other top icons (18 px glyph + bubble tail) */
 .mark.lg svg { width: 32px; height: 32px; }
 .mark .mk-b { fill: none; stroke: var(--text); stroke-width: 8; stroke-linejoin: round; }
