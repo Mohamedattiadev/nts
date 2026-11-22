@@ -1113,6 +1113,13 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
   .rail-tab.ear { padding: 3px 3px 3px 2px; border-left: 0; border-radius: 0 9px 9px 0; background: var(--surface); box-shadow: none; animation: earIn .15s var(--ease) both; }
   .rail-tab.ear button { width: 18px; height: 34px; border-radius: 0 6px 6px 0; }
   @keyframes earIn { from { opacity: 0; transform: translateX(-6px); } }
+  /* rail folded, palette closed: a handle pulled out of the left wall (no left edge, round only on the right), it slides out of the wall */
+  .rail-tab:not(.ear) { left: 0; padding: 4px 4px 4px 0; border-left: 0; border-radius: 0 12px 12px 0; background: var(--surface);
+    box-shadow: 1px 0 2px rgb(0 0 0 / .05), 4px 4px 14px rgb(0 0 0 / .08); animation: wallIn .18s var(--ease) both; transition: padding-left .15s var(--ease); }
+  .rail-tab:not(.ear) button { width: 22px; height: 52px; border-radius: 0 8px 8px 0; }
+  .rail-tab:not(.ear):hover { padding-left: 4px; }
+  [data-theme="dark"] .rail-tab:not(.ear) { background: var(--surface-2); border-color: #3a3a45; box-shadow: 4px 4px 16px rgb(0 0 0 / .45); }
+  @keyframes wallIn { from { transform: translateX(-100%); } }
 }
 /* 94a: view change = View Transition on #main only (the floating chrome does not blink); the item window grows from the card (Morph) */
 html.vt #main { view-transition-name: main; }
