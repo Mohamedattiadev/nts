@@ -388,6 +388,16 @@ function actsHtml(i) {
     ${i.type === 'file' ? `<button class="act" data-a="download" title="İndir">${ic('down', 'sm')}</button>` : ''}
   </div>`;
 }
+// 114: a tag is a small coloured chip with a fitting icon; the colour comes from the tag's name, so one tag looks the same everywhere
+const TAG_ICONS = [[/kod|code|yaz[ıi]l[ıi]m|dev|program|github|cpu/, 'cpu'], [/yapay ?zek|ai\b|claude|gpt|llm|model/, 'spark'], [/kitap|book|okuma|oku|makale/, 'book'],
+  [/video|youtube|film|dizi/, 'video'], [/m[üu]zik|music|şark|podcast/, 'audio'], [/aile|^ev$|anne|baba|family|ki[şs]isel/, 'heart'], [/^i[şs]$|proje|work|toplant|müşteri/, 'folder'],
+  [/foto|resim|image|tasar[ıi]m|design/, 'image'], [/g[öo]rev|todo|yap[ıi]lacak/, 'todo'], [/link|site|web/, 'link'], [/fikir|idea/, 'spark'], [/ders|okul|[üu]niversite|tez|doktora/, 'book']];
+const TAG_COLS = ['blue', 'purple', 'green', 'orange', 'red', 'yellow'];
+function tagChip(t) {
+  const k = t.toLocaleLowerCase('tr'), icn = (TAG_ICONS.find(([re]) => re.test(k)) || [, 'hash'])[1];
+  let h = 0; for (const ch of k) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return `<span class="tg" style="--tc:var(--c-${TAG_COLS[h % TAG_COLS.length]})" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
+}
 function metaHtml(i, { tags = 3, acts = false, day = false } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
   return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
@@ -397,7 +407,7 @@ function metaHtml(i, { tags = 3, acts = false, day = false } = {}) {
     ${i.prio === 'high' ? `<span class="m-prio">${ic('flag', 'sm')}Yüksek</span>` : ''}
     ${i.todo ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : d ? d.label : 'Görev'}</span>`; })() : ''}
     ${rel ? `<span class="rel">${ic('rel', 'sm')}${rel}</span>` : ''}
-    ${(i.tags || []).slice(0, tags).map(t => `<span class="tg">${esc(t)}</span>`).join('')}
+    ${(i.tags || []).slice(0, tags).map(tagChip).join('')}
     ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}${acts ? actsHtml(i) : ''}</div>`;
 }
 function itemRow(i, { acts = true } = {}) {
@@ -2293,6 +2303,11 @@ const Board = {
     const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / 24))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
     return 2 + (hasVisual(i) ? 132 : 0) + 21 + tl * 19 + (sl ? 2 + sl * 18 : 0) + 6 + 18;
   },
+  // no "…": text that does not fit fades out at the end of its last line (one batched read, then one write)
+  fades(cards) {
+    const els = cards.flatMap(c => [...c.querySelectorAll('.title, .sub')]), ov = els.map(e => e.scrollHeight > e.clientHeight + 1);
+    els.forEach((e, k) => e.classList.toggle('ov', ov[k]));
+  },
   card(i) {
     const c = document.createElement('div'); c.dataset.id = i.id;
     if (i.sticky) { // a note written right on the board
@@ -2302,7 +2317,7 @@ const Board = {
     }
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '') + markCls(i);
-    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
+    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
       ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 2, day: !!posOf(i) })}</div>`;
     return c;
   },
@@ -2381,7 +2396,7 @@ const Board = {
         frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
-    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t))); }
+    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t))); this.fades(fresh); }
     this.fitHeads();
     this.wires();
   },

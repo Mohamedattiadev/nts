@@ -462,7 +462,7 @@ Hatalar (önce bunlar, telefon önce):
         çalışmayan/kafa karıştıran her şeyi düzelt; eksik akıcılık (geçiş, geri bildirim) ekle. Sonuç `design/ux-review.md` "(d) düğme düğme".
 - [x] 113. (2026-11-22: logo 44 px = çubuk genişliği, aynı sol kenar/merkez; ">" Rail.place'te çubuğun ya da paletin dikey ortasında, v35) **Hizalar**: (a) sol çubuktan çıkan ">" sekmesi çubuğun DİKEY ORTASINDA olsun (üstte değil); (b) logo ile sol çubuk aynı hizada değil, hizala.
 Arayüz:
-- [ ] 114. **Liste ve galeri kartlarında etiket**: şu an sadece ad + tarih; etiketleri de uygun simgeyle göster (#iş → çanta vb., yoksa #);
+- [~] 114. (2026-11-22, kısmen: etiketler her yerde simgeli renkli çip (tagChip, renk addan), pano kartında renkli tür kutucuğu + "…" yerine son satırda solma (Board.fades). Kalan: kaynak simgesi, listede de "…" yerine solma) **Liste ve galeri kartlarında etiket**: şu an sadece ad + tarih; etiketleri de uygun simgeyle göster (#iş → çanta vb., yoksa #);
         önerilen ekler: tür simgesi (link/PDF/resim), kaynak (WhatsApp/telefon/PC), görev ise tarih çipi, bağlantı sayısı "🔗 3" — sade kalsın.
 - [ ] 115. **Üstteki görünüm seçici (Pano · Liste · Galeri…) kendini gizlesin**: 10 sn üzerine gelinmezse yumuşakça yukarı kayıp gizlenir,
         fare üst kenara yaklaşınca / telefonda yukarı kaydırınca geri iner (reduced-motion: anında). Klavyeyle odaklanınca da görünür.
