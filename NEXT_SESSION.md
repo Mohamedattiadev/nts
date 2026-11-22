@@ -12,9 +12,9 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 103a görünüm değişince arama listesi kapansın; arama listesi açıkken galeri önizleme paneli gizlensin (üst üste binme) (0667a1e)
 - [x] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür (0667a1e)
 - [x] 98 telefonda pano görünümü çok kötü (383a3a7)
-- [x] 111 açık tema telefonda çalışmıyor (PLAN T, sahip 8. geri bildirim — önce)
+- [x] 111 açık tema telefonda çalışmıyor (d426e46)
 - [ ] 109 pano hataları: zoom bazen çalışmıyor, kartlar cihazlar arasında kötü yere kayıyor, içerik ekleme düğmeleri, gün arası çizgi hiç görünmüyor
-- [x] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası
+- [x] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası (b5479b7)
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
@@ -80,8 +80,15 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 101 TELEFON ÖNCE (phone-audit.mjs yaz: 4 boyut × 2 tema, tüm ekranlar/pencereler; hataları 0'a indir; PLAN 101),
-sonra 102 (hareket kuralları). Sonra handoff.
+TAM SIRADAKİ ADIM: 109 pano hataları (PLAN T 109: zoom bazen çalışmıyor → kök neden; cihazlar arası kart konumu — mergeItem'da x/y;
+içerik ekleme düğmeleri tek tek; gün arası çizgi her yakınlıkta görünür mü, ekran görüntüsüyle), sonra 101 (phone-audit.mjs taslağı hazır). Sonra handoff.
+
+BİLGİ (2026-11-22, 8. oturum): sahibin 8. geri bildirimi PLAN "T" bölümüne 109–124 olarak yazıldı (07bc8a0). 111 (d426e46, v34): kök
+neden Android Chrome otomatik karartması; [data-theme="light"] artık `color-scheme: only light` + index.html'de meta color-scheme. Headless
+bunu taklit edemiyor, sahip telefonda doğrulasın. 113 (b5479b7, v35): .mark 44×44 (çubukla aynı), Rail.place ">"yi çubuğun/paletin dikey
+ortasına koyar. phone-audit.mjs TASLAĞI skill klasöründe (ilk koşu: pano/liste/galeri/yapılacak'ta small/tight/overlap var; diğer ekranlar
+closeAnswer ReferenceError yüzünden ölçülmedi, düzeltildi — yeniden koş). Not: 92b'nin gün arası çizgisi masaüstü pano ekran görüntüsünde
+görünüyordu; sahip "hiç görünmüyor" diyor → telefonda ve farklı yakınlıklarda bak. style.css'teki yabancı LaTeX taşıması hâlâ ayrı duruyor.
 
 BİLGİ (2026-11-21, 7. oturum): 103a+92b bitti (0667a1e, v33). 103a: `S.hitsOff` + `hideHits()` (app.js closeAnswer üstünde); setView
 değişince ve Back.open (her dialog) çağırır; renderHits hitsOff'ta listeyi kapatır (qchip değil); kutuya yazınca/focus olunca geri açılır.
