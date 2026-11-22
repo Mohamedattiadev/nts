@@ -190,3 +190,22 @@ Yok.
 - KaTeX çevrimdışıyken yüklenmez: matematik TeX olarak görünür (sayfa yine okunur).
 - Ay özetleri sadece ≥5 kayıtlı geçmiş aylar, gün özetleri ≥2 kayıtlı geçmiş günler için yazılır; bugün ve bu ay yazılmaz.
 - Logo (80) sahibin seçimini bekliyor: `ux/b-80-logo-secenekler.png`.
+
+## (c) Telefon denetimi (101, 2026-11-22)
+`phone-audit.mjs` (skill: nts-playwright-test): 360×740, 375×667, 390×844, 412×915 × açık/koyu = 8 yapılandırma, 22 ekran
+(pano, liste, galeri, yapılacaklar, filtre, Tarihe git, arama, klavye açık, bildirim, yapay zekâ cevabı, 4 kayıt penceresi, okuma,
+3 ayar sayfası, şifrelerim, çöp, yapay zekâ seçimi, tüm verileri sil). Her pencere geri tuşu / Esc / dışına dokunma / × ile kapanmalı,
+kilitli kaydırma kalmamalı.
+
+| | üst üste | kapatılmış dokunuş | taşma | küçük (<44) | sık (<8 px) | kapanış |
+|---|---|---|---|---|---|---|
+| önce (s9/t2, 390 açık) | 18 | 12 | 0 | 160 | 52 | 2 + 3 ekran ölçülemedi |
+| sonra (s12, 8 yapılandırma) | 0 | 0 | 0 | 0 | 0 | 0 |
+
+Bulunan gerçek hatalar: filtre menüsü, "Tarihe git" ve yapay zekâ cevabı açıkken Android geri tuşu uygulamadan çıkıyordu (geçmişe
+kayıt yoktu → artık her biri bir geçmiş kaydı açar); okuma sayfasında Esc/× iki kez geri gidip uygulamadan çıkıyordu (Read.init
+Back.init'ten önce çalıştığı için iki kapanış dinleyicisi vardı → `Back._skip` ile tek geri); "Tarihe git" Esc ile kapanmıyordu;
+yapılacaklar başlığında filtre çipi görünüm seçicinin altına giriyordu; bildirim açık arama listesinin üstüne biniyordu; telefonda
+düğmeler 30–40 px'ti (hepsi 44, renk noktaları ve görev kutusu görünüşte küçük ama dokunma alanı 44).
+Ölçüm notları: açık menünün sayfayı örtmesi, kaydırılabilir alanın yapışık alt çubuğun altına girmesi, tam ekran sayfada "dışına
+dokunma" ve yıl ısı haritası hücreleri (aynı işi 44 px ay düğmeleri yapıyor) hata sayılmaz.

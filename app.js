@@ -453,7 +453,8 @@ const topBtns = (cls = '') => `<div class="l-top ${cls}">${Saved.active() ? `<bu
 function monthJump(anchor) {
   const by = new Map(); visible().forEach(i => { const k = dayKey(i.ts).slice(0, 7); by.set(k, (by.get(k) || 0) + 1); });
   const years = new Map(); [...by].forEach(([k, n]) => { const y = k.slice(0, 4); (years.get(y) || years.set(y, []).get(y)).push([k, n]); });
-  let p = $('#jumpPop'); if (!p) { p = document.createElement('div'); p.id = 'jumpPop'; p.className = 'pop jump-pop'; document.body.appendChild(p);
+  let p = $('#jumpPop'); if (!p) { p = document.createElement('div'); p.id = 'jumpPop'; p.className = 'pop jump-pop'; p.hidden = true; document.body.appendChild(p);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') p.hidden = true; });
     p.addEventListener('click', e => {
       const hy = e.target.closest('[data-hyear]'); if (hy) { Heat.year = +hy.dataset.hyear; return monthJump(p._anchor); }
       const hd = e.target.closest('[data-hday]'); if (hd) { p.hidden = true; return showFrom(dayEnd(hd.dataset.hday)); }
@@ -627,7 +628,7 @@ const Trash = {
     let d = $('#trash');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'trash'; d.className = 'drawer modal narrow'; document.body.appendChild(d);
-      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; });
       d.addEventListener('click', async e => {
         if (e.target === d || e.target.closest('[data-x]')) return d.close();
         const r = e.target.closest('[data-restore]'), k = e.target.closest('[data-kill]');
@@ -777,8 +778,13 @@ const Morph = {
 const Back = {
   open(dlg) { hideHits(); if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
   init() {
-    addEventListener('popstate', () => { for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); });
-    for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
+    addEventListener('popstate', () => { if (this._skip) { this._skip = false; return; } for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); const j = $('#jumpPop'); if (j) j.hidden = true; });
+    // 101: menus and the AI answer are not dialogs but get a history entry too, so Android's back closes them instead of leaving the app
+    const LAYERS = new Set(['filterPop', 'jumpPop', 'answer']);
+    new MutationObserver(ms => { for (const m of ms) { const id = m.target.id; if (!LAYERS.has(id)) continue;
+      if (!m.target.hidden) { if (history.state?.nts !== id) history.pushState({ nts: id }, ''); }
+      else if (history.state?.nts === id) { Back._skip = true; history.back(); } } }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; });
   },
 };
 
@@ -1336,7 +1342,7 @@ const Read = {
   keep(fn) { const m = $('#reading .rp-main'), y = m?.scrollTop; fn(); const m2 = $('#reading .rp-main'); if (m2) m2.scrollTop = y; },
   init() {
     const d = document.createElement('dialog'); d.id = 'reading'; d.className = 'readpage'; d.setAttribute('aria-label', 'Okuma'); document.body.appendChild(d);
-    d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; $('#stip')?.remove(); });
+    d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; $('#stip')?.remove(); });
     d.addEventListener('click', async e => {
       const a = e.target.closest('[data-rp]')?.dataset.rp;
       if (a === 'close') return d.close();
@@ -1476,7 +1482,7 @@ const Vault = {
     let d = $('#vault');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'vault'; d.className = 'drawer modal narrow vault'; document.body.appendChild(d);
-      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; this.lock(); });
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; this.lock(); });
       d.addEventListener('click', e => this.click(e)); d.addEventListener('input', () => this.touch());
       d.addEventListener('submit', e => { e.preventDefault(); this.submit(e.target); });
       document.addEventListener('visibilitychange', () => { if (document.hidden) this.lock(); });
@@ -1578,7 +1584,7 @@ const AiPick = {
     let d = $('#aipick');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'aipick'; d.className = 'drawer modal narrow'; d.setAttribute('aria-label', 'Yapay zekâ seç'); document.body.appendChild(d);
-      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; try { localStorage.setItem('hn-ai', '1'); } catch { } const f = this.then; this.then = null; f && setTimeout(f, 300); });
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; try { localStorage.setItem('hn-ai', '1'); } catch { } const f = this.then; this.then = null; f && setTimeout(f, 300); });
       d.addEventListener('click', async e => {
         if (e.target === d || e.target.closest('[data-x]')) return d.close();
         const b = e.target.closest('[data-ai]'); if (b) { await this.set(b.dataset.ai); this.draw(); }
@@ -1610,7 +1616,7 @@ const Wipe = {
     let d = $('#wipe');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'wipe'; d.className = 'drawer modal narrow'; d.setAttribute('aria-label', 'Tüm verileri sil'); document.body.appendChild(d);
-      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) history.back(); d._fromBack = false; });
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; });
       d.addEventListener('input', () => this.check());
       d.addEventListener('change', () => this.check());
       d.addEventListener('click', e => {
@@ -3780,6 +3786,7 @@ function wire() {
   S.mode = 'note'; updateSend(); addEventListener('resize', updateSend);
   $('#saveBtn').onclick = submitBox;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
+  { const dk = $('#composer').closest('.dock'); if (dk) new ResizeObserver(() => document.documentElement.style.setProperty('--dock-full', dk.offsetHeight + 'px')).observe(dk); } // 101: the toast sits above the open search list / answer
   new ResizeObserver(() => { const w = $('#boardTools').offsetWidth; if (w) document.documentElement.style.setProperty('--bt-w', w + 'px'); }).observe($('#boardTools'));
   $('#cHint').onclick = e => { const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
   const inp = $('#input');

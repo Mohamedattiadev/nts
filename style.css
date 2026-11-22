@@ -1155,3 +1155,55 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
   mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat; }
 .bcard .meta { gap: 4px 6px; }
 .bcard .meta > span:first-child { margin-right: 2px; }
+
+/* 101: phone first - every tap target at least 44 px (WCAG 2.5.5), the toast never sits on the open search list / AI answer */
+@media (max-width: 899px) {
+  #viewSwitch button { width: 44px; height: 44px; }
+  .chip, .chip.icon { height: 44px; } .chip.icon { width: 44px; }
+  .icon-btn, .icon-btn.sm { min-width: 44px; min-height: 44px; }
+  .board-tools .tool { width: 44px; height: 44px; }
+  .board-tools .tool.range { width: auto; min-width: 44px; height: 44px; }
+  .c-btn { width: 44px; height: 44px; }
+  .send { height: 44px; border-radius: 22px; } .send.round { width: 44px; }
+  .c-hint button { min-height: 44px; }
+  .l-jump { height: 44px; }
+  .side-row, .pop .side-row { height: 44px; }
+  .seg button, .btn, .btn.sm, .cmd .btn, .pk-acts .btn, .tex-bar .btn { min-height: 44px; }
+  .set-row { min-height: 48px; }
+  .lchip, .tag-in, .rel-chip, .src-btn { height: 44px; }
+  .tagpill { height: 44px; padding-right: 0; } .tagpill button { width: 44px; height: 44px; }
+  .hits .h-foot .link-btn, .link-btn { min-height: 44px; }
+  .heat-ys button { height: 44px; }
+  .a-head button { min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; padding: 0; }
+  .sugg button { min-height: 44px; }
+  .sugg { gap: 4px; }
+  .sw { width: 44px; height: 44px; padding: 7px; background-clip: content-box; box-shadow: none; }
+  .set-line > span:first-child { white-space: nowrap; } .swatches { gap: 2px; }
+  .sw.on { box-shadow: inset 0 0 0 2px var(--c), inset 0 0 0 5px var(--surface); }
+  dialog input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), dialog select { min-height: 44px; }
+  /* colour dots: the dot stays 22 px, the tap area is 44 */
+  .cdot { width: 44px; height: 44px; background: radial-gradient(circle, var(--cl) 0 10.5px, transparent 11.5px); }
+  .cdot.on { box-shadow: none; background: radial-gradient(circle, var(--cl) 0 10.5px, var(--surface) 11px 12.5px, var(--cl) 13px 15px, transparent 16px); }
+  /* the todo tick: 44 px button, the 26 px box drawn inside it */
+  .t-check { width: 44px; height: 44px; margin: -7px; border: 0; background: none !important; isolation: isolate; }
+  .t-check::before { inset: 9px; border-radius: 7px; border: 1.5px solid var(--line-2); z-index: -1; }
+  .todo-row.done .t-check::before, .todo-row.ticking .t-check::before { background: var(--accent); border-color: var(--accent); }
+  /* the view switch sits beside the settings button so the filter chip ("Yapılacaklar") has room on the left */
+  .hud-c { left: auto; right: 62px; transform: none; } .hud-c .seg { padding: 0; gap: 0; }
+  #filterLbl { max-width: calc(100vw - 268px); overflow: hidden; text-overflow: ellipsis; }
+  body.answering .toast, body:has(#hits.hits:not([hidden])) .toast { bottom: min(calc(var(--dock-full, 60px) + 22px + env(safe-area-inset-bottom)), calc(100dvh - 140px)); }
+}
+/* 114: tags are small coloured chips with an icon (list, gallery, board); the board card gets a tinted type icon and no "…" */
+.meta .tg { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; border-radius: 999px; line-height: 1.5;
+  background: color-mix(in srgb, var(--tc, var(--muted)) 13%, transparent); color: color-mix(in srgb, var(--tc, var(--muted)) 72%, var(--text)); font-weight: 500; }
+.meta .tg .i { width: 12px; height: 12px; flex: none; }
+[data-theme="dark"] .meta .tg { background: color-mix(in srgb, var(--tc, var(--muted)) 18%, transparent); color: color-mix(in srgb, var(--tc, var(--muted)) 55%, #fff); }
+.bcard .b-ico { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; margin-top: -2px; background: color-mix(in srgb, currentColor 13%, transparent); }
+.bcard .b-head .b-ico .i { margin: 0; width: 14px; height: 14px; }
+.bcard .b-head { align-items: flex-start; }
+.bcard .title { font-weight: 600; display: block; -webkit-line-clamp: unset; max-height: 2lh; line-height: 1.4; }
+.bcard .sub { display: block; -webkit-line-clamp: unset; max-height: 3lh; line-height: 1.45; }
+.bcard .title.ov, .bcard .sub.ov { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat;
+  mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat; }
+.bcard .meta { gap: 4px 6px; }
+.bcard .meta > span:first-child { margin-right: 2px; }

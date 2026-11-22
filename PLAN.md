@@ -339,7 +339,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         öncelik, tekrar "Yapılacak" içinde aynen kalır. "Bitti" son 7 gün, gerisi "Eskiler" altında katlı. Yeni alan `todo.doing` (geriye uyumlu:
         done → Bitti, diğerleri → Yapılacak); senkron birleştirmede (mergeItem) done > doing > yapılacak. Bildirimler bozulmasın.
 
-- [ ] 101. **Telefon önce: tüm uygulama telefonda kusursuz** (sahip, 2026-11-21: "phone çok önemli, conflict / üst üste / boş / görünmeyen /
+- [x] 101. (2026-11-22: phone-audit.mjs 8 yapılandırma × 22 ekran → 0; geri tuşu menü/cevapta uygulamadan çıkmıyor, okuma sayfası çift geri düzeldi, telefonda her düğme 44 px; tablo design/ux-review.md "(c)") **Telefon önce: tüm uygulama telefonda kusursuz** (sahip, 2026-11-21: "phone çok önemli, conflict / üst üste / boş / görünmeyen /
         yarım kalan olmasın, açılan sekme ve kapanması kolay olsun"). Önce otomatik telefon denetimi yaz (`phone-audit.mjs`, skill'e ekle):
         360×740, 375×667 (iPhone SE), 390×844, 412×915 × açık/koyu; ekranlar: pano, liste, galeri, takvim/konular (varsa), yapılacaklar,
         kayıt penceresi (not/link/resim/PDF/LaTeX), okuma sayfası, ⋯ menü, Tarihe git, ayarlar (tüm alt sayfalar), şifrelerim, çöp kutusu,
