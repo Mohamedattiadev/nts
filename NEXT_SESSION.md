@@ -13,7 +13,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 92b uzaktayken gün başlığı kesiliyor ("BU… 3"): hiçbir yakınlıkta kesilmesin, ters ölçekle okunur kalsın; %10–%200 tara (PLAN 92'deki ek not) + günler arası net ayrım: bant + ince dikey çizgi, her yakınlıkta görünür (0667a1e)
 - [x] 98 telefonda pano görünümü çok kötü (383a3a7)
 - [x] 111 açık tema telefonda çalışmıyor (d426e46)
-- [ ] 109 pano hataları: zoom bazen çalışmıyor, kartlar cihazlar arasında kötü yere kayıyor, içerik ekleme düğmeleri, gün arası çizgi hiç görünmüyor
+- [x] 109 pano hataları: zoom bazen çalışmıyor, kartlar cihazlar arasında kötü yere kayıyor, içerik ekleme düğmeleri, gün arası çizgi hiç görünmüyor (94bf03e)
 - [x] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası (b5479b7)
 - [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
@@ -80,8 +80,19 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 109 pano hataları (PLAN T 109: zoom bazen çalışmıyor → kök neden; cihazlar arası kart konumu — mergeItem'da x/y;
-içerik ekleme düğmeleri tek tek; gün arası çizgi her yakınlıkta görünür mü, ekran görüntüsüyle), sonra 101 (phone-audit.mjs taslağı hazır). Sonra handoff.
+TAM SIRADAKİ ADIM: 101 (phone-audit.mjs). Önce betiği onar: ilk 4 ekrandan (pano/liste/galeri/yapılacak) sonra bir şey sayfayı uygulamanın
+dışına çıkarıyor (sonraki ekranlarda "Pop is not defined" / "$ is not defined") → büyük olasılıkla kapanış testindeki geri tuşu (page.goBack /
+history.back) geçmiş kısa olunca uygulamadan çıkıyor; her ekrandan önce `location.href` kontrol et, gerekirse p.goto ile geri dön. Sonra bulguları
+0'a indir (s9 koşusu: pano overlap 5 small 10 tight 5, liste/galeri/yapılacak small 7 tight 2-3; toplam small 248 tight 90 overlap 50 = 8 yapılandırma).
+Sonra 102. Sonra handoff.
+
+BİLGİ (2026-11-22, 9. oturum): 109 bitti (94bf03e, v36). Zoom: Board.zoomAt S.cam null'da çıkar; tekerlek ctrl ile, fare tıkı (deltaMode
+ya da |deltaY|≥50) 1,2×, dokunmatik yüzey exp(-d*.01) ±30 sınırlı; düz tekerlek hâlâ kaydırır (sahibe sorulacak: fare tekerleği yakınlaştırsın mı?).
+#months'ta pointerdown pts'e girer ama sürükleme/capture yok, .months-grid touch-action pan-y. Board.render sonu artık yalnız `!S.cam` ise fit
+(anyVisible kontrolü sadece resize'da). Ctx uzun-basma: 2. parmakta iptal. Konum: setPos posAt/posByAt damgalar, keepPos(m,l,r) mergeItem'da ve
+GH.merge'in kirli olmayan yolunda (yerel konum daha yeniyse korunur, GH._repush → Cloud.pull markDirty). Yapıştır/bırak: ownField (dialog,
+contenteditable, başka alan) kendi içeriğini alır; save() hata verirse yazı+dosyalar kutuya geri döner; ataç label tabIndex=0 role=button.
+Gün çizgisi: plane --dayh (en uzun gün, ≥320), .day-band::before %22 metin rengi, Bugün'de accent. phone-audit.mjs'te #answer null düzeltildi (skill'e kopyalandı).
 
 BİLGİ (2026-11-22, 8. oturum): sahibin 8. geri bildirimi PLAN "T" bölümüne 109–124 olarak yazıldı (07bc8a0). 111 (d426e46, v34): kök
 neden Android Chrome otomatik karartması; [data-theme="light"] artık `color-scheme: only light` + index.html'de meta color-scheme. Headless
