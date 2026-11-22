@@ -331,7 +331,8 @@ mark { background: var(--hit-soft); color: inherit; border-radius: 3px; padding:
 .far .day-band { background: color-mix(in srgb, var(--text) 5%, transparent); } .far .day-band.alt { background: color-mix(in srgb, var(--text) 9%, transparent); }
 .far .day-band.today { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 /* 92b: a thin line in the middle of the gap between two days, at least 1 screen px at any zoom (--ik = 1/zoom) */
-.day-band::before { content: ''; position: absolute; left: -26px; top: 0; bottom: 0; width: max(1px, calc(1px * var(--ik, 1))); background: var(--line-2); transform: translateX(-50%); }
+.day-band::before { content: ''; position: absolute; left: -26px; top: 0; height: var(--dayh, 100%); width: max(1px, calc(1.5px * var(--ik, 1))); border-radius: 2px; background: color-mix(in srgb, var(--text) 22%, transparent); transform: translateX(-50%); } /* 109d: full height, clearly visible in light and dark */
+.day-band.today::before { background: color-mix(in srgb, var(--accent) 45%, transparent); }
 /* zoomed out (<70%): every card shows its date in readable size */
 .b-date { display: none; position: absolute; left: 0; top: 0; z-index: 2; transform-origin: 0 0; transform: scale(var(--hs, 1));
   max-width: calc(100% / var(--hs, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -918,7 +919,7 @@ dialog.readpage::backdrop { background: var(--bg); }
 /* ---------- board: time range + month tiles when far out ---------- */
 .board-tools .tool.range { width: auto; padding: 0 9px; gap: 5px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .range-pop { width: 220px; }
-.months-grid { position: absolute; inset: 0; overflow-y: auto; padding: calc(70px + env(safe-area-inset-top)) 24px 130px 84px; z-index: 2; background: var(--bg); animation: fade .2s var(--ease); }
+.months-grid { position: absolute; inset: 0; overflow-y: auto; touch-action: pan-y; /* 109a: one finger scrolls the months; two fingers reach the board pinch */ padding: calc(70px + env(safe-area-inset-top)) 24px 130px 84px; z-index: 2; background: var(--bg); animation: fade .2s var(--ease); }
 .months-grid[hidden] { display: none; }
 .my-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; max-width: 1240px; margin-inline: auto; }
 .my-y { width: 52px; flex: none; font-weight: 700; font-size: 18px; padding-top: 8px; color: var(--text); }

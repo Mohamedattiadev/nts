@@ -222,7 +222,19 @@ const groupOf = i => i.type === 'file' && fileKind(i) === 'image' ? 'photo' : i.
 // several boards: "Genel" (main) and project boards; a card has its own place on each board
 const onMain = () => !S.board || S.board === 'main';
 const posOf = i => onMain() ? i.pos : i.posBy?.[S.board];
-const setPos = (i, p) => { if (onMain()) i.pos = p; else i.posBy = { ...(i.posBy || {}), [S.board]: p }; };
+const setPos = (i, p) => { const t = Date.now(); if (onMain()) { i.pos = p; i.posAt = t; } else { i.posBy = { ...(i.posBy || {}), [S.board]: p }; i.posByAt = { ...(i.posByAt || {}), [S.board]: t }; } };
+// 109b: a card's place has its own time, so an edit made elsewhere with an older place never moves the card back
+function keepPos(m, l, r) {
+  const la = l.posAt || 0, ra = r.posAt || 0;
+  if (la !== ra) { const w = la > ra ? l : r; if (w.pos) m.pos = w.pos; else delete m.pos; m.posAt = w.posAt; }
+  const ks = new Set([...Object.keys(l.posByAt || {}), ...Object.keys(r.posByAt || {})]);
+  if (ks.size) {
+    const pb = { ...(m.posBy || {}) }, pa = { ...(m.posByAt || {}) };
+    for (const k of ks) { const x = l.posByAt?.[k] || 0, y = r.posByAt?.[k] || 0; if (x === y) continue; const w = x > y ? l : r; if (w.posBy?.[k]) pb[k] = w.posBy[k]; else delete pb[k]; pa[k] = Math.max(x, y); }
+    m.posBy = pb; m.posByAt = pa;
+  }
+  return m;
+}
 const onBoard = i => onMain() ? true : i.project === S.board || (i.boards || []).includes(S.board) || !!posOf(i);
 const boardNames = () => { const b = byId('boards'), own = b && !b.deleted ? b.names || [] : []; const proj = [...new Set(S.items.filter(i => i.project && !i.deleted).map(i => i.project))]; return [...new Set([...proj, ...own])].sort((a, b) => a.localeCompare(b, 'tr')); };
 // board time range: 'week' | '30' (default) | 'month' | 'y2024' … | 'all'
@@ -711,7 +723,8 @@ async function save() {
     await Todo.add(lines.map(l => l.replace(TODO_LINE, '').trim()));
     return;
   }
-  const r = await addFromInput({ text, files });
+  let r; try { r = await addFromInput({ text, files }); }
+  catch (e) { console.warn('save', e); if (!inp.value.trim()) inp.value = text; S.attach = [...files, ...S.attach]; renderAttach(); autoGrow(); return toast('Kaydedilemedi: ' + e.message, 5000, 'x'); } // 109c: nothing typed is lost
   render();
   if (r !== 'dup') { haptic(); toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check'); }
 }
@@ -1778,6 +1791,7 @@ function mergeItem(l, r) {
     if (a.todo && b.todo && (a.todo.done || b.todo.done)) m.todo = { ...b.todo, ...a.todo, done: true, doneAt: a.todo.doneAt || b.todo.doneAt };
     if (a.starred || b.starred) m.starred = a.starred ?? b.starred;
   }
+  if (!a.deleted) keepPos(m, l, r);
   m.updatedAt = Math.max(l.updatedAt || 0, r.updatedAt || 0) + 1;
   return m;
 }
@@ -1944,10 +1958,11 @@ const Ctx = {
     const target = e => !e.target.closest('dialog,.dock,input,textarea') && e.target.closest('[data-id],[data-tid]');
     document.addEventListener('contextmenu', e => { const t = target(e); if (!t) return; e.preventDefault(); this.show(t.dataset.id || t.dataset.tid, e.clientX, e.clientY); });
     let lp = null; // long press on touch
-    document.addEventListener('touchstart', e => { const t = target(e); if (!t) return; const p = e.touches[0]; lp = setTimeout(() => { lp = 'fired'; navigator.vibrate?.(10); this.show(t.dataset.id || t.dataset.tid, p.clientX, p.clientY); }, 520); }, { passive: true });
+    document.addEventListener('touchstart', e => { if (lp && lp !== 'fired') clearTimeout(lp); lp = null; if (e.touches.length > 1) return; // 109a: a 2nd finger is a pinch, not a long press (the old timer opened the menu mid-zoom)
+      const t = target(e); if (!t) return; const p = e.touches[0]; lp = setTimeout(() => { lp = 'fired'; navigator.vibrate?.(10); this.show(t.dataset.id || t.dataset.tid, p.clientX, p.clientY); }, 520); }, { passive: true });
     const cancel = () => { if (lp && lp !== 'fired') clearTimeout(lp); };
     document.addEventListener('touchmove', cancel, { passive: true });
-    document.addEventListener('touchend', e => { if (lp === 'fired') e.preventDefault(); cancel(); lp = null; });
+    document.addEventListener('touchend', e => { if (lp === 'fired' && e.cancelable) e.preventDefault(); cancel(); lp = null; });
     document.addEventListener('pointerdown', e => { if (!e.target.closest('.ctx')) this.hide(); }, true);
     addEventListener('keydown', e => { if (e.key === 'Escape') this.hide(); });
     addEventListener('scroll', () => this.hide(), true);
@@ -2314,13 +2329,14 @@ const Board = {
       d.items.forEach((i, n) => { const col = Math.floor(n / this.PER), h = this.est(i), y = ys[col] ?? y0 + 30; ys[col] = y + h + 14; this.M.set(i.id, { i, x: x + col * (this.COLW + this.IN), y, w: this.COLW, h, auto: true }); });
       this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...ys) - y0, alt: n0 % 2, today: d.k === today });
     }
+    plane.style.setProperty('--dayh', Math.max(320, ...this.heads.map(h => h.h + 20)) + 'px'); // 109d: the line between days runs as tall as the tallest day, not a stub next to a 1-card day
     // months for the far-out view: each spans its days' columns
     this.months = []; for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
     this.cull();
     if (S.cam) this.apply();
-    requestAnimationFrame(() => { if (!S.cam || !this.anyVisible()) this.fit(false); });
+    requestAnimationFrame(() => { if (!S.cam) this.fit(false); }); // 109a: a synced item must not throw the camera back (only a new board/range/view starts from fit)
   },
   FAR: .14, // below this zoom the days fold into month tiles
   view(pad = 360) { // the visible part of the plane, in plane coordinates
@@ -2409,7 +2425,7 @@ const Board = {
     if (!this._cq) this._cq = requestAnimationFrame(() => { this._cq = 0; this.cull(); });
   },
   zoomAt(px, py, f) {
-    const c = S.cam, k = Math.min(2.5, Math.max(this.minK(), c.k * f));
+    const c = S.cam; if (!c) return; const k = Math.min(2.5, Math.max(this.minK(), c.k * f));
     c.x = px - (px - c.x) * (k / c.k); c.y = py - (py - c.y) * (k / c.k); c.k = k; this.apply();
   },
   zoomMonth(k) { // a month tile was tapped: come close to its days
@@ -2446,7 +2462,7 @@ const Board = {
   zoomTo(k) { // around the middle, but never below the cards (they stand in a band at the top)
     const b = $('#board'), top = S.cam.y + (this.y0 || 0) * S.cam.k; this.animate(() => this.zoomAt(b.clientWidth / 2, Math.max(64, Math.min(b.clientHeight / 2, top + 60)), k / S.cam.k));
   },
-  animate(fn) { const p = $('#plane'); p.style.transition = 'transform .3s var(--ease)'; fn(); setTimeout(() => { p.style.transition = ''; }, 320); },
+  animate(fn) { const p = $('#plane'); p.style.transition = 'transform .3s var(--ease)'; fn(); clearTimeout(this._at); this._at = setTimeout(() => { p.style.transition = ''; }, 320); }, // 109a: a fast 2nd click must not cut the 1st one's slide
   anyVisible() {
     const v = this.view(0); if (!v || !this.M) return false;
     for (const m of this.M.values()) if (m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + Math.min(m.h, 400) > v.y1) return true;
@@ -2492,7 +2508,12 @@ const Board = {
     addEventListener('keydown', e => { if (e.code === 'Space' && S.view === 'board' && !e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') && !document.querySelector('dialog[open]')) { e.preventDefault(); space = true; b.classList.add('space'); } });
     addEventListener('keyup', e => { if (e.code === 'Space') { space = false; b.classList.remove('space'); } });
     b.addEventListener('pointerdown', e => {
-      if (e.target.closest('.acts,#months') || e.button === 2) return; // the month grid takes its own clicks (no pointer capture)
+      if (e.target.closest('.acts') || e.button === 2 || !S.cam) return;
+      if (e.target.closest('#months')) { // 109a: the month grid keeps its own taps and scrolling (no capture), but two fingers still zoom
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); drag = null;
+        if (pts.size === 2) { const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; }
+        return;
+      }
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       b.setPointerCapture(e.pointerId);
       if (pts.size === 2) {
@@ -2553,8 +2574,12 @@ const Board = {
     Ink.init();
     b.addEventListener('click', e => { const a = e.target.closest('.act'); if (a) { e.stopPropagation(); itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); } });
     b.addEventListener('wheel', e => {
+      if (!S.cam) return;
+      const zoom = e.ctrlKey || e.metaKey;
+      if (!zoom && e.target.closest('#months')) return; // the month grid scrolls by itself
       e.preventDefault(); const r = b.getBoundingClientRect();
-      if (e.ctrlKey || e.metaKey) this.zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .01));
+      // 109a: a mouse notch (100-120 px, or lines) was e^1.2 = 3.3x per click and hit the limit at once; now 1.2x a notch, a trackpad pinch stays smooth
+      if (zoom) this.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaMode || Math.abs(e.deltaY) >= 50 ? (e.deltaY < 0 ? 1.2 : 1 / 1.2) : Math.exp(-Math.max(-30, Math.min(30, e.deltaY)) * .01));
       else { S.cam.x -= e.deltaX || (e.shiftKey ? e.deltaY : 0); S.cam.y -= e.shiftKey ? 0 : e.deltaY; this.apply(); }
     }, { passive: false });
     $('#fitBtn').innerHTML = ic('fit', 'sm');
@@ -2829,7 +2854,13 @@ const GH = { // old way: a private GitHub repo + token (kept under Advanced)
         (Cloud._lost ||= []).push({ at: now(), id: x.id, local: l, remote: x });
         changed.push(m); local.set(x.id, m); continue; // stays dirty: the merged version goes up on this run's push
       }
-      if (!l || (x.updatedAt || 0) > (l.updatedAt || 0)) { Cloud.keepHeavy(x, l); changed.push(x); local.set(x.id, x); }
+      if (!l || (x.updatedAt || 0) > (l.updatedAt || 0)) {
+        Cloud.keepHeavy(x, l);
+        if (l && !x.deleted && ((l.posAt || 0) > (x.posAt || 0) || Object.entries(l.posByAt || {}).some(([k, t]) => t > (x.posByAt?.[k] || 0)))) { // newer text, older place: keep our place and send it back
+          x = keepPos({ ...x }, l, x); x.updatedAt = (x.updatedAt || 0) + 1; (this._repush ||= []).push(x.id);
+        }
+        changed.push(x); local.set(x.id, x);
+      }
     }
     if (changed.length) { changed.forEach(x => { indexItem(x); if (x.purged) DB.del('files', x.id); }); S.items = [...local.values()]; } // trash keeps the file until it is purged
     return changed;
@@ -3085,6 +3116,7 @@ const Cloud = {
     }
     const dirty = new Set((await DB.get('kv', 'sb-dirty')) || []), base = (await DB.get('kv', 'sb-base')) || {};
     const changed = GH.merge(all, { dirty, base }); await DB.put('kv', base, 'sb-base');
+    if (GH._repush?.length) { await this.markDirty(GH._repush); GH._repush = []; }
     if (this._lost?.length) { const l = ((await DB.get('kv', 'sb-lost')) || []).concat(this._lost).slice(-50); this._lost = []; await DB.put('kv', l, 'sb-lost'); }
     if (changed.length) { await DB.putMany('items', changed); runSearch(); render(); AI.dot(); if (changed.some(i => i.id === 'bridge')) BridgeLink.adopt(); }
     await DB.put('kv', since, 'sb-since');
@@ -3756,10 +3788,14 @@ function wire() {
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && (inp.value.trim() || S.mode === 'ask')) { e.preventDefault(); setMode(S.mode === 'ask' ? 'note' : 'ask'); } // empty box: Tab moves on (no keyboard trap)
     if (e.key === 'Escape') { if (S.mode === 'ask' && !inp.value) setMode('note'); clearBox(); inp.blur(); }
   });
+  const clip = $('#fileInput').closest('label'); clip.tabIndex = 0; clip.setAttribute('role', 'button'); clip.setAttribute('aria-label', 'Dosya ekle'); // 109c: reachable by keyboard
+  clip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileInput').click(); } });
   $('#fileInput').onchange = e => { S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
   $('#attachList').onclick = e => { const b = e.target.closest('[data-rm]'); if (b) { S.attach.splice(+b.dataset.rm, 1); renderAttach(); } };
   // paste anywhere: files become attachments, text goes into the composer
+  const ownField = el => el?.closest?.('dialog,[contenteditable="true"],[contenteditable="plaintext-only"]') || (el?.closest?.('input,textarea') && el !== inp); // 109c: a sticky note, an item window or another field keeps its own paste/drop
   document.addEventListener('paste', e => {
+    if (ownField(e.target)) return;
     const fs = [...(e.clipboardData?.files || [])];
     if (fs.length) { e.preventDefault(); S.attach.push(...fs); renderAttach(); inp.focus(); return; }
     if (e.target.closest('input,textarea')) return;
@@ -3789,6 +3825,7 @@ function wire() {
   addEventListener('drop', e => {
     dragN = 0; comp.classList.remove('drag');
     if (inner) { inner = false; return; }
+    if (ownField(e.target)) return;
     e.preventDefault();
     const fs = [...e.dataTransfer.files];
     if (fs.length === 1 && /\.zip$/i.test(fs[0].name)) { importWhatsApp(fs[0]).catch(err => toast('Hata: ' + err.message)); return; }
