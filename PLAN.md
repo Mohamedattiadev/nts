@@ -457,7 +457,7 @@ Hatalar (önce bunlar, telefon önce):
         (92b'deki .day-band::before telefon/masaüstü, açık/koyu, her yakınlıkta gerçekten görünür olsun, ekran görüntüsüyle kanıtla).
 - [ ] 110. **Senkron sadeleşsin** ("bi tık karışık"): kullanıcı ne olduğunu tek bakışta anlasın (tek durum noktası: ✓ eşit / ↻ gönderiyor /
         ! sorun + dokununca açıklama); iki cihaz testi (twodevice.mjs) konum + düzenleme + silme senaryolarıyla.
-- [ ] 111. **Açık tema telefonda çalışmıyor** — nedenini bul (prefers-color-scheme, meta theme-color, hn-theme), düzelt, 4 boyutta dene.
+- [x] 111. (2026-11-22: kök neden Android Chrome "sitelerde koyu tema" otomatik karartması; açık temada `color-scheme: only light` + `<meta name="color-scheme" content="light dark">`, v34. Ayarlar düğmesi telefonda doğru çalışıyor. Gerçek telefonda sahip doğrulamalı.) **Açık tema telefonda çalışmıyor** — nedenini bul (prefers-color-scheme, meta theme-color, hn-theme), düzelt, 4 boyutta dene.
 - [ ] 112. **Derin kullanıcı testi** ("teyze de kullanabilsin"): her düğmeye tek tek bas (masaüstü + telefon), beklenen sonucu yaz,
         çalışmayan/kafa karıştıran her şeyi düzelt; eksik akıcılık (geçiş, geri bildirim) ekle. Sonuç `design/ux-review.md` "(d) düğme düğme".
 - [ ] 113. **Hizalar**: (a) sol çubuktan çıkan ">" sekmesi çubuğun DİKEY ORTASINDA olsun (üstte değil); (b) logo ile sol çubuk aynı hizada değil, hizala.
