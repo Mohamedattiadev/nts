@@ -1110,8 +1110,8 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 @media (min-width: 900px) {
   .rail-tab { left: var(--rt-left, 16px); }
   body.rail-off .board-tools.pal { background: var(--surface); }
-  .rail-tab.ear { padding: 3px 3px 3px 2px; border-left: 0; border-radius: 0 9px 9px 0; background: var(--surface); box-shadow: none; animation: earIn .15s var(--ease) both; }
-  .rail-tab.ear button { width: 18px; height: 34px; border-radius: 0 6px 6px 0; }
+  .rail-tab.ear { padding: 4px 4px 4px 0; border-left: 0; border-radius: 0 12px 12px 0; background: var(--surface); box-shadow: none; animation: earIn .15s var(--ease) both; }
+  .rail-tab.ear button { width: 22px; height: 52px; border-radius: 0 8px 8px 0; } /* same size as the wall handle */
   @keyframes earIn { from { opacity: 0; transform: translateX(-6px); } }
   /* rail folded, palette closed: a handle pulled out of the left wall (no left edge, round only on the right), it slides out of the wall */
   .rail-tab:not(.ear) { left: 0; padding: 4px 4px 4px 0; border-left: 0; border-radius: 0 12px 12px 0; background: var(--surface);
