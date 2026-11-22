@@ -872,12 +872,18 @@ dialog.readpage::backdrop { background: var(--bg); }
 @media (max-width: 899px) { .t-detail { padding-left: 14px; } .tp-row .seg.sm { flex-wrap: wrap; } }
 
 /* ---------- "Claude çalışıyor" pill ---------- */
-.busy { position: fixed; top: calc(14px + env(safe-area-inset-top)); right: 64px; z-index: 31; display: flex; width: max-content; white-space: nowrap; align-items: center; gap: 7px; height: 32px; padding: 0 12px 0 10px;
-  border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); color: var(--text-2);
-  font-size: 12.5px; font-weight: 550; box-shadow: var(--shadow-sm); backdrop-filter: blur(12px); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s var(--ease); }
+/* AI at work: a quiet pill - a breathing dot, the AI's name, then what it does with a soft light passing over the words (no spinning icon, no coloured ring) */
+.busy { position: fixed; top: calc(14px + env(safe-area-inset-top)); right: 64px; z-index: 31; display: flex; width: max-content; white-space: nowrap; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 12px;
+  border-radius: 999px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); color: var(--text);
+  font-size: 13px; font-weight: 500; box-shadow: var(--shadow); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .2s, transform .2s var(--ease); }
+[data-theme="dark"] .busy { background: color-mix(in srgb, var(--surface-2) 94%, transparent); border-color: #34343d; }
 .busy.on { opacity: 1; transform: none; }
-.busy .b-spark { color: var(--accent); display: grid; animation: bspin 2.4s linear infinite; }
-@keyframes bspin { to { transform: rotate(360deg); } }
+.busy b { font-weight: 650; }
+.busy .b-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; animation: bdot 1.4s ease-in-out infinite; }
+.busy .b-t { color: var(--text-2); background: linear-gradient(90deg, var(--text-2) 0 40%, var(--text) 50%, var(--text-2) 60% 100%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: bshine 2.2s linear infinite; }
+@keyframes bdot { 50% { transform: scale(.6); opacity: .45; } }
+@keyframes bshine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .busy .b-dot, .busy .b-t { animation: none; } }
 @media (max-width: 899px) { .busy { top: auto; right: auto; left: 50%; bottom: calc(var(--dock-h, 60px) + 20px + env(safe-area-inset-bottom)); transform: translate(-50%, 6px); } .busy.on { transform: translate(-50%, 0); } }
 .d-ocr { border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; font-size: 13px; }
 .d-ocr summary { cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-2); font-weight: 600; padding: 6px 0; list-style: none; }

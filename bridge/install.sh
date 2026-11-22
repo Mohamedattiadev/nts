@@ -25,7 +25,7 @@ UNIT
 systemctl --user daemon-reload
 systemctl --user enable --now hizli-note-bridge.service
 
-# "Open with → Nts'a gönder" in any file manager
+# "Nts'a gönder" in the app launcher (no file types: it must never become the default app for a file)
 cat > ~/.local/share/applications/hizli-note-send.desktop <<APP
 [Desktop Entry]
 Type=Application
@@ -36,7 +36,8 @@ Icon=document-send
 Terminal=false
 NoDisplay=false
 Categories=Utility;
-MimeType=application/octet-stream;text/plain;text/markdown;application/pdf;application/zip;image/jpeg;image/png;image/webp;image/gif;image/heic;video/mp4;video/quicktime;video/webm;audio/mpeg;audio/ogg;audio/mp4;application/msword;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.presentationml.presentation;
+# no MimeType: listing file types here made Nts the default app for PDFs, images, videos and text (double click sent them to Nts).
+# Sending is the right-click "Nts'a gönder" below (Dolphin) and `hn <file>` / `nts` from a terminal.
 APP
 # Dolphin right-click menu
 cat > ~/.local/share/kio/servicemenus/hizli-note.desktop <<SVC

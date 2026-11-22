@@ -1390,7 +1390,7 @@ const Busy = {
   jobs: new Map(), n: 0,
   label(path, body) {
     const k = path.split('?')[0];
-    if (k === '/organize') { const n = body?.items?.length || 0; return n > 1 ? `${n} kayıt düzenleniyor` : 'yeni kaydı düzenliyor'; }
+    if (k === '/organize') { const n = body?.items?.length || 0; return n > 1 ? `${n} kaydı düzenliyor` : 'yeni kaydı düzenliyor'; }
     if (k === '/ask') return /^Kayıt id=/.test(body?.question || '') ? 'kaydı inceliyor' : 'soruna bakıyor';
     if (k === '/article') return 'okunur kopya alıyor';
     if (k === '/tags') return 'konuları topluyor';
@@ -1404,7 +1404,7 @@ const Busy = {
     if (!el) { el = document.createElement('div'); el.id = 'busy'; el.className = 'busy'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
     const all = [...this.jobs.values()], on = all.length > 0;
     el.classList.toggle('on', on);
-    if (on) el.innerHTML = `<span class="b-spark">${ic('spark', 'sm')}</span><span class="b-t">${aiName()} ${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1} iş` : ''}</span>`;
+    if (on) el.innerHTML = `<span class="b-dot"></span><b>${esc(aiName())}</b><span class="b-t">${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1}` : ''}</span>`;
     el.title = on ? '' + aiName() + ' arka planda çalışıyor: ' + all.join(', ') : '';
   },
 };
