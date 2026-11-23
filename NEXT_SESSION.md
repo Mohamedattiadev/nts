@@ -93,7 +93,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 131 otomatik klasörler (95245e1; yapay zekâsız kaynaklar + A–E stil + ayar; kalan 131b) (PLAN 131; design/folders-choices.json): stiller A Cep, B Yığın (animasyonu korunsun), C Albüm, D Dosya (daha güzel
   yap), E Ayraç (etiket sekmesini sahip çok beğendi); varsayılanı E, ayarda seçilebilir
 - [x] 131b (c3819ba) otomatik klasörlere yapay zekâ: 104f gömmeleriyle kümeleme, köprü kümeye kısa ad verir, yeni kayıt en yakın klasöre; birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm (PLAN 131 notu)
-- [ ] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
+- [~B] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
 - [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
 - [ ] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
 - [ ] 116 logo = pano seçici (sağ alttan taşı)
