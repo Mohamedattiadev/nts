@@ -90,7 +90,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon) (19a52b6)
 - [x] 142 imza animasyonları uygula (804f7ca) (PLAN 142; design/motion-choices.json): tutma m1-A (+m1-B sarkaç ÇOK DAHA AZ), sürükleme m2-A+m2-B
   DAHA YAVAŞ, bırakma m3-C + m3-D abartısız, dosya m4-B, ipucu m5-B, logo m6-A (+m6-C yeniden, "çok kötü"); 60 fps, reduced-motion, telefon
-- [x] 131 otomatik klasörler (HASH; yapay zekâsız kaynaklar + A–E stil + ayar; kalan 131b) (PLAN 131; design/folders-choices.json): stiller A Cep, B Yığın (animasyonu korunsun), C Albüm, D Dosya (daha güzel
+- [x] 131 otomatik klasörler (95245e1; yapay zekâsız kaynaklar + A–E stil + ayar; kalan 131b) (PLAN 131; design/folders-choices.json): stiller A Cep, B Yığın (animasyonu korunsun), C Albüm, D Dosya (daha güzel
   yap), E Ayraç (etiket sekmesini sahip çok beğendi); varsayılanı E, ayarda seçilebilir
 - [ ] 131b otomatik klasörlere yapay zekâ: 104f gömmeleriyle kümeleme, köprü kümeye kısa ad verir, yeni kayıt en yakın klasöre; birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm (PLAN 131 notu)
 - [ ] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
