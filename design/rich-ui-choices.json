@@ -1,0 +1,107 @@
+{
+ "madde": "106-0",
+ "tarih": "2026-11-23T18:49:44.708Z",
+ "secimler": {
+  "a-link-A": {
+   "v": "y",
+   "note": ""
+  },
+  "a-link-B": {
+   "v": "y",
+   "note": ""
+  },
+  "a-media-A": {
+   "v": "y",
+   "note": ""
+  },
+  "a-media-B": {
+   "v": "y",
+   "note": ""
+  },
+  "a-media-C": {
+   "v": "y",
+   "note": ""
+  },
+  "a-pdf-A": {
+   "v": "y",
+   "note": ""
+  },
+  "a-code-B": {
+   "v": "y",
+   "note": ""
+  },
+  "a-wa-A": {
+   "v": "y",
+   "note": ""
+  },
+  "a-wa-B": {
+   "v": "y",
+   "note": ""
+  },
+  "a-note-A": {
+   "v": "y",
+   "note": ""
+  },
+  "b-menu-A": {
+   "v": "y",
+   "note": ""
+  },
+  "b-menu-B": {
+   "v": "y",
+   "note": ""
+  },
+  "b-menu-C": {
+   "v": "y",
+   "note": ""
+  },
+  "c-cover-A": {
+   "v": "y",
+   "note": ""
+  },
+  "c-empty-A": {
+   "v": "y",
+   "note": ""
+  },
+  "d-count-A": {
+   "v": "y",
+   "note": ""
+  },
+  "d-count-B": {
+   "v": "y",
+   "note": ""
+  },
+  "d-count-C": {
+   "v": "y",
+   "note": ""
+  },
+  "d-prog-B": {
+   "v": "y",
+   "note": ""
+  },
+  "d-check-A": {
+   "v": "y",
+   "note": ""
+  },
+  "d-chart-A": {
+   "v": "y",
+   "note": ""
+  },
+  "d-chart-B": {
+   "v": "y",
+   "note": ""
+  },
+  "e-ans-A": {
+   "v": "y",
+   "note": ""
+  },
+  "e-ans-B": {
+   "v": "y",
+   "note": ""
+  },
+  "e-ans-C": {
+   "v": "y",
+   "note": ""
+  }
+ },
+ "sahip_notu": "zengin şey çok beğendim ama biraz daha upgrade lazım, daha naive (native) görünsün; daha fazla şey olsun"
+}
