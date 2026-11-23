@@ -599,6 +599,11 @@ Site:
         ✎ Not / 🔍 Ara / ✦ Sor); Tab'a basınca (ya da düğmeye dokununca) sıradaki moda güzel, kısa bir animasyonla geçer (simge/yazı
         kayarak değişir, 150–200 ms, reduced-motion'da anında). Üç yan yana mod düğmesi ve "Tab" kutucuğu kalkar. Yazı alanı
         olabildiğince TEMİZ: placeholder kısa, yalnız seçili mod ("Not yaz…", "Ara…", "Sor…"), eski "- görev · ? sor · / ara" ipucu yok.
+- [ ] 137. **Seçili süzgeç sol çubukta görünmüyor** (sahip 2026-11-23, ekran görüntüsü: "Bilgisayar'ı seçtik, seçildiğine dair bir şey
+        görünmüyor; seçildiği anda soldaki barda bir şey gözükmesi lazım"): ⋯ menüsünden Kaynak / konu / renk / proje / liste seçilince menü
+        kapanıyor ve çubukta yalnız ⋯ hafifçe renkleniyor → fark edilmiyor. Çubukta ⋯'nin altında seçili her süzgeç için belirgin bir
+        düğme (simgesi, accent zemin, köşede ×; üstüne gelince "Bilgisayar · kaldır"), seçildiği anda kısa bir "pop" animasyonu
+        (reduced-motion'da yok); tıklayınca süzgeç kalkar. Çubuk gizliyken ">" kulakçığında nokta. Telefonda Filtre düğmesi accent olur.
 - [ ] 135. **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
         yapay zekâsının kısa açıklaması) başlık olur; dosya adı alt satırda kalır. Kullanıcı başlığı değiştirdiyse dokunulmaz.
 
