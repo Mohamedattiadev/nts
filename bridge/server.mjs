@@ -214,17 +214,34 @@ async function cleanTags(tags) {
   return runClaude({ prompt: `Tags with counts:\n${tags.map(([t, n]) => `${t} (${n})`).join('\n')}`, system, schema: TAGS_SCHEMA, model: conf.askModel });
 }
 
+// 106e: the answer may carry a few allowed parts (OpenUI idea, no library): the app draws only these types, anything else becomes plain text
+const PART_TYPES = ['records', 'table', 'timeline', 'checklist', 'chart', 'actions'];
 const ASK_SCHEMA = {
   type: 'object', required: ['answer', 'sources'],
   properties: {
-    answer: { type: 'string', description: 'concise answer in markdown, in the question language' },
+    answer: { type: 'string', description: 'concise answer in markdown, in the question language; ALWAYS a plain sentence first' },
     sources: { type: 'array', items: { type: 'string' }, description: 'ids of items used, most relevant first' },
+    parts: { type: 'array', maxItems: 3, description: 'OPTIONAL extra parts, only when the question really needs one (a list of found items, a table of amounts, dates in order, steps to tick, numbers over time). Usually 0 or 1. Never invent values: every value must come from the items.',
+      items: { type: 'object', required: ['type'], properties: {
+        type: { type: 'string', enum: PART_TYPES, description: 'records = item cards (ids); table = cols + rows; timeline = rows of {date, text, id}; checklist = rows of {text, id}; chart = labels + values; actions = buttons (acts)' },
+        title: { type: 'string', description: 'short label, optional' },
+        ids: { type: 'array', items: { type: 'string' }, description: 'records: item ids, best first, max 8' },
+        cols: { type: 'array', items: { type: 'string' }, description: 'table: column names, max 5' },
+        rows: { type: 'array', description: 'table: arrays of cell strings (max 12); timeline/checklist: objects {text, date?, id?, done?} (max 10)', items: {} },
+        labels: { type: 'array', items: { type: 'string' }, description: 'chart: x labels, 2-24' },
+        values: { type: 'array', items: { type: 'number' }, description: 'chart: one number per label' },
+        acts: { type: 'array', maxItems: 2, description: 'actions: board = put ids on the board, todo = make a task (text), open = open an item (ids[0])',
+          items: { type: 'object', required: ['do'], properties: { do: { type: 'string', enum: ['board', 'todo', 'open'] }, label: { type: 'string' }, ids: { type: 'array', items: { type: 'string' } }, text: { type: 'string' } } } },
+      } } },
+    next: { type: 'array', maxItems: 3, items: { type: 'string' }, description: 'optional: up to 3 short follow-up questions the person may ask next, in the question language' },
   },
 };
 
 async function ask(question, items) {
   const system = 'You answer questions about a person\'s saved notes, links and files. Use only the given items. ' +
-    'Be concise and plain, list items when asked, mention dates/times when useful. "content" is the text inside a PDF. If nothing matches, say so. Answer in the question\'s language. Never describe your own process.';
+    'Be concise and plain, list items when asked, mention dates/times when useful. "content" is the text inside a PDF. If nothing matches, say so. Answer in the question\'s language. Never describe your own process. ' +
+    'Start with a plain sentence. Add a part only when it really helps (found items → records, amounts → table, dates → timeline, things to do → checklist, numbers over time → chart); usually none or one. ' +
+    'Never invent numbers, ratings, prices or advice that are not in the items. No emojis, no sales talk.';
   const prompt = `Now: ${localTime(Date.now())}\nQuestion: ${question}\n\nItems:\n${JSON.stringify(compact(items))}`;
   return runClaude({ prompt, system, schema: ASK_SCHEMA, model: conf.askModel });
 }

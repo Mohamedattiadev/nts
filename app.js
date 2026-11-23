@@ -4509,11 +4509,12 @@ const AI = {
     const head = `<div class="a-head">${ic('spark', 'sm')}<span>${aiName()}</span><span class="q">· ${esc(q)}</span><button data-copy title="Cevabı kopyala" style="margin-left:auto">${ic('copy', 'sm')}</button><button data-close title="Kapat" style="margin-left:0">${ic('x', 'sm')}</button></div>`;
     if (!S.bridgeOk && !(await this.health())) { box.innerHTML = head + `<div class="txt">${claudeOff()}</div>`; return; }
     box.innerHTML = head + '<div class="skel" style="width:90%"></div><div class="skel" style="width:75%"></div><div class="skel" style="width:55%"></div>';
+    const tok = this._askTok = {};
     try {
       const r = await this.call('/ask', { question: q, items: this.pick(q) });
-      box.innerHTML = head + `<div class="txt">${esc(r.answer).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div>
-        <div class="src">${(r.sources || []).map(byId).filter(Boolean).slice(0, 12).map(i => `<button class="src-btn" data-open="${i.id}"><span class="${i.type}-c">${ic(fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}</span><span>${esc(titleOf(i))}</span></button>`).join('')}</div>`;
-    } catch (e) { box.innerHTML = head + `<div class="txt" style="color:var(--danger)">Hata: ${esc(e.message)}</div>`; }
+      if (this._askTok !== tok) return; // a newer question is on screen
+      Parts.show(box, head, q, r);
+    } catch (e) { if (this._askTok === tok) box.innerHTML = head + `<div class="txt" style="color:var(--danger)">Hata: ${esc(e.message)}</div>`; }
   },
   suggest() {
     const box = $('#answer'); box.hidden = false;
@@ -4553,6 +4554,101 @@ const AI = {
     } catch (e) { toast('Toparlanamadı: ' + e.message, 3500); }
   },
   refreshExplain(id) { const dlg = $('#sheet'); if (dlg.open && dlg.dataset.id === id) { if (!S.explaining.has(id)) openItem(id); else $('#explainBox').innerHTML = explainHtml(byId(id)); } },
+};
+
+// ---------- 106e: rich AI answers (OpenUI idea, vanilla) ----------
+// The bridge answer may carry parts from a fixed list; Parts.clean keeps only known types with sane sizes and real ids, anything else
+// becomes plain text (or is dropped). 106s: a plain sentence first, at most a few parts, source line "Nts · N kayıt", no made-up values.
+const Parts = {
+  TYPES: new Set(['records', 'table', 'timeline', 'checklist', 'chart', 'actions', 'text']),
+  str: (v, n = 200) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(/\s+/g, ' ').trim().slice(0, n) : '',
+  ids: v => [...new Set((Array.isArray(v) ? v : []).filter(x => typeof x === 'string' && byId(x) && !byId(x).deleted))],
+  clean(parts) {
+    const out = [];
+    for (const p of (Array.isArray(parts) ? parts : []).slice(0, 4)) {
+      if (!p || typeof p !== 'object') continue;
+      const title = this.str(p.title, 60), t = p.type;
+      if (!this.TYPES.has(t)) { const x = this.str(p.text ?? p.content ?? p.title, 600); if (x) out.push({ type: 'text', text: x }); continue; } // unknown part → plain text
+      if (t === 'text') { const x = this.str(p.text, 600); if (x) out.push({ type: 'text', text: x }); }
+      else if (t === 'records') { const ids = this.ids(p.ids).slice(0, 8); if (ids.length) out.push({ type: t, title, ids }); }
+      else if (t === 'table') {
+        const cols = (Array.isArray(p.cols) ? p.cols : []).slice(0, 5).map(c => this.str(c, 40));
+        const w = cols.length || 0, rows = (Array.isArray(p.rows) ? p.rows : []).filter(Array.isArray).slice(0, 12).map(r => r.slice(0, w || 5).map(c => this.str(c, 80)));
+        if (rows.length && rows.some(r => r.some(Boolean))) out.push({ type: t, title, cols, rows });
+      } else if (t === 'timeline' || t === 'checklist') {
+        const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 10).map(r => typeof r === 'string' ? { text: this.str(r) } : r && typeof r === 'object' ? { text: this.str(r.text, 160), date: this.str(r.date, 30), id: this.ids([r.id])[0], done: r.done === true } : null).filter(r => r?.text);
+        if (rows.length) out.push({ type: t, title, rows });
+      } else if (t === 'chart') {
+        const L = Array.isArray(p.labels) ? p.labels : [], V = Array.isArray(p.values) ? p.values : [];
+        const pts = L.slice(0, 24).map((l, k) => ({ l: this.str(l, 16), v: typeof V[k] === 'number' ? V[k] : Rich.num(V[k] ?? '') })).filter(x => x.l && isFinite(x.v));
+        if (pts.length >= 2) out.push({ type: t, title, pts });
+      } else if (t === 'actions') {
+        const acts = (Array.isArray(p.acts) ? p.acts : []).slice(0, 2).map(a => a && ({ do: a.do, label: this.str(a.label, 30), ids: this.ids(a.ids), text: this.str(a.text, 160) }))
+          .filter(a => a && (a.do === 'board' ? a.ids.length : a.do === 'todo' ? a.text : a.do === 'open' ? a.ids.length : false));
+        if (acts.length) out.push({ type: t, acts });
+      }
+    }
+    return out;
+  },
+  md: t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'),
+  dt(i) { const d = fmtDay(dayKey(i.ts)), s = i.type === 'link' ? domain(i.url) : fileKind(i) === 'text' ? '' : (i.fileName || '').split('.').pop(); return [s, d].filter(Boolean).join(' · '); },
+  card(i) {
+    const k = fileKind(i) === 'text' ? 'note' : fileKind(i);
+    return `<button class="ap-rec" data-open="${i.id}">${hasVisual(i) ? `<span class="ap-im" data-tid="${i.id}"></span>` : `<span class="ap-im ap-ic ${i.type}-c">${ic(k)}</span>`}<span class="ap-t" dir="auto">${esc(titleOf(i))}</span><small>${esc(this.dt(i))}</small></button>`;
+  },
+  html(p, n) {
+    const h = p.title ? `<div class="ap-hd" dir="auto">${esc(p.title)}</div>` : '', st = ` style="--d:${n * 70}ms"`;
+    if (p.type === 'text') return `<div class="ap txt"${st} dir="auto">${this.md(p.text)}</div>`;
+    if (p.type === 'records') return `<div class="ap"${st}>${h}<div class="ap-recs">${p.ids.map(byId).map(i => this.card(i)).join('')}</div></div>`;
+    if (p.type === 'table') {
+      const w = Math.max(p.cols.length, ...p.rows.map(r => r.length)), num = k => p.rows.filter(r => r[k]).length && p.rows.every(r => !r[k] || !isNaN(Rich.num(r[k])));
+      const cls = [...Array(w)].map((_, k) => k && num(k) ? ' class="num"' : '');
+      const sum = r => /^(toplam|total|المجموع|الإجمالي)$/i.test(r[0] || '');
+      return `<div class="ap"${st}>${h}<div class="ap-tw"><table class="ap-tb">${p.cols.length ? `<thead><tr>${p.cols.map((c, k) => `<th${cls[k]} dir="auto">${esc(c)}</th>`).join('')}</tr></thead>` : ''}<tbody>${p.rows.map(r => `<tr${sum(r) ? ' class="sum"' : ''}>${[...Array(w)].map((_, k) => `<td${cls[k]} dir="auto">${esc(r[k] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+    }
+    if (p.type === 'timeline') return `<div class="ap"${st}>${h}<ol class="ap-tl">${p.rows.map(r => `<li${r.id ? ` data-open="${r.id}" tabindex="0"` : ''}><time dir="auto">${esc(r.date || (r.id ? fmtDay(dayKey(byId(r.id).ts)) : ''))}</time><span dir="auto">${esc(r.text)}</span></li>`).join('')}</ol></div>`;
+    if (p.type === 'checklist') return `<div class="ap"${st}>${h}<div class="ap-ck">${p.rows.map((r, k) => { const it = r.id && byId(r.id), on = it?.todo ? !!it.todo.done : r.done;
+      return `<label dir="auto"><input type="checkbox" data-apck="${k}"${it?.todo ? ` data-tid2="${it.id}"` : ''}${on ? ' checked' : ''}><span>${esc(r.text)}</span></label>`; }).join('')}</div></div>`;
+    if (p.type === 'chart') return `<div class="ap"${st}>${Rich.chartHtml({ name: p.title, pts: p.pts })}</div>`;
+    return '';
+  },
+  ACT: { board: ['board', 'Pano yap'], todo: ['todo', 'Göreve çevir'], open: ['ext', 'Aç'], save: ['note', 'Not olarak kaydet'] },
+  show(box, head, q, r) {
+    const parts = this.clean(r.parts), src = this.ids(r.sources), acts = parts.filter(p => p.type === 'actions').flatMap(p => p.acts);
+    // 106s one focus: the found items become cards only when the answer has no part of its own; otherwise they stay small source chips
+    if (src.length >= 2 && !parts.some(p => p.type !== 'actions')) parts.unshift({ type: 'records', title: '', ids: src.slice(0, 6), auto: true });
+    acts.push({ do: 'save' });
+    const next = (Array.isArray(r.next) ? r.next : []).map(x => this.str(x, 90)).filter(Boolean).slice(0, 3);
+    this.cur = { q, answer: this.str(r.answer, 4000), parts, acts };
+    const body = parts.filter(p => p.type !== 'actions'), shown = new Set(body.filter(p => p.type === 'records').flatMap(p => p.ids)), rest = src.filter(id => !shown.has(id)).slice(0, 12);
+    box.innerHTML = head + `<div class="ap-who">${ic('spark', 'sm')}Nts · ${src.length} kayıt</div><div class="txt" dir="auto">${this.md(this.cur.answer)}</div>`
+      + body.map((p, n) => this.html(p, n + 1)).join('')
+      + (rest.length ? `<div class="src">${rest.map(byId).map(i => `<button class="src-btn" data-open="${i.id}"><span class="${i.type}-c">${ic(fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}</span><span dir="auto">${esc(titleOf(i))}</span></button>`).join('')}</div>` : '')
+      + `<div class="ap-acts">${acts.map((a, k) => { const [g, l] = this.ACT[a.do]; return `<button class="chip${k === 0 && a.do !== 'save' ? ' pri' : ''}" data-apact="${k}">${ic(g, 'sm')}${esc(a.label || l)}</button>`; }).join('')}</div>`
+      + (next.length ? `<div class="ap-next">${next.map(x => `<button data-q="${esc(x)}" dir="auto">${ic('search', 'sm')}${esc(x)}</button>`).join('')}</div>` : '');
+    box.querySelectorAll('.ap-im[data-tid]').forEach(el => thumbIO.observe(el));
+  },
+  text() { // the whole answer as Markdown: for copy and "Not olarak kaydet"
+    const c = this.cur; if (!c) return '';
+    const md = p => p.type === 'text' ? p.text : p.type === 'records' ? p.ids.map(byId).filter(Boolean).map(i => `- ${titleOf(i)}${i.url ? ' ' + i.url : ''}`).join('\n')
+      : p.type === 'table' ? [p.cols.length ? p.cols : p.rows[0].map(() => ''), null, ...p.rows].map(r => r ? `| ${r.join(' | ')} |` : `|${(p.cols.length ? p.cols : p.rows[0]).map(() => ' --- ').join('|')}|`).join('\n')
+      : p.type === 'timeline' ? p.rows.map(r => `- ${r.date ? r.date + ' — ' : ''}${r.text}`).join('\n')
+      : p.type === 'checklist' ? p.rows.map(r => `- [${r.done ? 'x' : ' '}] ${r.text}`).join('\n')
+      : p.type === 'chart' ? `| ${p.title || ''} | |\n| --- | --- |\n` + p.pts.map(x => `| ${x.l} | ${x.v} |`).join('\n') : '';
+    return [`## ${c.q}`, c.answer, ...c.parts.filter(p => p.type !== 'actions' && !p.auto).map(p => (p.title ? `**${p.title}**\n` : '') + md(p))].filter(Boolean).join('\n\n');
+  },
+  async act(k) {
+    const a = this.cur?.acts[k]; if (!a) return;
+    if (a.do === 'open') return openItem(a.ids[0]);
+    if (a.do === 'todo') return Todo.add([a.text]);
+    if (a.do === 'board') { const list = a.ids.map(byId).filter(Boolean); await upsert(list.map(i => ({ ...i, onBoard: true })));
+      return toast(`${list.length} kayıt panoya kondu`, 3000, 'board', { label: 'Panoya git', fn: () => { closeAnswer(); S.board = 'main'; setView('board'); } }); }
+    if (a.do === 'save') { const t = this.text(); const r = await addFromInput({ text: t, source: 'note' }); if (Array.isArray(r) && r[0]) toast('Cevap not olarak kaydedildi', 3000, 'note', { label: 'Aç', fn: () => openItem(r[0].id) }); }
+  },
+  async check(el) { // a ticked row: a real task flips its todo, a loose row only changes on screen
+    const p = this.cur?.parts.find(x => x.type === 'checklist' && el.closest('.ap-ck')); const r = p?.rows[+el.dataset.apck]; if (r) r.done = el.checked;
+    const id = el.dataset.tid2; if (id) await Todo.patch(id, c => { c.todo.done = el.checked; c.todo.doneAt = el.checked ? now() : undefined; });
+  },
 };
 
 // ---------- GitHub private repo sync ----------
@@ -5623,10 +5719,14 @@ function wire() {
     else { const t = e.dataTransfer.getData('text'); if (t) { inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); } }
   });
 
+  $('#answer').addEventListener('change', e => { if (e.target.matches('[data-apck]')) Parts.check(e.target); });
+  $('#answer').addEventListener('keydown', e => { const o = e.key === 'Enter' && e.target.closest('li[data-open]'); if (o) openItem(o.dataset.open); });
   $('#answer').onclick = e => {
     const o = e.target.closest('[data-open]'); if (o) return openItem(o.dataset.open);
     const q = e.target.closest('[data-q]'); if (q) { inp.value = q.dataset.q; AI.ask(q.dataset.q); return; }
-    if (e.target.closest('[data-copy]')) return copyText($('#answer .txt')?.innerText || '');
+    const pa = e.target.closest('[data-apact]'); if (pa) return Parts.act(+pa.dataset.apact);
+    const bar = e.target.closest('.r-chart [data-rich="bar"]'); if (bar) return Rich.chartTip(bar, +bar.dataset.k);
+    if (e.target.closest('[data-copy]')) return copyText(Parts.cur && $('#answer .ap-who') ? Parts.text() : $('#answer .txt')?.innerText || '');
     if (e.target.closest('[data-close]')) closeAnswer();
   };
   $('#hits').onclick = e => {
