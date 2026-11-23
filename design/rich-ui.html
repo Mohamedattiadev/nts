@@ -322,16 +322,15 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
 .evft .left { font-size: 12.5px; color: var(--muted); margin-right: auto; }
 .evft .left b { color: var(--accent); font-weight: 650; font-variant-numeric: tabular-nums; }
 .ppl { display: flex; } .ppl i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface); margin-left: -6px; font: 600 9.5px/18px system-ui; color: #fff; text-align: center; font-style: normal; } .ppl i:first-child { margin-left: 0; }
-/* a-event-B (new): the day itself, event placed on the hours */
-.dayv { position: relative; height: 150px; margin: 6px 0 4px 34px; border-left: 1px solid var(--line); }
-.dayv .h { position: absolute; left: -34px; right: 0; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 6px; align-items: center; }
-.dayv .h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.dayv .blk { position: absolute; left: 8px; right: 4px; border-radius: 8px; padding: 5px 9px; font-size: 12.5px; overflow: hidden; }
-.dayv .blk.me { background: var(--accent-soft); color: var(--text); border-left: 3px solid var(--accent); }
-.dayv .blk.me b { display: block; font-weight: 650; }
-.dayv .blk.oth { background: var(--surface-2); color: var(--muted); border-left: 3px solid var(--line-2); }
-.dayv .now { position: absolute; left: -4px; right: 0; height: 0; border-top: 1.5px solid var(--danger); }
-.dayv .now::before { content: ""; position: absolute; left: -3px; top: -4.5px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+/* a-event-B: only the busy hours of that day; free time between them is one thin line */
+.dayv { margin: 8px 0 2px; display: flex; flex-direction: column; gap: 4px; }
+.dayv .r { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; font-size: 12.5px; }
+.dayv .r time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+.dayv .r span { padding: 5px 9px; border-radius: 8px; background: var(--surface-2); color: var(--muted); border-left: 3px solid var(--line-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dayv .r.me span { background: var(--accent-soft); color: var(--text); border-left-color: var(--accent); font-weight: 600; }
+.dayv .gap { margin-left: 52px; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.dayv .gap::before, .dayv .gap::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.dayv .gap::before { flex: 0 0 10px; }
 /* contact */
 .ct { text-align: center; padding: 18px 14px 14px; }
 .ct .av { width: 64px; height: 64px; margin: 0 auto 8px; border-radius: 50%; background: var(--surface-3); color: var(--text-2); font: 600 24px/64px Inter, system-ui; }
@@ -368,8 +367,7 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
 /* quote */
 .qt { padding: 16px 16px 12px; border-left: 3px solid var(--accent); }
 .qt blockquote { margin: 0; font: 400 17px/1.5 Georgia, "Iowan Old Style", serif; }
-.qt .src { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
-.qt .bk { width: 26px; height: 38px; border-radius: 2px 4px 4px 2px; background: linear-gradient(90deg, #0003 0 3px, transparent 3px), linear-gradient(#e6b04a, #b7791f); flex: none; }
+.qt .src { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12.5px; color: var(--muted); } .qt .src svg.i { width: 15px; height: 15px; }
 
 /* ---------- editor ---------- */
 .ed { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 18px; position: relative; overflow: hidden; }
@@ -500,28 +498,26 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
 .bp .qr { width: 54px; height: 54px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; padding: 3px; background: #fff; border-radius: 4px; border: 1px solid var(--line); }
 .bp .qr i { background: #111; border-radius: .5px; } .bp .qr i.o { background: none; }
 /* book */
-.bk2 { display: grid; grid-template-columns: 78px 1fr; gap: 12px; padding: 12px; }
-.bk2 .cv { aspect-ratio: 2 / 3; border-radius: 3px 6px 6px 3px; position: relative; overflow: hidden; color: #fff; padding: 8px 7px; font: 700 10.5px/1.15 Georgia, serif; box-shadow: 0 1px 2px rgb(0 0 0 / .2), 0 6px 14px rgb(0 0 0 / .18);
-  background: linear-gradient(90deg, rgb(0 0 0 / .25) 0 4px, transparent 4px), linear-gradient(160deg, #c2410c, #7c2d12); }
-.bk2 .cv small { position: absolute; left: 7px; bottom: 7px; font: 500 8px/1 Inter, system-ui; opacity: .85; }
-.stars { display: inline-flex; gap: 1px; } .stars button { width: 22px; height: 22px; display: grid; place-items: center; color: var(--line-2); transition: color .15s, transform .15s var(--spring); }
-.stars button.on { color: var(--hit); } .stars button:active { transform: scale(1.3); } .stars svg.i { width: 15px; height: 15px; fill: currentColor; stroke: none; }
-.hl { margin-top: 8px; font: italic 13px/1.45 Georgia, serif; color: var(--text-2); border-left: 2px solid var(--hit); padding-left: 8px; min-height: 38px; transition: opacity .25s; }
+.bk2 { display: grid; grid-template-columns: 56px 1fr; gap: 12px; padding: 12px; }
+.bk2 .cv { aspect-ratio: 2 / 3; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); }
+.bk2 .cv svg.i { width: 20px; height: 20px; }
+.hl { display: block; width: 100%; text-align: start; margin-top: 10px; font: italic 13px/1.45 Georgia, serif; color: var(--text-2); border-left: 2px solid var(--line-2); padding: 0 0 0 8px; transition: opacity .25s; }
+.hl small { display: block; font: 400 11px/1.4 Inter, system-ui; color: var(--muted); margin-top: 2px; }
 /* film / series */
-.fm { display: grid; grid-template-columns: 84px 1fr; }
-.fm .po { position: relative; min-height: 100%; aspect-ratio: 2 / 3; color: #fff; display: flex; align-items: flex-end; padding: 7px; font: 800 12px/1.05 Inter, system-ui; letter-spacing: .02em; text-transform: uppercase; }
-.fm .bd { padding: 10px 12px; }
+.fm { display: grid; grid-template-columns: 56px 1fr; gap: 0 12px; padding: 12px; }
+.fm .po { aspect-ratio: 2 / 3; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); align-self: start; }
+.fm .po svg.i { width: 20px; height: 20px; }
+.fm .bd { padding: 0; min-width: 0; }
 .eps { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-top: 8px; }
 .eps button { height: 22px; border-radius: 5px; background: var(--surface-3); font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; transition: background .2s, color .2s, transform .15s var(--spring); }
 .eps button.w { background: var(--accent); color: var(--accent-text); } .eps button.nx { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); } .eps button:active { transform: scale(.85); }
-.score { display: inline-flex; align-items: center; gap: 4px; font-weight: 650; font-size: 12.5px; color: var(--hit); } .score svg.i { width: 13px; height: 13px; fill: currentColor; stroke: none; }
 /* price tracking */
 .pr2 .hd { display: flex; gap: 12px; padding: 12px 12px 0; }
-.pr2 .pic { width: 58px; height: 58px; border-radius: 10px; flex: none; background: radial-gradient(circle at 35% 50%, #2a2a30 0 22%, transparent 23%), radial-gradient(circle at 65% 50%, #2a2a30 0 22%, transparent 23%), linear-gradient(#d4d4d8, #a1a1aa); }
+.pr2 .pic { width: 52px; height: 52px; border-radius: 10px; flex: none; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); }
 .pr2 .now { font: 700 20px/1.1 Inter, system-ui; font-variant-numeric: tabular-nums; display: flex; gap: 8px; align-items: center; margin-top: 2px; }
 .pr2 .was { font-size: 12.5px; color: var(--muted); text-decoration: line-through; font-weight: 500; }
 .pr2 svg.sp { width: 100%; height: 70px; display: block; margin-top: 6px; }
-.pr2 .sp .l { fill: none; stroke: var(--ok); stroke-width: 2; stroke-linejoin: round; } .pr2 .sp .a { fill: var(--ok); opacity: .1; }
+.pr2 .sp .l { fill: none; stroke: var(--ok); stroke-width: 2; stroke-linejoin: round; } .pr2 .sp .a { fill: var(--ok); opacity: .06; }
 .pr2 .sp .tg { stroke: var(--accent); stroke-dasharray: 3 3; } .pr2 .sp text { fill: var(--accent); font: 600 9.5px Inter, system-ui; }
 .pr2 .sp .dot { fill: var(--ok); stroke: var(--surface); stroke-width: 2; }
 .pr2 .ft { display: flex; align-items: center; gap: 8px; padding: 8px 12px 12px; font-size: 12.5px; color: var(--muted); }
@@ -537,7 +533,7 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
 .pk .st { text-align: center; font-size: 11px; color: var(--muted); position: relative; padding-top: 24px; }
 .pk .st::before { content: ""; position: absolute; left: 50%; top: 4px; width: 13px; height: 13px; margin-left: -6.5px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line-2); transition: border-color .3s, background .3s; }
 .pk .st.done::before { border-color: var(--accent); background: var(--accent); } .pk .st.cur { color: var(--text); font-weight: 600; } .pk .st.cur::before { border-color: var(--accent); }
-.pk .log { font-size: 12.5px; color: var(--text-2); margin-top: 6px; } .pk .log div { display: flex; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); } .pk .log time { color: var(--muted); width: 72px; flex: none; font-variant-numeric: tabular-nums; }
+.pk .log { font-size: 12.5px; color: var(--text-2); margin-top: 6px; } .pk .log div { display: flex; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); } .pk .log time { color: var(--muted); width: 84px; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
 /* GitHub PR */
 .pr3 .tt { display: flex; gap: 8px; align-items: flex-start; } .pr3 .tt svg.i { color: var(--ok); margin-top: 2px; }
 .pr3 .row2 { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
@@ -550,7 +546,8 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
 .pr3 .checks .ls svg.i { color: var(--ok); width: 14px; height: 14px; } .pr3 .checks .ls small { margin-left: auto; color: var(--muted); }
 .diff { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .diff .p { color: var(--ok); font-weight: 650; } .diff .m { color: var(--danger); font-weight: 650; }
-.diff .sq { display: flex; gap: 2px; } .diff .sq i { width: 9px; height: 9px; border-radius: 2px; background: var(--surface-3); } .diff .sq i.a { background: var(--ok); } .diff .sq i.d { background: var(--danger); }
+.pr3 .s .p { color: var(--ok); font-weight: 650; } .pr3 .s .m { color: var(--danger); font-weight: 650; }
+.ai tr.sum td { font-weight: 650; border-bottom: 0; }
 /* social post */
 .po2 .who { display: flex; gap: 9px; align-items: center; }
 .po2 .who .av { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0f766e, #14b8a6); flex: none; }
@@ -856,7 +853,7 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
             <button class="chip" data-cal><svg class="i"><use href="#plus"/></svg>Takvime</button></div></div></div>
       </div></div>
       <div class="ex" data-id="a-event-B" data-new><h4><span class="l">B</span>Etkinlik: o günün saatleri</h4>
-        <p class="why">A'ya ikinci yol: takvim günü gibi; o gün başka kayıtlı işin varsa yanında görünür, çakışma hemen fark edilir.</p><div class="demo">
+        <p class="why">A'ya ikinci yol: o günün yalnız dolu saatleri; aradaki boşluk tek ince satır (106s: boş saat ızgarası çıktı).</p><div class="demo">
         <div class="card"><div class="bd">
           <div class="kind k-acc"><svg class="i"><use href="#cal"/></svg><span>Cumartesi 5 Aralık</span><span class="when">12 gün</span></div>
           <div class="t">Ehliyet sınavı</div>
@@ -886,8 +883,8 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
           <details class="vn-tx"><summary><svg class="i"><use href="#note"/></svg>Yazıya dökülmüş hâli</summary>"Yarın sabah kümes sensörünün pilini değiştir, sonra Ahmet'e ölçümleri gönder."</details></div>
       </div></div>
       <div class="ex" data-id="a-quote-A"><h4><span class="l">G</span>Alıntı <small>kitaptan / yazıdan altı çizili</small></h4><div class="demo">
-        <div class="card qt"><blockquote>Ağaç dikmenin en iyi zamanı yirmi yıl önceydi. İkinci en iyi zamanı şimdi.</blockquote>
-          <div class="src"><span class="bk"></span><div><div class="t" style="font-size:13px">Çin atasözü</div><div class="s">"Küçük Alışkanlıklar" · s. 112</div></div></div></div>
+        <div class="card qt"><blockquote>Hedeflerinin seviyesine yükselmezsin, sistemlerinin seviyesine düşersin.</blockquote>
+          <div class="src"><svg class="i"><use href="#book"/></svg><span>Atomik Alışkanlıklar · James Clear · s. 27</span></div></div>
       </div></div>
     </div>
   </section>
@@ -907,42 +904,40 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
           <div class="bd" style="padding-top:0"><button class="chip" data-gatechg><svg class="i"><use href="#bell"/></svg>Kapı değişikliğini dene</button></div></div>
       </div></div>
       <div class="ex" data-id="n-book-A" data-new><h4><span class="l">2</span>Kitap <small>ilerleme + altı çizililer</small></h4><div class="demo">
-        <div class="card bk2"><div class="cv">SAPIENS<br><span style="font-weight:400;font-size:9px">Hayvanlardan Tanrılara</span><small>Y. N. Harari</small></div>
-          <div style="min-width:0"><div class="kind k-acc"><svg class="i"><use href="#book"/></svg><span>kitap</span></div><div class="t">Sapiens</div><div class="s">Yuval Noah Harari</div>
-            <div class="stars ui" data-stars aria-label="Puan"></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px" class="num"><span>s. 212 / 464</span><span>%46</span></div><div class="bar"><b style="width:46%"></b></div>
-            <div class="hl" data-hl></div><button class="chip" style="margin-top:6px" data-hlnext><svg class="i"><use href="#pen"/></svg><span>14 altı çizili</span></button></div></div>
+        <div class="card bk2"><div class="cv"><svg class="i"><use href="#book"/></svg></div>
+          <div style="min-width:0"><div class="kind k-acc"><span>kitap · Kindle</span><span class="when">dün</span></div><div class="t">Sapiens</div><div class="s">Yuval Noah Harari</div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px" class="num"><span>s. 212 / 464</span><span>%46</span></div><div class="bar"><b style="width:46%"></b></div>
+            <button class="hl" data-hlnext aria-label="Sonraki altı çizili"><span data-hl></span><small data-hln></small></button></div></div>
       </div></div>
       <div class="ex" data-id="n-film-A" data-new><h4><span class="l">3</span>Dizi / film <small>bölüm takibi</small></h4><div class="demo">
-        <div class="card fm"><div class="po p7">Sever&shy;ance</div>
+        <div class="card fm"><div class="po"><svg class="i"><use href="#film"/></svg></div>
           <div class="bd"><div class="kind k-video"><svg class="i"><use href="#film"/></svg><span>dizi · 2. sezon</span></div><div class="t">Severance</div>
-            <div class="s" style="display:flex;gap:8px;align-items:center"><span class="score"><svg class="i"><use href="#star"/></svg>8,7</span><span>Apple TV+ · gerilim</span></div>
+            <div class="s">Apple TV+</div>
             <div class="eps ui" data-eps></div>
             <div class="s" style="margin-top:8px" data-epsl></div></div></div>
       </div></div>
       <div class="ex" data-id="n-price-A" data-new><h4><span class="l">4</span>Fiyat takibi <small>kaydedilen ürün linki</small></h4><div class="demo">
-        <div class="card pr2"><div class="hd"><div class="pic"></div><div style="min-width:0;flex:1"><div class="kind k-link"><svg class="i"><use href="#cart"/></svg><span>hepsiburada.com</span><span class="when">60 gün</span></div>
+        <div class="card pr2"><div class="hd"><div class="pic"><svg class="i"><use href="#cart"/></svg></div><div style="min-width:0;flex:1"><div class="kind k-link"><svg class="i"><use href="#cart"/></svg><span>hepsiburada.com</span><span class="when">60 gün</span></div>
             <div class="t" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Sony WH-1000XM5 kulaklık</div>
-            <div class="now"><span>₺9.499</span><span class="was">₺10.799</span><span class="tag ok"><svg class="i"><use href="#down"/></svg>%12</span></div></div></div>
+            <div class="now"><span>₺9.499</span><span class="was">₺10.799</span></div></div></div>
           <svg class="sp" viewBox="0 0 300 70" preserveAspectRatio="none" data-spark aria-label="60 günlük fiyat"></svg>
-          <div class="ft"><span>Hedefin <b style="color:var(--text)">₺9.000</b> · ₺499 kaldı</span><button class="chip bell" data-bell><svg class="i"><use href="#bell"/></svg><span>Haber ver</span></button></div></div>
+          <div class="ft"><span>60 günün en düşüğü</span><button class="chip bell" data-bell><svg class="i"><use href="#bell"/></svg><span>Haber ver</span></button></div></div>
       </div></div>
       <div class="ex" data-id="n-parcel-A" data-new><h4><span class="l">5</span>Kargo takibi <small>SMS / e-postadan</small></h4><div class="demo">
         <div class="card pk"><div class="bd">
           <div class="kind k-acc"><svg class="i"><use href="#box"/></svg><span>Kargo · 7340 2219 8812</span><button class="ibtn" style="margin-left:auto;width:30px;height:30px" aria-label="Takip numarasını kopyala" data-cpy="734022198812"><svg class="i"><use href="#copy"/></svg></button></div>
-          <div class="t">Kulaklık siparişi</div><div class="s">Tahmini: <b style="color:var(--text)">bugün 14:00 – 18:00</b></div>
+          <div class="t">Kulaklık siparişi</div><div class="s">Bugün 14:00 – 18:00 arası</div>
           <div class="trk" data-trk><span class="fill"></span><span class="truck"><svg class="i"><use href="#truck"/></svg></span>
             <div class="st">Alındı</div><div class="st">Transfer</div><div class="st">Dağıtımda</div><div class="st">Teslim</div></div>
-          <div class="log"><div><time>Bugün 08:12</time>Kadıköy şubesinde dağıtıma çıktı</div><div><time>Dün 22:40</time>Gebze aktarma merkezinden çıktı</div></div></div></div>
+          <div class="log"><div><time>Bugün 08:12</time>Kadıköy şubesinde dağıtıma çıktı</div></div></div></div>
       </div></div>
       <div class="ex" data-id="n-gh-A" data-new><h4><span class="l">6</span>GitHub PR <small>link kaydedince</small></h4><div class="demo">
         <div class="card pr3"><div class="bd">
           <div class="kind k-link"><svg class="i"><use href="#pr"/></svg><span>github.com · mohamedattiadev/nts</span><span class="when">#142</span></div>
           <div class="tt"><svg class="i"><use href="#pr"/></svg><div class="t">Motion: kart tutunca kalkış + bırakınca yaylı oturma</div></div>
-          <div class="row2"><span class="tag ok">Açık</span><span class="tag">motion</span><span class="tag">board</span><span class="tag">2 yorum</span></div>
+          <div class="s" style="margin-top:4px">Açık · 2 yorum · 6 dosya, <span class="p">+184</span> <span class="m">−37</span></div>
           <div class="checks" data-checks><button class="sum"><svg class="i"><use href="#check"/></svg><span>3 kontrol geçti</span><svg class="i chev"><use href="#chev"/></svg></button>
-            <div class="ls"><div><div><svg class="i"><use href="#check"/></svg>node --check<small>4 sn</small></div><div><svg class="i"><use href="#check"/></svg>phone-audit (8 boyut)<small>2 dk</small></div><div><svg class="i"><use href="#check"/></svg>Pages derlemesi<small>41 sn</small></div></div></div></div>
-          <div class="diff"><span class="p">+184</span><span class="m">−37</span><span class="sq"><i class="a"></i><i class="a"></i><i class="a"></i><i class="a"></i><i class="d"></i></span><span style="color:var(--muted)">6 dosya</span></div></div></div>
+            <div class="ls"><div><div><svg class="i"><use href="#check"/></svg>node --check<small>4 sn</small></div><div><svg class="i"><use href="#check"/></svg>phone-audit (8 boyut)<small>2 dk</small></div><div><svg class="i"><use href="#check"/></svg>Pages derlemesi<small>41 sn</small></div></div></div></div></div></div>
       </div></div>
       <div class="ex" data-id="n-post-A" data-new><h4><span class="l">7</span>Gönderi / tweet <small>X, Mastodon, LinkedIn</small></h4><div class="demo">
         <div class="card po2"><div class="bd">
@@ -979,10 +974,9 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
       </div></div>
       <div class="ex" data-id="n-med-A" data-new><h4><span class="l">11</span>İlaç hatırlatma <small>"3×1, 7 gün" notundan</small></h4><div class="demo">
         <div class="card md2"><div class="bd">
-          <div class="kind k-acc"><svg class="i"><use href="#pill"/></svg><span>ilaç · 7 günlük kür</span><span class="when" data-medn></span></div>
+          <div class="kind k-acc"><svg class="i"><use href="#pill"/></svg><span>ilaç · 7 günlük kür</span><span class="when">5. gün / 7</span></div>
           <div class="t">Amoksisilin 500 mg</div><div class="s">Günde 3 kez, tok karnına</div>
           <div class="doses ui" data-doses><button data-d="0"><b>08:00</b>sabah</button><button data-d="1"><b>16:00</b>öğle</button><button data-d="2"><b>24:00</b>gece</button></div>
-          <div class="crs" data-crs></div>
           <div class="s" style="margin-top:6px" data-crsl></div></div></div>
       </div></div>
     </div>
@@ -1090,19 +1084,15 @@ h3.sub { font-size: 12px; margin: 24px 2px 8px; font-weight: 600; color: var(--m
         <div class="ans"><mark>5 video</mark> buldum; 3'ü <b>ısı stresi</b>, 2'si <b>aşı takvimi</b> hakkında. En çok açtığın: "Yazın kümes havalandırma".</div>
         <div class="recs"><div class="rec"><div class="im p2"></div><div>Yazın kümes havalandırma<small>youtube · 4 Eki</small></div></div><div class="rec"><div class="im p4"></div><div>Isı stresi belirtileri<small>youtube · 9 Eki</small></div></div><div class="rec"><div class="im p1"></div><div>Newcastle aşı takvimi<small>youtube · 21 Eki</small></div></div></div>
         <div class="acts"><button class="chip pri"><svg class="i"><use href="#board"/></svg>Pano yap</button><button class="chip">Hepsini aç</button><button class="chip"><svg class="i"><use href="#hash"/></svg>sağlık etiketi</button></div></div></div></div>
-      <div class="ex" data-id="e-ans-B"><h4><span class="l">B</span>Sayılar + tablo + zaman çizelgesi</h4>
-        <p class="why"><b>Notun:</b> "biraz daha kalabalık" → üstte 3 sayı kutusu, aylık/yıllık geçişi, her satırda pay çubuğu, fiyat artışı uyarısı, "yarın" işaretli takvim.</p><div class="demo"><div class="ai" data-subs>
+      <div class="ex" data-id="e-ans-B"><h4><span class="l">B</span>Düz cevap + tablo</h4>
+        <p class="why">106s: önce düz cümle, sonra yalnız tablo (soru "ne ödüyorum" → tablo yeter). Sayı kutuları, uyarı kutusu, takvim ve "kazanırsın" satırı çıktı; zam bilgisi cümlede.</p><div class="demo"><div class="ai" data-subs>
         <div class="q"><b>bu yıl hangi aboneliklere ne ödüyorum?</b></div>
-        <div class="who"><svg class="i"><use href="#spark"/></svg>Nts · 23 fatura e-postası + 4 not</div>
-        <div class="ans">Kayıtlarında <mark>4 abonelik</mark> var. En büyük kalem <b>ChatGPT</b>; iCloud ocakta zamlanıyor.</div>
-        <div class="tiles"><div><small data-per>Aylık toplam</small><b data-tot>₺1.046</b></div><div><small>En pahalı</small><b>ChatGPT</b></div><div><small>Sıradaki</small><b>Yarın</b></div></div>
-        <div class="seg ui" style="margin-top:10px" role="tablist" data-persw><span class="thumb"></span><button role="tab" aria-selected="true" data-k="1">Aylık</button><button role="tab" data-k="12">Yıllık</button></div>
+        <div class="who"><svg class="i"><use href="#spark"/></svg>Nts · 27 kayıt</div>
+        <div class="ans">4 abonelik buldum, ayda toplam ₺1.046. iCloud ocakta ₺130'dan ₺160'a çıkıyor (12 Kasım e-postası).</div>
         <table><thead><tr><th>Abonelik</th><th>Yenileme</th><th class="num">Tutar</th></tr></thead><tbody data-subrows></tbody></table>
-        <div class="warn"><svg class="i"><use href="#alert"/></svg><span>iCloud 200 GB: <b>₺130 → ₺160</b> (12 Kas'taki e-postada, ocaktan itibaren).</span></div>
-        <ul class="tl"><li><b>24 Kas · yarın<span class="tag acc">yarın</span></b>Spotify yenilenir — ₺99</li><li><b>12 Ara</b>iCloud — son eski fiyat</li><li><b>17 Ara</b>Netflix</li><li><b>28 Ara</b>ChatGPT — yıllığa geçersen ₺1.036 kazanırsın</li></ul>
-        <div class="acts"><button class="chip pri"><svg class="i"><use href="#bell"/></svg>Hatırlatıcı kur</button><button class="chip">Not olarak kaydet</button><button class="chip">Tabloyu kopyala</button></div></div></div></div>
+        <div class="acts"><button class="chip">Not olarak kaydet</button><button class="chip">Tabloyu kopyala</button></div></div></div></div>
       <div class="ex" data-id="e-ans-C"><h4><span class="l">C</span>Akış: parçalar geldikçe çizilir</h4>
-        <p class="why"><b>Notun:</b> "biraz daha kalabalık" → önce ne yaptığı (adımlar), sonra cevap, kayıt kartları, gün gün plan, <b>hava artık tanınan parça</b>, eksikler listesi, bütçe tablosu, eylemler; bilinmeyen tür hâlâ düz metin.</p><div class="demo"><div class="ai" id="stream">
+        <p class="why">106s: parçalar geldikçe çizilir ama yalnız soruya gereken: düz cümle, bulunan kayıtlar, eksikler. Adım listesi, hava, plan, bütçe tablosu çıktı; bilinmeyen tür düz cümle olarak akar.</p><div class="demo"><div class="ai" id="stream">
         <div class="q"><b>İzmir gezisi için ne hazırlamıştım?</b></div><div id="st-out"></div>
         <div class="acts"><button class="chip" id="st-go"><svg class="i"><use href="#repeat"/></svg>Yeniden oynat</button></div></div></div></div>
       <div class="ex" data-id="e-cmp-A"><h4><span class="l">D</span>Karşılaştırma tablosu</h4>
@@ -1314,11 +1304,8 @@ $$('[data-cal]').forEach(b => b.onclick = e => { e.stopPropagation(); b.innerHTM
     return `<div class="${d.toDateString() === ev.toDateString() ? 'ev' : ''}">${days[d.getDay()]}<b>${d.getDate()}</b></div>`; }).join(''); });
   const dn = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'][ev.getDay()];
   $$('[data-evdate]').forEach(x => x.textContent = `${dn} ${ev.getDate()} ${months[ev.getMonth()]} · 09:30 – 10:15`);
-  $$('[data-dayv]').forEach(dv => { const H0 = 8, H1 = 13, ph = 150 / (H1 - H0), y = h => (h - H0) * ph;
-    dv.innerHTML = Array.from({ length: H1 - H0 }, (_, i) => `<span class="h" style="top:${y(H0 + i) - 7}px">${String(H0 + i).padStart(2, '0')}:00</span>`).join('') +
-      `<div class="blk oth" style="top:${y(8.25)}px;height:${ph * .5}px">Kahvaltı · Annemler</div>` +
-      `<div class="blk me" style="top:${y(9.5)}px;height:${ph * .75}px"><b>Ehliyet sınavı</b>09:30 – 10:15</div>` +
-      `<div class="blk oth" style="top:${y(11)}px;height:${ph}px">Kuaför (kayıttan)</div>`; });
+  $$('[data-dayv]').forEach(dv => { const row = (t, x, me) => `<div class="r${me ? ' me' : ''}"><time>${t}</time><span>${x}</span></div>`;
+    dv.innerHTML = row('08:15', 'Kahvaltı · Annemler') + row('09:30', 'Ehliyet sınavı · 45 dk', 1) + '<div class="gap">45 dk boş</div>' + row('11:00', 'Kuaför'); });
 })();
 
 // recipe
@@ -1343,11 +1330,9 @@ $$('.bp').forEach(bp => { const qr = $('.qr', bp); let s = 7; qr.innerHTML = Arr
   $('[data-gatechg]', bp).onclick = () => { const g = $('[data-gate]', bp), st = $('[data-fst]', bp); const chg = g.textContent === 'B9'; g.textContent = chg ? 'B12' : 'B9';
     g.classList.remove('chg'); void g.offsetWidth; if (chg) g.classList.add('chg'); st.textContent = chg ? 'Kapı değişti' : 'Zamanında'; st.className = 'tag ' + (chg ? 'acc' : 'ok'); buzz(); }; });
 // book: stars + cycling highlights
-$$('.bk2').forEach(bk => { const st = $('[data-stars]', bk); let r = 4; st.innerHTML = [1, 2, 3, 4, 5].map(i => `<button aria-label="${i} yıldız" data-r="${i}">${use('star')}</button>`).join('');
-  const paint = () => $$('button', st).forEach(b => b.classList.toggle('on', +b.dataset.r <= r)); st.onclick = e => { const b = e.target.closest('button'); if (b) { r = +b.dataset.r; paint(); buzz(); } }; paint();
-  const H = ['"Tarım devrimi tarihin en büyük dolandırıcılığıydı."  s. 79', '"Para, insanların icat ettiği en evrensel güven sistemidir."  s. 180', '"Mutluluk, beklentilerle koşulların uyumuna bağlıdır."  s. 391'];
-  let i = 0; const hl = $('[data-hl]', bk); hl.textContent = H[0];
-  $('[data-hlnext]', bk).onclick = () => { i = (i + 1) % H.length; hl.style.opacity = 0; setTimeout(() => { hl.textContent = H[i]; hl.style.opacity = 1; }, 180); buzz(); }; });
+$$('.bk2').forEach(bk => { const H = [['Tarım devrimi tarihin en büyük dolandırıcılığıydı.', 79], ['Para, insanların icat ettiği en evrensel güven sistemidir.', 180], ['Mutluluk, beklentilerle koşulların uyumuna bağlıdır.', 391]];
+  let i = 0; const hl = $('[data-hl]', bk), n = $('[data-hln]', bk), put = () => { hl.textContent = H[i][0]; n.textContent = `s. ${H[i][1]} · altı çizili ${i + 1} / 14`; }; put();
+  $('[data-hlnext]', bk).onclick = () => { i = (i + 1) % H.length; const b = hl.parentNode; b.style.opacity = 0; setTimeout(() => { put(); b.style.opacity = 1; }, 180); buzz(); }; });
 // series: tap episodes to mark watched
 $$('.fm').forEach(fm => { const e = $('[data-eps]', fm), l = $('[data-epsl]', fm); let w = 6;
   const draw = () => { e.innerHTML = Array.from({ length: 10 }, (_, i) => `<button class="${i < w ? 'w' : i === w ? 'nx' : ''}" aria-label="Bölüm ${i + 1}">${i + 1}</button>`).join('');
@@ -1355,8 +1340,8 @@ $$('.fm').forEach(fm => { const e = $('[data-eps]', fm), l = $('[data-epsl]', fm
   e.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const n = $$('button', e).indexOf(b); w = n < w ? n : n + 1; buzz(); draw(); }; draw(); });
 // price sparkline
 $$('[data-spark]').forEach(sv => { const P = [10799, 10799, 10650, 10650, 10899, 10499, 10499, 10299, 10399, 9999, 9999, 10199, 9899, 9699, 9799, 9499], W = 300, H = 70, lo = 8800, hi = 11000;
-  const pts = P.map((v, i) => [i / (P.length - 1) * (W - 8) + 4, (hi - v) / (hi - lo) * (H - 12) + 6]), d = 'M' + pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' L'), ty = (hi - 9000) / (hi - lo) * (H - 12) + 6;
-  sv.innerHTML = `<path class="a" d="${d} L${pts.at(-1)[0]},${H} L${pts[0][0]},${H}Z"/><line class="tg" x1="0" x2="${W}" y1="${ty}" y2="${ty}"/><text x="4" y="${ty - 3}">hedef ₺9.000</text><path class="l" d="${d}"/><circle class="dot" cx="${pts.at(-1)[0]}" cy="${pts.at(-1)[1]}" r="4"/>`; });
+  const pts = P.map((v, i) => [i / (P.length - 1) * (W - 8) + 4, (hi - v) / (hi - lo) * (H - 12) + 6]), d = 'M' + pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' L');
+  sv.innerHTML = `<path class="a" d="${d} L${pts.at(-1)[0]},${H} L${pts[0][0]},${H}Z"/><path class="l" d="${d}"/><circle class="dot" cx="${pts.at(-1)[0]}" cy="${pts.at(-1)[1]}" r="4"/>`; });
 $$('[data-bell]').forEach(b => b.onclick = () => { const on = b.classList.toggle('on'); b.classList.toggle('chip', true); $('span', b).textContent = on ? 'Haber verilecek' : 'Haber ver'; b.classList.toggle('acc', on); buzz(); });
 // parcel: truck drives to the current step when seen
 $$('[data-trk]').forEach(t => { const st = $$('.st', t), cur = 2; st.forEach((s, i) => { s.classList.toggle('done', i < cur); s.classList.toggle('cur', i === cur); });
@@ -1380,11 +1365,9 @@ $$('[data-sketch]').forEach(sv => { const ps = $$('path', sv);
 // flashcard
 $$('[data-flip]').forEach(f => { const go = () => { f.classList.toggle('on'); buzz(); }; f.onclick = go; f.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
 // medication: tap doses, course bar
-$$('.md2').forEach(m => { const ds = $$('[data-doses] button', m), taken = new Set([0]); const day = 5;
+$$('.md2').forEach(m => { const ds = $$('[data-doses] button', m), taken = new Set([0]);
   const draw = () => { const nx = [0, 1, 2].find(i => !taken.has(i)); ds.forEach((b, i) => { b.classList.toggle('tk', taken.has(i)); b.classList.toggle('nx', i === nx); });
-    $('[data-medn]', m).textContent = nx === undefined ? 'bugün tamam' : 'sıradaki ' + ['08:00', '16:00', '24:00'][nx];
-    $('[data-crs]', m).innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${i < day - 1 || (i === day - 1 && taken.size === 3) ? 'on' : ''}"></i>`).join('');
-    $('[data-crsl]', m).textContent = `${day}. gün · bugün ${taken.size}/3 alındı`; };
+    $('[data-crsl]', m).textContent = nx === undefined ? 'Bugünkü üç doz alındı' : `Bugün ${taken.size} / 3 · sıradaki ${['08:00', '16:00', '24:00'][nx]}`; };
   ds.forEach((b, i) => b.onclick = () => { taken.has(i) ? taken.delete(i) : taken.add(i); buzz(); draw(); }); draw(); });
 
 // ---------- 106b editor (bar, sheet, list + format bar) ----------
@@ -1519,10 +1502,8 @@ $$('.tmr').forEach(tm => { const T = 25 * 60, C = 175.9, fg = $('.fg', tm), tx =
 // ---------- 106e ----------
 // subscriptions: monthly / yearly switch redraws numbers and share bars
 const SUBS = [['Spotify', '#1db954', 'S', '24 Kas', 99], ['iCloud 200 GB', '#3b82f6', 'i', '12 Ara', 130], ['Netflix', '#e50914', 'N', '17 Ara', 299], ['ChatGPT', '#10a37f', 'C', '28 Ara', 518]];
-$$('[data-subs]').forEach(a => { const rows = $('[data-subrows]', a), sw = $('[data-persw]', a), tot = SUBS.reduce((s, r) => s + r[4], 0), mx = Math.max(...SUBS.map(r => r[4]));
-  const draw = k => { rows.innerHTML = SUBS.map(([n, c, l, d, v]) => `<tr><td><span class="lg2" style="background:${c}">${l}</span>${n}<div class="share" style="width:${v / mx * 100}%"></div></td><td>${d}</td><td class="num">₺${(v * k).toLocaleString('tr')}</td></tr>`).join('');
-    $('[data-tot]', a).textContent = '₺' + (tot * k).toLocaleString('tr'); $('[data-per]', a).textContent = k === 1 ? 'Aylık toplam' : 'Yıllık toplam'; };
-  sw.onclick = e => { const b = e.target.closest('button'); if (!b) return; segPick(sw, b); draw(+b.dataset.k); buzz(); }; segThumb(sw); draw(1); });
+$$('[data-subs]').forEach(a => { $('[data-subrows]', a).innerHTML = SUBS.map(([n, , , d, v]) => `<tr><td>${n}</td><td>${d}</td><td class="num">₺${v.toLocaleString('tr')}</td></tr>`).join('') +
+  `<tr class="sum"><td>Toplam</td><td></td><td class="num">₺${SUBS.reduce((s, r) => s + r[4], 0).toLocaleString('tr')}</td></tr>`; });
 // comparison: only differences
 $$('[data-diffonly]').forEach(b => b.onclick = () => { const t = $('[data-cmp]', b.closest('.ai')), on = t.classList.toggle('diffonly'); b.setAttribute('aria-pressed', String(on)); b.classList.toggle('on', on); buzz(); });
 // sources: 7-day humidity from the user's own sensor notes, ideal band shaded
@@ -1534,15 +1515,11 @@ $$('.ai [data-s]').forEach(a => a.onclick = e => e.preventDefault());
 
 // streaming: the bridge returns typed parts; only known ones are drawn
 const PARTS = [
-  { type: 'steps', items: ['312 kayıt tarandı', '9 kayıt İzmir ile ilgili', '2 e-posta: otel + araba'] },
-  { type: 'answer', text: 'Ekim\'de <mark>İzmir</mark> için 9 kayıt açmışsın: otel, 4 yemek yeri, bir rota ve araba kiralama. Eksik olan <b>3 şey</b> var.' },
+  { type: 'answer', text: 'Ekim\'de İzmir için 9 kayıt açmışsın. Otel ve araba kiralama e-postaları var; Efes bileti ve Urla\'daki yer ayırtma henüz yok.' },
   { type: 'records', items: [['p2', 'Alaçatı Taş Ev', 'booking · 12 Eki'], ['p6', 'Şirince köy kahvaltısı', 'not · 14 Eki'], ['p1', 'Efes sabah girişi', 'link · 15 Eki']] },
-  { type: 'timeline', items: [['Cuma', 'Alsancak — Kordon\'da akşam yürüyüşü'], ['Cumartesi', 'Şirince + Efes (araba kiralık)'], ['Pazar', 'Urla bağ yolu, dönüş 18:00']] },
-  { type: 'weather', items: [['Cuma', 'psun', '17°'], ['Cumartesi', 'sun', '19°'], ['Pazar', 'cloud', '15°']] },
-  { type: 'checklist', title: 'Eksikler', items: ['Araba rezervasyonu onayı', 'Efes müze kart', 'Urla şarap evi yer ayırtma'] },
-  { type: 'table', head: ['Kalem', 'Tutar'], rows: [['Otel (2 gece)', '₺5.500'], ['Araba (2 gün)', '₺2.300'], ['Yemek (tahmin)', '₺3.000']] },
-  { type: 'budget_pie', text: 'Bütçe pastası (bilinmeyen tür → düz metin): toplam ₺10.800.' },
-  { type: 'actions', items: ['Pano yap', 'Eksikleri göreve çevir', 'Kaydet'] },
+  { type: 'missing', text: 'Kalan 6 kayıt yemek yerleri; hepsi "izmir" etiketli.' },
+  { type: 'source', text: 'Nts · 9 kayıt' },
+  { type: 'actions', items: ['Pano yap', 'Hepsini aç'] },
 ];
 const drawPart = p => {
   if (p.type === 'steps') return `<div class="steps2 part">${p.items.map(t => `<div>${use('check')}${t}</div>`).join('')}</div>`;
@@ -1552,8 +1529,9 @@ const drawPart = p => {
   if (p.type === 'weather') return `<div class="wxs part">${p.items.map(([d, i, t]) => `<div>${d}${use(i)}<b>${t}</b></div>`).join('')}</div>`;
   if (p.type === 'checklist') return `<div class="nd part" style="margin-top:10px"><b style="font-size:13.5px">${p.title}</b>${p.items.map(t => `<label><input class="ck" type="checkbox"><span>${t}</span></label>`).join('')}</div>`;
   if (p.type === 'table') return `<table class="part"><thead><tr>${p.head.map((h, i) => `<th${i ? ' class="num"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${p.rows.map(r => `<tr>${r.map((c, i) => `<td${i ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  if (p.type === 'source') return `<div class="who part" style="margin:10px 0 0">${use('spark')}${p.text}</div>`;
   if (p.type === 'actions') return `<div class="acts part">${p.items.map((t, i) => `<button class="chip${i ? '' : ' pri'}">${t}</button>`).join('')}</div>`;
-  return `<div class="warn part" style="background:var(--surface-2)">${use('alert')}<span>${String(p.text || '').replace(/</g, '&lt;')}</span></div>`;
+  return `<p class="part" style="margin:8px 0 0;font-size:13.5px;color:var(--text-2)">${String(p.text || '').replace(/</g, '&lt;')}</p>`; // unknown part → plain sentence
 };
 let stT = [];
 const TYP = '<div class="typing"><i></i><i></i><i></i></div>';
