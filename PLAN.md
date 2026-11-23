@@ -362,10 +362,18 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         Morph.revive: kapanırken tekrar açılan pencereyi eski kapanış kapatmıyordu (hata) → düzeldi. Ölçüm: layout-shift masaüstü
         0.0013, telefon 0; ekle/sil sonrası 6–7 kart FLIP ile kayıyor (4 yapılandırma, konsol hatası yok).
 
-- [ ] 103. **Arama listesi + tek kutu modları** (sahip, ekran görüntüleri):
+- [x] 103. (2026-11-23, B hattı: (b) yapıldı, aşağıdaki nota bak) **Arama listesi + tek kutu modları** (sahip, ekran görüntüleri):
         (a) [x] (2026-11-21: setView ve her pencere açılışında (Back.open) liste kapanır, yazı kalır; kutuya tıklayınca/yazınca geri gelir; liste açıkken .peek gizli) Görünüm/sayfa değişince (Pano/Liste/Galeri, yapılacaklar, ayarlar, kayıt penceresi) açık arama sonuç listesi kapansın; yazı kutuda
             kalabilir, yeni sayfada sadece süzme/vurgu. Arama listesi açıkken galeri önizleme paneli (ve başka yüzen kartlar) gizlensin, üst üste binmesin.
-        (b) Tek kutuda kaydet / ara / sor karışık (sahip: "oturtamadık"). Kutunun solunda her zaman görünen mod seçici: ✎ Not · 🔍 Ara · ✦ Sor
+        (b) [x] (2026-11-23, B hattı: kutunun solunda ✎ Not · 🔍 Ara · ✦ Sor seçici (masaüstünde üçü görünür, seçilinin adı yazılı; telefonda tek düğme,
+            dokununca kutunun üstünde küçük menü), Tab/Shift+Tab döner, son mod localStorage hn-mode'da; boş Not kutusuna "/" → Ara, "?" → Sor;
+            sayfada "/" kısayolu Ara'ya geçer. Not: sonuç listesi açılmaz, yalnız "N benzer kayıt" çipi (dokununca Ara). Ara CANLI: her harfte
+            sayfa süzülür ama yeniden çizilmez (LiveQ: eşleşmeyen satır/kutucuk .q-out sınıfıyla gider, boşalan gün/ay başlığı da; kalanlar FLIP ile
+            kayar; panoda eşleşmeyenler solar), yalnız sayfada olmayan bir eşleşme gerekirse bir kez çizilir; kaydırma ve resimler yerinde kalır.
+            Ara penceresi (130a): başta "fatura · 111 kayıt ×", tür çipleri sayılı (Hepsi · Resim · Not · Link · Dosya), en sık etiketler
+            ("# logo 14", dokununca daraltır), altta ızgara (resim büyük, not küçük belge kartı, kutucuklar id ile korunur, yeni yerine kayar),
+            ↑↓ gez, Enter ilk/seçili sonucu açar, Esc temizler, "Aramayı sabitle" + "Sayfada gör". Tab = etikete daraltma yapılmadı (Tab mod değiştirir).
+            Ölçüm: yük altındaki makinede LiveQ 11–41 ms; content-visibility gruplarında satır ölçümü yalnız ekrandaki gruplarda.) Tek kutuda kaydet / ara / sor karışık (sahip: "oturtamadık"). Kutunun solunda her zaman görünen mod seçici: ✎ Not · 🔍 Ara · ✦ Sor
             (Sor = seçili yapay zekâ, 87). Yazı (placeholder), gönder simgesi ve Enter moda göre: Not = kaydet; Ara = sonuçlar açık, Enter ilk sonucu
             açar, "hepsini göster"; Sor = yapay zekâya sor. Not modunda sonuç listesi açılmaz, sadece "4 benzer kayıt" çipi (tekrar kaydetmeyi önler).
             Kısayol: Tab modlar arasında döner, "/" Ara, başta "?" Sor. Telefonda dokunarak seçilir, son mod hatırlanır. Turu ve ipuçlarını güncelle.
@@ -480,7 +488,7 @@ Arayüz:
 - [ ] 117. **Yazı kutusu üstündeki şeyleri görünür bıraksın**: panoda bir kartın üstündeyken kutu, logo, yan çubuklar, üstteki seçici ve ayarlar
         o kartı kapatıyorsa saydamlaşsın/kenara kaçsın (imleç ya da kart altında kalınca opaklık düşer, üzerine gelince geri gelir); kutu her zaman
         net okunur kalsın.
-- [ ] 118. **Kutu modları ve ipuçları** (103b ile birlikte): placeholder anlaşılır bir cümle olsun: "Not yaz · - görev · ? yapay zekâya sor · / ara";
+- [x] 118. (2026-11-23, B hattı, 103b ile: placeholder Not'ta "Not yaz · - görev · ? yapay zekâya sor · / ara" (telefonda kısa), Ara/Sor'da kendi cümlesi; kutu odaktayken masaüstünde mod düğmelerinin yanında küçük `Tab` ipucu; gönder simgesi Enter'ın yapacağını söyler: ↑ kaydet, ☐ "- " ile görev, 🔍 ilk sonucu aç, ✦ Sor; renk yalnız Sor'da accent) **Kutu modları ve ipuçları** (103b ile birlikte): placeholder anlaşılır bir cümle olsun: "Not yaz · - görev · ? yapay zekâya sor · / ara";
         küçük tuş ipucu (Tab ile mod değiştir: `Tab`); başa yazılan işarete göre (- / ? / ve sonra eklenenler) gönder düğmesinin simgesi değişsin
         (✎ not, ☐ görev, ✦ sor, 🔍 ara), renk uygunsa değişsin yoksa aynı kalsın.
 - [ ] 119. **Uzaklaşınca anlamlı çizim (çok önemli, sahip: "bütün gücünü ver")**: çok uzaklaşınca kartlar okunmuyor; o yakınlıkta panoda

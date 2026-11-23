@@ -98,8 +98,9 @@
     <section class="composer" id="composer">
       <div id="attachList" class="attach-list"></div>
       <div class="c-row">
+        <div id="modes" class="modes" role="radiogroup" aria-label="Kutu modu"></div>
         <label class="c-btn" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
-        <textarea id="input" dir="auto" rows="1" placeholder="Not, link ya da soru yaz…" enterkeyhint="send" autocomplete="off"></textarea>
+        <textarea id="input" rows="1" placeholder="Not yaz · - görev · ? sor · / ara" enterkeyhint="send" dir="auto" autocomplete="off"></textarea>
         <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
       </div>
       <div id="cHint" class="c-hint" hidden></div>

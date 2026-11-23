@@ -199,7 +199,7 @@ const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share
 let qWarnT;
 function runSearch() {
   const q = S.q.trim(); S.qx = null; clearTimeout(qWarnT);
-  if (!q || q.startsWith('?') || q.endsWith('?')) { S.hits = null; return; } // a question goes to Claude, it doesn't filter
+  if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
     const toks = tokens(x.terms.join(' ')); S.hits = new Map();
@@ -506,7 +506,7 @@ function metaHtml(i, { tags = 2, acts = false, day = false } = {}) {
 }
 function itemRow(i, { acts = true } = {}) {
   const sub = subOf(i);
-  return `<div class="item${S.hits?.has(i.id) ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}">
+  return `<div class="item${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}">
     ${leadOf(i)}
     <div class="body">
       <div class="title">${hl(titleOf(i))}</div>
@@ -560,14 +560,16 @@ function monthJump(anchor) {
   p.hidden = false; const hs = p.querySelector('.heat-scroll'); if (hs) hs.scrollLeft = Heat.year === new Date().getFullYear() ? hs.scrollWidth : 0;
   const r = anchor.getBoundingClientRect(); p.style.top = r.bottom + 6 + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.right - p.offsetWidth)) + 'px';
 }
+const galleryMedia = items => { const from = S.listFrom ? Math.max(0, items.findIndex(i => i.ts <= S.listFrom)) : 0;
+  return items.filter(i => i.type === 'file' || (i.type === 'link' && i.meta?.image)).slice(0, from + S.limit).filter(i => !S.listFrom || i.ts <= S.listFrom).slice(0, S.limit); };
+const listShown = items => { const from = Math.max(0, S.listFrom ? items.findIndex(i => i.ts <= S.listFrom) : 0); return items.slice(from, from + S.limit); };
 function renderGallery(items) { // month headers stick to the top while scrolling; "Tarihe git" jumps
-  const el = $('#gallery'), from = S.listFrom ? Math.max(0, items.findIndex(i => i.ts <= S.listFrom)) : 0;
-  const media = items.filter(i => i.type === 'file' || (i.type === 'link' && i.meta?.image)).slice(0, from + S.limit).filter(i => !S.listFrom || i.ts <= S.listFrom).slice(0, S.limit);
+  const el = $('#gallery'), media = galleryMedia(items);
   let last = '', html = '';
   for (const i of media) {
     const m = dayKey(i.ts).slice(0, 7);
     if (m !== last) { const [y, mo] = m.split('-').map(Number); html += `<div class="g-month">${new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>`; last = m; }
-    html += `<div class="tile${S.hits?.has(i.id) ? ' hit' : ''}${markCls(i)}" data-id="${i.id}">
+    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${markCls(i)}" data-id="${i.id}">
     ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
   el.innerHTML = media.length ? `${topBtns('g-jump')}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
@@ -649,9 +651,10 @@ function render(force) {
   requestAnimationFrame(() => {
     renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, S.searchOn, S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
+    const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
-    renderHits(); if (same && S.view !== 'todo') return;
+    renderHits(); if (same && S.view !== 'todo' && (!live || LiveQ.apply())) return;
     const items = visible(), none = !alive().length;
     const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
     const fr = fv && S._fv === fv && !onlyMore && $('#' + fv), fb = fr && Flip.snap(fr); S._fv = fv;
@@ -664,11 +667,11 @@ function render(force) {
     Rail.place();
     $('#empty').hidden = !none || S.view === 'todo';
     if (S.view === 'todo') Todo.render();
-    else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Sonra aynı kutuya yazarak bul. <b>Tab</b> ile ' + aiTo() + ' sorma moduna geçersin.',
+    else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Kutunun solunda üç mod var: <b>Not</b> kaydeder, <b>Ara</b> yazdıkça bulur, <b>Sor</b> ' + aiTo() + ' sorar (<b>Tab</b> ile değişir).',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
-    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
+    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
     else if (S.view === 'board') { // typing in the box doesn't rebuild the board: only data, filters or a real search do
-      const key = [S.items, JSON.stringify(S.filter), S.sortPrio, S.searchOn && S.q, S.searchOn && S.hits, S.linkFrom];
+      const key = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn && S.q, live ? 'L' : S.searchOn && S.hits, S.linkFrom];
       if (!S.cam || !Board._key || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
     }
     else if (S.view === 'gallery') renderGallery(items);
@@ -774,21 +777,117 @@ function renderHits() {
     if (el._html !== html) { el.innerHTML = html; el._html = html; }
     el.hidden = false;
   };
-  if (S.searchOn && q) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span>“${esc(q.slice(0, 40))}” · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı kapat">${ic('x', 'sm')}</button>`);
-  if (!q || !S.hits?.size || S.hitsOff) { // 103a: hitsOff = the page changed; the text stays, the list comes back on typing/focus
+  if (!findMode() || !q) { // 103b: only Ara mode opens results; Not shows a "N benzer kayıt" chip, Sor asks
+    if (Find.top.length) { Find.top = []; updateSend(); }
     if (el.hidden || el.classList.contains('closing')) return;
-    el.classList.add('closing'); el._ht = setTimeout(() => { el.hidden = true; el.classList.remove('closing'); el._html = ''; }, 140); return;
+    el.classList.add('closing'); el._ht = setTimeout(() => { el.hidden = true; el.classList.remove('closing'); el._html = ''; el._cls = ''; }, 140); return;
   }
-  const top = [...S.hits].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => byId(id)).filter(Boolean);
-  if (S.hitSel >= top.length) S.hitSel = top.length - 1;
-  const hint = S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç · <kbd>Esc</kbd> kapat'
-    : askMode() ? '<kbd>Enter</kbd> ' + aiTo() + ' sor · <kbd>Tab</kbd> not moduna dön · <kbd>↓</kbd> sonuçlara in' : '<kbd>Enter</kbd> not olarak kaydet · <kbd>Tab</kbd> ' + aiTo() + ' sor · <kbd>↓</kbd> sonuçlara in';
-  show('hits', `<div class="h-label">Kayıtlar</div>` + top.map((i, n) => {
-    const k = fileKind(i), logo = i.type === 'link' && i.meta?.logo;
-    return `<button class="h-row${n === S.hitSel ? ' sel' : ''}" data-open="${i.id}"><span class="h-ico ${i.type}-c">${logo ? `<img src="${esc(logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span>
-      <span class="h-t">${hl(titleOf(i))}</span><span class="h-s">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span></button>`;
-  }).join('') + `<div class="h-foot"><span class="d-only">${hint}</span>${S.hits.size > 0 ? `<button class="link-btn" data-all>${S.hits.size} sonucun hepsini göster</button>` : ''}</div>`);
+  // 103a: hitsOff = the page changed (or "Sayfada gör"); the filter stays, a small chip says so, typing/focus brings the window back
+  if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+  show('hits find', '<div class="f-head"></div><div class="f-chips"></div><div class="f-grid"></div><div class="h-foot"></div>');
+  Find.draw(el, q);
 }
+// 103b + 130a: the Ara window is a small visual grid: pictures big, notes as little document cards; type counts and the
+// most common tags on top (a tap narrows); it is updated in place (tiles are kept by id and slide to their new place), never rebuilt
+const Find = {
+  top: [],
+  list() {
+    const f = S.filter;
+    return [...(S.hits || [])].map(([id, sc]) => [byId(id), sc]).filter(([i]) => i && !i.deleted && !HIDDEN.has(i.type) && (!f.tag || (i.tags || []).includes(f.tag)))
+      .sort((a, b) => b[1] - a[1] || b[0].ts - a[0].ts).map(([i]) => i); // best first, then newest
+  },
+  set(el, sel, html) { const n = el.querySelector(sel); if (n._h !== html) { n.innerHTML = html; n._h = html; } return n; },
+  draw(el, q) {
+    const all = this.list(), f = S.filter, cnt = new Map();
+    for (const i of all) cnt.set(groupOf(i), (cnt.get(groupOf(i)) || 0) + 1);
+    const items = f.type === 'all' ? all : all.filter(i => groupOf(i) === f.type);
+    const tags = new Map(); for (const i of items.slice(0, 500)) for (const t of i.tags || []) tags.set(t, (tags.get(t) || 0) + 1);
+    if (f.tag && !tags.has(f.tag)) tags.set(f.tag, items.length);
+    const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, innerWidth < 700 ? 4 : 6);
+    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(q)}<b dir="auto">${esc(q.slice(0, 40))}</b><span>· ${items.length} kayıt</span></span><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    const T = [['all', 'Hepsi', all.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
+    this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
+      + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
+    const g = el.querySelector('.f-grid'), want = items.slice(0, innerWidth < 700 ? 12 : 24), old = new Map([...g.children].filter(n => n.dataset.open).map(n => [n.dataset.open, n]));
+    this.top = want.map(i => i.id);
+    if (S.hitSel >= want.length) S.hitSel = want.length - 1;
+    const anim = !reduced() && !el.classList.contains('closing'), before = new Map();
+    if (anim) for (const n of old.values()) before.set(n, n.getBoundingClientRect());
+    const fresh = [];
+    want.forEach((i, k) => {
+      let t = old.get(i.id); if (t) old.delete(i.id); else { t = this.tile(i); fresh.push(t); }
+      if (g.children[k] !== t) g.insertBefore(t, g.children[k] || null);
+      t.classList.toggle('sel', k === S.hitSel);
+      const tt = hl(titleOf(i)); if (t._t !== tt) { t.querySelector('.f-t').innerHTML = tt; t._t = tt; }
+      const s = t.querySelector('.f-s'); if (s) { const ss = hl(subOf(i).slice(0, 160)); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
+    });
+    old.forEach(n => n.remove()); g.querySelector('.f-none')?.remove();
+    if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">Bulunamadı.<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button><button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button></div>`);
+    if (anim) {
+      const moves = []; for (const [n, a] of before) { if (!n.isConnected) continue; const b = n.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top; if (dx || dy) moves.push([n, dx, dy]); }
+      for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      for (const n of fresh) n.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 170, easing: 'ease-out' });
+    }
+    fresh.forEach(hookThumbs); updateSend(); // the send button opens the first result: on only when there is one
+    const phone = innerWidth < 700;
+    this.set(el, '.h-foot', `<span class="d-only">${S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç' : '<kbd>Enter</kbd> ilk sonucu aç · <kbd>↓</kbd> gez'} · <kbd>Tab</kbd> mod · <kbd>Esc</kbd> temizle</span>`
+      + (items.length ? `<button class="link-btn" data-lpin>${ic('pin', 'sm')}${phone ? 'Sabitle' : 'Aramayı sabitle'}</button><button class="link-btn" data-all>Sayfada gör</button>` : ''));
+  },
+  tile(i) {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.open = i.id;
+    const vis = hasVisual(i), k = fileKind(i);
+    b.className = 'h-row f-tile ' + (vis ? 'vis' : 'doc');
+    b.innerHTML = vis ? `${thumbBox(i, 'f-th')}<span class="f-t" dir="auto"></span>`
+      : `<span class="f-ic ${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
+    return b;
+  },
+  open(n = 0) { const id = this.top[n]; if (id) openItem(id); },
+};
+// 103b: live search without redrawing the page: rows/tiles that don't match get a class and leave, the rest slide up (FLIP);
+// scroll, images and everything else stay. Only when a match is not on the page yet is the view drawn once (then narrowing is classes again)
+const LiveQ = {
+  apply() {
+    if (S.view === 'board') return this.board();
+    if (S.view === 'list') return this.page($('#list'), '.item[data-id]', listShown(visible()));
+    if (S.view === 'gallery') return this.page($('#gallery'), '.tile[data-id]', galleryMedia(visible()));
+    return false;
+  },
+  board() {
+    const on = !!(S.searchOn && S.hits);
+    for (const c of document.querySelectorAll('#board .bcard[data-id]:not(.sticky)')) { const h = on && S.hits.has(c.dataset.id); c.classList.toggle('hit', h); c.classList.toggle('dim', on && !h); }
+    return true;
+  },
+  page(el, sel, want) {
+    if (!want.length || !el) return false; // the empty message is drawn once
+    const have = new Map(); for (const n of el.querySelectorAll(sel)) have.set(n.dataset.id, n);
+    const ids = new Set(); for (const i of want) { if (!have.has(i.id)) return false; ids.add(i.id); }
+    const anim = !reduced(), vh = innerHeight, near = r => r.bottom > -80 && r.top < vh + 80, before = new Map();
+    // rows sit in content-visibility:auto groups: measuring a row of an off-screen group costs a layout each, so only rows of groups on screen
+    const onScreen = () => { const out = [];
+      if (el.querySelector('.group')) { for (const g of el.querySelectorAll('.group:not(.q-out)')) if (near(g.getBoundingClientRect())) out.push(...g.querySelectorAll(sel + ':not(.q-out)')); }
+      else for (const n of have.values()) if (!n.classList.contains('q-out')) out.push(n);
+      return out; };
+    if (anim) for (const n of onScreen()) { const r = n.getBoundingClientRect(); if (near(r)) before.set(n, r); }
+    const back = [];
+    for (const [id, n] of have) { const out = !ids.has(id); if (!out && n.classList.contains('q-out')) back.push(n); n.classList.toggle('q-out', out); }
+    for (const g of el.querySelectorAll('.group')) g.classList.toggle('q-out', !g.querySelector(sel + ':not(.q-out)'));
+    let head = null, n0 = 0; // a day / month heading with nothing left under it goes too
+    for (const c of el.children) {
+      if (c.matches('.day,.g-month')) { if (head) head.classList.toggle('q-out', !n0); head = c; n0 = 0; }
+      else if (c.matches(sel + ',.group') && !c.classList.contains('q-out')) n0++;
+    }
+    if (head) head.classList.toggle('q-out', !n0);
+    el.classList.toggle('q-live', !!S.searchOn);
+    if (anim) { // all reads first, then all writes: an animate() between two reads would force a layout per row
+      const moves = [], fades = [];
+      for (const [n, a] of before) { if (n.classList.contains('q-out')) continue; const b = n.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top; if ((dx || dy) && near(b)) moves.push([n, dx, dy]); }
+      const bk = new Set(back); for (const n of onScreen()) { if (fades.length >= 40) break; if (bk.has(n) && near(n.getBoundingClientRect())) fades.push(n); }
+      for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      for (const n of fades) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' });
+    }
+    return true;
+  },
+};
 function renderAttach() {
   const el = $('#attachList');
   el.innerHTML = S.attach.map((f, k) => {
@@ -798,31 +897,55 @@ function renderAttach() {
       <button data-rm="${k}" title="Kaldır">${ic('x', 'sm')}</button></div>`;
   }).join('');
   el.querySelectorAll('img[data-k]').forEach(img => { const u = URL.createObjectURL(S.attach[+img.dataset.k]); img.onload = () => URL.revokeObjectURL(u); img.src = u; });
+  if (S.attach.length && findMode()) return setMode('note'); // a file is saved, not searched for
   updateSend();
 }
-// two modes: "Not" (Enter saves) and "Sor" (Enter asks Claude); Tab switches. A text ending in ? only shows a hint.
+// 103b: three modes in the one box, picked on the left (always visible), Tab cycles, the last one is remembered:
+// ✎ Not (Enter saves; only a "N benzer kayıt" chip), 🔍 Ara (live: the page filters as you type, Enter opens the first), ✦ Sor (Enter asks the AI).
+// Typing "/" or "?" first in an empty Not box switches to Ara / Sor (118); a "- " line shows the task icon on the send button.
+const MODES = [['note', 'pen', 'Not'], ['find', 'search', 'Ara'], ['ask', 'spark', 'Sor']];
+const findMode = () => S.mode === 'find';
 const askMode = () => S.mode === 'ask' && !S.attach.length;
-function setMode(m) { S.mode = m; updateSend(); if (S.q) renderHits(); }
+function renderModes() {
+  const el = $('#modes'); if (!el) return;
+  const tip = { note: 'Not: Enter kaydeder', find: 'Ara: yazdıkça bulur (/)', ask: 'Sor: ' + aiTo() + ' sorar (?)' };
+  el.innerHTML = MODES.map(([m, icn, l]) => `<button type="button" role="radio" aria-checked="${S.mode === m}" class="m-b${S.mode === m ? ' on' : ''}" data-m="${m}" title="${tip[m]} · Tab: sonraki mod">${ic(icn, 'sm')}<span>${l}</span></button>`).join('')
+    + '<kbd class="m-tab" title="Tab ile mod değiştir">Tab</kbd>'
+    // phone: only the current mode shows; a tap opens this small menu above it (the box itself doesn't move)
+    + `<div class="m-menu" role="menu">${MODES.map(([m, icn, l]) => `<button type="button" role="menuitemradio" aria-checked="${S.mode === m}" class="m-i${S.mode === m ? ' on' : ''}" data-m="${m}">${ic(icn, 'sm')}<span><b>${l}</b><small>${tip[m].replace(/^[^:]+: /, '').replace(/ \(.\)$/, '')}</small></span></button>`).join('')}</div>`;
+}
+function setMode(m) {
+  if (!MODES.some(x => x[0] === m)) m = 'note';
+  const was = S.mode, inp = $('#input'); S.mode = m; try { localStorage.setItem('hn-mode', m); } catch { }
+  $('#modes').classList.remove('open'); renderModes(); S.hitSel = -1; S.hitsOff = false;
+  if (was !== m) { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); runSearch(); render(); }
+  updateSend();
+}
+const nextMode = (d = 1) => MODES[(MODES.findIndex(x => x[0] === S.mode) + d + MODES.length) % MODES.length][0];
 const updateSend = () => {
-  const v = $('#input').value.trim(), ask = askMode(), b = $('#saveBtn'), phone = innerWidth < 700;
-  b.disabled = !ask && !v && !S.attach.length;
-  const key = ask ? 'a' : 'n';
+  const v = $('#input').value.trim(), ask = askMode(), find = findMode(), b = $('#saveBtn'), phone = innerWidth < 700;
+  b.disabled = find ? !Find.top.length : !ask && !v && !S.attach.length;
+  const icn = ask ? 'spark' : find ? 'search' : !S.attach.length && TODO_LINE.test(v) ? 'todo' : 'up'; // 118: the button says what Enter will do
+  const key = icn + phone;
   if (b.dataset.k !== key) {
     b.dataset.k = key; b.classList.toggle('ask', ask);
-    b.innerHTML = ask ? `${ic('spark', 'sm')}<span>Sor</span>` : ic('up', 'sm'); b.classList.toggle('round', !ask);
-    b.setAttribute('aria-label', ask ? '' + aiTo() + ' sor' : 'Kaydet');
-    b.title = ask ? '' + aiTo() + ' sor (Enter) · Tab: not moduna dön' : 'Kaydet (Enter) · Tab: ' + aiTo() + ' sor';
-    $('#composer').classList.toggle('ask-mode', ask);
-    $('#input').placeholder = ask ? '' + aiTo() + ' sor: "geçen hafta ne kaydettim?"' : 'Not, link ya da soru yaz…';
+    b.innerHTML = ask ? `${ic('spark', 'sm')}<span>Sor</span>` : ic(icn, 'sm'); b.classList.toggle('round', !ask);
+    const lbl = ask ? aiTo() + ' sor' : find ? 'İlk sonucu aç' : icn === 'todo' ? 'Görev olarak kaydet' : 'Kaydet';
+    b.setAttribute('aria-label', lbl); b.title = lbl + ' (Enter) · Tab: sonraki mod';
+    $('#composer').classList.toggle('ask-mode', ask); $('#composer').classList.toggle('find-mode', find);
+    $('#input').placeholder = ask ? aiTo() + ' sor: "geçen hafta ne kaydettim?"' : find ? (phone ? 'Ara: yazdıkça bulur' : 'Ara: yazdıkça sayfa süzülür, Enter ilk sonucu açar')
+      : phone ? 'Not · - görev · ? sor · / ara' : 'Not yaz · - görev · ? yapay zekâya sor · / ara';
   }
-  const touch = matchMedia('(hover: none)').matches, h = $('#cHint'), tip = ask ? 'not' : ((touch ? v : isQuestion(v)) && !S.attach.length ? 'ask' : ''); // no Tab key on a phone: the chip is the way in
+  // Not mode: a chip "4 benzer kayıt" (so the same thing isn't saved twice) → Ara; on a phone (no Tab key) also the way to Sor
+  const touch = matchMedia('(hover: none)').matches, h = $('#cHint'), n = S.mode === 'note' && v && !S.attach.length ? S.hits?.size || 0 : 0;
+  const tip = ask ? 'not' : S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', (touch ? v : isQuestion(v)) ? 'ask' : ''].filter(Boolean).join(' ');
   if (h.dataset.k !== tip) {
     h.dataset.k = tip; h.hidden = !tip;
-    h.innerHTML = tip === 'ask' ? `<button data-mode="ask">${phone ? '' : '<kbd>Tab</kbd>'}${ic('spark', 'sm')}${aiTo()} sor</button>`
-      : tip === 'not' ? `<span class="m-on">${ic('spark', 'sm')}${aiTo()} soruyorsun</span><button data-mode="note">${phone ? '' : '<kbd>Tab</kbd>'}Not olarak kaydet</button>` : '';
+    h.innerHTML = tip === 'not' ? `<span class="m-on">${ic('spark', 'sm')}${aiTo()} soruyorsun</span><button data-mode="note">${phone ? '' : '<kbd>Esc</kbd>'}Not moduna dön</button>`
+      : (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${phone ? '' : '<kbd>Tab</kbd>'}${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
   }
 };
-const submitBox = () => { const v = $('#input').value; if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
+const submitBox = () => { const v = $('#input').value; if (findMode()) return Find.open(Math.max(0, S.hitSel)); if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
 async function save() {
   const inp = $('#input'), text = inp.value.trim(), files = S.attach;
   if (!text && !files.length) return;
@@ -1784,8 +1907,8 @@ const Tour = {
   steps() {
     const phone = innerWidth < 900;
     return [
-      ['#composer', 'Tek kutu', 'Yaz, link ya da resim yapıştır, dosya bırak. <b>Enter</b> kaydeder. Yazarken kayıtların arasında da arar.'],
-      ['#composer', '' + aiTo() + ' sor', '<b>Tab</b> ile "Sor" moduna geç (telefonda kutunun altındaki "' + aiTo() + ' sor"): "geçen hafta kaydettiğim PDF neydi?" ' + aiName() + ' kayıtlarını da kendisi düzenler.'],
+      ['#composer', 'Tek kutu, üç mod', 'Solda modu seç' + (phone ? ' (simgeye dokun)' : ', <b>Tab</b> ile değiştir') + '. <b>Not</b>: yaz, link ya da resim yapıştır, <b>Enter</b> kaydeder. <b>Ara</b>: yazdıkça sayfa süzülür, Enter ilk sonucu açar (başa <b>/</b> yaz).'],
+      ['#composer', '' + aiTo() + ' sor', '<b>Sor</b> modunda (başa <b>?</b> yaz) sor: "geçen hafta kaydettiğim PDF neydi?" ' + aiName() + ' kayıtlarını da kendisi düzenler.'],
       [phone ? '#filterBtn' : '#rail', 'Neye bakmak istersin', 'Linkler, notlar, fotoğraflar ve <b>Yapılacaklar</b>. Listeler, konular ve Şifrelerim <b>⋯</b> altında; çubuğu <b>[</b> ile gizlersin.'],
       ['#viewSwitch', 'Pano, liste, galeri', 'Panoda kartları sürükleyip istediğin yere koy, boş yere çift tıklayıp not yaz, kalemle çiz.'],
       ['#settingsBtn', 'Telefon ve bilgisayar', 'Ayarlar\'dan <b>Google ile gir</b>: iki cihaz da aynı kayıtları görür. ' + aiName() + ' bağlantısı da burada.'],
@@ -1997,7 +2120,7 @@ const Saved = {
   apply(id) {
     const s = this.list().find(x => x.id === id); if (!s) return;
     S.filter = { type: 'all', tag: null, star: false, list: null, color: null, src: null, ...s.f };
-    const inp = $('#input'); inp.value = s.q; S.q = s.q; S.searchOn = !!s.q; runSearch(); autoGrow();
+    const inp = $('#input'); inp.value = s.q; S.q = s.q; if (s.q) { S.mode = 'find'; renderModes(); S.hitsOff = true; } S.searchOn = !!s.q && findMode(); runSearch(); autoGrow();
     if (S.view === 'todo') S.view = S.prevView || 'list';
     S.limit = 300; S.listFrom = null; S.cam = null; Pop.close(); render(); scrollTo(0, 0);
   },
@@ -3975,7 +4098,15 @@ function openSettings(page = 'main') {
 // ---------- wiring ----------
 function wire() {
   for (const [id, icn] of [['#clipIco', 'plus'], ['#setIco', 'settings']]) $(id).innerHTML = ic(icn, 'sm');
-  S.mode = 'note'; updateSend(); addEventListener('resize', updateSend);
+  try { S.mode = localStorage.getItem('hn-mode') || 'note'; } catch { S.mode = 'note'; } // 103b: the last mode is remembered
+  if (!MODES.some(x => x[0] === S.mode)) S.mode = 'note';
+  renderModes(); updateSend(); addEventListener('resize', updateSend);
+  { const md = $('#modes'), wide = () => matchMedia('(min-width: 700px)').matches;
+    md.onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return;
+      if (!wide() && !b.closest('.m-menu')) { md.classList.toggle('open'); return; } // phone: the button shows the mode, a tap opens the three
+      setMode(b.dataset.m); $('#input').focus(); };
+    document.addEventListener('pointerdown', e => { if (!e.target.closest('#modes')) md.classList.remove('open'); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') md.classList.remove('open'); }); }
   $('#saveBtn').onclick = submitBox;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
   { const dk = $('#composer').closest('.dock'); if (dk) new ResizeObserver(() => document.documentElement.style.setProperty('--dock-full', dk.offsetHeight + 'px')).observe(dk); } // 101: the toast sits above the open search list / answer
@@ -3984,9 +4115,12 @@ function wire() {
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
   let st;
-  inp.addEventListener('input', () => {
+  inp.addEventListener('input', e => {
+    if (/^insert(Text|CompositionText)$/.test(e.inputType || '') && S.mode === 'note' && !S.attach.length && (inp.value === '/' || inp.value === '?')) { // 118: "/" Ara, "?" Sor
+      const m = inp.value === '/' ? 'find' : 'ask'; inp.value = ''; setMode(m);
+    }
     autoGrow(); clearTimeout(st); S.hitSel = -1; S.hitsOff = false;
-    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.limit = 300; runSearch(); render(); }, 80);
+    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); if (!findMode()) S.limit = 300; runSearch(); updateSend(); render(); }, 80);
   });
   inp.addEventListener('focus', () => { document.body.classList.add('typing'); if (S.hitsOff && !document.querySelector('dialog[open]')) { S.hitsOff = false; renderHits(); } });
   inp.addEventListener('blur', () => document.body.classList.remove('typing'));
@@ -3999,8 +4133,8 @@ function wire() {
     }
     if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; openItem(id); return; }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitBox(); }
-    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && (inp.value.trim() || S.mode === 'ask')) { e.preventDefault(); setMode(S.mode === 'ask' ? 'note' : 'ask'); } // empty box: Tab moves on (no keyboard trap)
-    if (e.key === 'Escape') { if (S.mode === 'ask' && !inp.value) setMode('note'); clearBox(); inp.blur(); }
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && (inp.value.trim() || S.mode !== 'note')) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // empty Not box: Tab moves on (no keyboard trap)
+    if (e.key === 'Escape') { if (S.mode !== 'note' && !inp.value) setMode('note'); clearBox(); inp.blur(); }
   });
   const clip = $('#fileInput').closest('label'); clip.tabIndex = 0; clip.setAttribute('role', 'button'); clip.setAttribute('aria-label', 'Dosya ekle'); // 109c: reachable by keyboard
   clip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileInput').click(); } });
@@ -4024,7 +4158,8 @@ function wire() {
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && S.undo && !e.target.closest('input,textarea')) { e.preventDefault(); undoDelete(); return; }
     if (e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
-    if (e.key === '/' || (e.key === 'n' && S.view !== 'board')) { e.preventDefault(); inp.focus(); }
+    if (e.key === '/') { e.preventDefault(); if (!findMode()) setMode('find'); inp.focus(); }
+    else if (e.key === 'n' && S.view !== 'board') { e.preventDefault(); inp.focus(); }
     else if (S.view === 'board' && e.shiftKey && e.code === 'Digit1') Board.fit();
     else if (S.view === 'board' && e.shiftKey && e.code === 'Digit0') Board.zoomTo(1);
   });
@@ -4054,8 +4189,12 @@ function wire() {
     if (e.target.closest('[data-close]')) closeAnswer();
   };
   $('#hits').onclick = e => {
-    if (e.target.closest('[data-clear]')) return clearBox();
-    if (e.target.closest('[data-all]')) { S.searchOn = true; S.cam = null; return render(); }
+    if (e.target.closest('[data-clear]')) { clearBox(); return inp.focus(); }
+    if (e.target.closest('[data-all]')) { S.cam = null; return hideHits(); } // the page is already filtered: just put the window away
+    if (e.target.closest('[data-lpin]')) return Saved.save();
+    const m = e.target.closest('[data-mode]'); if (m) { setMode(m.dataset.mode); return inp.focus(); }
+    const ft = e.target.closest('[data-ftype]'); if (ft) { Object.assign(S.filter, { type: ft.dataset.ftype, star: false, list: null }); render(); return inp.focus(); }
+    const fg = e.target.closest('[data-ftag]'); if (fg) { S.filter.tag = S.filter.tag === fg.dataset.ftag ? null : fg.dataset.ftag; render(); return inp.focus(); }
     const o = e.target.closest('[data-open]'); if (o) openItem(o.dataset.open);
   };
 
