@@ -59,7 +59,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 132 renkle arama (104d'ye renk: alanı) (ad27736)
 - [x] 133 benzer kayıtlar şeridi (104f'den sonra) (7e459a6)
 - [x] 134 galeride çoklu seçim (314a354)
-- [~B] 135 ekran görüntüsüne otomatik başlık
+- [x] 135 ekran görüntüsüne otomatik başlık (6c95038)
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
 - [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
