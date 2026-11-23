@@ -1,0 +1,210 @@
+{
+  "madde": "106-0c",
+  "tarih": "2026-11-23T21:30:37.385Z",
+  "secimler": {
+    "a-link-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-link-B": {
+      "v": "y",
+      "note": ""
+    },
+    "a-media-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-media-B": {
+      "v": "y",
+      "note": ""
+    },
+    "a-media-C": {
+      "v": "y",
+      "note": ""
+    },
+    "a-pdf-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-code-B": {
+      "v": "y",
+      "note": ""
+    },
+    "a-wa-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-wa-B": {
+      "v": "y",
+      "note": ""
+    },
+    "a-note-A": {
+      "v": "y",
+      "note": ""
+    },
+    "b-menu-C": {
+      "v": "y",
+      "note": ""
+    },
+    "c-cover-A": {
+      "v": "y",
+      "note": ""
+    },
+    "c-empty-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-count-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-count-B": {
+      "v": "y",
+      "note": ""
+    },
+    "d-count-C": {
+      "v": "y",
+      "note": ""
+    },
+    "d-prog-B": {
+      "v": "y",
+      "note": ""
+    },
+    "d-check-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-chart-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-chart-B": {
+      "v": "y",
+      "note": ""
+    },
+    "e-ans-A": {
+      "v": "y",
+      "note": ""
+    },
+    "e-ans-B": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "e-ans-C": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "a-event-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-contact-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-recipe-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-receipt-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-voice-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-quote-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "b-sheet-A": {
+      "v": "y",
+      "note": ""
+    },
+    "b-fmt-A": {
+      "v": "y",
+      "note": ""
+    },
+    "c-list-A": {
+      "v": "y",
+      "note": ""
+    },
+    "c-seg-A": {
+      "v": "y",
+      "note": ""
+    },
+    "c-toast-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-weather-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-habit-A": {
+      "v": "y",
+      "note": ""
+    },
+    "d-timer-A": {
+      "v": "y",
+      "note": ""
+    },
+    "e-cmp-A": {
+      "v": "y",
+      "note": ""
+    },
+    "e-src-A": {
+      "v": "y",
+      "note": ""
+    },
+    "a-event-B": {
+      "v": "y",
+      "note": "düzeltmen lazım, çok boşluklu (space)"
+    },
+    "n-flight-A": {
+      "v": "y",
+      "note": ""
+    },
+    "n-book-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "n-film-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "n-price-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "n-parcel-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "n-gh-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    },
+    "n-post-A": {
+      "v": "y",
+      "note": ""
+    },
+    "n-pod-A": {
+      "v": "y",
+      "note": ""
+    },
+    "n-sketch-A": {
+      "v": "y",
+      "note": ""
+    },
+    "n-formula-A": {
+      "v": "y",
+      "note": ""
+    },
+    "n-med-A": {
+      "v": "y",
+      "note": "AI slop olmasın"
+    }
+  }
+}

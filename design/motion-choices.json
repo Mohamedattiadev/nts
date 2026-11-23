@@ -1,0 +1,46 @@
+{
+  "madde": "142-0",
+  "tarih": "2026-11-23T21:27:38.108Z",
+  "secimler": {
+    "m1-A": {
+      "v": "y",
+      "note": ""
+    },
+    "m1-B": {
+      "v": "y",
+      "note": "ama çok sallanıyor"
+    },
+    "m2-A": {
+      "v": "y",
+      "note": "ama çok hızlı"
+    },
+    "m2-B": {
+      "v": "y",
+      "note": "ama çok hızlı"
+    },
+    "m3-C": {
+      "v": "y",
+      "note": ""
+    },
+    "m3-D": {
+      "v": "y",
+      "note": "ama çok abartı olmasın"
+    },
+    "m4-B": {
+      "v": "y",
+      "note": ""
+    },
+    "m5-B": {
+      "v": "y",
+      "note": ""
+    },
+    "m6-A": {
+      "v": "y",
+      "note": ""
+    },
+    "m6-C": {
+      "v": "y",
+      "note": "çok kötü, daha iyi olsun"
+    }
+  }
+}

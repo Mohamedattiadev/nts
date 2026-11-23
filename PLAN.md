@@ -501,7 +501,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             görüntüsü, konsol hatası 0, phone-audit (arama) 0. Sahip telefonda denesin: gerçek mikrofon (Android Chrome) ve gerçek ekran görüntüsü.
 
 - [?] 106-0b. (2026-11-23, A hattı: design/rich-ui.html YÜKSELTİLDİ — sahibin 25 ✓'si (rich-ui-choices.json) yerli hisle yeniden çizildi: sistem yazı tipi (-apple-system/Segoe UI/Roboto), iOS/Android gri gruplu zemin, ince ayırıcılar, katmanlı yumuşak gölge, büyük başlık + bulanık yapışkan çubuk + kayan bölüm seçici, dokununca küçülme + titreşim (navigator.vibrate), yuvarlak onay kutuları, ✓/✗ segmentli. 16 YENİ örnek: a etkinlik/takvim, kişi kartı, tarif (kişi sayısı → miktar), fiş/fatura (tırtıklı kenar), sesli not dalga formu (oynat/ara + yazıya dökülmüş), alıntı; b "+" alt sayfa menüsü, seçince biçim çubuğu (kalın/italik/vurgu/link → Markdown); c gruplu ayar listesi (iOS anahtarları), kayan sekme seçici (FLIP), sil → "Geri al" bildirimi; d hava durumu bileşeni, alışkanlık serisi (bugüne dokun), odak sayacı; e karşılaştırma tablosu, kaynaklı cevap + devam soruları. Seçilmeyenler (a-link-C, a-pdf-B, a-code-A, a-note-B, c-cover-B, c-glass-A/B, c-empty-B, d-prog-A, d-check-B) çıkarıldı. Eski ✓'ler hazır işaretli ("seçtin"), yeniler "YENİ"; "Seçimlerimi indir" → rich-ui-choices.json (madde 106-0b). Telefon 390 + 1366, açık/koyu: konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor; 106a–e bu seçimden sonra.)
-- [?] 106-0c. (2026-11-23, B hattı: design/rich-ui.html 3. TUR — 143-0 ertelendiği için yeni stil YOK: renk/yazı/kenar/köşe/gölge style.css'in bugünkü belirteçleri, simgeler app.js'teki çizgi simgeleri (emoji süsleri ve iOS kopyası renkli kareler çıktı), her örnek panonun noktalı zemininde; kartların üst satırı uygulamadaki gibi tür simgesi kendi renginde + site + zaman. Sahibin rich-ui-choices-2.json notları: a-event-A yeniden (kırmızı takvim yaprağı yerine o haftanın şeridi, etkinlik günü nefes alır) + a-event-B (o günün saatleri, çakışma görünür); a-media-B plak çıkıp döner + ekolayzır + sürüklenen zaman çubuğu; a-media-C tema renginde çizilmiş harita, rota kendini çizer, iğne düşer, yürü/araba/toplu; a-pdf-A GERÇEK kapak: vendor/pdf.min.js ile design/rich-ui-sample.pdf'in 1. sayfası (3 sayfa arası noktalarla), açılamazsa çizim; a-code-B küçük editör (sekmeler, satır no, satır vurgusu, durum çubuğu, kendi açık/koyu, kaydır, kopyala); a-wa-A tek sohbet 4 biçim (WhatsApp/Telegram/iMessage/e-posta zinciri); e-ans-B/C, e-cmp-A, e-src-A daha dolu (sayı kutuları, aylık/yıllık, uyarı, akışta adımlar + hava + tablo, 7 satırlı karşılaştırma + yalnız farklar, nem grafiği + çelişki uyarısı); d-timer-A saat halkanın içine göre boyutlanan HTML yazı (ölçüldü 52 px < 81 px); b-menu-A/B çıktı; 11 YENİ kart: uçuş, kitap, dizi, fiyat takibi, kargo, GitHub PR, gönderi, podcast bölümleri, el yazısı/çizim tekrar oynatma, ders notu+formül+çevrilen kart, ilaç hatırlatma. 51 örnek, önceki ✓'ler hazır işaretli, indir → rich-ui-choices-3.json. Test: 390/1366 × açık/koyu, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.)
+- [x] 106-0c. (sahip seçti 2026-11-24: 51/51 ✓, design/rich-ui-choices-3.json; 9 kart "AI slop olmasın" → 106s) (2026-11-23, B hattı: design/rich-ui.html 3. TUR — 143-0 ertelendiği için yeni stil YOK: renk/yazı/kenar/köşe/gölge style.css'in bugünkü belirteçleri, simgeler app.js'teki çizgi simgeleri (emoji süsleri ve iOS kopyası renkli kareler çıktı), her örnek panonun noktalı zemininde; kartların üst satırı uygulamadaki gibi tür simgesi kendi renginde + site + zaman. Sahibin rich-ui-choices-2.json notları: a-event-A yeniden (kırmızı takvim yaprağı yerine o haftanın şeridi, etkinlik günü nefes alır) + a-event-B (o günün saatleri, çakışma görünür); a-media-B plak çıkıp döner + ekolayzır + sürüklenen zaman çubuğu; a-media-C tema renginde çizilmiş harita, rota kendini çizer, iğne düşer, yürü/araba/toplu; a-pdf-A GERÇEK kapak: vendor/pdf.min.js ile design/rich-ui-sample.pdf'in 1. sayfası (3 sayfa arası noktalarla), açılamazsa çizim; a-code-B küçük editör (sekmeler, satır no, satır vurgusu, durum çubuğu, kendi açık/koyu, kaydır, kopyala); a-wa-A tek sohbet 4 biçim (WhatsApp/Telegram/iMessage/e-posta zinciri); e-ans-B/C, e-cmp-A, e-src-A daha dolu (sayı kutuları, aylık/yıllık, uyarı, akışta adımlar + hava + tablo, 7 satırlı karşılaştırma + yalnız farklar, nem grafiği + çelişki uyarısı); d-timer-A saat halkanın içine göre boyutlanan HTML yazı (ölçüldü 52 px < 81 px); b-menu-A/B çıktı; 11 YENİ kart: uçuş, kitap, dizi, fiyat takibi, kargo, GitHub PR, gönderi, podcast bölümleri, el yazısı/çizim tekrar oynatma, ders notu+formül+çevrilen kart, ilaç hatırlatma. 51 örnek, önceki ✓'ler hazır işaretli, indir → rich-ui-choices-3.json. Test: 390/1366 × açık/koyu, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.)
 - [?] 106-0. (2026-11-23, B hattı: ÖRNEK HAZIR design/rich-ui.html — 35 canlı örnek: a link A/B/C, medya A video/B müzik/C harita, PDF A/B, kod A/B, WhatsApp A/B, not mini belge A/B; b düzenleyici "/" menüsü A liste/B ızgara/C klavye üstü şerit (Markdown kısayolları + altta saklanan Markdown); c kapak A/B, cam A/B, boş durum A/B; d geri sayım A/B/C, ilerleme A/B, onay listesi A/B, CSV grafik A/B; e yapay zekâ cevabı A kartlar/B tablo+zaman çizelgesi/C akış (bilinmeyen parça → düz metin). Her örnekte ✓/✗ + not, "Seçimlerimi indir" → rich-ui-secimler.json, "Kopyala". Telefon 390 + masaüstü, açık/koyu, taşma 0, konsol hatası 0. Sahibin seçimi bekleniyor.) **ÖNCE ÖRNEK SAYFASI, sonra yapım** (sahip: "önce bana birkaç örnek göster, bu olur bu hayır"): `design/rich-ui.html`
         (tek dosya, uygulamanın renkleri/fontu, açık+koyu, telefon genişliğinde de) — 106a–e'nin her biri için 2–3 farklı canlı örnek
         (gerçekçi Türkçe/Arapça/İngilizce örnek verilerle: link kartı varyantları, gömülü video, PDF kapak, WhatsApp balonları, "/" menülü düzenleyici,
@@ -509,6 +509,18 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         seçimler kaydedilir ve "Seçimlerimi gönder" tek tıkla JSON'u `design/rich-ui-secimler.json`'a yazdırır (köprünün /inbox'una değil: sayfa
         indirme ile verir, sahip dosyayı klasöre koyar) ya da yayınlanmış bir Artifact sayfası olarak (kalıcı oy saklama ile) paylaşılır.
         Sahibe linki ver ve DUR ([?] bekle). 106a–e sadece ✓ alan örneklerle yapılır.
+- [ ] 106s. **AI slop temizliği** (sahip 2026-11-24, rich-ui-choices-3.json'da 9 kart "AI slop olmasın": e-ans-B, e-ans-C, a-quote-A,
+        n-book-A, n-film-A, n-price-A, n-parcel-A, n-gh-A, n-med-A; a-event-B "çok boşluklu"). Sahip "hallet" dedi: tekrar sorma, rich-ui.html'de
+        düzelt, ekran görüntüsüne bak, sonra 106a'ya geç. Neden slop: hepsi aynı kalıp (tür çipi + başlık + alt yazı + sayı kutuları + çubuk +
+        etiket çipleri + eylem çipleri), kayıtta olmayan uydurma veri (yıldız, 8,7 puan, %12 rozeti, "₺1.036 kazanırsın", 3 sayı kutusu),
+        yazılı sahte afiş/kapak, klişe metin (atasözü), her şeye rozet/uyarı/zaman çizelgesi. Ölçütler (106a–e'nin HER kartı için):
+        1) kart yalnız kaydın gerçekten içerdiğini gösterir (link önizlemesi, dosya, notun yazısı); uydurma metrik/puan/öneri yok;
+        2) tek odak: kartın bir ana öğesi (kapak / sayı / satır), gerisi en çok bir sakin satır; en çok 2 çip, rozet + uyarı + çizelge aynı anda yok;
+        3) gerçek görsel yoksa düz zemin + tür simgesi, yazılı sahte afiş yok; 4) yapay zekâ cevabında önce düz cümle, parça yalnız soruya
+        gerçekten gerekiyorsa (sayı kutusu/tablo/çizelgeden biri), kaynak satırı "Nts · N kayıt" kalır, satış dili yok;
+        5) metinler gerçekçi ve sade (örnek veri sahibin türünde: Türkçe/Arapça/İngilizce karışık), parlama/gradyan/emoji yok;
+        6) a-event-B: boş saatler sıkışsın (yalnız dolu saatler + aradaki boşluk tek ince satır), telefonda 390 px'de boş alan yok.
+        Bitince her kartın önce/sonra ekran görüntüsü (390 + 1366, açık/koyu) PLAN notuna.
 - [ ] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
         (a) zengin kart önizlemeleri: link büyük görsel + site rengi; YouTube/Spotify/Vimeo/harita kartta oynar (tıklayınca iframe, önce
             küçük resim); PDF ilk sayfa kapak; kod dosyası renkli (küçük, sonradan yüklenen vurgulayıcı); WhatsApp sohbeti balonlarla;
@@ -627,6 +639,8 @@ Site:
         Alınmaz: Mac'e özel yerel uygulama, iCloud, diskte klasör saklama (Nts PWA + IndexedDB + GitHub; Markdown dışa aktarma zaten 107j).
 
 - [ ] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
+        SEÇİM (sahip 2026-11-24, design/folders-choices.json): A Cep, B Yığın (\"animasyon iyi\"), C Albüm, D Dosya (\"güzel ama daha güzel
+        olmalı\" → gölge/kağıt dokusu/kapak açılışı iyileştir), E Ayraç (\"bu etiketi beğendim\" → varsayılan). F–J alınmaz. Ayarda stil seçimi.
         gibi klasör kartları: kartın üstünde içindeki 2–3 kaydın küçük önizlemesi klasör sekmesinden taşar, altta ad + "13 resim · 2 not".
         Tıklayınca klasörün içi açılır (geri tuşu döner). Klasörler sanal: kayıt taşınmaz, bir kayıt birkaç klasörde olabilir.
         Kaynaklar (önce ucuz olanlar, yapay zekâsız hemen çalışır): etiket, proje, kaynak (WhatsApp sohbeti "Annem"), site (github.com),
@@ -698,7 +712,7 @@ Site:
         titreşim (yıldız, görev bitti, sayfa kapandı); manifest: "Ara" kısayolu (sc-find.png, ?do=find), launch_handler navigate-existing, lang.
         Playwright 1366 açık/koyu + 390 açık/koyu (CDP dokunmayla sürükleme), konsol hatası yok.
 
-- [?] 142-0. (2026-11-23, B hattı) **design/motion.html — imza animasyon örnekleri** (bugünkü Nts görünümü, yeni stil yok; yalnız transform/opacity,
+- [x] 142-0. (sahip seçti 2026-11-24 → design/motion-choices.json, uygulama 142) (2026-11-23, B hattı) **design/motion.html — imza animasyon örnekleri** (bugünkü Nts görünümü, yeni stil yok; yalnız transform/opacity,
         yay eğrisi CSS linear() ile; üstte "Hareketi azalt" önizlemesi + sistem ayarı). 6 konu, 22 elle denenebilir varyant: 1 tutma (A yay + hıza göre
         eğilme ≤6°, B asılı kâğıt sarkaç, C sade kalkış, D bas–kalk dokunsal), 2 sürüklerken (A hayalet yer tutucu, B nefes alan accent yer, C kuyruklu
         iz + sırayla FLIP), 3 bırakma (A yaylı oturma + halka, B nokta ızgarasına mıknatıs, C klasör/etiket/pano hedefi yutar + sayı, D parıltı + kıvılcım),
@@ -706,6 +720,13 @@ Site:
         5 ipucu (A 141'deki gecikmeli + kısayol rozeti, B ok imleci izler, C tek kayan ipucu, D telefonda basılı tut + kaydır), 6 logodan imza (A nokta
         zıplar + "Kaydedildi", B satırlar yazılır, C bağlandı: nokta karttan karta uçar, D balon nefesi). ✓/✗ + not → motion-choices.json.
         Test: 1366/390 × açık/koyu, fare ve CDP dokunmayla sürükleme, hareketi azalt açıkken de, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.
+
+- [ ] 142. **İmza animasyonları uygula** (sahip seçimi 2026-11-24, design/motion-choices.json): 1 tutma m1-A yay + eğilme (m1-B sarkacı
+        isteğe bağlı ama "çok sallanıyor" → genlik ≤ yarısı, 1 salınımda dursun); 2 sürüklerken m2-A hayalet yer tutucu + m2-B nefes alan yer,
+        ikisi de "çok hızlı" → nefes ~1,6 s, FLIP 220–260 ms; 3 bırakma m3-C hedef yutar + sayı, m3-D parıltı "abartı olmasın" (kıvılcım yok
+        ya da 3 tane, 300 ms, yalnız accent); 4 dışarıdan dosya m4-B ikonlar kavisle uçup kart olur; 5 ipucu m5-B ok imleci izler; 6 logo m6-A
+        nokta zıplar + "Kaydedildi"; m6-C (bağlandı) "çok kötü" → yeniden: nokta karttan karta 108'in eğrisi boyunca kayar, varınca tek
+        sakin halka. Yalnız transform/opacity, 60 fps (Playwright ile kare süresi), reduced-motion'da sade, telefonda dokunmayla; 141 ile uyumlu.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
