@@ -331,6 +331,90 @@
     return { test, sort: out.sort, terms: out.terms.filter(Boolean), res: out.res, deleted: out.deleted, warnings, ast: out.ast };
   }
 
-  const api = { fold, compile, isPlain, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null };
+  // ---------- 104b: typo tolerance (one wrong / missing / extra / swapped letter; two in long words) ----------
+  function near(a, b) { // a: a word of the item (or its start), b: what was typed; both folded
+    const max = b.length >= 8 ? 2 : 1;
+    if (Math.abs(a.length - b.length) > max) return false;
+    let prev2 = null, prev = Array.from({ length: b.length + 1 }, (_, k) => k);
+    for (let x = 1; x <= a.length; x++) {
+      const cur = [x]; let low = x;
+      for (let y = 1; y <= b.length; y++) {
+        let v = Math.min(prev[y] + 1, cur[y - 1] + 1, prev[y - 1] + (a[x - 1] === b[y - 1] ? 0 : 1));
+        if (prev2 && x > 1 && y > 1 && a[x - 1] === b[y - 2] && a[x - 2] === b[y - 1]) v = Math.min(v, prev2[y - 2] + 1); // swapped pair
+        cur.push(v); if (v < low) low = v;
+      }
+      if (low > max) return false;
+      prev2 = prev; prev = cur;
+    }
+    return prev[b.length] <= max;
+  }
+
+  // ---------- 104a: plain sentence → filter chips ("geçen hafta pdf", "mart 2024 fatura", "whatsapp annem", "telefondan foto") ----------
+  // Only for a query without syntax. Each chip knows the words it came from (a..b in the typed text), so × removes exactly them.
+  const SUF = ['', 'lar', 'ler', 'dan', 'den', 'tan', 'ten', 'da', 'de', 'ta', 'te', 'daki', 'deki', 'taki', 'teki', 'lari', 'leri', 'lardan', 'lerden', 'larda', 'lerde', 'ndan', 'nden', 's', 'es'];
+  const NL_KIND = [['pdf', 'PDF', ['pdf']], ['image', 'Resim', ['foto', 'fotograf', 'resim', 'gorsel', 'photo', 'image', 'picture', 'pic', 'صوره', 'صور']],
+    ['link', 'Link', ['link', 'baglanti', 'رابط', 'روابط']], ['video', 'Video', ['video', 'فيديو', 'فيديوهات']],
+    ['audio', 'Ses', ['ses kaydi', 'sesli not', 'audio', 'voice', 'تسجيل']], ['note', 'Not', ['notlar', 'notes', 'ملاحظات', 'ملاحظه']]];
+  const NL_SRC = [['whatsapp', 'WhatsApp', ['whatsapp', 'wp', 'واتساب', 'واتس']], ['phone', 'Telefon', ['telefon', 'phone', 'mobile', 'هاتف', 'الهاتف', 'موبايل']],
+    ['pc', 'Bilgisayar', ['bilgisayar', 'pc', 'computer', 'laptop', 'حاسوب', 'الحاسوب', 'كمبيوتر']], ['bookmarks', 'Yer imleri', ['yer imleri', 'yerimleri', 'bookmarks', 'المفضله']]];
+  const NL_REL = [['today', 'Bugün', ['bugun', 'today', 'اليوم']], ['yesterday', 'Dün', ['dun', 'yesterday', 'امس', 'البارحه']],
+    ['lastweek', 'Geçen hafta', ['gecen hafta', 'last week', 'الاسبوع الماضي']], ['week', 'Bu hafta', ['bu hafta', 'this week', 'هذا الاسبوع']],
+    ['lastmonth', 'Geçen ay', ['gecen ay', 'last month', 'الشهر الماضي']], ['month', 'Bu ay', ['bu ay', 'this month', 'هذا الشهر']],
+    ['lastyear', 'Geçen yıl', ['gecen yil', 'gecen sene', 'last year', 'السنه الماضيه', 'العام الماضي']], ['year', 'Bu yıl', ['bu yil', 'bu sene', 'this year', 'هذه السنه', 'هذا العام']]];
+  const REL_Q = { today: 'today', yesterday: 'yesterday', lastweek: 'last_week', week: 'this_week', lastmonth: 'last_month', month: 'this_month', lastyear: 'last_year', year: 'this_year' };
+  const MONTHS = ['ocak subat mart nisan mayis haziran temmuz agustos eylul ekim kasim aralik', 'january february march april may june july august september october november december',
+    'يناير فبراير مارس ابريل مايو يونيو يوليو اغسطس سبتمبر اكتوبر نوفمبر ديسمبر'].map(l => l.split(' '));
+  const AYLAR = 'Ocak Şubat Mart Nisan Mayıs Haziran Temmuz Ağustos Eylül Ekim Kasım Aralık'.split(' ');
+  const monthOf = w => { for (const l of MONTHS) { const k = l.findIndex(m => w === m || (w.startsWith(m) && SUF.includes(w.slice(m.length)))); if (k >= 0) return k; } return -1; };
+  const LAST = new Set(['son', 'last', 'past', 'اخر']), UNITS = [['d', 'gün', ['gun', 'day', 'days', 'يوم', 'ايام']], ['w', 'hafta', ['hafta', 'week', 'weeks', 'اسبوع', 'اسابيع']],
+    ['m', 'ay', ['ay', 'month', 'months', 'شهر', 'اشهر', 'شهور']], ['y', 'yıl', ['yil', 'sene', 'year', 'years', 'سنه', 'سنوات']]];
+  function natural(q, opt = {}) {
+    const toks = []; let m; const re = /\S+/g;
+    while ((m = re.exec(q))) { const raw = m[0], f = fold(raw.split(/['’]/)[0]).replace(/[.,;!?]+$/, ''); toks.push({ a: m.index, b: m.index + raw.length, f }); }
+    const used = new Set(), chips = [];
+    const take = (k, n, chip) => { for (let x = k; x < k + n; x++) used.add(x); chips.push({ ...chip, a: toks[k].a, b: toks[k + n - 1].b }); };
+    const is = (w, base) => w === base || (w.startsWith(base) && SUF.includes(w.slice(base.length)));
+    const phrase = (k, p) => { const ps = p.split(' '); if (k + ps.length > toks.length) return 0; for (let x = 0; x < ps.length; x++) { if (used.has(k + x)) return 0; const w = toks[k + x].f; if (x === ps.length - 1 ? !is(w, ps[x]) : w !== ps[x]) return 0; } return ps.length; };
+    const chats = (opt.chats || []).filter(Boolean).map(c => [c, fold(c)]);
+    for (let k = 0; k < toks.length; k++) {
+      if (used.has(k)) continue;
+      const w = toks[k].f; let n;
+      // son 7 gün / last 3 weeks / آخر 7 أيام
+      if (LAST.has(w) && toks[k + 1] && /^\d{1,3}$/.test(toks[k + 1].f) && toks[k + 2]) {
+        const u = UNITS.find(([, , l]) => l.some(x => is(toks[k + 2].f, x)));
+        if (u) { const v = toks[k + 1].f; take(k, 3, { k: 'date', label: `Son ${v} ${u[1]}`, q: `son:${v}${u[0] === 'm' ? 'a' : u[0] === 'w' ? 'h' : u[0] === 'y' ? 'y' : 'g'}` }); continue; }
+      }
+      // mart 2024 / 2024 mart / march 2024 / مارس 2024
+      const mo = monthOf(w), yr = /^(19|20)\d\d$/.test(w);
+      if (mo >= 0 && toks[k + 1] && /^(19|20)\d\d$/.test(toks[k + 1].f)) { const y = toks[k + 1].f; take(k, 2, { k: 'date', label: `${AYLAR[mo]} ${y}`, q: `tarih:${y}-${String(mo + 1).padStart(2, '0')}` }); continue; }
+      if (yr && toks[k + 1] && monthOf(toks[k + 1].f) >= 0) { const x = monthOf(toks[k + 1].f); take(k, 2, { k: 'date', label: `${AYLAR[x]} ${w}`, q: `tarih:${w}-${String(x + 1).padStart(2, '0')}` }); continue; }
+      let hit = false;
+      for (const [key, label, list] of NL_REL) { for (const p of list) if ((n = phrase(k, p))) { take(k, n, { k: 'date', label, q: `tarih:${REL_Q[key]}` }); hit = true; break; } if (hit) break; }
+      if (hit) continue;
+      for (const [key, label, list] of NL_KIND) { for (const p of list) if ((n = phrase(k, p))) { take(k, n, { k: 'kind', v: key, label, q: `tür:${key}` }); hit = true; break; } if (hit) break; }
+      if (hit) continue;
+      for (const [key, label, list] of NL_SRC) {
+        for (const p of list) if ((n = phrase(k, p))) {
+          take(k, n, { k: 'src', v: key, label, q: `kaynak:${key}` }); hit = true;
+          // "whatsapp annem": the next word is one of the chats → that chat
+          const nx = toks[k + n];
+          if (key === 'whatsapp' && nx && !used.has(k + n) && nx.f.length > 1) {
+            const c = chats.find(([, fc]) => fc === nx.f || fc.split(/\s+/).some(p2 => p2.length > 1 && (p2 === nx.f || is(nx.f, p2) || (nx.f.length >= 3 && p2.startsWith(nx.f)))));
+            if (c) take(k + n, 1, { k: 'chat', label: c[0], q: `sohbet:"${c[0].replace(/"/g, '')}"` });
+          }
+          break;
+        }
+        if (hit) break;
+      }
+    }
+    if (!chips.length) return { chips, rest: q, q };
+    const rest = toks.filter((_, k) => !used.has(k)).map(t => q.slice(t.a, t.b)).join(' ');
+    // several kinds or sources are "any of them"; different groups are "all of them"
+    const grp = k => { const l = chips.filter(c => c.k === k).map(c => c.q); return l.length > 1 ? `(${l.join(' | ')})` : l[0] || ''; };
+    const filt = ['date', 'kind', 'src', 'chat'].map(grp).filter(Boolean).join(' ');
+    return { chips, rest, filter: filt, q: (filt + ' ' + rest).trim() };
+  }
+
+  const api = { fold, compile, isPlain, natural, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);

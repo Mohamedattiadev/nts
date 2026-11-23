@@ -1271,6 +1271,15 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 .hits.find .f-q b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .hits.find .f-head button { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); flex: none; }
 .hits.find .f-head button:hover { background: var(--surface-2); color: var(--text); }
+.hits.find .f-q .f-n { flex: none; }
+/* 104a: filter chips from a plain sentence ("geçen hafta pdf") — tap removes */
+.hits.find .f-head .f-nl { width: auto; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; flex: none;
+  font-size: 12.5px; font-weight: 500; color: var(--accent); background: var(--accent-soft); }
+.hits.find .f-head .f-nl:hover { background: var(--accent-soft); color: var(--text); }
+.hits.find .f-head .f-nl > .i:last-child { opacity: .6; }
+.hits.find .f-head .f-nl:hover > .i:last-child { opacity: 1; }
+/* 104c: where a match was found (picture text, PDF, readable copy …) */
+.snip-src { display: inline-block; margin-right: 5px; padding: 0 5px; border-radius: 4px; font-size: .86em; font-weight: 600; color: var(--muted); background: var(--surface-2); }
 .hits.find .f-chips { display: flex; align-items: center; gap: 5px; padding: 2px 8px 8px; overflow-x: auto; scrollbar-width: none; flex: none; border-bottom: 1px solid var(--line); }
 .hits.find .f-chips::-webkit-scrollbar { display: none; }
 .f-ty, .f-tag { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; color: var(--text-2); background: var(--surface-2); white-space: nowrap; }
@@ -1293,6 +1302,7 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 .f-tile .f-ic img { width: 100%; height: 100%; object-fit: cover; }
 .f-tile.doc .f-t { font-size: 12.5px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: none; }
 .f-tile .f-s { font-size: 11.5px; line-height: 1.35; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.f-tile.doc.has-snip .f-t { -webkit-line-clamp: 1; } /* 104c: the found piece gets the room */
 .f-tile .f-d { margin-top: auto; font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .f-tile mark { background: var(--hit-soft); color: inherit; border-radius: 3px; }
 .f-none { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 18px 8px; color: var(--muted); font-size: 13px; }
@@ -1302,6 +1312,10 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 @media (max-width: 699px) {
   .hits.find .f-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 104px; gap: 6px; padding: 6px; }
   .hits.find .f-head button { width: 44px; height: 44px; }
+  .f-tile .snip-src { display: none; } /* small tiles: the found words need the room */
+  .hits.find .f-head .f-nl { height: 44px; padding: 0 8px 0 10px; background: none; position: relative; isolation: isolate; }
+  .hits.find .f-head .f-nl::before { content: ''; position: absolute; inset: 6px 0; border-radius: 999px; background: var(--accent-soft); z-index: -1; }
+  .hits.find .f-q { overflow-x: auto; scrollbar-width: none; }
   .f-ty, .f-tag { height: 44px; padding: 0 14px; }
   .hits.find .f-chips { gap: 8px; }
 }

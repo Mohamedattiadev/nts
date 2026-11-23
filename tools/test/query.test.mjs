@@ -208,6 +208,48 @@ for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:'
   pt('renk:siyah-beyaz', 'q'); pt('color:bw', 'q'); pt('renk:gri tür:resim', 'q'); pt('renk:mavi -renk:beyaz', 's');
   pt('renk:yeşil | renk:gri', 'qr'); pt('"siyah beyaz"', 'q'); pt('mavi has:resim', 'p'); pt('أخضر tür:resim', 'r');
 }
+// 104a: plain sentence → filter chips (tr/en/ar); each chip runs through compile() like typed syntax
+{
+  const nl = (q, chats) => Q.natural(q, { chats });
+  const ids = q => { const n = nl(q, ['Annem', 'İş grubu']); return items.filter(Q.compile(n.filter || '', { now: NOW }).test).map(i => i.id).join(''); };
+  const c = (q, labels, rest) => { const n = nl(q, ['Annem', 'İş grubu']); eq('nl ' + q, [n.chips.map(x => x.label), n.rest], [labels, rest]); };
+  c('geçen hafta fatura', ['Geçen hafta'], 'fatura');
+  c('fatura dün', ['Dün'], 'fatura');
+  c('mart 2024 fatura', ['Mart 2024'], 'fatura');
+  c('2024 mart', ['Mart 2024'], '');
+  c("mart'ta 2024", ['Mart 2024'], '');
+  c('march 2024 invoice', ['Mart 2024'], 'invoice');
+  c('مارس 2024', ['Mart 2024'], '');
+  c('pdf', ['PDF'], '');
+  c('fotoğraflar deniz', ['Resim'], 'deniz');
+  c('telefondan resimler', ['Telefon', 'Resim'], '');
+  c("whatsapp'tan annem", ['WhatsApp', 'Annem'], '');
+  c('whatsapp annem kahvaltı', ['WhatsApp', 'Annem'], 'kahvaltı');
+  c('whatsapp ahmet', ['WhatsApp'], 'ahmet');
+  c('son 7 gün', ['Son 7 gün'], '');
+  c('last 2 weeks links', ['Son 2 hafta', 'Link'], '');
+  c('صور الاسبوع الماضي', ['Resim', 'Geçen hafta'], '');
+  c('أمس', ['Dün'], '');
+  c('videolar', ['Video'], '');
+  c('linkedin profili', [], 'linkedin profili');  // "link" inside a word is not a chip
+  c('süt al', [], 'süt al');
+  c('pdf ve resim', ['PDF', 'Resim'], 've');
+  eq('nl span', (({ chips }) => chips.map(x => [x.a, x.b]))(nl('fatura geçen hafta pdf')), [[7, 18], [19, 22]]);
+  eq('nl kinds OR', nl('pdf resim').filter, '(tür:pdf | tür:image)');
+  eq('nl ids pdf', ids('pdf'), 'c');
+  eq('nl ids mart 2024', ids('mart 2024'), 'c');
+  eq('nl ids geçen hafta', ids('geçen hafta'), 'behj');
+  eq('nl ids whatsapp annem', ids('whatsapp annem'), 'e');
+  eq('nl ids resim', ids('foto'), 'd');
+  eq('nl ids son 3 gün', ids('son 3 gün'), 'abj');
+}
+// 104b: typo tolerance
+{
+  const ok = (a, b, want) => eq(`near ${a}~${b}`, Q.near(Q.fold(a), Q.fold(b)), want);
+  ok('fatura', 'faturra', true); ok('fatura', 'ftaura', true); ok('fatura', 'fatur', true); ok('fatura', 'fatira', true);
+  ok('fatura', 'fxtxra', false); ok('toplantı', 'toplnati', true); ok('toplantısı', 'toplanitsi', true); ok('görev', 'gorev', true);
+  ok('kahvaltı', 'kahvalt', true); ok('kahvaltı', 'kavhalti', true); ok('ev', 'iş', false);
+}
 // speed: 10k items, a busy query, < 50 ms
 {
   const many = Array.from({ length: 10000 }, (_, k) => ({ id: 'x' + k, type: k % 3 ? 'note' : 'link', text: `kayıt ${k} süt fatura ${k % 7 ? 'ev' : 'iş'} poultry`, url: k % 3 ? '' : 'https://ex.com/' + k, ts: NOW - k * 36e5, tags: [k % 2 ? 'ev' : 'iş'] }));

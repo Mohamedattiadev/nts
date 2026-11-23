@@ -151,7 +151,9 @@ function relatedOf(i) {
 
 // ---------- search ----------
 const rawText = i => [i.title, i.meta?.title, i.meta?.description, i.meta?.site, i.text, i.url, i.url && domain(i.url),
-  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.hues && window.NtsQuery?.hueWords(i), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
+  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.hues && window.NtsQuery?.hueWords(i), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' '), readText(i)].filter(Boolean).join(' ');
+// 104c: the readable copy of a link (bridge /article) is searched like the item's own text
+const readText = i => i.read?.blocks?.length ? i.read.blocks.map(b => b.x || '').join(' ').slice(0, 20000) : '';
 const idxEntry = h => ({ h, w: [...new Set(h.split(/[^\p{L}\p{N}]+/u).filter(Boolean))] });
 function indexItem(i) {
   if (HIDDEN.has(i.type) && i.type !== 'draw') return; // never searchable
@@ -187,18 +189,26 @@ function scoreItem(i, toks, any) {
   for (const t of toks) {
     let s = 0;
     if (x.h.includes(t)) s = x.w.some(w => w.startsWith(t)) ? 3 : 2;
-    else if (t.length >= 4 && x.w.some(w => near(w.slice(0, t.length), t) || near(w, t))) s = 1;
+    else if (t.length >= 4 && x.w.some(w => (w[0] === t[0] || w[0] === t[1]) && typoHit(w, t))) s = 1; // "faturra" → faturası
     if (s) { hit++; score += s; } else if (!any) return 0;
   }
   return hit ? score + (i.starred ? .5 : 0) : 0;
 }
+// the same words repeat in thousands of items: each (word, typed word) pair is checked once per search
+let _typo = new Map();
+function typoHit(w, t) {
+  const k = t + '\u0001' + w; let r = _typo.get(k);
+  if (r === undefined) { r = typo(w, t) || [0, -1, 1].some(d => w.length > t.length + d && typo(w.slice(0, t.length + d), t)); if (_typo.size > 2e5) _typo = new Map(); _typo.set(k, r); }
+  return r;
+}
+const typo = (a, b) => window.NtsQuery ? NtsQuery.near(a, b) : near(a, b); // 104b: one wrong/missing/extra/swapped letter, two in long words
 const tokens = q => norm(q).split(/\s+/).filter(t => t.length > 1 || /\d/.test(t));
 // 104d: a query with syntax (fields, "phrase", /regex/, OR, -word, poul*, tarih:, is:, sırala: …) goes through query.js
 const qHay = i => { let x = S.idx.get(i.id); if (!x) { indexItem(i); x = S.idx.get(i.id); } return x ? x.h : ''; };
 const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share' ? i.source === 'share' : srcMatch(i, s);
 let qWarnT;
 function runSearch() {
-  const q = S.q.trim(); S.qx = null; clearTimeout(qWarnT);
+  const q = S.q.trim(); S.qx = null; S.nl = null; clearTimeout(qWarnT);
   if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
@@ -211,17 +221,59 @@ function runSearch() {
     if (x.warnings.length) qWarnT = setTimeout(() => { if (S.qx === x) toast(x.warnings[0], 2600); }, 1200);
     return;
   }
+  // 104a: in Ara mode a plain sentence gives filter chips: "geçen hafta pdf fatura" → [Geçen hafta] [PDF] + "fatura"
+  const nl = findMode() && window.NtsQuery ? NtsQuery.natural(q, { chats: chatNames() }) : null;
+  if (nl?.chips.length) {
+    S.nl = nl; const f = NtsQuery.compile(nl.filter, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
+    const toks = tokens(nl.rest); S.hits = new Map();
+    for (const i of S.items) {
+      if (i.deleted || HIDDEN.has(i.type) || !f.test(i)) continue;
+      const s = toks.length ? scoreItem(i, toks) : 1 + (i.starred ? .5 : 0); if (s) S.hits.set(i.id, s);
+    }
+    return;
+  }
   const toks = tokens(q); S.hits = new Map();
   for (const i of S.items) { if (i.deleted) continue; const s = scoreItem(i, toks); if (s) S.hits.set(i.id, s); }
 }
+let _chats, _chatsOf;
+const chatNames = () => { if (_chatsOf !== S.items) { _chats = [...new Set(S.items.filter(i => i.chat && !i.deleted).map(i => i.chat))]; _chatsOf = S.items; } return _chats; };
+// 104a: × on a chip takes exactly its words out of the box
+function dropChip(k) {
+  const c = S.nl?.chips[k], inp = $('#input'); if (!c) return;
+  const q = S.q.trim(), v = (q.slice(0, c.a) + q.slice(c.b)).replace(/\s{2,}/g, ' ').trim();
+  inp.value = v; S.q = v; S.searchOn = !!v; runSearch(); autoGrow(); render();
+}
+const nlIc = c => c.k === 'date' ? 'clock' : c.k === 'kind' ? (c.v === 'image' ? 'image' : c.v === 'note' ? 'note' : c.v) : c.k === 'chat' || c.v === 'whatsapp' ? 'chat' : c.v === 'pc' ? 'cpu' : 'inbox';
+const nlChips = () => (S.nl?.chips || []).map((c, k) => `<button class="f-nl" data-nlx="${k}" title="Süzgeci kaldır" aria-label="${esc(c.label)} süzgecini kaldır">${ic(nlIc(c), 'sm')}<span dir="auto">${esc(c.label)}</span>${ic('x', 'sm')}</button>`).join('');
 const CH = { i: '[iıİI]', s: '[sşŞ]', g: '[gğĞ]', u: '[uüÜ]', o: '[oöÖ]', c: '[cçÇ]' };
 function hl(text) {
   const out = esc(text);
   if (!S.hits || !S.q.trim()) return out;
-  const toks = tokens(S.qx ? S.qx.terms.join(' ') : S.q).filter(t => t.length > 1);
-  if (!toks.length) return out;
-  const re = new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
+  const re = hlRe(); if (!re) return out;
   return out.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(re, '<mark>$1</mark>'));
+}
+// 104c: where the words were found: when the title / first lines don't show it, a short piece around the first match
+// (picture text, PDF or file text, readable copy, conversation, summary) with a small label of where it came from
+function snip(i, n, lead = 48) {
+  const sub = subOf(i), re = S.hits && S.q.trim() ? hlRe() : null;
+  if (!re) return { sub: sub.slice(0, n) };
+  const at = t => { re.lastIndex = 0; return re.exec(t); };
+  if (at(titleOf(i) + ' \n ' + sub.slice(0, n))) return { sub: sub.slice(0, n) };
+  const src = [['', i.text], ['Resimdeki yazı', i.ocr], [fileKind(i) === 'pdf' ? 'PDF' : 'Dosyanın içi', i.content], ['Okunur kopya', readText(i)],
+    ['Özet', i.summary], ['', i.meta?.description], ['Altı çizili', (i.highlights || []).map(h => h.text).join(' … ')]];
+  for (const [label, t] of src) {
+    if (!t) continue; const m = at(t); if (!m) continue;
+    let a = Math.max(0, m.index - lead); if (a) { const sp = t.indexOf(' ', a); if (sp > 0 && sp < m.index) a = sp + 1; }
+    const b = Math.min(t.length, m.index + n - lead);
+    return { sub: (a ? '…' : '') + t.slice(a, b).replace(/\s+/g, ' ') + (b < t.length ? '…' : ''), label };
+  }
+  return { sub: sub.slice(0, n) };
+}
+const snipHtml = (i, n, lead) => { const x = snip(i, n, lead); return x.sub ? (x.label ? `<span class="snip-src">${x.label}</span>` : '') + hl(x.sub) : ''; };
+function hlRe() {
+  const toks = tokens(S.qx ? S.qx.terms.join(' ') : S.nl ? S.nl.rest : S.q).filter(t => t.length > 1);
+  if (!toks.length) return null;
+  return new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
 }
 // colour labels and priority (set by hand: window, right-click / long-press menu)
 const COLORS = [['red', 'Kırmızı'], ['orange', 'Turuncu'], ['yellow', 'Sarı'], ['green', 'Yeşil'], ['blue', 'Mavi'], ['purple', 'Mor']];
@@ -505,12 +557,12 @@ function metaHtml(i, { tags = 2, acts = false, day = false } = {}) {
     ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}${acts ? actsHtml(i) : ''}</div>`;
 }
 function itemRow(i, { acts = true } = {}) {
-  const sub = subOf(i);
+  const sub = snipHtml(i, 300);
   return `<div class="item${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}">
     ${leadOf(i)}
     <div class="body">
       <div class="title">${hl(titleOf(i))}</div>
-      ${sub ? `<div class="sub">${hl(sub.slice(0, 300))}</div>` : ''}
+      ${sub ? `<div class="sub" dir="auto">${sub}</div>` : ''}
       ${metaHtml(i, { acts })}
     </div></div>`;
 }
@@ -694,7 +746,32 @@ async function upsert(list, { sync = true } = {}) {
   runSearch(); render(); AI.dot();
   if (sync) Sync.schedule();
   Snapshot.schedule();
+  if (list.some(Inside.need)) setTimeout(() => Inside.run(), 1500);
 }
+// 104c: text files (LaTeX .tex/.bbl, Markdown, .txt, code, csv …) are searched by what is inside them: the first 20k characters
+// are read once from the file on this device (no AI, no network), newest first, while the page is idle
+const Inside = {
+  tried: new Set(),
+  need: i => i.type === 'file' && !i.deleted && i.content == null && fileKind(i) === 'text' && (i.size || 0) < 5e6,
+  async run() {
+    if (this._run) return; this._run = true;
+    try {
+      for (;;) {
+        await new Promise(r => (window.requestIdleCallback || setTimeout)(r, { timeout: 3000 }));
+        const todo = S.items.filter(i => this.need(i) && !this.tried.has(i.id)).sort((a, b) => b.ts - a.ts).slice(0, 8);
+        if (!todo.length) break;
+        const upd = [];
+        for (const i of todo) {
+          this.tried.add(i.id);
+          const rec = await DB.get('files', i.id).catch(() => null); if (!rec?.blob) continue;
+          const t = (await rec.blob.slice(0, 60000).text()).replace(/\u0000/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 20000);
+          upd.push({ ...byId(i.id), content: t });
+        }
+        if (upd.length) await upsert(upd, { sync: false });
+      }
+    } finally { this._run = false; }
+  },
+};
 async function addFromInput(input) {
   const made = itemsFromInput(input);
   if (!made.length) return [];
@@ -783,7 +860,7 @@ function renderHits() {
     el.classList.add('closing'); el._ht = setTimeout(() => { el.hidden = true; el.classList.remove('closing'); el._html = ''; el._cls = ''; }, 140); return;
   }
   // 103a: hitsOff = the page changed (or "Sayfada gör"); the filter stays, a small chip says so, typing/focus brings the window back
-  if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+  if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(S.nl ? [S.nl.rest, ...S.nl.chips.map(c => c.label)].filter(Boolean).join(' · ').slice(0, 48) : q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
   show('hits find', '<div class="f-head"></div><div class="f-chips"></div><div class="f-grid"></div><div class="h-foot"></div>');
   Find.draw(el, q);
 }
@@ -804,7 +881,8 @@ const Find = {
     const tags = new Map(); for (const i of items.slice(0, 500)) for (const t of i.tags || []) tags.set(t, (tags.get(t) || 0) + 1);
     if (f.tag && !tags.has(f.tag)) tags.set(f.tag, items.length);
     const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, innerWidth < 700 ? 4 : 6);
-    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(q)}<b dir="auto">${esc(q.slice(0, 40))}</b><span>· ${items.length} kayıt</span></span><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
+    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${items.length} kayıt</span></span><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     const T = [['all', 'Hepsi', all.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
     this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
       + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
@@ -818,8 +896,8 @@ const Find = {
       let t = old.get(i.id); if (t) old.delete(i.id); else { t = this.tile(i); fresh.push(t); }
       if (g.children[k] !== t) g.insertBefore(t, g.children[k] || null);
       t.classList.toggle('sel', k === S.hitSel);
-      const tt = hl(titleOf(i)); if (t._t !== tt) { t.querySelector('.f-t').innerHTML = tt; t._t = tt; }
-      const s = t.querySelector('.f-s'); if (s) { const ss = hl(subOf(i).slice(0, 160)); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
+      const sn = t.classList.contains('vis') && snip(i, 90, 8), tt = sn?.label ? hl(sn.sub) : hl(titleOf(i)); if (t._t !== tt) { t.querySelector('.f-t').innerHTML = tt; t._t = tt; t.title = sn?.label ? titleOf(i) : ''; }
+      const s = t.querySelector('.f-s'); if (s) { const ss = snipHtml(i, 160, 14); t.classList.toggle('has-snip', ss.includes('snip-src')); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
     });
     old.forEach(n => n.remove()); g.querySelector('.f-none')?.remove();
     if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">Bulunamadı.<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button><button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button></div>`);
@@ -4190,6 +4268,7 @@ function wire() {
   };
   $('#hits').onclick = e => {
     if (e.target.closest('[data-clear]')) { clearBox(); return inp.focus(); }
+    const nx = e.target.closest('[data-nlx]'); if (nx) { dropChip(+nx.dataset.nlx); return inp.focus(); }
     if (e.target.closest('[data-all]')) { S.cam = null; return hideHits(); } // the page is already filtered: just put the window away
     if (e.target.closest('[data-lpin]')) return Saved.save();
     const m = e.target.closest('[data-mode]'); if (m) { setMode(m.dataset.mode); return inp.focus(); }
@@ -4322,6 +4401,6 @@ const Boot = {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
-  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000);
+  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();

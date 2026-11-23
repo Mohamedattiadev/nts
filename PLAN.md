@@ -407,6 +407,14 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             parantez, alanlar tr/en/ar, tarih/son:/is:/has:/boyut:/tür:/renk:/sırala:); sözdizimi yoksa eski hızlı bulanık arama. Bozuk parça
             çökertmez, metin olarak aranır + 1,2 sn sonra uyarı. norm() Arapça normalleştirme + Arapça sözcük bölme; kutu dir="auto".
             tools/test/query.test.mjs: 156 kontrol geçiyor, 10k kayıtta ~17 ms. Eksik: is:silindi çöpü göstermez (görünüm silinmişleri süzüyor).
+        [x] 104a+b+c (2026-11-23, B hattı): (a) Ara modunda sözdizimsiz cümle → çipler (query.js natural(): dün/bugün/geçen hafta/bu ay/geçen yıl,
+            "mart 2024"/"2024 mart"/"march 2024"/"مارس 2024", "son 7 gün"/"last 2 weeks"/"آخر 7 أيام", pdf/foto/resim/link/video/ses/notlar, whatsapp/telefon/
+            bilgisayar/yer imleri, "whatsapp annem" → sohbet; Türkçe ekler ("telefondan", "fotoğraflar", "mart'ta")); çipler sonuç penceresinin başında,
+            × tam o sözcükleri kutudan siler; birden çok tür/kaynak = VEYA. (b) near(): Damerau (takas dahil), 8+ harfte 2 hata, önek ±1 ("faturra" →
+            faturası); sözcük çifti başına önbellek → 10k kayıtta 3–8 ms. (c) okunur kopya (read.blocks) ve metin dosyalarının içi (LaTeX/md/txt/kod;
+            Inside: ilk 20k karakter, cihazdaki dosyadan, yapay zekâsız) aranır; başlıkta görünmeyen eşleşme için kısa vurgulu alıntı + nereden geldiği
+            ("Okunur kopya", "PDF", "Resimdeki yazı", "Dosyanın içi"); resim kutusu OCR alıntısını gösterir. 219 birim testi.
+            Eksik: yazım hatalı sözcük vurgulanmıyor (bulunuyor ama <mark> yok); ay adı yalnız yılla birlikte çip olur ("mart" tek başına sözcük kalır).
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);
