@@ -672,7 +672,8 @@ function renderGallery(items) { // month headers stick to the top while scrollin
   }
   el.innerHTML = media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
     : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
-  hookThumbs(el); Sel.paint();
+  hookThumbs(el);
+  Peek.dock(); // no tiles → no docked "hover a card" panel Sel.paint();
 }
 function renderTopics(items) {
   const el = $('#topics'), by = new Map();
@@ -1992,10 +1993,18 @@ const Busy = {
     if (!el) { el = document.createElement('div'); el.id = 'busy'; el.className = 'busy'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
     const all = [...this.jobs.values()], on = all.length > 0;
     el.classList.toggle('on', on);
-    if (on) el.innerHTML = `<span class="b-dot"></span><b>${esc(aiName())}</b><span class="b-t">${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1}` : ''}</span>`;
+    if (on) el.innerHTML = `${aiMark()}<b>${esc(aiName())}</b><span class="b-t">${esc(all[0])}${all.length > 1 ? ` · +${all.length - 1}` : ''}</span>`;
     el.title = on ? '' + aiName() + ' arka planda çalışıyor: ' + all.join(', ') : '';
   },
 };
+
+// the working AI's own mark, moving its own way: Claude's spark turns and breathes ray by ray, Codex's blossom spins, Gemini's star twinkles
+function aiMark(k = aiKey()) {
+  if (k === 'codex') return `<svg class="b-mk mk-codex" viewBox="-12 -12 24 24" aria-hidden="true">${[0, 60, 120, 180, 240, 300].map(a => `<rect x="-2.6" y="-10" width="5.2" height="10" rx="2.6" transform="rotate(${a})"/>`).join('')}<circle r="3" class="mk-hole"/></svg>`;
+  if (k === 'gemini') return `<svg class="b-mk mk-gemini" viewBox="-12 -12 24 24" aria-hidden="true"><defs><linearGradient id="mkG" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4285f4"/><stop offset=".55" stop-color="#9b72cb"/><stop offset="1" stop-color="#d96570"/></linearGradient></defs><path fill="url(#mkG)" d="M0-11C0.8-5 5-0.8 11 0 5 0.8 0.8 5 0 11-0.8 5-5 0.8-11 0-5-0.8-0.8-5 0-11Z"/></svg>`;
+  const L = [10, 8, 9.5, 7.5, 10, 8.5, 9, 7.5, 10, 8, 9.5, 8]; // uneven rays, like the hand-drawn spark
+  return `<svg class="b-mk mk-claude" viewBox="-12 -12 24 24" aria-hidden="true">${L.map((l, i) => `<line x1="0" y1="-1.6" x2="0" y2="${-l}" transform="rotate(${i * 30 + (i % 2 ? 4 : 0)})" style="--i:${i}"/>`).join('')}</svg>`;
+}
 
 // ---------- left rail: fold away, and the drawing palette slides out of it ----------
 const Rail = {
@@ -2370,7 +2379,7 @@ const Peek = {
   // gallery on a wide screen with a mouse: the panel stays docked on the right and shows the last tile you pointed at
   dock() {
     if (!this.el) return;
-    const on = S.view === 'gallery' && document.body.classList.contains('gallery-view') && matchMedia('(hover: hover) and (min-width: 1100px)').matches;
+    const on = S.view === 'gallery' && document.body.classList.contains('gallery-view') && !!document.querySelector('#gallery .tile') && matchMedia('(hover: hover) and (min-width: 1100px)').matches;
     if (on === this.docked) return; this.docked = on;
     this.el.classList.toggle('docked', on); document.body.classList.toggle('peek-dock', on);
     if (on && !this.id) this.empty(); else if (!on) this.hide();

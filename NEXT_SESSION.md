@@ -53,6 +53,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 104f ÇOK ÖNEMLİ anlamsal arama: cihazda çok dilli gömme modeli (sem.js Worker, ~140 MB bir kez) + "Yapay zekâ ile ara" (bb86e39)
 - [x] 137 seçili süzgeç (Kaynak/konu/renk/proje) sol çubukta belirgin görünsün, seçildiği anda (sahip, ekran görüntüsü; PLAN 137) (f5c8413)
 - [~A] 104g ÇOK ÖNEMLİ uçtan uca: 10k kayıtta tuş < 50 ms, telefonda da, kayıtlı aramalar yeni dili saklar; ekran görüntüleri + PLAN notu
+- [ ] 138 ÇOK ÖNEMLİ elle BAĞLA (sahip: "bağlamak istesem napmam lazım, yok öyle özellik"): pano kartında sağ tık → "Bağla…" → öteki karta tıkla (Esc iptal, ipucu "bağlanacak kartı seç"); Shift ile 2+ kart seç → "Bağla"; telefonda uzun bas → menü → Bağla → öteki karta dokun; bağlı kartta "Bağlantıyı kaldır". Veri i.links (çizim 108'de 'man' türü olarak var, oluşturan yok); iki cihaz senkronu + kayıt penceresindeki "Bağlantılı" listesi. Masaüstü + telefon ekran görüntüsü.
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
 - [ ] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)

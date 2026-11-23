@@ -894,11 +894,18 @@ dialog.readpage::backdrop { background: var(--bg); }
 [data-theme="dark"] #busy { background: color-mix(in srgb, var(--surface-2) 94%, transparent); border-color: #34343d; }
 #busy.on { opacity: 1; transform: none; }
 #busy b { font-weight: 600; color: var(--text-2); }
-#busy .b-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; animation: bdot 1.4s ease-in-out infinite; }
-#busy .b-t { color: var(--text-2); background: linear-gradient(90deg, var(--text-2) 0 40%, var(--text) 50%, var(--text-2) 60% 100%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: bshine 2.2s linear infinite; }
-@keyframes bdot { 50% { transform: scale(.6); opacity: .45; } }
-@keyframes bshine { from { background-position: 100% 0; } to { background-position: 0 0; } }
-@media (prefers-reduced-motion: reduce) { #busy .b-dot, #busy .b-t { animation: none; } }
+#busy .b-t { color: var(--text-2); }
+#busy .b-mk { width: 18px; height: 18px; flex: none; overflow: visible; }
+.mk-claude { animation: mkspin 6s linear infinite; }
+.mk-claude line { stroke: #d97757; stroke-width: 2.3; stroke-linecap: round; animation: mkray 1.2s ease-in-out infinite; animation-delay: calc(var(--i) * -.1s); }
+.mk-codex { fill: var(--text); animation: mkspin 2.4s cubic-bezier(.6, 0, .4, 1) infinite; }
+.mk-codex .mk-hole { fill: var(--surface); }
+[data-theme="dark"] .mk-codex .mk-hole { fill: var(--surface-2); }
+.mk-gemini { animation: mktwinkle 1.6s ease-in-out infinite; }
+@keyframes mkspin { to { transform: rotate(360deg); } }
+@keyframes mkray { 50% { stroke-dasharray: 4 20; } }
+@keyframes mktwinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(.72) rotate(45deg); } }
+@media (prefers-reduced-motion: reduce) { #busy .b-mk, #busy .b-mk * { animation: none; } }
 @media (max-width: 899px) { #busy { top: auto; right: auto; left: 50%; bottom: calc(var(--dock-h, 60px) + 20px + env(safe-area-inset-bottom)); transform: translate(-50%, 6px); } #busy.on { transform: translate(-50%, 0); } }
 .d-ocr { border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; font-size: 13px; }
 .d-ocr summary { cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-2); font-weight: 600; padding: 6px 0; list-style: none; }
