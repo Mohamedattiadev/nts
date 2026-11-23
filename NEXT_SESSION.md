@@ -1,3 +1,22 @@
+PARALEL HATLAR (sahip, 2026-11-23: "iş hızlansın, 2 oturum 2 oturum, her oturum tek iş, token fazla kullanılmasın"):
+İki hat (A, B) aynı anda çalışır; her oturum TEK madde yapar, sonra kendi hattına devreder. Her hat kendi git worktree'sinde:
+A → ../hizli_note-A (dal lane-A, test sunucusu port 8791), B → ../hizli_note-B (dal lane-B, port 8792). Ana klasör (hizli_note)
+ve oradaki commit'lenmemiş değişiklikler sahibin/eski zincirin: DOKUNMA.
+1. Başla: `git fetch -q && git status --short` temizse `git reset -q --hard origin/main`. Sunucu: `python3 -m http.server <port> --bind 127.0.0.1`
+   (kendi klasöründen, arka planda); testler `NTS_URL=http://127.0.0.1:<port>/ node ...` (nts-playwright-test dosyaları bunu okur).
+2. Madde seç: aşağıdaki SIRA'da yukarıdan ilk `- [ ]` (`[~A]`/`[~B]`/`[?]`/`[x]` olanları atla). Öteki hattın şu an yaptığı maddeyle aynı
+   dosya bölgesine dokunacaksa (ör. ikisi de pano kartı) bir sonrakini al. `[ ]` → `[~A]` (ya da `[~B]`) yap, commit "NEXT_SESSION: A takes N",
+   `git push origin HEAD:main`. Push reddedilirse `git pull --rebase origin main`; madde bu arada alınmışsa başka madde seç. Push = kilit.
+3. Yap (KURALLAR aynen geçerli: telefon önce, ekran görüntüsü, konsol hatası yok, node --check). "ÖNCE örnek sayfası … sahip seçsin"
+   maddelerinde örnek sayfayı yap, maddeyi `[?]` yap, seçimi sahibe sor (son mesajında).
+4. Bitir: PLAN.md'de [x] + not, burada `[~A]` → `[x]` + hash. Commit'ten ÖNCE `git status --short` ve `git diff --cached --stat`: yalnız
+   kendi dosyaların. sw.js VERSION: `git pull --rebase origin main` SONRASI origin'deki sayının bir fazlası (çakışırsa büyüğü +1).
+   `git pull --rebase origin main && git push origin HEAD:main`; çakışmada iki tarafın işini de koru, node --check ile doğrula.
+   Pages'te yeni VERSION'ı kontrol et.
+5. `tools/handoff.sh A` (ya da B) çalıştır ve dur. Hiç `[ ]` kalmadıysa devretme; sahibe kısa Türkçe özet + sorular.
+Ders (2026-11-23): başka oturumun `git add` ile hazırladığı (staged) dosyalar senin commit'ine girer → commit'ten önce `git diff --cached
+--stat` bak, yabancı dosya varsa `git restore --staged <yol>` değil, dokunmadan bekle/ayrı çalış (worktree bu yüzden).
+
 Nts projesine devam et: /home/ati/Attia-Pro/Projects/hizli_note (uygulama **Nts**, repo `nts`, https://mohamedattiadev.github.io/nts/). Türkçe konuş.
 
 İlk iş: PLAN.md'yi oku (özellikle "P. Sahibin 5. geri bildirimi"), sonra şu skill'leri oku:
@@ -17,9 +36,9 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası (b5479b7)
 - [x] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101 (1d5137f)
 - [x] 125 kutunun yazısı telefonda ortada (bu oturum)
-- [ ] 126 HATA: panoda taşırken kart en sola kaçıyor + sayfa "yenileniyor" → sürüklerken gelen güncelleme beklesin (PLAN 126, twodevice ile kanıtla)
-- [ ] 127 liste görünümünde sağdaki önizleme (.peek) kutunun üstüne biniyor (1366×768) → çakışma 0
-- [ ] 128 pano kartında etiketler kesik ("# y…") → alt satıra insin, gerekirse "+2"
+- [x] 126 HATA: panoda taşırken kart en sola kaçıyor + sayfa "yenileniyor" → sürüklerken gelen güncelleme beklesin (PLAN 126, twodevice ile kanıtla) (9f10873)
+- [x] 127 liste görünümünde sağdaki önizleme (.peek) kutunun üstüne biniyor (1366×768) → çakışma 0 (9f10873)
+- [x] 128 pano kartında etiketler kesik ("# y…") → alt satıra insin, gerekirse "+2" (9f10873)
 - [ ] 129 "Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgisi görünmüyor → ≥48 px (108 ile)
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
@@ -87,11 +106,11 @@ KURALLAR (sahip):
   Commit + push için ayrıca izin bekleme (sahip verdi). Push'tan sonra Pages'te yeni sw VERSION'ın açıldığını kontrol et.
 - Yeni, tekrar eden bir yöntem öğrenirsen ~/.claude/skills altına yaz.
 
-TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve bu dosyayı güncelle (bitenler / kalanlar / tam sıradaki
+TOKEN KURALI (sahip): tutumlu ol. Bir oturumda TEK madde (bkz. PARALEL HATLAR en üstte); sonra PLAN.md ve bu dosyayı güncelle (bitenler / kalanlar / tam sıradaki
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-NOT (2026-11-23): 126+127+128'in işi (app.js, style.css, sw v45, PLAN [x]) yanlışlıkla başka bir oturumun commit'ine girdi: 9f10873 (mesajı yalnız PLAN 131 diyor). İş tam ve push'lu; tekrar commit etmeye çalışma, bu dosyada 126/127/128'i [x] 9f10873 yap ve devam et.
+NOT (2026-11-23): 126+127+128'in işi (app.js, style.css, sw v45, PLAN [x]) yanlışlıkla başka bir oturumun commit'ine girdi: 9f10873 (mesajı yalnız PLAN 131 diyor). İş tam ve push'lu; tekrar commit etmeye çalışma (126/127/128 burada [x] yapıldı).
 
 TAM SIRADAKİ ADIM: 126 (taşırken kaçan kart — gerçek hata, önce bu), sonra 127 + 128. Sonra handoff. 102'ye başlanmış, commit'lenmemiş
 iş ağaçta duruyor (app.js: AR haritası + growTo(), resim önizlemesi yer tutar ve yumuşakça büyür; style.css'te 114 bloğu 101 bloğunun altına
