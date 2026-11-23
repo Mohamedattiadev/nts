@@ -1079,24 +1079,32 @@ function renderAttach() {
   if (S.attach.length && findMode()) return setMode('note'); // a file is saved, not searched for
   updateSend();
 }
-// 103b: three modes in the one box, picked on the left (always visible), Tab cycles, the last one is remembered:
+// 103b + 136: three modes in the one box. Left of the text: "+" (attach), then ONE mode button showing the current mode
+// (icon + name); Tab (or a tap on it) moves to the next mode, the name slides in (≈180 ms). The last mode is remembered:
 // ✎ Not (Enter saves; only a "N benzer kayıt" chip), 🔍 Ara (live: the page filters as you type, Enter opens the first), ✦ Sor (Enter asks the AI).
 // Typing "/" or "?" first in an empty Not box switches to Ara / Sor (118); a "- " line shows the task icon on the send button.
 const MODES = [['note', 'pen', 'Not'], ['find', 'search', 'Ara'], ['ask', 'spark', 'Sor']];
 const findMode = () => S.mode === 'find';
 const askMode = () => S.mode === 'ask' && !S.attach.length;
-function renderModes() {
+function renderModes(dir = 0) {
   const el = $('#modes'); if (!el) return;
   const tip = { note: 'Not: Enter kaydeder', find: 'Ara: yazdıkça bulur (/)', ask: 'Sor: ' + aiTo() + ' sorar (?)' };
-  el.innerHTML = MODES.map(([m, icn, l]) => `<button type="button" role="radio" aria-checked="${S.mode === m}" class="m-b${S.mode === m ? ' on' : ''}" data-m="${m}" title="${tip[m]} · Tab: sonraki mod">${ic(icn, 'sm')}<span>${l}</span></button>`).join('')
-    + '<kbd class="m-tab" title="Tab ile mod değiştir">Tab</kbd>'
-    // phone: only the current mode shows; a tap opens this small menu above it (the box itself doesn't move)
-    + `<div class="m-menu" role="menu">${MODES.map(([m, icn, l]) => `<button type="button" role="menuitemradio" aria-checked="${S.mode === m}" class="m-i${S.mode === m ? ' on' : ''}" data-m="${m}">${ic(icn, 'sm')}<span><b>${l}</b><small>${tip[m].replace(/^[^:]+: /, '').replace(/ \(.\)$/, '')}</small></span></button>`).join('')}</div>`;
+  const [m, icn, l] = MODES.find(x => x[0] === S.mode) || MODES[0], nx = MODES.find(x => x[0] === nextMode());
+  let b = el.querySelector('.m-b');
+  if (!b) { el.innerHTML = '<button type="button" class="m-b"></button>'; b = el.firstChild; }
+  const w0 = b.offsetWidth;
+  b.dataset.m = m; b.title = `${tip[m]} · Tab ya da dokun: ${nx[2]}`; b.setAttribute('aria-label', `Mod: ${l}. Değiştir: ${nx[2]}`);
+  b.innerHTML = `<span class="m-in">${ic(icn, 'sm')}<span>${l}</span></span>`;
+  if (!dir || matchMedia('(prefers-reduced-motion: reduce)').matches || !b.animate) return;
+  const w1 = b.offsetWidth, ease = 'cubic-bezier(.2,.8,.2,1)'; // the button grows/shrinks to the new name, the name slides up into place
+  if (w0 && w0 !== w1) b.animate([{ width: w0 + 'px' }, { width: w1 + 'px' }], { duration: 180, easing: ease });
+  b.firstChild.animate([{ transform: `translateY(${dir > 0 ? 70 : -70}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: ease });
 }
 function setMode(m) {
   if (!MODES.some(x => x[0] === m)) m = 'note';
   const was = S.mode, inp = $('#input'); S.mode = m; try { localStorage.setItem('hn-mode', m); } catch { }
-  $('#modes').classList.remove('open'); renderModes(); S.hitSel = -1; S.hitsOff = false;
+  const d = (MODES.findIndex(x => x[0] === m) - MODES.findIndex(x => x[0] === was) + 3) % 3;
+  renderModes(was === m ? 0 : d === 2 ? -1 : 1); S.hitSel = -1; S.hitsOff = false;
   if (m === 'find' && document.activeElement === inp) S.sugOn = true; // 104e: suggestions when the box is empty
   if (was !== m) { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); runSearch(); render(); }
   updateSend();
@@ -1109,20 +1117,19 @@ const updateSend = () => {
   const key = icn + phone;
   if (b.dataset.k !== key) {
     b.dataset.k = key; b.classList.toggle('ask', ask);
-    b.innerHTML = ask ? `${ic('spark', 'sm')}<span>Sor</span>` : ic(icn, 'sm'); b.classList.toggle('round', !ask);
+    b.innerHTML = ic(icn, 'sm'); b.classList.add('round'); // 136: the mode button already says "Sor"
     const lbl = ask ? aiTo() + ' sor' : find ? 'İlk sonucu aç' : icn === 'todo' ? 'Görev olarak kaydet' : 'Kaydet';
     b.setAttribute('aria-label', lbl); b.title = lbl + ' (Enter) · Tab: sonraki mod';
     $('#composer').classList.toggle('ask-mode', ask); $('#composer').classList.toggle('find-mode', find);
-    $('#input').placeholder = ask ? aiTo() + ' sor: "geçen hafta ne kaydettim?"' : find ? (phone ? 'Ara: yazdıkça bulur' : 'Ara: yazdıkça sayfa süzülür, Enter ilk sonucu açar')
-      : phone ? 'Not · - görev · ? sor · / ara' : 'Not yaz · - görev · ? yapay zekâya sor · / ara';
+    $('#input').placeholder = ask ? 'Sor…' : find ? 'Ara…' : 'Not yaz…'; // 136: short, only the current mode
   }
   // Not mode: a chip "4 benzer kayıt" (so the same thing isn't saved twice) → Ara; on a phone (no Tab key) also the way to Sor
-  const touch = matchMedia('(hover: none)').matches, h = $('#cHint'), n = S.mode === 'note' && v && !S.attach.length ? S.hits?.size || 0 : 0;
-  const tip = ask ? 'not' : S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', (touch ? v : isQuestion(v)) ? 'ask' : ''].filter(Boolean).join(' ');
+  // 136: the mode button already says the mode, so no "soruyorsun" line and no Tab/Esc key hints here
+  const h = $('#cHint'), n = S.mode === 'note' && v && !S.attach.length ? S.hits?.size || 0 : 0;
+  const tip = S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', isQuestion(v) ? 'ask' : ''].filter(Boolean).join(' ');
   if (h.dataset.k !== tip) {
     h.dataset.k = tip; h.hidden = !tip;
-    h.innerHTML = tip === 'not' ? `<span class="m-on">${ic('spark', 'sm')}${aiTo()} soruyorsun</span><button data-mode="note">${phone ? '' : '<kbd>Esc</kbd>'}Not moduna dön</button>`
-      : (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${phone ? '' : '<kbd>Tab</kbd>'}${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
+    h.innerHTML = (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
   }
 };
 const submitBox = () => { const v = $('#input').value; if (findMode()) return Find.open(Math.max(0, S.hitSel)); if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
@@ -4397,12 +4404,7 @@ function wire() {
   try { S.mode = localStorage.getItem('hn-mode') || 'note'; } catch { S.mode = 'note'; } // 103b: the last mode is remembered
   if (!MODES.some(x => x[0] === S.mode)) S.mode = 'note';
   renderModes(); updateSend(); addEventListener('resize', updateSend);
-  { const md = $('#modes'), wide = () => matchMedia('(min-width: 700px)').matches;
-    md.onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return;
-      if (!wide() && !b.closest('.m-menu')) { md.classList.toggle('open'); return; } // phone: the button shows the mode, a tap opens the three
-      setMode(b.dataset.m); $('#input').focus(); };
-    document.addEventListener('pointerdown', e => { if (!e.target.closest('#modes')) md.classList.remove('open'); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') md.classList.remove('open'); }); }
+  $('#modes').onclick = e => { if (!e.target.closest('.m-b')) return; setMode(nextMode()); if (matchMedia('(hover: hover)').matches) $('#input').focus(); }; // 136: a tap = next mode (phone: no keyboard pops up)
   $('#saveBtn').onclick = submitBox;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
   { const dk = $('#composer').closest('.dock'); if (dk) new ResizeObserver(() => document.documentElement.style.setProperty('--dock-full', dk.offsetHeight + 'px')).observe(dk); } // 101: the toast sits above the open search list / answer
@@ -4432,12 +4434,12 @@ function wire() {
     if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; Recent.add(S.q); openItem(id); return; }
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && findMode() && Suggest.cur && Suggest.of(inp.value)) { e.preventDefault(); Suggest.cur = Suggest.of(inp.value); Suggest.pick(0); return; } // 104e
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitBox(); }
-    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && (inp.value.trim() || S.mode !== 'note')) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // empty Not box: Tab moves on (no keyboard trap)
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // 136: Tab / Shift+Tab always change the mode here; Esc leaves the box
     if (e.key === 'Escape') { if (S.mode !== 'note' && !inp.value) setMode('note'); clearBox(); inp.blur(); }
   });
   const clip = $('#fileInput').closest('label'); clip.tabIndex = 0; clip.setAttribute('role', 'button'); clip.setAttribute('aria-label', 'Dosya ekle'); // 109c: reachable by keyboard
   clip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileInput').click(); } });
-  $('#fileInput').onchange = e => { S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
+  $('#fileInput').onchange = e => { if (findMode()) setMode('note'); S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
   $('#attachList').onclick = e => { const b = e.target.closest('[data-rm]'); if (b) { S.attach.splice(+b.dataset.rm, 1); renderAttach(); } };
   // paste anywhere: files become attachments, text goes into the composer
   const ownField = el => el?.closest?.('dialog,[contenteditable="true"],[contenteditable="plaintext-only"]') || (el?.closest?.('input,textarea') && el !== inp); // 109c: a sticky note, an item window or another field keeps its own paste/drop
