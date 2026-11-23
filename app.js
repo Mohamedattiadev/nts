@@ -151,7 +151,7 @@ function relatedOf(i) {
 
 // ---------- search ----------
 const rawText = i => [i.title, i.meta?.title, i.meta?.description, i.meta?.site, i.text, i.url, i.url && domain(i.url),
-  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
+  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.hues && window.NtsQuery?.hueWords(i), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
 const idxEntry = h => ({ h, w: [...new Set(h.split(/[^\p{L}\p{N}]+/u).filter(Boolean))] });
 function indexItem(i) {
   if (HIDDEN.has(i.type) && i.type !== 'draw') return; // never searchable
@@ -357,7 +357,7 @@ const Prev = {
         c = new OffscreenCanvas(Math.round(bmp.width * r), Math.round(bmp.height * r)); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); }
       if (!c) return null;
       const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/webp', quality: .72 }) : await new Promise(r => c.toBlob(r, 'image/webp', .72));
-      await DB.put('files', { id: i.id + ':t', blob }); return blob;
+      await DB.put('files', { id: i.id + ':t', blob }); Hues.from(i, blob); return blob;
     } catch (e) { console.warn('thumb', e); return null; }
   },
   async remoteThumb(i) {
@@ -407,12 +407,55 @@ const Flip = {
     }
   },
 };
+// 132: a picture's 1-3 main colours (+ 'bw'), read once from its small preview, no AI; saved on the item (hues) so search finds
+// renk:mavi / color:blue / لون:أزرق and plain "mavi". Shown pictures are done as they load, the rest a few at a time when idle.
+const Hues = {
+  q: new Map(), tried: new Set(), t: 0,
+  need: i => !!i && fileKind(i) === 'image' && i.hues === undefined && !i.deleted,
+  async from(i, blob) {
+    if (!this.need(i) || this.tried.has(i.id) || !window.NtsQuery || typeof OffscreenCanvas === 'undefined') return;
+    this.tried.add(i.id);
+    try {
+      const bmp = await createImageBitmap(blob, { resizeWidth: 32, resizeHeight: 32, resizeQuality: 'low' }), c = new OffscreenCanvas(32, 32), g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(bmp, 0, 0); bmp.close?.(); this.q.set(i.id, NtsQuery.palette(g.getImageData(0, 0, 32, 32).data));
+      clearTimeout(this.t); this.t = setTimeout(() => this.save(), 1500);
+    } catch (e) { console.warn('hues', e.message); }
+  },
+  async save() { // quiet save: colours don't change how a card looks, so no re-render (only the open search is re-run)
+    const list = [...this.q].map(([id, h]) => { const i = byId(id); if (i) i.hues = h; return i; }).filter(Boolean); this.q.clear();
+    if (!list.length) return;
+    const t = now(), base = new Map(list.map(i => [i.id, i.updatedAt || 0]));
+    for (const i of list) { i.updatedAt = Math.max(t, (i.updatedAt || 0) + 1); indexItem(i); }
+    await DB.putMany('items', list.map(({ ...i }) => i)); await Sync.markDirty(list, base); Sync.schedule();
+    if (S.q.trim()) { runSearch(); render(); }
+  },
+  async backfill() { // pictures never shown on this device: newest first, 6 at a time, only while the page is idle and visible
+    if (this._run) return; this._run = true;
+    try {
+      for (;;) {
+        await new Promise(r => setTimeout(r, 1200)); await new Promise(r => (window.requestIdleCallback || setTimeout)(r, { timeout: 3000 }));
+        if (document.hidden) continue;
+        const todo = S.items.filter(i => this.need(i) && !this.tried.has(i.id) && !i.pending).sort((a, b) => b.ts - a.ts).slice(0, 6);
+        if (!todo.length) break;
+        for (const i of todo) { // never pulls a whole picture from the cloud just for this: a local file or a cloud preview only
+          const ok = i.ghThumb || i.sbThumb || await DB.get('files', i.id + ':t') || await DB.get('files', i.id), b = ok && await Prev.thumbBlob(i).catch(() => null); if (b) await this.from(i, b); else this.tried.add(i.id); }
+      }
+    } finally { this._run = false; }
+  },
+};
+// 132: colour words in the search (renk:mavi, color:blue, لون:أزرق, or just "mavi") get a small dot in the search chip
+const HUE_DOT = { red: 'var(--c-red)', orange: 'var(--c-orange)', yellow: 'var(--c-yellow)', green: 'var(--c-green)', blue: 'var(--c-blue)', purple: 'var(--c-purple)',
+  pink: '#ec4899', brown: '#92400e', black: '#111', white: '#fff', gray: '#9ca3af', bw: 'linear-gradient(90deg, #111 50%, #fff 50%)' };
+const hueDots = q => { if (!window.NtsQuery) return '';
+  const hs = [...new Set(q.split(/\s+/).map(w => NtsQuery.COLOR_OF(w.replace(/^-?[^:]*:/, '').replace(/^-/, ''))).filter(Boolean))].slice(0, 4);
+  return hs.length ? `<span class="hue-dots" aria-hidden="true">${hs.map(h => `<i style="background:${HUE_DOT[h]}"></i>`).join('')}</span>` : ''; };
 const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   if (!e.isIntersecting) return;
   thumbIO.unobserve(e.target);
   const i = byId(e.target.dataset.tid); if (!i) return;
   e.target.classList.add('loading'); // 94d: skeleton shimmer while the thumbnail is made/fetched
   const u = await Prev.thumb(i).catch(() => null); if (!u) return e.target.classList.remove('loading');
+  if (Hues.need(i)) Prev.thumbBlob(i, false).then(b => b && Hues.from(i, b), () => { });
   const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.decoding = 'async';
   img.onerror = () => img.remove(); img.src = u;
   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
@@ -731,7 +774,7 @@ function renderHits() {
     if (el._html !== html) { el.innerHTML = html; el._html = html; }
     el.hidden = false;
   };
-  if (S.searchOn && q) return show('qchip', `${ic('search', 'sm')}<span>“${esc(q.slice(0, 40))}” · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı kapat">${ic('x', 'sm')}</button>`);
+  if (S.searchOn && q) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span>“${esc(q.slice(0, 40))}” · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı kapat">${ic('x', 'sm')}</button>`);
   if (!q || !S.hits?.size || S.hitsOff) { // 103a: hitsOff = the page changed; the text stays, the list comes back on typing/focus
     if (el.hidden || el.classList.contains('closing')) return;
     el.classList.add('closing'); el._ht = setTimeout(() => { el.hidden = true; el.classList.remove('closing'); el._html = ''; }, 140); return;
@@ -4140,6 +4183,6 @@ const Boot = {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
-  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000);
+  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();

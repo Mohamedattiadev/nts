@@ -184,6 +184,30 @@ eq('not plain tag', Q.isPlain('#ev'), false);
 // never throws on junk
 for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:', '/\\/', '-(', 'OR OR', '"" -""', '\u0000'])
   try { Q.compile(junk, { now: NOW }).test(items[0]); pass++; } catch (e) { fail++; console.log('✗ threw on', JSON.stringify(junk), e.message); }
+// --- 132: picture colours (palette from pixels) + renk:/color:/لون: on hues ---
+{
+  const px = (...cols) => { const a = []; for (const [rgb, n] of cols) for (let k = 0; k < n; k++) a.push(...rgb, 255); return new Uint8ClampedArray(a); };
+  eq('pal sky', Q.palette(px([[40, 110, 220], 70], [[250, 250, 250], 30])), ['blue', 'white']);
+  eq('pal forest', Q.palette(px([[40, 140, 50], 60], [[110, 70, 30], 40])), ['green', 'brown']);
+  eq('pal sunset', Q.palette(px([[240, 130, 20], 50], [[230, 30, 40], 30], [[250, 220, 40], 20])), ['orange', 'red', 'yellow']);
+  eq('pal bw photo', Q.palette(px([[20, 20, 20], 40], [[128, 128, 128], 30], [[235, 235, 235], 30])), ['black', 'gray', 'white', 'bw']);
+  eq('pal pink purple', Q.palette(px([[240, 140, 190], 50], [[130, 50, 200], 50])), ['pink', 'purple']);
+  eq('pal small bits ignored', Q.palette(px([[40, 110, 220], 95], [[230, 30, 40], 5])), ['blue']);
+  eq('pal transparent', Q.palette(px([[0, 0, 0], 0])), []);
+  eq('pal sepia not bw', Q.palette(px([[112, 66, 20], 100])).includes('bw'), false);
+  eq('COLOR_OF ar', Q.COLOR_OF('أزرق'), 'blue');
+  eq('COLOR_OF tr fold', Q.COLOR_OF('KIRMIZI'), 'red');
+  const pics = [
+    { id: 'p', type: 'file', fileName: 'deniz.jpg', mime: 'image/jpeg', ts: NOW, hues: ['blue', 'white'] },
+    { id: 'q', type: 'file', fileName: 'eski.jpg', mime: 'image/jpeg', ts: NOW, hues: ['gray', 'black', 'bw'] },
+    { id: 'r', type: 'file', fileName: 'orman.png', mime: 'image/png', ts: NOW, hues: ['green', 'brown'] },
+    { id: 's', type: 'note', text: 'mavi etiketli not', ts: NOW, color: 'blue' },
+  ];
+  const pt = (q, want) => { const r = Q.compile(q, { now: NOW }); eq('hues ' + q, pics.filter(r.test).map(i => i.id).join(''), want); };
+  pt('renk:mavi', 'ps'); pt('color:blue', 'ps'); pt('لون:أزرق', 'ps'); pt('renk:yeşil', 'r'); pt('renk:kahverengi', 'r');
+  pt('renk:siyah-beyaz', 'q'); pt('color:bw', 'q'); pt('renk:gri tür:resim', 'q'); pt('renk:mavi -renk:beyaz', 's');
+  pt('renk:yeşil | renk:gri', 'qr'); pt('"siyah beyaz"', 'q'); pt('mavi has:resim', 'p'); pt('أخضر tür:resim', 'r');
+}
 // speed: 10k items, a busy query, < 50 ms
 {
   const many = Array.from({ length: 10000 }, (_, k) => ({ id: 'x' + k, type: k % 3 ? 'note' : 'link', text: `kayıt ${k} süt fatura ${k % 7 ? 'ev' : 'iş'} poultry`, url: k % 3 ? '' : 'https://ex.com/' + k, ts: NOW - k * 36e5, tags: [k % 2 ? 'ev' : 'iş'] }));

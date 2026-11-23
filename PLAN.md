@@ -550,8 +550,13 @@ Site:
         üstüne gelince/dokununca içindekiler biraz yukarı çıkar (150–200 ms, reduced-motion'da yok); açılınca kart klasörün içine
         büyüyerek geçer (FLIP, 102); koyu temada da aynı kalite; telefonda 2 sütun, 44 px. Örnek sayfada her stilin ekran görüntüsü
         (masaüstü + telefon, açık + koyu) design/ux'e; görüntüye bakmadan "güzel" deme.
-- [ ] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
+- [x] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
         arama çiplerinde renk noktaları; "siyah beyaz" otomatik. 104d dilbilgisine `renk:` alanı (tr/en/ar: renk/color/لون).
+        [x] 2026-11-23, A hattı: query.js palette() 32×32 pikselden 12 renk kovası (kırmızı…mor + pembe, kahverengi, siyah, beyaz, gri),
+            ≥ %12 olan ilk 3 + neredeyse renksizse 'bw'; kayda `hues` (elle verilen renk etiketi `color` ayrı kalır, renk: ikisine de bakar).
+            Küçük resim yapılırken / ekranda yüklenirken hesaplanır; görünmeyenler boşta 6'şar (buluttan tam resim indirmez, yalnız yerel dosya
+            ya da bulut önizlemesi). Renk adları tr/en/ar dizine girer: düz "mavi" / "أزرق" de bulur; arama çipinde renk noktası.
+            23 yeni test (179 geçiyor). Eksik: "mavi resimler" doğal cümlesi → çip 104a/105'te; mevcut resimler ilk açılışta yavaş yavaş dolar.
 - [ ] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
 - [ ] 134. **Galeride çoklu seçim**: sürükleyerek kutu çiz / uzun bas + dokun; seçilenlere tek seferde etiket, sil, klasöre/panoya taşı;
         altta küçük eylem çubuğu "12 seçili". Telefon önce.

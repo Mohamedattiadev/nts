@@ -1,6 +1,6 @@
 // 104d: the search language. One parser for the search box (and saved searches): words, "exact phrase", /regex/i,
 // wildcards poul* f?tura, OR / VEYA / أو / |, -exclude, (groups), fields (title: url: site: file: ext: tag:/# project: chat:
-// source: type: color:), dates (tarih:2024-03, 2024-01..2024-03, >2025-06, son:7g, dün, "geçen hafta"), is:/has:, size:>5mb,
+// source: type: color: — a hand label or a picture's own colours, 132), dates (tarih:2024-03, 2024-01..2024-03, >2025-06, son:7g, dün, "geçen hafta"), is:/has:, size:>5mb,
 // sort:new/old/rel. Keywords in Turkish, English and Arabic. Never throws: a bad piece becomes plain text plus a warning.
 // Works in the page (window.NtsQuery) and in node (tools/test/query.test.mjs).
 (function (root) {
@@ -36,7 +36,46 @@
   const COLORS = words({
     red: ['kırmızı', 'red', 'أحمر'], orange: ['turuncu', 'orange', 'برتقالي'], yellow: ['sarı', 'yellow', 'أصفر'],
     green: ['yeşil', 'green', 'أخضر'], blue: ['mavi', 'blue', 'أزرق'], purple: ['mor', 'purple', 'بنفسجي'],
+    pink: ['pembe', 'pink', 'وردي'], brown: ['kahverengi', 'kahve', 'brown', 'بني'], black: ['siyah', 'kara', 'black', 'أسود'],
+    white: ['beyaz', 'white', 'أبيض'], gray: ['gri', 'gray', 'grey', 'رمادي'],
+    bw: ['siyah-beyaz', 'siyahbeyaz', 'sb', 'bw', 'b&w', 'black-and-white', 'monochrome', 'أبيض-وأسود'],
   });
+  // 132: names shown and indexed for a picture's colours (plain search "mavi" finds blue pictures in any of the 3 languages)
+  const HUE_NAMES = { red: 'kırmızı red أحمر', orange: 'turuncu orange برتقالي', yellow: 'sarı yellow أصفر', green: 'yeşil green أخضر',
+    blue: 'mavi blue أزرق', purple: 'mor purple بنفسجي', pink: 'pembe pink وردي', brown: 'kahverengi brown بني', black: 'siyah black أسود',
+    white: 'beyaz white أبيض', gray: 'gri gray grey رمادي', bw: 'siyah-beyaz siyah beyaz black-and-white أبيض-وأسود' };
+  const hueWords = i => (i.hues || []).map(h => HUE_NAMES[h] || '').join(' ');
+  // 132: the 1-3 main colours of a picture, no AI: RGBA pixels of a small copy (~32x32) → colour names, + 'bw' when there is
+  // (almost) no colour at all. Each pixel goes to one bucket by hue / lightness; a bucket needs ≥ 12% of the picture.
+  function palette(px) {
+    const n = Math.floor(px.length / 4), cnt = {}; let seen = 0, vivid = 0;
+    for (let p = 0; p < n; p++) {
+      if (px[p * 4 + 3] < 128) continue; // transparent
+      const r = px[p * 4] / 255, g = px[p * 4 + 1] / 255, b = px[p * 4 + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+      const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1)); seen++;
+      let k;
+      if (l < .13 || (l < .22 && s < .45)) k = 'black';
+      else if (s < .16 || d < .08) k = l > .84 ? 'white' : l < .28 ? 'black' : 'gray';
+      else if (l > .93) k = 'white';
+      else {
+        vivid++;
+        let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
+        if ((h < 45 || h >= 345) && l < .42 && ((h >= 10 && h < 45) || s < .5)) k = 'brown'; // dark warm = brown, dark vivid red stays red
+        else if (h < 12 || h >= 345) k = l > .72 ? 'pink' : 'red';
+        else if (h < 42) k = l < .4 ? 'brown' : 'orange';
+        else if (h < 68) k = 'yellow';
+        else if (h < 165) k = 'green';
+        else if (h < 255) k = 'blue';
+        else if (h < 290) k = 'purple';
+        else k = 'pink';
+      }
+      cnt[k] = (cnt[k] || 0) + 1;
+    }
+    if (!seen) return [];
+    const out = Object.entries(cnt).filter(([, c]) => c / seen >= .12).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k);
+    if (vivid / seen < .04) out.push('bw');
+    return out;
+  }
   const SORTS = words({ new: ['yeni', 'new', 'newest', 'الأحدث'], old: ['eski', 'old', 'oldest', 'الأقدم'], rel: ['alaka', 'ilgili', 'relevance', 'صلة'] });
   const OR = new Set(['OR', 'VEYA', 'veya', 'أو', '||']), AND = new Set(['AND', 'VE', 'و']), NOT = new Set(['NOT', 'DEĞİL', 'ليس']);
   const REL = words({
@@ -241,7 +280,7 @@
           unseen: i => !i.seenAt, deleted: i => !!i.deleted, pinned: i => !!(i.sticky || i.pinned),
         }[s];
       }
-      case 'color': { const c = COLORS.get(fv); if (!c) return bad('Renk'); return i => i.color === c; }
+      case 'color': { const c = COLORS.get(fv); if (!c) return bad('Renk'); return i => i.color === c || !!i.hues?.includes(c); } // label or picture colour (132)
       case 'date': { const r = dateRange(String(v), ctx.now); if (!r) return bad('Tarih'); return i => inR(i.ts, r); }
       case 'last': { const r = lastRange(String(v), ctx.now); if (!r) return bad('Son'); return i => inR(i.ts, r); }
       case 'size': { const r = sizeRange(String(v)); if (!r) return bad('Boyut'); return i => typeof i.size === 'number' && i.size >= r[0] && i.size <= r[1]; }
@@ -254,7 +293,7 @@
   const KIND = i => { if (i.type !== 'file') return i.type; const m = i.mime || '', n = (i.fileName || '').toLowerCase();
     return m.startsWith('image') || /\.(jpe?g|png|gif|webp|heic|avif|bmp|svg)$/.test(n) ? 'image' : m.startsWith('video') || /\.(mp4|mov|webm|mkv|3gp)$/.test(n) ? 'video'
       : m.startsWith('audio') || /\.(mp3|m4a|ogg|opus|wav|aac|flac)$/.test(n) ? 'audio' : m.includes('pdf') || n.endsWith('.pdf') ? 'pdf' : 'file'; };
-  const RAW = i => [i.title, i.meta?.title, i.meta?.description, i.text, i.url, i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.project, i.chat].filter(Boolean).join(' ');
+  const RAW = i => [i.title, i.meta?.title, i.meta?.description, i.text, i.url, i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), hueWords(i), i.project, i.chat].filter(Boolean).join(' ');
   function defaults(c = {}) {
     const kind = c.kind || KIND, raw = c.raw || RAW, cache = new WeakMap(), tcache = new WeakMap();
     return {
@@ -292,6 +331,6 @@
     return { test, sort: out.sort, terms: out.terms.filter(Boolean), res: out.res, deleted: out.deleted, warnings, ast: out.ast };
   }
 
-  const api = { fold, compile, isPlain, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange };
+  const api = { fold, compile, isPlain, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);
