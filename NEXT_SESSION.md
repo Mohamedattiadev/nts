@@ -84,7 +84,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 92 bugün / dün sütunları ayırt edilsin (zemin bandı, ayırıcı, Bugün vurgusu, başlıkta tarih) (3c4cfcd)
 - [x] 94a+94b View Transitions geçişleri + dokunma geri bildirimi (be289c8)
 - [x] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme (9164705)
-- [ ] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon)
+- [~B] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon)
 - [ ] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
 - [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
 - [ ] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
