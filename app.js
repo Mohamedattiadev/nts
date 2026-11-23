@@ -87,7 +87,7 @@ const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidd
 
 // ---------- utils ----------
 function toast(msg, ms = 2600, icon = '', action = null) {
-  const t = $('#toast'); t.innerHTML = (icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + (action ? `<button class="t-act">${esc(action.label)}</button>` : ''); t.hidden = false;
+  const t = $('#toast'); t.innerHTML = (icon === 'mark' ? `<span class="mark t-mark">${$('header .mark svg, .mark svg')?.outerHTML || ''}</span>` : icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + (action ? `<button class="t-act">${esc(action.label)}</button>` : ''); t.hidden = false;
   if (action) t.querySelector('.t-act').onclick = () => { t.hidden = true; action.fn(); };
   t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms);
@@ -1763,13 +1763,104 @@ async function save() {
   let r; try { r = await addFromInput({ text, files }); }
   catch (e) { console.warn('save', e); if (!inp.value.trim()) inp.value = text; S.attach = [...files, ...S.attach]; renderAttach(); autoGrow(); return toast('Kaydedilemedi: ' + e.message, 5000, 'x'); } // 109c: nothing typed is lost
   render();
-  if (r !== 'dup') { haptic(); toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'check'); }
+  if (r !== 'dup') { haptic(); toast(files.length ? `${files.length} dosya kaydedildi` : 'Kaydedildi', 1600, 'mark'); Motion.hop(); } // 142 m6-A
 }
 function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, innerHeight * .4) + 'px'; updateSend(); }
 
 // ---------- 94: native feel - the item window grows out of the tapped card and shrinks back; short haptic ticks ----------
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const haptic = (ms = 8) => { try { if (matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(ms); } catch { } };
+// ---------- 142: signature motion (owner's picks, design/motion-choices.json). transform / opacity only; reduced motion → none ----------
+const Motion = {
+  off: () => reduced() || !document.body.animate,
+  EASE: 'cubic-bezier(.2,.8,.2,1)', SPR: 'linear(0, .45 12%, .86 25%, 1.03 38%, 1.04 46%, 1.01 60%, 1)',
+  // m1-A (+ a soft m1-B): a held board card grows 4 %, leans with the pointer's speed (≤ 6°) from where it was grabbed and,
+  // when the hand stops, swings back once (about half as far as the old pendulum sample) and rests
+  hold(card, gx, gy) {
+    this.drop(); if (this.off()) return;
+    const h = this.h = { card, ang: 0, av: 0, vx: 0, lx: null, lt: 0, on: true, raf: 0 };
+    card.style.transformOrigin = `${Math.round(gx)}px ${Math.round(gy)}px`;
+    const tick = () => { h.vx *= .86; const target = h.on ? Math.max(-6, Math.min(6, h.vx * 9)) : 0;
+      h.av = (h.av + (target - h.ang) * .1) * .74; h.ang += h.av; card.style.setProperty('--tilt', h.ang.toFixed(2) + 'deg');
+      if (h.on || Math.abs(h.ang) > .05 || Math.abs(h.av) > .05) h.raf = requestAnimationFrame(tick); else card.style.removeProperty('--tilt'); };
+    h.raf = requestAnimationFrame(tick);
+  },
+  move(x) { const h = this.h; if (!h) return; const t = performance.now(); if (h.lx != null) h.vx = h.vx * .5 + (x - h.lx) / Math.max(8, t - h.lt) * .5; h.lx = x; h.lt = t; },
+  // m3-D, calm: the card settles from its lean, one accent light runs over it, three small sparks (300 ms)
+  drop(card) {
+    const h = this.h; this.h = null; if (h) { cancelAnimationFrame(h.raf); h.card.style.removeProperty('--tilt'); }
+    if (!card || this.off()) return;
+    const ang = h?.card === card ? h.ang : 0;
+    card.animate([{ transform: `rotate(${ang}deg) scale(1.04)` }, { transform: 'none' }], { duration: 380, easing: this.SPR });
+    const sh = document.createElement('i'); sh.className = 'mo-sheen'; card.appendChild(sh); setTimeout(() => sh.remove(), 520);
+    const w = card.offsetWidth, x0 = card.offsetLeft, y0 = card.offsetTop;
+    [[w, 0, 1, -1], [0, 0, -1, -1], [w * .5, card.offsetHeight, 0, 1]].forEach(([x, y, sx, sy], n) => {
+      const p = document.createElement('i'); p.className = 'mo-spark'; p.style.left = x0 + x - 3 + 'px'; p.style.top = y0 + y - 3 + 'px'; card.parentNode.appendChild(p);
+      p.animate([{ transform: 'none', opacity: .9 }, { transform: `translate(${sx * 10}px,${sy * 10}px) scale(.2)`, opacity: 0 }], { duration: 300, delay: 90 + n * 20, easing: this.EASE, fill: 'backwards' }).onfinish = () => p.remove(); });
+  },
+  // m2-A + m2-B for lists sorted by hand (to-dos): the row floats with the finger, a faint dashed ghost marks where it will land and
+  // breathes slowly in the accent (1.6 s); the other rows make room in 240 ms; on release the row glides into the gap
+  sort(row, e, done) {
+    const list = row.parentElement, r0 = row.getBoundingClientRect(), y0 = e.clientY, off = this.off();
+    const slot = document.createElement('div'); slot.className = 'mo-slot' + (off ? ' still' : ''); slot.style.height = r0.height + 'px';
+    const ghost = row.cloneNode(true); ghost.removeAttribute('data-tid'); ghost.className += ' mo-ghost'; ghost.setAttribute('aria-hidden', 'true'); ghost.inert = true; slot.appendChild(ghost);
+    if (getComputedStyle(list).position === 'static') list.style.position = 'relative';
+    row.before(slot); row.classList.add('dragging', 'mo-float'); row.style.width = r0.width + 'px'; row.style.top = (r0.top - list.getBoundingClientRect().top) + 'px';
+    let moved = false;
+    const flip = fn => { const kids = [...list.children].filter(k => k !== row), a = new Map(kids.map(k => [k, k.getBoundingClientRect().top])); fn();
+      if (!off) kids.forEach(k => { const d = a.get(k) - k.getBoundingClientRect().top; if (d) k.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 240, easing: this.EASE }); }); };
+    const mv = ev => { const dy = ev.clientY - y0; if (!moved && Math.abs(dy) < 3) return; moved = true; row.style.transform = `translateY(${dy}px)` + (off ? '' : ' scale(1.02)');
+      const cy = r0.top + r0.height / 2 + dy, rows = [...list.children].filter(k => k !== row && k !== slot);
+      const after = rows.find(k => { const b = k.getBoundingClientRect(); return cy < b.top + b.height / 2; }) || null;
+      let nx = slot.nextElementSibling; if (nx === row) nx = nx.nextElementSibling; if (nx === after) return;
+      flip(() => list.insertBefore(slot, after)); };
+    const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+      const a = row.getBoundingClientRect(); slot.replaceWith(row); row.classList.remove('mo-float'); row.style.cssText = '';
+      const b = row.getBoundingClientRect(); if (!off && moved) row.animate([{ transform: `translateY(${a.top - b.top}px) scale(1.02)` }, { transform: 'none' }], { duration: 240, easing: this.EASE });
+      setTimeout(() => row.classList.remove('dragging'), off || !moved ? 0 : 240); done(moved); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  },
+  // m3-C: things put somewhere shrink into the target, the target gulps and its count ticks
+  eat(els, target, n) {
+    if (!target?.offsetParent) return; const t = target.getBoundingClientRect(), tx = t.left + t.width / 2, ty = t.top + t.height / 2;
+    if (!this.off()) els.filter(el => el?.isConnected && el.getBoundingClientRect().bottom > 0).slice(0, 6).forEach((el, k) => {
+      const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.inert = true; c.className += ' mo-fly'; Object.assign(c.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+      document.body.appendChild(c); c.animate([{ transform: 'none', opacity: .95 }, { transform: `translate(${tx - r.left - r.width / 2}px,${ty - r.top - r.height / 2}px) scale(.1)`, opacity: 0 }], { duration: 320, delay: k * 40, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'both' }).onfinish = () => c.remove(); });
+    const gulp = () => { if (!this.off()) target.animate([{ transform: 'none' }, { transform: 'scale(1.12)', offset: .35 }, { transform: 'scale(.97)', offset: .7 }, { transform: 'none' }], 380);
+      if (n) { target.querySelector('.mo-n')?.remove(); const b = document.createElement('b'); b.className = 'mo-n'; b.textContent = '+' + n; target.appendChild(b); setTimeout(() => b.remove(), 1400); }
+      haptic(10); };
+    this.off() ? gulp() : setTimeout(gulp, 330);
+  },
+  // m4-B: files dropped from outside fly from the drop point on an arc into the box, each becomes its chip as it lands
+  fly(x, y, chips) {
+    if (this.off() || !chips.length) return;
+    chips.forEach((c, k) => { const r = c.getBoundingClientRect(), tx = r.left + 18 - x, ty = r.top + r.height / 2 - y, mx = tx / 2, my = Math.min(ty, 0) / 2 - 60;
+      const f = document.createElement('div'); f.className = 'mo-file'; f.innerHTML = c.querySelector('.att-ico')?.innerHTML || ic('image', 'sm'); f.style.left = x + 'px'; f.style.top = y + 'px'; document.body.appendChild(f);
+      c.style.opacity = 0;
+      f.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: `translate(${mx * .5}px,${my * .6}px) scale(1.1)`, opacity: 1, offset: .2 }, { transform: `translate(${mx}px,${my}px)`, offset: .5 }, { transform: `translate(${tx}px,${ty}px) scale(.9)`, opacity: 1 }],
+        { duration: 520, delay: k * 90, easing: 'cubic-bezier(.3,.1,.3,1)', fill: 'both' }).onfinish = () => { f.remove(); c.style.opacity = ''; c.animate([{ opacity: 0, transform: 'scale(.5)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: this.SPR }); }; });
+  },
+  // m6-A: saved → the logo's dot hops (the mark squashes under it), the toast's little mark pops its dot
+  hop() {
+    if (this.off()) return;
+    for (const m of document.querySelectorAll('.mark')) { if (!m.offsetParent) continue; const d = m.querySelector('.mk-d'), s = m.querySelector('svg'); if (!d || !s) continue;
+      d.style.transformBox = 'fill-box'; d.style.transformOrigin = '50% 100%'; s.style.transformOrigin = '50% 90%';
+      d.animate([{ transform: 'none' }, { transform: 'translateY(4px) scale(1.1,.85)', offset: .12 }, { transform: 'translateY(-26px) scale(.95,1.08)', offset: .45 }, { transform: 'translateY(0) scale(1.15,.85)', offset: .78 }, { transform: 'none' }], { duration: 620, easing: 'cubic-bezier(.3,0,.3,1)' });
+      s.animate([{ transform: 'none' }, { transform: 'scale(1.04,.94)', offset: .12 }, { transform: 'scale(.98,1.02)', offset: .4 }, { transform: 'scale(1.03,.97)', offset: .8 }, { transform: 'none' }], 620); }
+  },
+  // m6-C, redone: a new link → a dot slides from card to card along the link's own curve (108), then one calm ring on the far card
+  linked(a, b, tries = 12) {
+    if (this.off() || S.view !== 'board') return;
+    const p = $('#wires')?.querySelector(`path[data-a="${CSS.escape(a)}"][data-b="${CSS.escape(b)}"],path[data-a="${CSS.escape(b)}"][data-b="${CSS.escape(a)}"]`);
+    if (!p) { if (tries) setTimeout(() => this.linked(a, b, tries - 1), 60); return; }
+    const rev = p.dataset.a !== a, d = p.getAttribute('d'), plane = $('#plane'), dot = document.createElement('i'); dot.className = 'mo-dot'; dot.style.offsetPath = `path("${d}")`; plane.appendChild(dot);
+    const k = rev ? ['100%', '0%'] : ['0%', '100%'];
+    dot.animate([{ offsetDistance: k[0], opacity: 0, transform: 'scale(.5)' }, { opacity: 1, transform: 'none', offset: .15 }, { opacity: 1, offset: .85 }, { offsetDistance: k[1], opacity: 0, transform: 'scale(.6)' }], { duration: 640, easing: 'cubic-bezier(.45,0,.25,1)' }).onfinish = () => {
+      dot.remove(); const c = plane.querySelector(`.bcard[data-id="${CSS.escape(b)}"]`); if (!c) return; haptic(12);
+      const r = document.createElement('i'); r.className = 'mo-ring'; Object.assign(r.style, { left: c.offsetLeft - 3 + 'px', top: c.offsetTop - 3 + 'px', width: c.offsetWidth + 6 + 'px', height: c.offsetHeight + 6 + 'px' }); plane.appendChild(r);
+      r.animate([{ transform: 'scale(1)', opacity: .7 }, { transform: 'scale(1.06)', opacity: 0 }], { duration: 560, easing: this.EASE }).onfinish = () => r.remove(); };
+  },
+};
 const Morph = {
   tap: null, // the element the last pointerdown landed on, so the window opens from the card actually tapped
   init() { document.addEventListener('pointerdown', e => { this.tap = e.target.closest?.('[data-id],[data-open],[data-topen]') || null; }, true); },
@@ -1818,7 +1909,7 @@ const Native = {
     const place = el => { const r = el.getBoundingClientRect(); tip.textContent = el.dataset.ti; tip.hidden = false; tip.classList.remove('in');
       const w = tip.offsetWidth, h = tip.offsetHeight, below = r.bottom + h + 10 < innerHeight;
       tip.style.left = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 6)) + 'px'; tip.style.top = (below ? r.bottom + 7 : r.top - h - 7) + 'px';
-      tip.dataset.side = below ? 'b' : 't'; requestAnimationFrame(() => tip.classList.add('in')); };
+      tip.dataset.side = below ? 'b' : 't'; tip.style.translate = ''; tip.style.setProperty('--ax', Math.round(r.left + r.width / 2 - tip.offsetLeft) + 'px'); requestAnimationFrame(() => tip.classList.add('in')); };
     const hide = () => { clearTimeout(timer); if (!tip.hidden) lastHide = performance.now(); cur = null; tip.hidden = true; tip.classList.remove('in'); };
     const show = (el, fast) => { clearTimeout(timer); cur = el; const go = () => { if (cur === el && el.isConnected && el.dataset.ti) place(el); };
       fast || performance.now() - lastHide < 300 ? go() : (timer = setTimeout(go, 450)); };
@@ -1827,6 +1918,10 @@ const Native = {
       if (!el?.dataset.ti || el.closest('.rail,.rail-tab')) { if (cur && !cur.contains(e.target)) hide(); return; } // the rail has its own side tips
       if (el !== cur) { const wasUp = !tip.hidden; hide(); show(el, wasUp); }
     });
+    // 142 m5-B: the little arrow follows the pointer inside the button and the bubble leans a few px toward it
+    document.addEventListener('pointermove', e => { if (!cur || tip.hidden || !cur.contains(e.target) || reduced()) return; const w = tip.offsetWidth, r = cur.getBoundingClientRect();
+      const lean = Math.max(-6, Math.min(6, (e.clientX - (r.left + r.width / 2)) * .25)), x0 = tip.offsetLeft + lean;
+      tip.style.translate = lean.toFixed(1) + 'px 0'; tip.style.setProperty('--ax', Math.round(Math.max(10, Math.min(w - 10, e.clientX - x0))) + 'px'); }, { passive: true });
     document.addEventListener('focusin', e => { const el = e.target.closest?.('[title],[data-ti]'); if (!el || !el.matches(':focus-visible')) return; if (el.hasAttribute('title')) adopt(el); if (el.dataset.ti && !el.closest('.rail,.rail-tab')) show(el, true); });
     document.addEventListener('focusout', () => { if (!cur?.matches(':hover')) hide(); });
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, hide, { capture: true, passive: true });
@@ -3229,6 +3324,7 @@ const Sel = {
   },
   async toBoard(n) {
     const list = this.picked(); this.hidePop();
+    if (S.view !== 'board') Motion.eat(list.map(i => document.querySelector(`.gallery [data-id="${CSS.escape(i.id)}"],#list [data-id="${CSS.escape(i.id)}"]`)), $('#viewSwitch [data-view="board"]'), list.length); // 142 m3-C
     await upsert(list.map(i => n ? { ...i, boards: [...new Set([...(i.boards || []), n])] } : { ...i, onBoard: true }));
     toast(`${list.length} kayıt ${n ? `“${n}” panosuna` : 'panoya'} kondu`, 3000, 'board', { label: 'Panoya git', fn: () => { this.clear(); if (n) S.board = n; setView('board'); } });
     this.paint();
@@ -3271,7 +3367,7 @@ const Link = {
       const has = (x.links || []).includes(y);
       if (on ? x === A && !has && !(B.links || []).includes(a) : has) { const l = on ? [...(x.links || []), y] : x.links.filter(r => r !== y); out.push({ ...x, links: l.length ? l : undefined, lk: { ...(x.lk || {}), [y]: on ? t : -t } }); }
     }
-    if (!out.length) return; await upsert(out); haptic(12);
+    if (!out.length) return; await upsert(out); haptic(12); if (on) Motion.linked(a, b); // 142 m6-C
     if (say) toast(on ? 'Bağlandı' : 'Bağlantı kaldırıldı', 4000, 'link', { label: 'Geri al', fn: () => this.set(a, b, !on) });
   },
   menu(i) {
@@ -3592,22 +3688,12 @@ const Todo = {
     el.addEventListener('pointerdown', e => {
       const g = e.target.closest('[data-grip]'); if (!g) return;
       e.preventDefault();
-      const row = g.closest('.todo-item'), list = row.parentElement; let moved = false;
-      row.classList.add('dragging'); // window listeners: moving the row in the DOM would drop a pointer capture
-      const move = ev => {
-        moved = true;
-        const rows = [...list.children].filter(r => r !== row);
-        const after = rows.find(r => { const b = r.getBoundingClientRect(); return ev.clientY < b.top + b.height / 2; });
-        list.insertBefore(row, after || null);
-        [...list.children].forEach((r, n) => { r.querySelector('.t-num').textContent = n + 1 + '.'; });
-      };
-      const up = async () => {
-        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
-        row.classList.remove('dragging'); if (!moved) return;
-        const ids = [...list.children].map(r => r.dataset.tid);
+      const row = g.closest('.todo-item'), list = row.parentElement;
+      Motion.sort(row, e, async moved => { // 142: ghost + breathing gap, rows make room (FLIP)
+        [...list.children].forEach((r, n) => { const t = r.querySelector('.t-num'); if (t) t.textContent = n + 1 + '.'; }); if (!moved) return;
+        const ids = [...list.children].map(r => r.dataset.tid).filter(Boolean);
         await upsert(ids.map((id, n) => { const i = byId(id); return { ...i, todo: { ...i.todo, order: n } }; }));
-      };
-      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+      });
     });
   },
 };
@@ -4248,7 +4334,7 @@ const Board = {
       b.setPointerCapture(e.pointerId);
       if (pts.size === 2) {
         if (drag?.card && drag.moved) return; // keep dragging the card, ignore the 2nd finger
-        drag?.card?.classList.remove('dragging'); drag = null;
+        drag?.card?.classList.remove('dragging'); drag = null; Motion.drop();
         const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; return;
       }
       if (S.tool !== 'select' && !space && e.button !== 1 && !e.target.closest('.st-body[contenteditable="true"]')) { drag = Ink.start(e); if (drag) { this.busy = true; return; } }
@@ -4289,9 +4375,11 @@ const Board = {
       if (drag.box) { drag.moved = true; return this.boxAt(drag, e.clientX, e.clientY); }
       if (drag.grab) { if (!drag.moved) { this.grab(drag); this.busy = true; } drag.moved = true; return this.groupMove(drag, dx / S.cam.k, dy / S.cam.k), redraw(); }
       if (!drag.moved && drag.card) {
+        const r = drag.card.getBoundingClientRect(); Motion.hold(drag.card, (drag.sx - r.left) / S.cam.k, (drag.sy - r.top) / S.cam.k); // 142: lean from the grab point
         drag.card.classList.add('dragging'); drag.card.parentNode.appendChild(drag.card); // on top
         this.busy = true;
       }
+      if (drag.card) Motion.move(e.clientX);
       drag.moved = true;
       if (drag.card) {
         drag.card.style.left = drag.ox + dx / S.cam.k + 'px'; drag.card.style.top = drag.oy + dy / S.cam.k + 'px'; redraw();
@@ -4315,14 +4403,14 @@ const Board = {
       if (d.resize) { const i = byId(d.resize.dataset.id); if (!i) return;
         if (d.note) { if (d.w && (d.w !== i.w || d.h !== i.h)) { const m = this.M?.get(i.id); if (m) m.w = d.w; await upsert([{ ...i, w: d.w, h: d.h }]); } return; }
         if (d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
-      if (!d.card || !d.card.isConnected) return;
+      if (!d.card || !d.card.isConnected) return Motion.drop();
       if (!d.moved) { if (e.type !== 'pointerup' || Ctx.el && !Ctx.el.hidden) return; // 138: a long press opened the card menu, the finger lifting must not open the card too
         if (S.linkFrom) return Link.pick(d.card.dataset.id); // 138: "Bağla…" is waiting for the other card
         if (!(e.shiftKey || e.ctrlKey || e.metaKey) && byId(d.card.dataset.id)?.sticky) return Ink.tap(d.card, e, d.t); // 140: pick, then write
         if (e.shiftKey || e.ctrlKey || e.metaKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138/139: Shift / Ctrl-click picks (then taps add/remove)
         if (Rich.tap(d.card, d.t)) return; // 106a: play / tick inside the card
         return openItem(d.card.dataset.id); }
-      d.card.classList.remove('dragging');
+      d.card.classList.remove('dragging'); Motion.drop(d.card); // 142: settle + a calm sheen
       const i = byId(d.card.dataset.id); if (!i) return;
       setPos(i, { x: Math.round(d.card.offsetLeft), y: Math.round(d.card.offsetTop) });
       d.card.classList.remove('auto'); d.card.style.height = '';
@@ -5715,7 +5803,7 @@ function wire() {
     const fs = [...e.dataTransfer.files];
     if (fs.length === 1 && /\.zip$/i.test(fs[0].name)) { importWhatsApp(fs[0]).catch(err => toast('Hata: ' + err.message)); return; }
     if (fs.length === 1 && findMode() && ImgFind.isImg(fs[0])) return ImgFind.run(fs[0]); // 105f
-    if (fs.length) { S.attach.push(...fs); renderAttach(); }
+    if (fs.length) { S.attach.push(...fs); renderAttach(); Motion.fly(e.clientX, e.clientY, [...$('#attachList').children].slice(-fs.length)); } // 142 m4-B
     else { const t = e.dataTransfer.getData('text'); if (t) { inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); } }
   });
 

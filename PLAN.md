@@ -726,12 +726,21 @@ Site:
         zıplar + "Kaydedildi", B satırlar yazılır, C bağlandı: nokta karttan karta uçar, D balon nefesi). ✓/✗ + not → motion-choices.json.
         Test: 1366/390 × açık/koyu, fare ve CDP dokunmayla sürükleme, hareketi azalt açıkken de, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.
 
-- [ ] 142. **İmza animasyonları uygula** (sahip seçimi 2026-11-24, design/motion-choices.json): 1 tutma m1-A yay + eğilme (m1-B sarkacı
+- [x] 142. **İmza animasyonları uygula** (sahip seçimi 2026-11-24, design/motion-choices.json): 1 tutma m1-A yay + eğilme (m1-B sarkacı
         isteğe bağlı ama "çok sallanıyor" → genlik ≤ yarısı, 1 salınımda dursun); 2 sürüklerken m2-A hayalet yer tutucu + m2-B nefes alan yer,
         ikisi de "çok hızlı" → nefes ~1,6 s, FLIP 220–260 ms; 3 bırakma m3-C hedef yutar + sayı, m3-D parıltı "abartı olmasın" (kıvılcım yok
         ya da 3 tane, 300 ms, yalnız accent); 4 dışarıdan dosya m4-B ikonlar kavisle uçup kart olur; 5 ipucu m5-B ok imleci izler; 6 logo m6-A
         nokta zıplar + "Kaydedildi"; m6-C (bağlandı) "çok kötü" → yeniden: nokta karttan karta 108'in eğrisi boyunca kayar, varınca tek
         sakin halka. Yalnız transform/opacity, 60 fps (Playwright ile kare süresi), reduced-motion'da sade, telefonda dokunmayla; 141 ile uyumlu.
+        YAPILDI (2026-11-24, B hattı): app.js'de tek `Motion` bölümü. Pano kartı tutunca %4 büyür, tutulan noktadan hıza göre ≤6° eğilir,
+        durunca TEK hafif salınımla durur (yay k=.1, sönüm .74; sarkaç eskisinin ~yarısı). Bırakınca yayla oturur + accent parıltı (500 ms) + 3 küçük
+        kıvılcım (300 ms). Görevler listesinde tutamakla sürükleme: satır parmağı izler, bırakılacak yerde soluk kesik çizgili hayalet + accent
+        çerçeve 1,6 sn nefes alır, öteki satırlar 240 ms FLIP ile yol açar, bırakınca satır boşluğa kayar. m3-C: galeri/listede seçilenler
+        "Panoya koy" ile küçülüp üstteki Pano düğmesine girer, düğme yutkunur + "+N". m4-B: dışarıdan bırakılan dosyaların ikonları bırakılan
+        noktadan kavisle kutudaki eklere uçar, her biri vardığında çipine dönüşür. m5-B: ipucunun oku düğme içinde imleci izler, kutu ≤6 px yaslanır.
+        m6-A: kaydedince logodaki nokta zıplar (işaret ezilir), "Kaydedildi" bildirimi küçük logoyla. m6-C yeniden: bağlanınca nokta 108'in
+        eğrisi boyunca (offset-path) karttan karta kayar, varınca tek sakin halka (560 ms). Hareketi azalt: hiçbiri çalışmaz, yer tutucu durağan.
+        Test (t142): 1366 + 390 × açık/koyu, fare + CDP dokunma; sürüklerken kare p50 16,7 / p95 16,8 ms; konsol hatası 0, yatay taşma 0.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

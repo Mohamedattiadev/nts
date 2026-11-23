@@ -1751,3 +1751,30 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .r-csv:not(.ok) { background: var(--surface-2); border-radius: 8px; opacity: .5; }
 @media (pointer: coarse) { .r-sb { width: 44px; height: 34px; } .r-pg .rw { gap: 6px; } }
 @media (prefers-reduced-motion: reduce) { .r-ring .fg, .r-pg .st i, .r-chart .b { transition: none; } }
+/* 142: signature motion (design/motion-choices.json) - transform / opacity only, nothing under reduced motion */
+.bcard.dragging { transform: rotate(var(--tilt, 0deg)) scale(1.04); }
+.tip::after { content: ""; position: absolute; left: var(--ax, 50%); top: -4px; width: 8px; height: 8px; margin-left: -4px; background: inherit; border-radius: 2px; transform: rotate(45deg); transition: left .06s linear; }
+.tip[data-side="t"]::after { top: auto; bottom: -4px; }
+.tip.in { transition: opacity .12s, transform .12s var(--ease), translate .12s ease-out; }
+.mo-sheen { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 3; }
+.mo-sheen::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 45%; transform: translateX(-120%) skewX(-12deg);
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--accent) 22%, transparent), transparent); animation: mo-sheen .5s var(--ease) forwards; }
+@keyframes mo-sheen { to { transform: translateX(330%) skewX(-12deg); } }
+.mo-spark { position: absolute; z-index: 11; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); pointer-events: none; }
+.mo-slot { position: relative; border-radius: 10px; }
+.mo-slot::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; border: 1.5px solid var(--accent); background: var(--accent-soft); animation: mo-breathe 1.6s var(--ease) infinite; pointer-events: none; }
+.mo-slot.still::before { animation: none; opacity: .7; }
+@keyframes mo-breathe { 0%, 100% { transform: scale(.97); opacity: .45; } 50% { transform: none; opacity: 1; } }
+.mo-ghost { position: absolute !important; inset: 0; margin: 0 !important; opacity: .3; filter: grayscale(1); outline: 1.5px dashed var(--line-2); outline-offset: -1px; border-radius: 10px; pointer-events: none; }
+.mo-float { position: absolute !important; left: 0; z-index: 5; background: var(--surface); pointer-events: none; }
+#viewSwitch button { position: relative; }
+.mo-fly { position: fixed !important; z-index: 95; margin: 0 !important; pointer-events: none; transform-origin: 50% 50%; }
+.mo-n { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-text, #fff);
+  font: 700 10.5px/18px system-ui, sans-serif; pointer-events: none; animation: mo-n 1.4s var(--ease) forwards; }
+@keyframes mo-n { 0% { transform: translateY(4px) scale(.6); opacity: 0; } 15% { transform: none; opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-4px); opacity: 0; } }
+.mo-file { position: fixed; z-index: 95; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 10px; display: grid; place-items: center; pointer-events: none;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--line-2); box-shadow: var(--shadow-sm); }
+.mo-dot { position: absolute; left: 0; top: 0; z-index: 11; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--surface); pointer-events: none; offset-rotate: 0deg; }
+.mo-ring { position: absolute; z-index: 11; border-radius: 14px; border: 2px solid var(--accent); pointer-events: none; }
+.toast .t-mark { width: 22px; height: 22px; border-radius: 7px; flex: none; } .toast .t-mark svg { width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) { .bcard.dragging { transform: none; } .mo-slot::before { animation: none; } .tip::after { transition: none; } }
