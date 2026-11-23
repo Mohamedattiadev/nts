@@ -56,7 +56,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
 - [x] 132 renkle arama (104d'ye renk: alanı) (ad27736)
 - [ ] 133 benzer kayıtlar şeridi (104f'den sonra)
-- [ ] 134 galeride çoklu seçim
+- [~A] 134 galeride çoklu seçim
 - [ ] 135 ekran görüntüsüne otomatik başlık
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
 - [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
