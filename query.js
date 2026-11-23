@@ -415,6 +415,6 @@
     return { chips, rest, filter: filt, q: (filt + ' ' + rest).trim() };
   }
 
-  const api = { fold, compile, isPlain, natural, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null };
+  const api = { fold, compile, isPlain, natural, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);

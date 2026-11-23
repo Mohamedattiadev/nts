@@ -854,6 +854,7 @@ function renderHits() {
     if (el._html !== html) { el.innerHTML = html; el._html = html; }
     el.hidden = false;
   };
+  if (findMode() && !q && S.sugOn && !S.attach.length) { if (Find.top.length) { Find.top = []; updateSend(); } return show('hits find sug', sugHtml()); } // 104e: empty box → suggestions
   if (!findMode() || !q) { // 103b: only Ara mode opens results; Not shows a "N benzer kayıt" chip, Sor asks
     if (Find.top.length) { Find.top = []; updateSend(); }
     if (el.hidden || el.classList.contains('closing')) return;
@@ -861,7 +862,7 @@ function renderHits() {
   }
   // 103a: hitsOff = the page changed (or "Sayfada gör"); the filter stays, a small chip says so, typing/focus brings the window back
   if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(S.nl ? [S.nl.rest, ...S.nl.chips.map(c => c.label)].filter(Boolean).join(' · ').slice(0, 48) : q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
-  show('hits find', '<div class="f-head"></div><div class="f-chips"></div><div class="f-grid"></div><div class="h-foot"></div>');
+  show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-chips"></div><div class="f-grid"></div><div class="h-foot"></div>');
   Find.draw(el, q);
 }
 // 103b + 130a: the Ara window is a small visual grid: pictures big, notes as little document cards; type counts and the
@@ -870,8 +871,9 @@ const Find = {
   top: [],
   list() {
     const f = S.filter;
+    const rel = !S.qx || !S.qx.sort || S.qx.sort === 'rel', ph = rel ? norm((S.nl ? S.nl.rest : S.qx ? S.qx.terms.join(' ') : S.q).trim()) : '';
     return [...(S.hits || [])].map(([id, sc]) => [byId(id), sc]).filter(([i]) => i && !i.deleted && !HIDDEN.has(i.type) && (!f.tag || (i.tags || []).includes(f.tag)))
-      .sort((a, b) => b[1] - a[1] || b[0].ts - a[0].ts).map(([i]) => i); // best first, then newest
+      .map(x => (rel && (x[1] += rankBonus(x[0], ph)), x)).sort((a, b) => b[1] - a[1] || b[0].ts - a[0].ts).map(([i]) => i); // best first, then newest
   },
   set(el, sel, html) { const n = el.querySelector(sel); if (n._h !== html) { n.innerHTML = html; n._h = html; } return n; },
   draw(el, q) {
@@ -882,7 +884,9 @@ const Find = {
     if (f.tag && !tags.has(f.tag)) tags.set(f.tag, items.length);
     const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, innerWidth < 700 ? 4 : 6);
     const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
-    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${items.length} kayıt</span></span><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${items.length} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
+    this.set(el, '.f-hlp', S.qHelp ? qHelpHtml() : '');
     const T = [['all', 'Hepsi', all.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
     this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
       + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
@@ -919,8 +923,93 @@ const Find = {
       : `<span class="f-ic ${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
     return b;
   },
-  open(n = 0) { const id = this.top[n]; if (id) openItem(id); },
+  open(n = 0) { const id = this.top[n]; if (id) { Recent.add(S.q); openItem(id); } },
 };
+// 104e: order = the whole words in the title > starred (in the score) > often opened here > newer
+let _nt = new Map(), _ntOf;
+const normTitle = i => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } let t = _nt.get(i.id); if (t === undefined) _nt.set(i.id, t = norm(titleOf(i))); return t; };
+function rankBonus(i, ph) {
+  let b = 0;
+  if (ph.length > 1) { const t = normTitle(i); b = t === ph ? 4 : t.startsWith(ph) ? 3 : t.includes(ph) ? 2 : 0; }
+  const n = Opens.n(i.id); return n ? b + Math.min(1.5, Math.log2(1 + n) * .5) : b;
+}
+// how often an item was opened on this device (only for the order; never synced)
+const Opens = {
+  m: null,
+  load() { if (!this.m) try { this.m = JSON.parse(localStorage.getItem('nts-opens') || '{}'); } catch { this.m = {}; } return this.m; },
+  n(id) { return this.load()[id] || 0; },
+  bump(id) {
+    const m = this.load(); m[id] = (m[id] || 0) + 1; const ks = Object.keys(m);
+    if (ks.length > 3000) for (const k of ks.sort((a, b) => m[a] - m[b]).slice(0, 1000)) delete m[k];
+    try { localStorage.setItem('nts-opens', JSON.stringify(m)); } catch { }
+  },
+};
+// 104e: recent searches (this device): kept when a result is opened or the typing rests 2.5 s with results
+const Recent = {
+  list() { try { return JSON.parse(localStorage.getItem('nts-recentq') || '[]'); } catch { return []; } },
+  add(q) {
+    q = (q || '').trim(); if (q.length < 2 || q.length > 120) return;
+    const l = this.list().filter(x => x !== q && !q.startsWith(x)); l.unshift(q);
+    try { localStorage.setItem('nts-recentq', JSON.stringify(l.slice(0, 8))); } catch { }
+  },
+  clear() { try { localStorage.removeItem('nts-recentq'); } catch { } },
+};
+// 104e: autocomplete for the search language: the word at the end of the box ("etiket:fa", "#fa", "proje:", "sohbet:an", "is:", "renk:")
+// offers its values (tags / projects / chats with counts, most used first); Tab or a tap completes it
+const AC_FIX = { is: 'yıldızlı görev açık bitti bakılmadı sabit', has: 'resim not link pdf video ses', type: 'resim not link pdf video ses dosya',
+  source: 'whatsapp telefon bilgisayar yerimleri paylaşım', sort: 'yeni eski alaka', last: '1g 7g 30g 3a 1y',
+  color: 'kırmızı turuncu sarı yeşil mavi mor pembe kahverengi siyah beyaz gri siyah-beyaz' };
+const AC_NAME = { tag: 'Etiket', project: 'Proje', chat: 'Sohbet', is: 'Durum', has: 'İçinde', type: 'Tür', source: 'Kaynak', sort: 'Sırala', last: 'Son', color: 'Renk', date: 'Tarih' };
+let _fc, _fcOf;
+function facets() { // tag / project / chat counts, counted once per items array
+  if (_fcOf === S.items) return _fc;
+  const tag = new Map(), project = new Map(), chat = new Map(), add = (m, k) => k && m.set(k, (m.get(k) || 0) + 1);
+  for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type)) continue; for (const t of i.tags || []) add(tag, t); add(project, i.project); add(chat, i.chat); }
+  _fcOf = S.items; return _fc = { tag, project, chat };
+}
+const Suggest = {
+  cur: null,
+  of(q) {
+    if (!window.NtsQuery?.field) return null;
+    const m = q.match(/(^|[\s(])(-?)(#|[^\s:"()#\-][^\s:"()]*:)("?)([^\s"()]*)$/u); if (!m) return null;
+    const f = m[3] === '#' ? 'tag' : NtsQuery.field(m[3].slice(0, -1)); if (!f) return null;
+    const fold = NtsQuery.fold, pre = fold(m[5]), fc = facets(), d = new Date(), ym = (y, k) => y + '-' + String(k + 1).padStart(2, '0');
+    let list = fc[f] ? [...fc[f]].sort((a, b) => b[1] - a[1]) : AC_FIX[f] ? AC_FIX[f].split(' ').map(v => [v])
+      : f === 'date' ? [['dün'], ['bugün'], [ym(d.getFullYear(), d.getMonth())], [d.getMonth() ? ym(d.getFullYear(), d.getMonth() - 1) : ym(d.getFullYear() - 1, 11)], [String(d.getFullYear())]] : null;
+    if (!list) return null;
+    if (m[3] === '#') list = list.filter(([v]) => !/\s/.test(v));
+    const a = [], b = []; for (const x of list) { const v = fold(x[0]); if (v === pre) continue; if (v.startsWith(pre)) a.push(x); else if (pre && v.includes(pre)) b.push(x); }
+    list = [...a, ...b].slice(0, innerWidth < 700 ? 6 : 8);
+    return list.length ? { at: q.length - m[4].length - m[5].length, name: AC_NAME[f] || f, list } : null;
+  },
+  pick(k) {
+    const c = this.cur, v = c?.list[k]?.[0], inp = $('#input'); if (v == null) return;
+    inp.value = inp.value.slice(0, c.at) + (/[\s()"]/.test(v) ? `"${v}"` : v) + ' '; S.q = inp.value; S.searchOn = true; S.hitSel = -1;
+    runSearch(); autoGrow(); render(); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  },
+  html() {
+    const c = this.cur; if (!c) return '';
+    return `<span class="f-ac-l">${c.name}</span>` + c.list.map(([v, n], k) => `<button class="f-acv" data-ac="${k}"><span dir="auto">${esc(v)}</span>${n ? `<small>${n}</small>` : ''}</button>`).join('') + '<span class="f-ac-k d-only"><kbd>Tab</kbd> tamamla</span>';
+  },
+};
+// 104e: the "?" card: the search language in short, each example a button that puts it in the box
+const Q_HELP = [['#iş', 'etiket'], ['"tam ifade"', 'aynen bu sözler'], ['fatura -su', '"su" olmasın'], ['fatura VEYA makbuz', 'biri yeter'], ['poul*', 'ile başlayan'],
+  ['/fa.+ra/', 'düzenli ifade'], ['tarih:2024-03', 'ay, yıl, aralık ..'], ['son:7g', 'son 7 gün (h, a, y)'], ['is:yıldızlı', 'görev, bitti, bakılmadı'], ['has:pdf', 'resim, link, not'],
+  ['site:youtube.com', 'link adresi'], ['proje:', 'proje adı'], ['sohbet:', 'WhatsApp sohbeti'], ['renk:mavi', 'resmin rengi'], ['boyut:>5mb', 'dosya boyu'], ['sırala:eski', 'yeni, eski, alaka']];
+const qHelpHtml = () => `<div class="f-help"><div class="f-help-h">Arama dili <span class="muted">· tr / en / ar: etiket: tag: وسم:</span></div><div class="f-help-g">`
+  + Q_HELP.map(([x, d]) => `<button class="f-hx" data-qex="${esc(x)}"><code dir="auto">${esc(x)}</code><span>${d}</span></button>`).join('') + '</div></div>';
+// 104e: Ara with an empty box: recent searches, saved searches and the most used tags / projects, so a search starts with a tap
+function sugHtml() {
+  const rec = Recent.list(), saved = Saved.list(), fc = facets(), phone = innerWidth < 700;
+  const tags = [...fc.tag].sort((a, b) => b[1] - a[1]).slice(0, phone ? 5 : 8), projs = [...fc.project].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const q1 = v => /[\s()"]/.test(v) ? `"${v}"` : v, sec = (t, body, more = '') => body ? `<div class="s-sec"><div class="s-h">${t}${more}</div><div class="s-row">${body}</div></div>` : '';
+  const body = sec('Son aramalar', rec.map(q => `<button class="f-tag" data-qex="${esc(q)}">${ic('clock', 'sm')}<span dir="auto">${esc(q.slice(0, 40))}</span></button>`).join(''), rec.length ? '<button class="link-btn" data-qclr>Temizle</button>' : '')
+    + sec('Kayıtlı aramalar', saved.map(s => `<button class="f-tag" data-saved="${s.id}">${ic('pin', 'sm')}<span dir="auto">${esc(s.name)}</span></button>`).join(''))
+    + sec('Sık konular', tags.map(([t, n]) => `<button class="f-tag" data-qex="#${esc(q1(t))}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${n}</small></button>`).join('')
+      + projs.map(([p, n]) => `<button class="f-tag" data-qex="proje:${esc(q1(p))}">${ic('folder', 'sm')}<span dir="auto">${esc(p)}</span><small>${n}</small></button>`).join(''));
+  return `<div class="f-head"><span class="f-q">${ic('search', 'sm')}<span class="muted">Yazdıkça bulur</span></span><button data-qhelp class="${S.qHelp || !body ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!(S.qHelp || !body)}">?</button></div>`
+    + `<div class="s-body">${body}${S.qHelp || !body ? qHelpHtml() : ''}</div>`;
+}
 // 103b: live search without redrawing the page: rows/tiles that don't match get a class and leave, the rest slide up (FLIP);
 // scroll, images and everything else stay. Only when a match is not on the page yet is the view drawn once (then narrowing is classes again)
 const LiveQ = {
@@ -996,6 +1085,7 @@ function setMode(m) {
   if (!MODES.some(x => x[0] === m)) m = 'note';
   const was = S.mode, inp = $('#input'); S.mode = m; try { localStorage.setItem('hn-mode', m); } catch { }
   $('#modes').classList.remove('open'); renderModes(); S.hitSel = -1; S.hitsOff = false;
+  if (m === 'find' && document.activeElement === inp) S.sugOn = true; // 104e: suggestions when the box is empty
   if (was !== m) { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); runSearch(); render(); }
   updateSend();
 }
@@ -1125,7 +1215,7 @@ function convHtml(i) {
     <div class="conv-log">${i.conv.log.map(l => `<div class="cl"><span class="cl-t">${fmtTime(l.ts)}</span>${many ? `<b>${esc(l.who)}</b>` : ''}<span>${l.att ? `<span class="cl-att">${ic('clip', 'sm')}${esc(byId(l.att)?.fileName || 'dosya')}</span> ` : ''}${esc(l.text).replace(URL_RE, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</span></div>`).join('')}</div>`;
 }
 function openItem(id) {
-  const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i);
+  const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
   dlg.dataset.id = id;
   const yt = ytId(i), media = yt || i.type === 'file' || (i.type === 'link' && i.meta?.image);
@@ -4192,16 +4282,18 @@ function wire() {
   $('#cHint').onclick = e => { const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
-  let st;
+  let st, rt;
   inp.addEventListener('input', e => {
     if (/^insert(Text|CompositionText)$/.test(e.inputType || '') && S.mode === 'note' && !S.attach.length && (inp.value === '/' || inp.value === '?')) { // 118: "/" Ara, "?" Sor
       const m = inp.value === '/' ? 'find' : 'ask'; inp.value = ''; setMode(m);
     }
     autoGrow(); clearTimeout(st); S.hitSel = -1; S.hitsOff = false;
     st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); if (!findMode()) S.limit = 300; runSearch(); updateSend(); render(); }, 80);
+    clearTimeout(rt); rt = setTimeout(() => { if (findMode() && S.hits?.size && S.q.trim()) Recent.add(S.q); }, 2500); // 104e: a search that rested with results is remembered
   });
-  inp.addEventListener('focus', () => { document.body.classList.add('typing'); if (S.hitsOff && !document.querySelector('dialog[open]')) { S.hitsOff = false; renderHits(); } });
-  inp.addEventListener('blur', () => document.body.classList.remove('typing'));
+  let sugT;
+  inp.addEventListener('focus', () => { document.body.classList.add('typing'); clearTimeout(sugT); S.sugOn = true; if (!document.querySelector('dialog[open]') && (S.hitsOff || (findMode() && !S.q.trim()))) { S.hitsOff = false; renderHits(); } });
+  inp.addEventListener('blur', () => { document.body.classList.remove('typing'); clearTimeout(sugT); sugT = setTimeout(() => { if (document.activeElement === inp || $('#hits').contains(document.activeElement)) return; S.sugOn = false; S.qHelp = false; if (!S.q.trim()) renderHits(); }, 150); });
   inp.addEventListener('keydown', e => {
     const rows = $('#hits').classList.contains('hits') && !$('#hits').hidden ? [...$('#hits').querySelectorAll('.h-row')] : [];
     if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && rows.length) {
@@ -4209,7 +4301,8 @@ function wire() {
       S.hitSel = Math.max(-1, Math.min(rows.length - 1, (S.hitSel ?? -1) + (e.key === 'ArrowDown' ? 1 : -1)));
       renderHits(); $('#hits .h-row.sel')?.scrollIntoView({ block: 'nearest' }); return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; openItem(id); return; }
+    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; Recent.add(S.q); openItem(id); return; }
+    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && findMode() && Suggest.cur && Suggest.of(inp.value)) { e.preventDefault(); Suggest.cur = Suggest.of(inp.value); Suggest.pick(0); return; } // 104e
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitBox(); }
     if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && (inp.value.trim() || S.mode !== 'note')) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // empty Not box: Tab moves on (no keyboard trap)
     if (e.key === 'Escape') { if (S.mode !== 'note' && !inp.value) setMode('note'); clearBox(); inp.blur(); }
@@ -4274,8 +4367,17 @@ function wire() {
     const m = e.target.closest('[data-mode]'); if (m) { setMode(m.dataset.mode); return inp.focus(); }
     const ft = e.target.closest('[data-ftype]'); if (ft) { Object.assign(S.filter, { type: ft.dataset.ftype, star: false, list: null }); render(); return inp.focus(); }
     const fg = e.target.closest('[data-ftag]'); if (fg) { S.filter.tag = S.filter.tag === fg.dataset.ftag ? null : fg.dataset.ftag; render(); return inp.focus(); }
-    const o = e.target.closest('[data-open]'); if (o) openItem(o.dataset.open);
+    const ac = e.target.closest('[data-ac]'); if (ac) return Suggest.pick(+ac.dataset.ac);
+    if (e.target.closest('[data-qhelp]')) { S.qHelp = !S.qHelp; S.hitsOff = false; renderHits(); return inp.focus(); }
+    const qx = e.target.closest('[data-qex]'); if (qx) { // 104e: an example / recent search / topic goes into the box
+      const v = qx.dataset.qex, end = /:$/.test(v); inp.value = v + (end ? '' : ' '); S.q = inp.value; S.searchOn = true; S.hitSel = -1; S.hitsOff = false;
+      if (!end) S.qHelp = false; runSearch(); autoGrow(); render(); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); return;
+    }
+    if (e.target.closest('[data-qclr]')) { Recent.clear(); renderHits(); return inp.focus(); }
+    const sv = e.target.closest('[data-saved]'); if (sv) return Saved.apply(sv.dataset.saved);
+    const o = e.target.closest('[data-open]'); if (o) { Recent.add(S.q); openItem(o.dataset.open); }
   };
+  $('#hits').addEventListener('pointerdown', e => { if (e.target.closest('button') && e.pointerType === 'mouse') e.preventDefault(); }); // the box keeps the focus
 
   const onFilter = e => {
     const b = e.target.closest('button'); if (!b) return; const f = S.filter;

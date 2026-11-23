@@ -415,6 +415,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             Inside: ilk 20k karakter, cihazdaki dosyadan, yapay zekâsız) aranır; başlıkta görünmeyen eşleşme için kısa vurgulu alıntı + nereden geldiği
             ("Okunur kopya", "PDF", "Resimdeki yazı", "Dosyanın içi"); resim kutusu OCR alıntısını gösterir. 219 birim testi.
             Eksik: yazım hatalı sözcük vurgulanmıyor (bulunuyor ama <mark> yok); ay adı yalnız yılla birlikte çip olur ("mart" tek başına sözcük kalır).
+        [x] 104e (2026-11-23, B hattı): otomatik tamamlama: kutunun sonundaki "etiket:fa" / "#fa" / "proje:" / "sohbet:an" / is: has: tür: kaynak:
+            renk: sırala: son: tarih: (tr/en/ar alan adları, query.js field()) → sonuç penceresinin başında değer satırı (etiket/proje/sohbet sayılı, en çok
+            kullanılan önce, önce baştan sonra içinden eşleşen); Tab (masaüstü) ya da dokunuş tamamlar (boşluklu değer tırnaklı). "?" düğmesi: 16 örnekli
+            sözdizimi kartı, örneğe dokununca kutuya girer. Sıralama: başlık = aranan > başlık onunla başlar > başlıkta geçer, + yıldızlı (puanda),
+            + bu cihazda sık açılan (localStorage nts-opens, eşitlenmez), sonra yeni; sırala:yeni/eski'de dokunulmaz. Türe göre sayılar: mevcut tür çipleri
+            (Hepsi/Resim/Not/Link/Dosya + sayı) — ayrı başlıklı gruplar YAPILMADI (ızgara + FLIP bozulur). Boş Ara kutusu (odakta): Son aramalar
+            (sonuç açılınca ya da 2,5 sn sonuçla durunca, 8 tane, Temizle), Kayıtlı aramalar, Sık konular (en çok etiket + proje); hiçbiri yoksa sözdizimi kartı.
+            phone-audit (arama, arama-bos, arama-dil) 0 hata; 10k kayıtta Find.list 2–14 ms. 104g'ye not: "etiket:fa" (eşleşmeyen alan değeri) runSearch 48 ms
+            masaüstü / 75 ms telefon — query.js alan testi yavaş, tamamlama bunu sık yazdırır.
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);
