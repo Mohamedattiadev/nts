@@ -506,8 +506,8 @@ Site:
         bitsin (max-height / bottom = dock yüksekliği + boşluk) ya da kutu peek'in solunda kalsın; 1280–1920 genişlikte ve telefonda ölç, 0 çakışma.
 - [x] 128. (2026-11-23: Board.metaLines(i) meta satırının genişliğini tahmin eder, sığmıyorsa est() ikinci satıra yer ayırır (.meta.m2); fades() sığmayan çipleri sondan kaldırıp tek bir "+N" çipi koyar, satırdan geniş çip önce gider; nowrap+overflow kaldırıldı. Masaüstü+telefon açık/koyu: kesik çip 0) **Pano kartında etiketler kesiliyor ("# y…")**: kart genişliği yetmiyorsa etiket çipleri alt satıra insin (flex-wrap), hiçbiri yarım
         görünmesin; çok etiket varsa son çip "+2". 114'teki maske/fade etiket satırına uygulanmasın.
-- [ ] 129. **"Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgileri görünmüyor**: bağlantısı olan kartlar arasında en az ~48 px boşluk
-        (çizginin kıvrımı görünür), bağlı kartlar yan yana/üst üste ama çizgi kartın altında kalmasın. 108 ile birlikte.
+- [x] 129. **"Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgileri görünmüyor**: bağlantısı olan kartlar arasında en az ~48 px boşluk
+        (çizginin kıvrımı görünür), bağlı kartlar yan yana/üst üste ama çizgi kartın altında kalmasın. 108 ile birlikte. YAPILDI (B hattı): oto dizilimde gün içinde bağlı kartlar (aynı grup / related / links) arka arkaya, aralarında 48 px (diğerleri 14), bağlı dizi sütun arasında bölünmez (sütun en çok +2 büyür); 4 yapılandırmada ölçüldü.
 - [ ] 130. **Locus'tan alınacaklar** (Pavel Macek, LinkedIn video 2026-11, macOS "görsel defter"; video indirildi, kare kare + konuşma
         yazıya döküldü: "every notes app … is made mostly for text and half of what I keep is pictures … gallery, easy to browse visually …
         when I need more room to think I can use a canvas view … pictures get tagged automatically … plain files in a folder, Markdown and

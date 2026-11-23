@@ -2366,12 +2366,24 @@ const Board = {
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
-    let cx = x0; const today = dayKey(now());
+    let cx = x0; const today = dayKey(now()), { links: rl } = relIndex();
+    // 129: linked cards (same group / related / own links) stand one under the other with a 48 px gap, so the wire between them shows;
+    // a linked run is not split across columns (a column may grow by 2 for it)
+    const tied = (a, b) => !!a && ((a.group && a.group === b.group) || !!rl.get(a.id)?.has(b.id));
     for (const [n0, d] of days.entries()) {
-      const x = cx, cw = Math.ceil(d.items.length / this.PER) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
-      const ys = [];
-      d.items.forEach((i, n) => { const col = Math.floor(n / this.PER), h = this.est(i), y = ys[col] ?? y0 + 30; ys[col] = y + h + 14; this.M.set(i.id, { i, x: x + col * (this.COLW + this.IN), y, w: this.COLW, h, auto: true }); });
-      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...ys) - y0, alt: n0 % 2, today: d.k === today });
+      const left = new Set(d.items), seq = [];
+      for (const i of d.items) { if (!left.has(i)) continue; const q = [i]; left.delete(i);
+        while (q.length) { const c = q.shift(); seq.push(c); for (const o of d.items) if (left.has(o) && tied(c, o)) { left.delete(o); q.push(o); } } }
+      const pos = []; let col = 0, n = 0, y = y0 + 30, prev = null;
+      for (const i of seq) {
+        const t = tied(prev, i);
+        if (n >= this.PER && !(t && n < this.PER + 2)) { col++; n = 0; y = y0 + 30; prev = null; }
+        else if (prev) y += t ? 48 : 14;
+        const h = this.est(i); pos.push({ i, col, y, h }); y += h; n++; prev = i;
+      }
+      const x = cx, cw = (col + 1) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
+      for (const p of pos) this.M.set(p.i.id, { i: p.i, x: x + p.col * (this.COLW + this.IN), y: p.y, w: this.COLW, h: p.h, auto: true });
+      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, alt: n0 % 2, today: d.k === today });
     }
     plane.style.setProperty('--dayh', Math.max(320, ...this.heads.map(h => h.h + 20)) + 'px'); // 109d: the line between days runs as tall as the tallest day, not a stub next to a 1-card day
     // months for the far-out view: each spans its days' columns
