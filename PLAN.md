@@ -641,6 +641,15 @@ Site:
 - [x] 135. (2026-11-23: başlık saklanmıyor, türetiliyor (titleOf → autoTitle): resim/PDF adı anlamsızsa (IMG-/VID-/PXL_/Screenshot_…_Chrome/Ekran görüntüsü/WhatsApp Image, ya da harf kelimesi kalmayan ad) OCR'nin ilk anlamlı satırı (durum çubuğu, sayı, URL atlanır; tr/ar/en; 70 harf), yoksa yapay zekâ özetinin ilk cümlesi başlık olur; dosya adı listede/galeride alt satırda, öğe penceresinde başlığın altında. Kullanıcı başlığı (userTitle) ya da anlamlı yapay zekâ başlığı varsa dokunulmaz. 4 yapılandırma ekran görüntüsü, konsol hatası yok) **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
         yapay zekâsının kısa açıklaması) başlık olur; dosya adı alt satırda kalır. Kullanıcı başlığı değiştirdiyse dokunulmaz.
 - [x] 138. (2026-11-23: pano kartında sağ tık (telefonda uzun bas) menüsünde "Bağla…" → alttaki çubukta "Bağlanacak kartı seç" (not kutusu o sırada gizlenir), öteki karta tıkla/dokun → bağlanır, "Bağlandı · Geri al"; Esc ya da × iptal, bu sırada pano kaydırılabilir. Shift+tık (ya da menüde "Seç (çoklu bağla)") ile 2+ kart → "N kart seçili · Bağla" → zaman sırasında zincir. Bağlı kartın menüsünde "Bağlantıyı kaldır: <başlık>" (en çok 5). Veri i.links + i.lk {öteki: +zaman ekleme / −zaman kaldırma}; mergeItem bağları birleştirir, sonraki kaldırma eski eklemeyi yener (iki cihazda kaldırılan bağ geri gelmez). Kayıt penceresindeki "Bağlantılı" listesi bunları gösterir (relIndex). Telefonda uzun basınca kart artık menüyle birlikte açılmıyor. 1366 açık/koyu + 390 açık/koyu, konsol hatası yok) **Elle bağla** (sahip: "bağlamak istesem napmam lazım, yok öyle özellik").
+- [x] 139. (2026-11-23, A hattı) **Panoda fareyle kutu seçimi** (sahip: "mouse ile bir yere basıp birkaç tane eleman seçebileyim"): seç aracında boş yerde
+        sürükle → yarı saydam accent dikdörtgen; değdiği kartlar, panoya yazılan yazı/notlar ve çizimler seçilir (Shift = ekle, Ctrl/⌘ = aç-kapa;
+        Shift/Ctrl+tık tek kart). Seçim 138'in Link.sel kümesi (tek seçim modeli; bağlama yalnız gerçek kartları zincirler). 2+ seçilide hepsinin
+        çevresinde kesik çizgili çerçeve: seçili karttan ya da çerçevenin içinden sürükle → hepsi birlikte taşınır (çizimlerin noktaları da kayar).
+        Alt çubuk: × · "N seçili" · Bağla · Etiket · Hizala (sola alt alta / üste yan yana / düzenli diz, Geri al) · Sil (Geri al). Ctrl+A hepsi,
+        Delete/Backspace sil, Esc ya da boş yere tık bırakır. Sağ tık seçili kartta: renk/öncelik hepsine, "Seçilen N kartı bağla / etiketle /
+        Hizala / Seçilenleri sil (N)". Boşlukla sürükleme, orta tuş ve tekerlek = kaydırma kalır. Telefon: boş yerde parmağı ~0,4 sn tut (titrer) +
+        sürükle = kutu; hızlı kaydırma pano kaydırır, boş yere dokunuş bırakır. Playwright 1366 açık/koyu + 390 açık/koyu (CDP dokunma), konsol
+        hatası yok. Not: kartlar taşınınca "yerleşmiş" olur ve taşınmamış gün sütunları onların sağına geçer (eski davranış, 91/109 ile aynı).
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

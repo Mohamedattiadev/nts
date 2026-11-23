@@ -1429,3 +1429,9 @@ body.selecting.gallery-view .dock { opacity: 0; pointer-events: none; visibility
 #linkBar .sel-n { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; }
 body.linking .dock { opacity: 0; pointer-events: none; visibility: hidden; }
 @media (max-width: 899px) { #linkBar { justify-content: flex-start; gap: 6px; } #linkBar .sel-b { margin-left: auto; } }
+/* 139: board box selection - picked strokes glow in the accent, 2+ picked things sit in one soft dashed frame (drag inside it = move all) */
+.ink path.sel { filter: drop-shadow(0 0 2.5px var(--accent)) drop-shadow(0 0 1px var(--accent)); }
+.sel-frame { position: absolute; z-index: 0; pointer-events: none; border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 14px;
+}
+.sel-frame[hidden] { display: none; }
+.bcard.sticky.sel { outline: 2px solid var(--accent); outline-offset: 3px; }

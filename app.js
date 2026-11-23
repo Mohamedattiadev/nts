@@ -2679,7 +2679,7 @@ const Sel = {
       <button class="sel-b danger" data-sa="del"${n ? '' : ' disabled'}>${ic('trash', 'sm')}<span>Sil</span></button>`;
     b.hidden = false;
   },
-  picked: () => [...Sel.ids].map(byId).filter(i => i && !i.deleted),
+  picked: () => S.view === 'board' ? Link.items().filter(i => i.type !== 'draw') : [...Sel.ids].map(byId).filter(i => i && !i.deleted), // 139: the board's selection tags too
   async act(a, btn) {
     if (a === 'x') return this.clear();
     if (a === 'all') { const t = this.tiles(); if (this.ids.size === t.length) this.ids.clear(); else t.forEach(x => this.ids.add(x.dataset.id)); return this.paint(); }
@@ -2699,7 +2699,7 @@ const Sel = {
       p.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
         if (b.dataset.stag) this.addTag(b.dataset.stag); else if (b.dataset.sboard !== undefined) this.toBoard(b.dataset.sboard); });
       p.addEventListener('submit', e => { e.preventDefault(); const v = p.querySelector('input').value; if (v.trim()) this.addTag(v); });
-      document.addEventListener('pointerdown', e => { if (!e.target.closest('.sel-pop,[data-sa]')) this.hidePop(); }, true); }
+      document.addEventListener('pointerdown', e => { if (!e.target.closest('.sel-pop,[data-sa],[data-la="tag"]')) this.hidePop(); }, true); }
     p._a = a; const list = this.picked();
     if (a === 'tag') {
       const cnt = new Map(); S.items.forEach(i => !i.deleted && (i.tags || []).forEach(t => cnt.set(t, (cnt.get(t) || 0) + 1)));
@@ -2721,7 +2721,7 @@ const Sel = {
     const t = v.trim().toLowerCase().replace(/^#+/, '').replace(/\s+/g, '-'); if (!t) return;
     const list = this.picked().filter(i => !(i.tags || []).includes(t)); this.hidePop();
     if (list.length) await upsert(list.map(i => ({ ...i, tags: [...(i.tags || []), t] })));
-    toast(`#${t} · ${this.ids.size} kayıt`, 2200, 'hash'); this.paint();
+    toast(`#${t} · ${this.picked().length} kayıt`, 2200, 'hash'); S.view === 'board' ? Link.paint() : this.paint();
   },
   async toBoard(n) {
     const list = this.picked(); this.hidePop();
@@ -2772,6 +2772,10 @@ const Link = {
   },
   menu(i) {
     const lk = this.mine(i), board = S.view === 'board' && !i.sticky, n = this.sel.size;
+    if (board && n >= 2 && this.sel.has(i.id)) { const nl = this.linkable().length, nc = [...this.sel].filter(id => Board.M?.has(id)).length; // 139
+      return (nl >= 2 ? `<button class="side-row" data-a="linksel">${ic('link', 'sm')}<span class="lbl">Seçilen ${nl} kartı bağla</span></button>` : '')
+        + `<button class="side-row" data-a="seltag">${ic('hash', 'sm')}<span class="lbl">Seçilenleri etiketle</span></button>`
+        + (nc >= 2 ? `<button class="side-row" data-a="selalign">${ic('grid', 'sm')}<span class="lbl">Hizala / düzenli diz</span></button>` : ''); }
     return (board ? (n >= 2 && this.sel.has(i.id) ? `<button class="side-row" data-a="linksel">${ic('link', 'sm')}<span class="lbl">Seçilen ${n} kartı bağla</span></button>`
         : `<button class="side-row" data-a="link">${ic('link', 'sm')}<span class="lbl">Bağla…</span></button>`)
       + (n && !this.sel.has(i.id) || !n ? `<button class="side-row" data-a="pick">${ic('check', 'sm')}<span class="lbl">${n ? 'Seçime ekle' : 'Seç (çoklu bağla)'}</span></button>` : '') : '')
@@ -2780,7 +2784,64 @@ const Link = {
   start(id) { this.sel.clear(); S.linkFrom = id; this.paint(); },
   async pick(id) { const a = S.linkFrom; this.end(); if (a && id !== a) await this.set(a, id, true, true); },
   end() { if (!S.linkFrom && !this.sel.size) return; S.linkFrom = null; this.sel.clear(); this.paint(); },
-  toggle(id) { if (byId(id)?.sticky) return; this.sel.has(id) ? this.sel.delete(id) : this.sel.add(id); haptic(8); this.paint(); },
+  // 139: the same set is the board's selection (cards, notes written on the board, strokes); only real cards get linked
+  toggle(id) { this.sel.has(id) ? this.sel.delete(id) : this.sel.add(id); haptic(8); this.paint(); },
+  linkable() { return [...this.sel].map(byId).filter(i => i && !i.deleted && !i.sticky && i.type !== 'draw'); },
+  items() { return [...this.sel].map(byId).filter(i => i && !i.deleted); },
+  // every card / note / stroke on this board (Ctrl+A)
+  everything() { return [...(Board.M?.keys() || []), ...S.items.filter(i => i.type === 'draw' && !i.deleted && i.pts?.length > 1).map(i => i.id)]; },
+  // plane box of a stroke / a card (the mounted card's real size when it is on screen)
+  rect(id) {
+    const m = Board.M?.get(id);
+    if (m) { const el = Board.mounted?.get(id); return el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : { x: m.x, y: m.y, w: m.w, h: m.i.sticky ? Board.est(m.i) : m.h - (m.auto ? 0 : 40) }; }
+    const i = byId(id); if (i?.type !== 'draw' || !i.pts?.length) return null;
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity; for (const [x, y] of i.pts) { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); }
+    return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+  },
+  hit(r) { // ids whose box touches the plane rect r
+    const out = [], on = q => q && q.x < r.x2 && q.x + q.w > r.x1 && q.y < r.y2 && q.y + q.h > r.y1;
+    for (const id of this.everything()) if (on(this.rect(id))) out.push(id);
+    return out;
+  },
+  bounds() { let b = null; for (const id of this.sel) { const q = this.rect(id); if (!q) continue; b = b ? { x1: Math.min(b.x1, q.x), y1: Math.min(b.y1, q.y), x2: Math.max(b.x2, q.x + q.w), y2: Math.max(b.y2, q.y + q.h) } : { x1: q.x, y1: q.y, x2: q.x + q.w, y2: q.y + q.h }; } return b; },
+  frame() { // a soft dashed frame around 2+ picked things: dragging inside it moves them all
+    let f = $('#selFrame'); const b = this.sel.size > 1 && S.view === 'board' && this.bounds();
+    if (!b) { if (f) f.hidden = true; return; }
+    if (!f) { f = document.createElement('div'); f.id = 'selFrame'; f.className = 'sel-frame'; $('#plane').appendChild(f); }
+    Object.assign(f.style, { left: b.x1 - 8 + 'px', top: b.y1 - 8 + 'px', width: b.x2 - b.x1 + 16 + 'px', height: b.y2 - b.y1 + 16 + 'px' }); f.hidden = false;
+  },
+  async del() {
+    const list = this.items(); if (!list.length) return; const old = list.map(i => ({ ...i })); S.undo = null; haptic(14); this.end();
+    for (const i of list) document.querySelector(`[data-did="${i.id}"]`)?.remove();
+    await upsert(list.map(i => ({ ...i, deleted: true, deletedAt: now() })));
+    toast(`${old.length} öğe silindi`, 6000, 'trash', { label: 'Geri al', fn: async () => { await upsert(old.map(i => ({ ...i, deleted: false, deletedAt: undefined }))); toast('Geri alındı', 1800, 'check'); } });
+  },
+  // Hizala: left edges, top edges, or a neat grid in reading order; one undo puts every card back
+  async align(kind) {
+    const ids = [...this.sel].filter(id => Board.M?.has(id)); if (ids.length < 2) return;
+    const rs = ids.map(id => ({ id, ...this.rect(id) })), i0 = ids.map(byId), before = i0.map(i => ({ id: i.id, pos: posOf(i) }));
+    const x1 = Math.min(...rs.map(r => r.x)), y1 = Math.min(...rs.map(r => r.y)), at = new Map();
+    if (kind === 'left') { let y = y1; for (const r of rs.slice().sort((a, b) => a.y - b.y)) { at.set(r.id, { x: x1, y }); y += r.h + 24; } }
+    else if (kind === 'top') { let x = x1; for (const r of rs.slice().sort((a, b) => a.x - b.x)) { at.set(r.id, { x, y: y1 }); x += r.w + 24; } }
+    else { const n = Math.ceil(Math.sqrt(rs.length)), cw = Math.max(...rs.map(r => r.w)) + 24, row = rs.slice().sort((a, b) => a.y - b.y || a.x - b.x); let y = y1;
+      for (let k = 0; k < row.length; k += n) { const part = row.slice(k, k + n).sort((a, b) => a.x - b.x); part.forEach((r, c) => at.set(r.id, { x: x1 + c * cw, y })); y += Math.max(...part.map(r => r.h)) + 24; } }
+    const list = i0.map(i => { setPos(i, { x: Math.round(at.get(i.id).x), y: Math.round(at.get(i.id).y) }); return i; });
+    await Board.savePos(list); S.items = [...S.items]; render(); haptic(10);
+    toast(kind === 'grid' ? `${list.length} kart dizildi` : `${list.length} kart hizalandı`, 5000, 'layers', { label: 'Geri al', fn: async () => {
+      const back = before.map(b => { const i = byId(b.id); if (i) setPos(i, b.pos); return i; }).filter(Boolean); await Board.savePos(back); S.items = [...S.items]; render(); } });
+  },
+  alignPop(btn) {
+    let p = this.pop; if (!p) { p = this.pop = document.createElement('div'); p.className = 'pop sel-pop al-pop'; p.hidden = true; document.body.appendChild(p);
+      p.addEventListener('click', e => { const b = e.target.closest('[data-al]'); if (b) { p.hidden = true; this.align(b.dataset.al); } });
+      document.addEventListener('pointerdown', e => { if (!e.target.closest('.al-pop,[data-la="align"]')) p.hidden = true; }, true); }
+    if (!p.hidden) { p.hidden = true; return; }
+    p.innerHTML = `<div class="side-label">Hizala</div>
+      <button class="side-row" data-al="left">${ic('list', 'sm')}<span class="lbl">Sola hizala (alt alta)</span></button>
+      <button class="side-row" data-al="top">${ic('layers', 'sm')}<span class="lbl">Üste hizala (yan yana)</span></button>
+      <button class="side-row" data-al="grid">${ic('grid', 'sm')}<span class="lbl">Düzenli diz</span></button>`;
+    p.hidden = false; const r = btn.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+    p.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; p.style.top = Math.max(8, r.top - h - 8) + 'px';
+  },
   async many(ids) {
     const l = ids.map(byId).filter(Boolean).sort((x, y) => x.ts - y.ts); this.end(); if (l.length < 2) return;
     const before = new Map(l.map(i => [i.id, { links: i.links, lk: i.lk }])), t = now(), out = [];
@@ -2791,19 +2852,31 @@ const Link = {
   paint() {
     if (S.view !== 'board') { S.linkFrom = null; this.sel.clear(); }
     for (const c of document.querySelectorAll('#plane > .bcard')) c.classList.toggle('sel', c.dataset.id === S.linkFrom || this.sel.has(c.dataset.id));
+    for (const p of document.querySelectorAll('#ink path[data-did]')) p.classList.toggle('sel', this.sel.has(p.dataset.did));
+    this.frame();
     $('#board')?.classList.toggle('linking', !!S.linkFrom);
     let b = this.bar; const on = !!S.linkFrom || this.sel.size > 0; document.body.classList.toggle('linking', on); // the bar stands where the box is: the box steps aside
-    if (!on) { if (b) b.hidden = true; return; }
-    if (!b) { b = this.bar = document.createElement('div'); b.id = 'linkBar'; b.className = 'sel-bar'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Bağla'); document.body.appendChild(b);
-      b.addEventListener('click', e => { const a = e.target.closest('[data-la]')?.dataset.la; if (a === 'x') this.end(); else if (a === 'go') this.many([...this.sel]); }); }
-    const n = this.sel.size;
+    if (!on) { if (b) b.hidden = true; if (this.pop) this.pop.hidden = true; Sel.hidePop(); return; }
+    if (!b) { b = this.bar = document.createElement('div'); b.id = 'linkBar'; b.className = 'sel-bar'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Seçilenler'); document.body.appendChild(b);
+      b.addEventListener('click', e => { const t = e.target.closest('[data-la]'), a = t?.dataset.la; if (!a || t.disabled) return;
+        if (a === 'x') this.end(); else if (a === 'go') this.many(this.linkable().map(i => i.id)); else if (a === 'del') this.del();
+        else if (a === 'align') this.alignPop(t); else if (a === 'tag') { if (Sel.pop && !Sel.pop.hidden && Sel.pop._a === 'tag') Sel.hidePop(); else Sel.showPop('tag', t); } }); }
+    const n = this.sel.size, nl = this.linkable().length, nc = [...this.sel].filter(id => Board.M?.has(id)).length, nt = this.items().filter(i => i.type !== 'draw').length;
     b.innerHTML = `<button class="icon-btn sm" data-la="x" title="Vazgeç (Esc)" aria-label="Vazgeç">${ic('x', 'sm')}</button>`
       + (S.linkFrom ? `<span class="sel-n" aria-live="polite">${ic('link', 'sm')} Bağlanacak kartı seç</span>`
-        : `<span class="sel-n" aria-live="polite"><b>${n}</b> kart seçili</span><button class="sel-b" data-la="go"${n >= 2 ? '' : ' disabled'}>${ic('link', 'sm')}<span>Bağla</span></button>`);
+        : `<span class="sel-n" aria-live="polite"><b>${n}</b> seçili</span><button class="sel-b" data-la="go"${nl >= 2 ? '' : ' disabled'} title="Seçilen kartları bağla">${ic('link', 'sm')}<span>Bağla</span></button>`
+          + `<button class="sel-b" data-la="tag"${nt ? '' : ' disabled'} title="Etiket ekle">${ic('hash', 'sm')}<span>Etiket</span></button>`
+          + `<button class="sel-b" data-la="align"${nc >= 2 ? '' : ' disabled'} title="Hizala / düzenli diz">${ic('grid', 'sm')}<span>Hizala</span></button>`
+          + `<button class="sel-b danger" data-la="del" title="Sil (Delete)">${ic('trash', 'sm')}<span>Sil</span></button>`);
     b.hidden = false;
   },
 };
 addEventListener('keydown', e => { if (e.key === 'Escape' && (S.linkFrom || Link.sel.size) && !document.querySelector('dialog[open]')) Link.end(); });
+addEventListener('keydown', e => { // 139: Ctrl/Cmd+A picks everything on the board, Delete / Backspace removes the picked ones (Geri al)
+  if (S.view !== 'board' || $('#board').hidden || e.altKey || e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') || document.querySelector('dialog[open]')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); S.linkFrom = null; Link.sel = new Set(Link.everything()); Link.paint(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && Link.sel.size && !S.linkFrom) { e.preventDefault(); Link.del(); }
+});
 const Ctx = {
   el: null, id: null,
   init() {
@@ -2821,14 +2894,16 @@ const Ctx = {
     addEventListener('scroll', () => this.hide(), true);
     el.addEventListener('click', async e => {
       const b = e.target.closest('button'); if (!b) return; const i = byId(this.id); if (!i) return this.hide();
-      if (b.dataset.c !== undefined) await upsert([{ ...i, color: i.color === b.dataset.c ? undefined : b.dataset.c || undefined }]);
-      else if (b.dataset.p !== undefined) await upsert([{ ...i, prio: b.dataset.p || undefined }]);
+      const many = S.view === 'board' && Link.sel.size > 1 && Link.sel.has(i.id), all = many ? Link.items().filter(x => x.type !== 'draw') : [i]; // 139: colour / priority / delete reach every picked card
+      if (b.dataset.c !== undefined) { const c = i.color === b.dataset.c ? undefined : b.dataset.c || undefined; await upsert(all.map(x => ({ ...x, color: c }))); }
+      else if (b.dataset.p !== undefined) await upsert(all.map(x => ({ ...x, prio: b.dataset.p || undefined })));
       else if (b.dataset.a === 'open') openItem(i.id);
       else if (b.dataset.a === 'star') await toggleStar(i.id);
       else if (b.dataset.a === 'todo') await upsert([{ ...i, ...(i.todo ? { todo: null, noTodo: true } : { todo: { text: titleOf(i), done: false, user: true }, noTodo: false }) }]);
-      else if (b.dataset.a === 'del') await removeItem(i);
+      else if (b.dataset.a === 'del') { if (many) { this.hide(); return Link.del(); } await removeItem(i); }
+      else if (b.dataset.a === 'seltag' || b.dataset.a === 'selalign') { this.hide(); const t = Link.bar?.querySelector(`[data-la="${b.dataset.a === 'seltag' ? 'tag' : 'align'}"]`); if (t) b.dataset.a === 'seltag' ? Sel.showPop('tag', t) : Link.alignPop(t); return; }
       else if (b.dataset.a === 'link') { this.hide(); return Link.start(i.id); }
-      else if (b.dataset.a === 'linksel') { this.hide(); return Link.many([...Link.sel]); }
+      else if (b.dataset.a === 'linksel') { this.hide(); return Link.many(Link.linkable().map(x => x.id)); }
       else if (b.dataset.a === 'pick') { this.hide(); return Link.toggle(i.id); }
       else if (b.dataset.unlink) await Link.set(i.id, b.dataset.unlink, false, true);
       this.hide();
@@ -2841,7 +2916,7 @@ const Ctx = {
       <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">Aç</span></button>
       <button class="side-row" data-a="star">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}<span class="lbl">${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}</span></button>
       <button class="side-row" data-a="todo">${ic('todo', 'sm')}<span class="lbl">${i.todo ? 'Görevden çıkar' : 'Görev yap'}</span></button>
-      ${Link.menu(i)}<button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button>`;
+      ${Link.menu(i)}<button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">${S.view === 'board' && Link.sel.size > 1 && Link.sel.has(i.id) ? `Seçilenleri sil (${Link.sel.size})` : 'Sil'}</span></button>`;
     el.hidden = false;
     const w = el.offsetWidth, h = el.offsetHeight;
     el.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; el.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px';
@@ -3112,7 +3187,7 @@ const Ink = {
       let el = have.get(id); const k = this.key(i);
       if (el && el._k === k) continue;
       if (!el) { el = document.createElementNS('http://www.w3.org/2000/svg', 'path'); el.dataset.did = id; svg.appendChild(el); }
-      el.setAttribute('class', 'k-' + i.shape); el.style.stroke = INK_COLORS[i.color] || INK_COLORS.ink; el.setAttribute('d', this.path(i.shape, i.pts)); el._k = k;
+      el.setAttribute('class', 'k-' + i.shape + (Link.sel.has(id) ? ' sel' : '')); el.style.stroke = INK_COLORS[i.color] || INK_COLORS.ink; el.setAttribute('d', this.path(i.shape, i.pts)); el._k = k;
     }
   },
   key(i) { return i.shape + '|' + i.color + '|' + i.pts.length + '|' + i.pts.at(-1); },
@@ -3175,7 +3250,7 @@ const Board = {
   card(i) {
     const c = document.createElement('div'); c.dataset.id = i.id;
     if (i.sticky) { // a note written right on the board
-      c.className = 'bcard sticky' + (i.sticky === 'text' ? ' text' : '') + markCls(i);
+      c.className = 'bcard sticky' + (i.sticky === 'text' ? ' text' : '') + (Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
       c.innerHTML = `<div class="st-body" data-ph="${i.sticky === 'text' ? 'Yazı' : 'Not yaz…'}"${i.fs ? ` style="font-size:${i.fs}px"` : ''}>${esc(i.text || '')}</div>${i.sticky === 'text' ? '<span class="st-size" title="Sürükle: büyüt / küçült"></span>' : ''}`;
       return c;
     }
@@ -3229,7 +3304,7 @@ const Board = {
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
     this.deg = this.degrees();
-    this.cull();
+    this.cull(); Link.frame();
     if (S.cam) this.apply();
     requestAnimationFrame(() => { if (!S.cam) this.fit(false); }); // 109a: a synced item must not throw the camera back (only a new board/range/view starts from fit)
   },
@@ -3414,6 +3489,51 @@ const Board = {
     anim ? this.animate(() => this.apply()) : this.apply();
   },
   // save where cards were dropped, without re-rendering the board
+  // 139: the selection box, in plane coordinates (it stays right while the camera does not move)
+  boxAt(d, cx, cy) {
+    const b = $('#board').getBoundingClientRect();
+    if (!d.boxEl) { d.boxEl = document.createElement('div'); d.boxEl.className = 'sel-box'; document.body.appendChild(d.boxEl); d.base = d.mods ? new Set(Link.sel) : new Set(); getSelection()?.removeAllRanges(); Ctx.hide(); }
+    const l = Math.max(b.left, Math.min(d.sx, cx)), r = Math.min(b.right, Math.max(d.sx, cx)), t = Math.max(b.top, Math.min(d.sy, cy)), bt = Math.min(b.bottom, Math.max(d.sy, cy));
+    Object.assign(d.boxEl.style, { left: l + 'px', top: t + 'px', width: r - l + 'px', height: bt - t + 'px' });
+    d.last = [l - b.left, t - b.top, r - b.left, bt - b.top]; if (!d.raf) d.raf = requestAnimationFrame(() => { d.raf = 0; this.boxHit(d); });
+  },
+  boxHit(d) { // Shift adds to what was picked, Ctrl/Cmd flips it, a plain box starts over
+    const [l, t, r, bt] = d.last, k = S.cam.k, s = new Set(d.base);
+    for (const id of Link.hit({ x1: (l - S.cam.x) / k, y1: (t - S.cam.y) / k, x2: (r - S.cam.x) / k, y2: (bt - S.cam.y) / k })) d.mods === 'flip' && d.base.has(id) ? s.delete(id) : s.add(id);
+    if (s.size !== Link.sel.size || [...s].some(id => !Link.sel.has(id))) { Link.sel = s; S.linkFrom = null; Link.paint(); }
+  },
+  boxEnd(d) {
+    if (!d.boxEl) { if (!d.mods && Link.sel.size && !S.linkFrom) Link.end(); return; } // a plain click on empty space lets the selection go
+    if (d.raf) cancelAnimationFrame(d.raf); d.raf = 0; d.boxEl.remove(); if (d.last) this.boxHit(d); if (Link.sel.size) haptic(8);
+  },
+  grab(d) { // what moves together: mounted cards (their element), cards off screen (their layout box), strokes (their path)
+    d.grp = { cards: [], draws: [] };
+    for (const id of Link.sel) {
+      const i = byId(id); if (!i || i.deleted) continue;
+      if (i.type === 'draw') { const el = document.querySelector(`#ink path[data-did="${id}"]`); d.grp.draws.push({ i, el }); continue; }
+      const m = this.M?.get(id); if (!m) continue; const el = this.mounted?.get(id);
+      if (el) el.classList.add('dragging');
+      d.grp.cards.push({ i, m, el, x: el ? el.offsetLeft : m.x, y: el ? el.offsetTop : m.y });
+    }
+  },
+  groupMove(d, dx, dy) {
+    for (const c of d.grp.cards) if (c.el) { c.el.style.left = c.x + dx + 'px'; c.el.style.top = c.y + dy + 'px'; }
+    for (const s of d.grp.draws) s.el?.setAttribute('transform', `translate(${dx} ${dy})`);
+    const f = $('#selFrame'); if (f && !f.hidden) { f.style.translate = `${dx}px ${dy}px`; }
+  },
+  async groupDrop(d, dx, dy) {
+    const f = $('#selFrame'); if (f) f.style.translate = '';
+    dx = Math.round(dx); dy = Math.round(dy); const cards = [];
+    for (const c of d.grp.cards) {
+      c.el?.classList.remove('dragging', 'auto'); if (c.el) c.el.style.height = '';
+      const i = byId(c.i.id); if (!i) continue; setPos(i, { x: Math.round(c.x + dx), y: Math.round(c.y + dy) });
+      const p = posOf(i); Object.assign(c.m, { x: p.x, y: p.y, auto: false, h: c.m.auto ? c.m.h + 40 : c.m.h }); cards.push(i);
+    }
+    const draws = d.grp.draws.map(s => { const i = { ...byId(s.i.id), pts: s.i.pts.map(([x, y]) => [x + dx, y + dy]) }; if (s.el) { s.el.removeAttribute('transform'); s.el.setAttribute('d', Ink.path(i.shape, i.pts)); s.el._k = Ink.key(i); } return i; });
+    if (cards.length) await this.savePos(cards);
+    if (draws.length) await upsert(draws);
+    Link.frame(); this.wires();
+  },
   async savePos(list) {
     const t = now();
     for (const i of list) i.updatedAt = Math.max(t, (i.updatedAt || 0) + 1);
@@ -3460,7 +3580,15 @@ const Board = {
       const sz = e.target.closest('.st-size');
       if (sz) { const body = sz.parentNode.querySelector('.st-body'); drag = { resize: sz.parentNode, body, sx: e.clientX, sy: e.clientY, fs0: parseFloat(getComputedStyle(body).fontSize) }; this.busy = true; return; }
       const card = space || e.button === 1 ? null : e.target.closest('.bcard');
-      drag = { card, tile: null, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop };
+      drag = { card, tile: null, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop, mods: e.shiftKey ? 'add' : e.ctrlKey || e.metaKey ? 'flip' : '' };
+      // 139: on empty space a mouse draws a selection box (Space / middle button still pan); inside the frame of 2+ picked things it moves them all.
+      // A finger pans; held still for a moment it draws the box instead
+      if (!card && !space && e.button === 0 && !e.target.closest('#months') && S.tool === 'select' && !S.linkFrom) {
+        const [px, py] = Ink.at(e), bb = Link.sel.size > 1 && Link.bounds();
+        if (bb && px > bb.x1 - 8 && px < bb.x2 + 8 && py > bb.y1 - 8 && py < bb.y2 + 8) drag.grab = true;
+        else if (e.pointerType === 'mouse') drag.box = true;
+        else { const d0 = drag; drag.lp = setTimeout(() => { if (drag === d0 && !d0.moved && pts.size === 1) { d0.box = true; haptic(12); this.boxAt(d0, e.clientX, e.clientY); } }, 420); }
+      } else if (card && Link.sel.has(card.dataset.id) && Link.sel.size > 1) drag.grab = true;
     });
     b.addEventListener('pointermove', e => {
       if (!pts.has(e.pointerId)) return;
@@ -3477,7 +3605,10 @@ const Board = {
         drag.body.style.fontSize = drag.fs + 'px'; return;
       }
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+      if (!drag.moved && Math.hypot(dx, dy) < (drag.lp && !drag.box ? 8 : 5)) return;
+      if (drag.lp && !drag.box) { clearTimeout(drag.lp); drag.lp = 0; }
+      if (drag.box) { drag.moved = true; return this.boxAt(drag, e.clientX, e.clientY); }
+      if (drag.grab) { if (!drag.moved) { this.grab(drag); this.busy = true; } drag.moved = true; return this.groupMove(drag, dx / S.cam.k, dy / S.cam.k), redraw(); }
       if (!drag.moved && drag.card) {
         drag.card.classList.add('dragging'); drag.card.parentNode.appendChild(drag.card); // on top
         this.busy = true;
@@ -3496,13 +3627,17 @@ const Board = {
       try { await this.drop(d, e); } finally { flush(); }
     };
     this.drop = async (d, e) => {
+      if (d.lp) clearTimeout(d.lp);
       if (d.ink) return Ink.end(d, e);
+      if (d.box) return this.boxEnd(d);
+      if (d.grp) return this.groupDrop(d, (e.clientX - d.sx) / S.cam.k, (e.clientY - d.sy) / S.cam.k);
+      if (!d.card && !d.moved && !d.grab && e.type === 'pointerup' && !d.mods && Link.sel.size && !S.linkFrom) return Link.end(); // a click on empty space lets the selection go
       if (d.tile && !d.moved) return this.zoomMonth(d.tile);
       if (d.resize) { const i = byId(d.resize.dataset.id); if (i && d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
       if (!d.card || !d.card.isConnected) return;
       if (!d.moved) { if (e.type !== 'pointerup' || Ctx.el && !Ctx.el.hidden) return; // 138: a long press opened the card menu, the finger lifting must not open the card too
         if (S.linkFrom) return Link.pick(d.card.dataset.id); // 138: "Bağla…" is waiting for the other card
-        if (e.shiftKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138: Shift-click picks cards to link (then taps add/remove)
+        if (e.shiftKey || e.ctrlKey || e.metaKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138/139: Shift / Ctrl-click picks (then taps add/remove)
         return byId(d.card.dataset.id)?.sticky ? Ink.edit(d.card) : openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging');
       const i = byId(d.card.dataset.id); if (!i) return;
