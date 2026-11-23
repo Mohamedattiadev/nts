@@ -46,6 +46,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 131-0 (+130d) ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131) — ÖRNEK HAZIR: design/folders.html (A Cep · B Yığın · C Albüm), sahibin seçimi bekleniyor (7d83168)
 - [x] 103b (+130a görsel arama penceresi, PLAN 130a) tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP) (db99aa5)
 - [x] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap) (db99aa5)
+- [ ] 136 ÇOK ÖNEMLİ kutu/mod seçici arayüzü karışık (sahip, ekran görüntüsü; PLAN 136): B 104f'te (kutuya dokunmuyorsa) al; sahip karar verdi: en solda "+" (ChatGPT gibi), yanında TEK mod düğmesi, Tab ile 3 mod arasında güzel animasyonla geçiş, yazı alanı temiz (kısa placeholder, eski ipuçları yok)
 - [x] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104) (91a534a)
 - [x] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil (f8faa08)
 - [x] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri (da76e01)
@@ -56,7 +57,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
 - [x] 132 renkle arama (104d'ye renk: alanı) (ad27736)
 - [ ] 133 benzer kayıtlar şeridi (104f'den sonra)
-- [~A] 134 galeride çoklu seçim
+- [x] 134 galeride çoklu seçim (HASH)
 - [ ] 135 ekran görüntüsüne otomatik başlık
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
 - [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)

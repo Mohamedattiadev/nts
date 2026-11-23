@@ -594,7 +594,7 @@ function renderList(items, append = false) {
   const m = $('#more');
   if (m) new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); S.limit += 300; render(); } }, { rootMargin: '600px' }).observe(m);
 }
-const topBtns = (cls = '') => `<div class="l-top ${cls}">${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
+const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
 // "Tarihe git": every month that has items, newest first, with counts; picking one shows the list from there
 function monthJump(anchor) {
   const by = new Map(); visible().forEach(i => { const k = dayKey(i.ts).slice(0, 7); by.set(k, (by.get(k) || 0) + 1); });
@@ -621,12 +621,12 @@ function renderGallery(items) { // month headers stick to the top while scrollin
   for (const i of media) {
     const m = dayKey(i.ts).slice(0, 7);
     if (m !== last) { const [y, mo] = m.split('-').map(Number); html += `<div class="g-month">${new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>`; last = m; }
-    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${markCls(i)}" data-id="${i.id}">
+    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}">
     ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
-  el.innerHTML = media.length ? `${topBtns('g-jump')}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
+  el.innerHTML = media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
     : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
-  hookThumbs(el);
+  hookThumbs(el); Sel.paint();
 }
 function renderTopics(items) {
   const el = $('#topics'), by = new Map();
@@ -728,6 +728,7 @@ function render(force) {
     }
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
+    if (S.view !== 'gallery' && Sel.mode) Sel.clear();
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' ? [] : items);
     $('#splash').classList.add('gone');
@@ -2369,15 +2370,131 @@ const Scrub = {
 };
 
 // ---------- right-click / long-press menu on any item ----------
+// 134: gallery multi-select — phone: long press a tile, then taps add/remove; desktop: drag a box on empty space, Ctrl/Shift-click,
+// or "Seç". A bar at the bottom ("12 seçili") tags, puts on a board or deletes them all at once (undo restores every one).
+const Sel = {
+  ids: new Set(), mode: false, last: null, bar: null, pop: null, eat: false,
+  tiles: () => [...document.querySelectorAll('#gallery .tile[data-id]')],
+  start(id) { this.mode = true; if (id) { this.ids.add(id); this.last = id; } haptic(10); this.paint(); },
+  toggle(id, range) {
+    if (range && this.last) { const t = this.tiles().map(x => x.dataset.id), a = t.indexOf(this.last), b = t.indexOf(id);
+      if (a >= 0 && b >= 0) { t.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(x => this.ids.add(x)); this.paint(); return; } }
+    this.mode = true; this.ids.has(id) ? this.ids.delete(id) : this.ids.add(id); this.last = id; this.paint();
+  },
+  clear() { if (!this.mode && !this.ids.size) return; this.ids.clear(); this.mode = false; this.last = null; this.hidePop(); this.paint(); },
+  click(e) { // the gallery's click: true = handled here (no open)
+    const t = e.target.closest('.tile[data-id]');
+    if (this.eat) { this.eat = false; return true; }
+    if (e.target.closest('[data-selmode]')) { this.mode ? this.clear() : this.start(); return true; }
+    if (!t) return false;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) { e.preventDefault(); this.toggle(t.dataset.id, e.shiftKey); return true; }
+    if (this.mode) { this.toggle(t.dataset.id); return true; }
+    return false;
+  },
+  paint() {
+    if (S.view !== 'gallery') { this.ids.clear(); this.mode = false; }
+    const on = this.mode; document.body.classList.toggle('selecting', on);
+    for (const t of this.tiles()) { const s = this.ids.has(t.dataset.id); t.classList.toggle('sel', s); t.setAttribute('aria-selected', s); }
+    $('#gallery [data-selmode]')?.setAttribute('aria-pressed', on);
+    const sb = $('#gallery [data-selmode]'); if (sb) { sb.classList.toggle('on', on); sb.querySelector('span').textContent = on ? 'Bitti' : 'Seç'; }
+    let b = this.bar;
+    if (!on) { if (b) b.hidden = true; return; }
+    if (!b) { b = this.bar = document.createElement('div'); b.id = 'selBar'; b.className = 'sel-bar'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Seçilenler'); document.body.appendChild(b);
+      b.addEventListener('click', e => { const a = e.target.closest('[data-sa]')?.dataset.sa; if (a) this.act(a, e.target.closest('[data-sa]')); }); }
+    const n = this.ids.size, all = this.tiles().length;
+    b.innerHTML = `<button class="icon-btn sm" data-sa="x" title="Seçimi bitir (Esc)" aria-label="Seçimi bitir">${ic('x', 'sm')}</button>
+      <span class="sel-n" aria-live="polite">${n ? `<b>${n}</b> seçili` : 'Seçmek için dokun'}</span>
+      <button class="sel-b" data-sa="all">${n && n === all ? 'Hiçbiri' : 'Tümü'}</button>
+      <button class="sel-b" data-sa="tag"${n ? '' : ' disabled'}>${ic('hash', 'sm')}<span>Etiket</span></button>
+      <button class="sel-b" data-sa="board"${n ? '' : ' disabled'}>${ic('board', 'sm')}<span>Panoya</span></button>
+      <button class="sel-b danger" data-sa="del"${n ? '' : ' disabled'}>${ic('trash', 'sm')}<span>Sil</span></button>`;
+    b.hidden = false;
+  },
+  picked: () => [...Sel.ids].map(byId).filter(i => i && !i.deleted),
+  async act(a, btn) {
+    if (a === 'x') return this.clear();
+    if (a === 'all') { const t = this.tiles(); if (this.ids.size === t.length) this.ids.clear(); else t.forEach(x => this.ids.add(x.dataset.id)); return this.paint(); }
+    const list = this.picked(); if (!list.length) return;
+    if (a === 'del') {
+      const old = list.map(i => ({ ...i })); S.undo = null; haptic(14); this.clear();
+      await upsert(list.map(i => ({ ...i, deleted: true, deletedAt: now() })));
+      toast(`${old.length} kayıt çöp kutusuna taşındı`, 6000, 'trash', { label: 'Geri al', fn: async () => { await upsert(old.map(i => ({ ...i, deleted: false, deletedAt: undefined }))); toast('Geri alındı', 1800, 'check'); } });
+      return;
+    }
+    if (this.pop && !this.pop.hidden && this.pop._a === a) return this.hidePop();
+    this.showPop(a, btn);
+  },
+  hidePop() { if (this.pop) this.pop.hidden = true; },
+  showPop(a, btn) {
+    let p = this.pop; if (!p) { p = this.pop = document.createElement('div'); p.className = 'pop sel-pop'; p.hidden = true; document.body.appendChild(p);
+      p.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.stag) this.addTag(b.dataset.stag); else if (b.dataset.sboard !== undefined) this.toBoard(b.dataset.sboard); });
+      p.addEventListener('submit', e => { e.preventDefault(); const v = p.querySelector('input').value; if (v.trim()) this.addTag(v); });
+      document.addEventListener('pointerdown', e => { if (!e.target.closest('.sel-pop,[data-sa]')) this.hidePop(); }, true); }
+    p._a = a; const list = this.picked();
+    if (a === 'tag') {
+      const cnt = new Map(); S.items.forEach(i => !i.deleted && (i.tags || []).forEach(t => cnt.set(t, (cnt.get(t) || 0) + 1)));
+      const every = t => list.every(i => (i.tags || []).includes(t));
+      const top = [...cnt].sort((x, y) => y[1] - x[1]).map(x => x[0]).filter(t => !every(t)).slice(0, 10);
+      p.innerHTML = `<form class="sel-form"><input dir="auto" placeholder="Etiket yaz, Enter" aria-label="Etiket" autocomplete="off" enterkeyhint="done"><button class="btn sm">Ekle</button></form>
+        ${top.length ? `<div class="side-label">Sık kullanılan</div><div class="tp-chips">${top.map(t => `<button class="lchip" data-stag="${esc(t)}" dir="auto">#${esc(t)}</button>`).join('')}</div>` : ''}`;
+    } else {
+      const has = n => list.every(i => n ? (i.boards || []).includes(n) || i.project === n : i.onBoard || i.pos);
+      p.innerHTML = `<div class="side-label">${list.length} kaydı panoya koy</div>
+        ${['', ...boardNames()].map(n => `<button class="side-row" data-sboard="${esc(n)}">${ic(n ? 'folder' : 'board', 'sm')}<span class="lbl" dir="auto">${n ? esc(n) : 'Ana pano'}</span>${has(n) ? ic('check', 'sm') : ''}</button>`).join('')}`;
+    }
+    p.hidden = false;
+    const r = btn.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+    p.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; p.style.top = Math.max(8, r.top - h - 8) + 'px';
+    if (a === 'tag' && matchMedia('(hover: hover)').matches) p.querySelector('input').focus();
+  },
+  async addTag(v) {
+    const t = v.trim().toLowerCase().replace(/^#+/, '').replace(/\s+/g, '-'); if (!t) return;
+    const list = this.picked().filter(i => !(i.tags || []).includes(t)); this.hidePop();
+    if (list.length) await upsert(list.map(i => ({ ...i, tags: [...(i.tags || []), t] })));
+    toast(`#${t} · ${this.ids.size} kayıt`, 2200, 'hash'); this.paint();
+  },
+  async toBoard(n) {
+    const list = this.picked(); this.hidePop();
+    await upsert(list.map(i => n ? { ...i, boards: [...new Set([...(i.boards || []), n])] } : { ...i, onBoard: true }));
+    toast(`${list.length} kayıt ${n ? `“${n}” panosuna` : 'panoya'} kondu`, 3000, 'board', { label: 'Panoya git', fn: () => { this.clear(); if (n) S.board = n; setView('board'); } });
+    this.paint();
+  },
+  init() {
+    const g = $('#gallery'); let d = null;
+    // desktop: press on empty space and drag → a box; tiles it touches get selected (Ctrl/Shift keeps the earlier ones)
+    g.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('.tile,button,a,input,.l-top')) return;
+      d = { x: e.clientX, y: e.clientY + scrollY, base: e.ctrlKey || e.metaKey || e.shiftKey ? new Set(this.ids) : new Set(), box: null };
+    });
+    addEventListener('pointermove', e => {
+      if (!d) return; const y = e.clientY + scrollY;
+      if (!d.box) { if (Math.hypot(e.clientX - d.x, y - d.y) < 6) return; d.box = document.createElement('div'); d.box.className = 'sel-box'; document.body.appendChild(d.box); this.mode = true; getSelection()?.removeAllRanges(); }
+      const l = Math.min(d.x, e.clientX), r = Math.max(d.x, e.clientX), t = Math.min(d.y, y), b = Math.max(d.y, y);
+      Object.assign(d.box.style, { left: l + 'px', top: t - scrollY + 'px', width: r - l + 'px', height: b - t + 'px' });
+      this.ids = new Set(d.base);
+      for (const el of this.tiles()) { const q = el.getBoundingClientRect(); if (q.right > l && q.left < r && q.bottom + scrollY > t && q.top + scrollY < b) this.ids.add(el.dataset.id); }
+      if (e.clientY > innerHeight - 40) scrollBy(0, 14); else if (e.clientY < 70) scrollBy(0, -14);
+      this.paint();
+    });
+    addEventListener('pointerup', () => { if (!d) return; if (d.box) { d.box.remove(); this.eat = true; setTimeout(() => this.eat = false, 0); } d = null; });
+    addEventListener('keydown', e => {
+      if (!this.mode || e.target.closest('input,textarea,[contenteditable]') || document.querySelector('dialog[open]')) return;
+      if (e.key === 'Escape') { if (this.pop && !this.pop.hidden) this.hidePop(); else this.clear(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'a') { e.preventDefault(); this.tiles().forEach(x => this.ids.add(x.dataset.id)); this.paint(); }
+      else if (e.key === 'Delete' && this.ids.size) this.act('del');
+    });
+  },
+};
 const Ctx = {
   el: null, id: null,
   init() {
     const el = this.el = document.createElement('div'); el.className = 'ctx pop'; el.hidden = true; document.body.appendChild(el);
     const target = e => !e.target.closest('dialog,.dock,input,textarea') && e.target.closest('[data-id],[data-tid]');
-    document.addEventListener('contextmenu', e => { const t = target(e); if (!t) return; e.preventDefault(); this.show(t.dataset.id || t.dataset.tid, e.clientX, e.clientY); });
+    document.addEventListener('contextmenu', e => { const t = target(e); if (!t) return; e.preventDefault(); if (t.closest('#gallery .tile') && (Sel.mode || e.pointerType === 'touch' || matchMedia('(pointer: coarse)').matches)) return; /* 134: on the phone a long press selects */ this.show(t.dataset.id || t.dataset.tid, e.clientX, e.clientY); });
     let lp = null; // long press on touch
     document.addEventListener('touchstart', e => { if (lp && lp !== 'fired') clearTimeout(lp); lp = null; if (e.touches.length > 1) return; // 109a: a 2nd finger is a pinch, not a long press (the old timer opened the menu mid-zoom)
-      const t = target(e); if (!t) return; const p = e.touches[0]; lp = setTimeout(() => { lp = 'fired'; navigator.vibrate?.(10); this.show(t.dataset.id || t.dataset.tid, p.clientX, p.clientY); }, 520); }, { passive: true });
+      const t = target(e); if (!t) return; const p = e.touches[0]; lp = setTimeout(() => { lp = 'fired'; const gt = t.closest('#gallery .tile'); if (gt) return Sel.toggle(gt.dataset.id); navigator.vibrate?.(10); this.show(t.dataset.id || t.dataset.tid, p.clientX, p.clientY); }, 520); }, { passive: true });
     const cancel = () => { if (lp && lp !== 'fired') clearTimeout(lp); };
     document.addEventListener('touchmove', cancel, { passive: true });
     document.addEventListener('touchend', e => { if (lp === 'fired' && e.cancelable) e.preventDefault(); cancel(); lp = null; });
@@ -4407,10 +4524,11 @@ function wire() {
   Scrub.init();
   Rail.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
-  Ctx.init(); Peek.init(); Read.init(); Remind.init();
+  Ctx.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
   Todo.init();
   Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
+    if (id === '#gallery' && Sel.click(e)) return;
     const a = e.target.closest('.act'); if (a) { e.stopPropagation(); return itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); }
     if (e.target.closest('[data-ljump]')) return monthJump(e.target.closest('[data-ljump]'));
     if (e.target.closest('[data-lpin]')) return Saved.save();

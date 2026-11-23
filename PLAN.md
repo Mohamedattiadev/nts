@@ -583,8 +583,22 @@ Site:
             ya da bulut önizlemesi). Renk adları tr/en/ar dizine girer: düz "mavi" / "أزرق" de bulur; arama çipinde renk noktası.
             23 yeni test (179 geçiyor). Eksik: "mavi resimler" doğal cümlesi → çip 104a/105'te; mevcut resimler ilk açılışta yavaş yavaş dolar.
 - [ ] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
-- [ ] 134. **Galeride çoklu seçim**: sürükleyerek kutu çiz / uzun bas + dokun; seçilenlere tek seferde etiket, sil, klasöre/panoya taşı;
+- [x] 134. **Galeride çoklu seçim**: sürükleyerek kutu çiz / uzun bas + dokun; seçilenlere tek seferde etiket, sil, klasöre/panoya taşı;
         altta küçük eylem çubuğu "12 seçili". Telefon önce.
+        [x] 2026-11-23, A hattı: app.js `Sel` (Ctx'in üstünde). Telefon: kutucuğa uzun bas → seçer (bağlam menüsü galeride açılmaz),
+            sonra dokunuşlar ekler/çıkarır. Masaüstü: boş yerde fareyle sürükle → seçim kutusu (kenarda kendiliğinden kayar), Ctrl/⌘+tık,
+            Shift+tık aralık, galerinin üstünde "Seç"/"Bitti" düğmesi, Ctrl+A, Delete, Esc. Seçim modunda kutunun yerine alt çubuk:
+            × · "N seçili" · Tümü/Hiçbiri · Etiket (yaz + sık kullanılanlar) · Panoya (Ana pano + panolar, hepsinde olanda ✓) · Sil
+            (çöpe, "Geri al" hepsini geri getirir). Galeriden çıkınca seçim biter. Klasör henüz yok (131) → klasör yerine panolar.
+            Playwright: 4 yapılandırmada kutu/Ctrl/Shift/uzun bas/dokun/etiket/pano/sil+geri al/tümü/çıkış geçti, konsol hatası yok.
+- [ ] 136. **Kutu (mod seçici) arayüzü karışık** (sahip 2026-11-23, ekran görüntüsü: "bu kısımda büyük bir sorun var, UI/UX"):
+        103b'den sonra kutuda yan yana ✎ Not · 🔍 · ✦ · Tab · + ve eski ipucu "Not yaz · - görev · ? yapay zekâya sor · / ara" var →
+        aynı iş iki yoldan anlatılıyor, "+" dördüncü mod gibi duruyor, hap içinde hap, kalabalık. Sade bir düzen: modlar tek bir yerde,
+        placeholder yalnız seçili modu anlatsın, "+" (ek) modlardan ayrı ve belli; masaüstü + telefon (360/390) ekran görüntüsü.
+        KARAR (sahip 2026-11-23): ChatGPT gibi — en solda "+" (ek), hemen yanında TEK mod düğmesi (seçili modun simgesi + adı:
+        ✎ Not / 🔍 Ara / ✦ Sor); Tab'a basınca (ya da düğmeye dokununca) sıradaki moda güzel, kısa bir animasyonla geçer (simge/yazı
+        kayarak değişir, 150–200 ms, reduced-motion'da anında). Üç yan yana mod düğmesi ve "Tab" kutucuğu kalkar. Yazı alanı
+        olabildiğince TEMİZ: placeholder kısa, yalnız seçili mod ("Not yaz…", "Ara…", "Sor…"), eski "- görev · ? sor · / ara" ipucu yok.
 - [ ] 135. **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
         yapay zekâsının kısa açıklaması) başlık olur; dosya adı alt satırda kalır. Kullanıcı başlığı değiştirdiyse dokunulmaz.
 
