@@ -46,7 +46,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 131-0 (+130d) ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131) — ÖRNEK HAZIR: design/folders.html (A Cep · B Yığın · C Albüm), sahibin seçimi bekleniyor (7d83168)
 - [x] 103b (+130a görsel arama penceresi, PLAN 130a) tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP) (db99aa5)
 - [x] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap) (db99aa5)
-- [~B] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
+- [x] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104) (91a534a)
 - [x] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil (f8faa08)
 - [ ] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri
 - [ ] 104f ÇOK ÖNEMLİ anlamsal arama: cihazda çok dilli gömme modeli (Worker, IndexedDB vektörler, ~25 MB bir kez) + "Yapay zekâ ile ara" + model ar/en/tr birlikte (fatura↔invoice↔فاتورة)
