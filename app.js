@@ -950,41 +950,82 @@ function renderHits() {
   show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-chips"></div><div class="f-grid"></div><div class="f-sem"></div><div class="h-foot"></div>');
   Find.draw(el, q);
 }
+// 104g2: the m-th smallest number of a typed array (quickselect, the array is reordered): ~2 passes instead of a full sort
+function kth(a, m) {
+  let lo = 0, hi = a.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1, x = a[lo], y = a[mid], z = a[hi], piv = x < y ? (y < z ? y : x < z ? z : x) : (x < z ? x : y < z ? z : y);
+    let i = lo, j = hi;
+    while (i <= j) { while (a[i] < piv) i++; while (a[j] > piv) j--; if (i <= j) { const t = a[i]; a[i] = a[j]; a[j] = t; i++; j--; } }
+    if (m <= j) hi = j; else if (m >= i) lo = i; else return a[m];
+  }
+  return a[m];
+}
 // 103b + 130a: the Ara window is a small visual grid: pictures big, notes as little document cards; type counts and the
 // most common tags on top (a tap narrows); it is updated in place (tiles are kept by id and slide to their new place), never rebuilt
 const Find = {
   top: [],
-  list() { // 104g: the same hits are asked for more than once per key (window, send button): sorted once
+  list() { // 104g: the same hits are asked for more than once per key (window, send button): scored once
     const k = this._k, f = S.filter;
     if (k && k[0] === S.hits && k[1] === f.tag && k[2] === S.items && k[3] === S.q && k[4] === S.hits?.size) return this._l;
-    this._k = [S.hits, f.tag, S.items, S.q, S.hits?.size]; return this._l = this.list0();
+    this._k = [S.hits, f.tag, S.items, S.q, S.hits?.size]; this._bk = null; return this._l = this.list0();
   },
-  list0() {
-    const f = S.filter;
+  list0() { // 104g2: { it: items, sc: their scores }, NOT sorted (8k hits on a phone: sorting them all was most of a key), no per-hit arrays
+    const f = S.filter, it = [], sc = [];
     const rel = !S.qx || !S.qx.sort || S.qx.sort === 'rel', ph = rel ? norm((S.nl ? S.nl.rest : S.qx ? S.qx.terms.join(' ') : S.q).trim()) : '';
-    return [...(S.hits || [])].map(([id, sc]) => [byId(id), sc]).filter(([i]) => i && !i.deleted && !HIDDEN.has(i.type) && (!f.tag || (i.tags || []).includes(f.tag)))
-      .map(x => (rel && (x[1] += rankBonus(x[0], ph)), x)).sort((a, b) => b[1] - a[1] || b[0].ts - a[0].ts).map(([i]) => i); // best first, then newest
+    byId(''); Opens.load(); const bm = _bm, nt = ntMap(), om = Opens.mm, idx = S.idx, long = ph.length > 1;
+    S.hits?.forEach((s, id) => {
+      const i = bm.get(id); if (!i || i.deleted || HIDDEN.has(i.type) || (f.tag && !(i.tags || []).includes(f.tag))) return;
+      if (rel) { // 104e: the whole words in the title > starred (in the score) > often opened here > newer
+        if (long) { let t = nt.get(id); if (t === undefined) nt.set(id, t = idx.get(id)?.t ?? norm(titleOf(i))); const at = t.indexOf(ph); if (at >= 0) s += at ? 2 : t.length === ph.length ? 4 : 3; }
+        const o = om.get(id); if (o) s += Math.min(1.5, Math.log2(1 + o) * .5);
+      }
+      it.push(i); sc.push(s);
+    });
+    return { it, sc };
+  },
+  // 104g2: the best k of the hits (by score, then newest) as indexes, in no order, without sorting all of them: the k-th best score
+  // is found by quickselect (kth), a tie at that line is cut by date the same way; only the few shown are then really sorted
+  pick(L, ids, k) {
+    const n = ids.length; if (n <= k) return ids;
+    const a = new Float64Array(n); for (let j = 0; j < n; j++) a[j] = L.sc[ids[j]];
+    const t = kth(a, n - k), above = [], ties = [];
+    for (const j of ids) { const v = L.sc[j]; if (v > t) above.push(j); else if (v === t) ties.push(j); }
+    const need = k - above.length; if (ties.length <= need) return above.concat(ties);
+    const ts = new Float64Array(ties.length); ties.forEach((j, x) => ts[x] = L.it[j].ts); const tt = kth(ts, ties.length - need);
+    for (const j of ties) if (L.it[j].ts > tt) above.push(j);
+    for (const j of ties) if (above.length < k && L.it[j].ts === tt) above.push(j);
+    return above;
+  },
+  best(L, ids, k) { return this.pick(L, ids, k).sort((a, b) => L.sc[b] - L.sc[a] || L.it[b].ts - L.it[a].ts).slice(0, k).map(j => L.it[j]); },
+  ranked(type) { // a kind's best 24 in order + its best 500 (for the tag chips), kept until the hits or the kind change
+    const L = this.list(), b = this._bk;
+    if (b && b[0] === L && b[1] === type) return b[2];
+    const ids = []; L.it.forEach((i, j) => { if (type === 'all' || groupOf(i) === type) ids.push(j); });
+    const pool = this.pick(L, ids, 500);
+    return (this._bk = [L, type, { n: ids.length, pool: pool.map(j => L.it[j]), top: this.best(L, pool, 24) }])[2];
   },
   set(el, sel, html) { const n = el.querySelector(sel); if (n._h !== html) { n.innerHTML = html; n._h = html; } return n; },
   draw(el, q) {
     const all = this.list(), f = S.filter, cnt = new Map();
-    for (const i of all) cnt.set(groupOf(i), (cnt.get(groupOf(i)) || 0) + 1);
-    const items = f.type === 'all' ? all : all.filter(i => groupOf(i) === f.type);
-    const tags = new Map(); for (const i of items.slice(0, 500)) for (const t of i.tags || []) tags.set(t, (tags.get(t) || 0) + 1);
-    if (f.tag && !tags.has(f.tag)) tags.set(f.tag, items.length);
+    for (const i of all.it) { const g = groupOf(i); cnt.set(g, (cnt.get(g) || 0) + 1); }
+    const { n: nItems, pool, top: items } = this.ranked(f.type);
+    const tags = new Map(); for (const i of pool) for (const t of i.tags || []) tags.set(t, (tags.get(t) || 0) + 1);
+    if (f.tag && !tags.has(f.tag)) tags.set(f.tag, nItems);
     const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, narrow() ? 4 : 6);
     const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
-    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${items.length} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
     this.set(el, '.f-hlp', S.qHelp ? qHelpHtml() : '');
-    const T = [['all', 'Hepsi', all.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
+    const T = [['all', 'Hepsi', all.it.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
     this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
       + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
     const g = el.querySelector('.f-grid'), want = items.slice(0, narrow() ? 12 : 24), old = new Map([...g.children].filter(n => n.dataset.open).map(n => [n.dataset.open, n]));
     this.top = want.map(i => i.id);
     if (S.hitSel >= want.length) S.hitSel = want.length - 1;
-    const anim = !reduced() && !el.classList.contains('closing'), before = new Map();
-    if (anim) for (const n of old.values()) before.set(n, n.getBoundingClientRect());
+    // 104g2: only tiles that change their place in the grid are measured (and slide); a key that keeps the order reads no layout
+    const anim = !reduced() && !el.classList.contains('closing'), before = new Map(), was = new Map([...g.children].map((n, k) => [n, k]));
+    if (anim) want.forEach((i, k) => { const n = old.get(i.id); if (n && was.get(n) !== k) before.set(n, n.getBoundingClientRect()); });
     const fresh = [];
     want.forEach((i, k) => {
       let t = old.get(i.id); if (t) old.delete(i.id); else { t = this.tile(i); fresh.push(t); }
@@ -1000,11 +1041,11 @@ const Find = {
       for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
       for (const n of fresh) n.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 170, easing: 'ease-out' });
     }
-    const sb = semBar(items.length, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
+    const sb = semBar(nItems, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
     fresh.forEach(hookThumbs); updateSend(); // the send button opens the first result: on only when there is one
     const phone = narrow();
     this.set(el, '.h-foot', `<span class="d-only">${S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç' : '<kbd>Enter</kbd> ilk sonucu aç · <kbd>↓</kbd> gez'} · <kbd>Tab</kbd> mod · <kbd>Esc</kbd> temizle</span>`
-      + (items.length ? `<button class="link-btn" data-lpin>${ic('pin', 'sm')}${phone ? 'Sabitle' : 'Aramayı sabitle'}</button><button class="link-btn" data-all>Sayfada gör</button>` : ''));
+      + (nItems ? `<button class="link-btn" data-lpin>${ic('pin', 'sm')}${phone ? 'Sabitle' : 'Aramayı sabitle'}</button><button class="link-btn" data-all>Sayfada gör</button>` : ''));
   },
   tile(i) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.open = i.id;
@@ -1016,22 +1057,17 @@ const Find = {
   },
   open(n = 0) { const id = this.top[n]; if (id) { Recent.add(S.q); openItem(id); } },
 };
-// 104e: order = the whole words in the title > starred (in the score) > often opened here > newer
 let _nt = new Map(), _ntOf;
-const normTitle = i => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } let t = _nt.get(i.id); if (t === undefined) _nt.set(i.id, t = S.idx.get(i.id)?.t ?? norm(titleOf(i))); return t; };
-function rankBonus(i, ph) {
-  let b = 0;
-  if (ph.length > 1) { const t = normTitle(i); b = t === ph ? 4 : t.startsWith(ph) ? 3 : t.includes(ph) ? 2 : 0; }
-  const n = Opens.n(i.id); return n ? b + Math.min(1.5, Math.log2(1 + n) * .5) : b;
-}
+const ntMap = () => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } return _nt; }; // folded titles, filled as asked
 // how often an item was opened on this device (only for the order; never synced)
 const Opens = {
   m: null,
-  load() { if (!this.m) try { this.m = JSON.parse(localStorage.getItem('nts-opens') || '{}'); } catch { this.m = {}; } return this.m; },
-  n(id) { return this.load()[id] || 0; },
+  load() { if (!this.m) { try { this.m = JSON.parse(localStorage.getItem('nts-opens') || '{}'); } catch { this.m = {}; } this.mm = new Map(Object.entries(this.m)); } return this.m; },
+  n(id) { this.load(); return this.mm.get(id) || 0; }, // 104g2: a Map (a missing key on a big plain object was slow, once per hit)
   bump(id) {
     const m = this.load(); m[id] = (m[id] || 0) + 1; const ks = Object.keys(m);
     if (ks.length > 3000) for (const k of ks.sort((a, b) => m[a] - m[b]).slice(0, 1000)) delete m[k];
+    this.mm = new Map(Object.entries(m));
     try { localStorage.setItem('nts-opens', JSON.stringify(m)); } catch { }
   },
 };

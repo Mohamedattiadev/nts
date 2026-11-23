@@ -444,6 +444,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             < 50), yazı durunca tek çizim 70–160 ms; telefon (390×844, 4× yavaş CPU) medyan 29–107 ms, 8/17 sorgu < 50. Kayıtlı arama sözdizimini
             aynen saklar ve geri açar ("etiket:fatura -proje son:400g" → 178/178). Kalan (104g2): çok geniş eşleşmede ("uzun bir" 8,5k sonuç)
             telefonda ~100 ms — Find.list'te en iyi 24'ü kısmi seçimle bulmak, sonuç penceresi FLIP ölçümünü azaltmak.
+        [x] 104g2 (2026-11-23, A hattı): Find.list artık 8k sonucun hepsini sıralamıyor: sonuçlar {kayıt, puan} dizisi (kayıt başına dizi/
+            sıralama yok), en iyi 500 (etiket çipleri için) quickselect (kth) ile sırasız seçilir, eşitlik tarihle kesilir, yalnız gösterilen 24
+            gerçekten sıralanır (300 rastgele denemede tam sıralamayla birebir aynı); rankBonus döngüye gömüldü (tek indexOf, Opens Map).
+            Sonuç penceresi FLIP'i yalnız yeri değişen kartları ölçer (sıra aynıysa hiç layout okumaz). Ölçüm (telefon 4× yavaş, 10k):
+            Find.list 38–42 → 17–20 ms; keybench telefon 11/17 sorgu < 50 (önce 8/17), "mesaj" (10k sonuç) 97 → 42 ms, masaüstü 17/17 < 50.
+            Kalan: "uzun bir" telefonda medyan ~86 ms (makine yüklüyken) — artık çoğu runSearch'teki puanlama (scoreItem × 8,5k), bu maddenin dışı.
+            keybench.mjs: QS='["…"]' ile sorgu listesi verilebilir.
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);
