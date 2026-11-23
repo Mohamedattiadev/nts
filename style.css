@@ -1393,3 +1393,17 @@ body.selecting.gallery-view .dock { opacity: 0; pointer-events: none; visibility
   .sel-n { min-width: 0; padding: 0 4px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .sel-bar { animation: none; } }
+/* 137: a filter picked under ⋯ stands on the rail as its own button; × takes it off */
+.rail button.r-act { background: var(--accent); color: var(--accent-text); }
+.rail button.r-act:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); color: var(--accent-text); }
+.rail .r-act .cdot { width: 16px; height: 16px; box-shadow: 0 0 0 2px var(--accent-text); }
+.rail .r-act .r-x { position: absolute; top: -4px; right: -4px; width: 15px; height: 15px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); color: var(--text-2); border: 1px solid var(--line-2); }
+.rail .r-act .r-x .i { width: 9px; height: 9px; stroke-width: 3; }
+.rail .r-act:hover .r-x { background: var(--danger); color: #fff; border-color: transparent; }
+.rail .r-act.new { animation: rActIn .22s var(--ease) both; }
+@keyframes rActIn { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+.rail-tab button { position: relative; }
+.rail-tab .rt-dot { position: absolute; top: 5px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+#filterBtn.on { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+@media (prefers-reduced-motion: reduce) { .rail .r-act.new { animation: none; } }

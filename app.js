@@ -653,20 +653,22 @@ function renderChrome() {
   const nUnseen = live.filter(unseen).length; if (nUnseen || f.list === 'unseen') lists.push(['unseen', 'clock', listName('unseen'), nUnseen]);
   const listOn = k => S.view !== 'todo' && f.list === k;
   $('#viewSwitch').innerHTML = VIEWS.map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}" title="${l}">${ic(icn, 'sm')}<span>${l}</span></button>`).join('');
-  $('#rail [data-tags]')?.classList.toggle('on', !!(f.tag || f.color));
   $('#filterLbl').textContent = S.view === 'todo' ? 'Yapılacaklar' : f.src ? srcName(f.src) : f.list ? listName(f.list) : f.tag ? '#' + f.tag : f.star ? 'Yıldızlı' : types.find(t => t[0] === f.type)[2];
   const stars = live.filter(i => i.starred).length;
   // the rail stays short: the 5 kinds, starred, to-dos; lists, vault, colours and topics live under "Daha fazla"
-  const moreOn = !!(f.tag || f.color || f.src || (f.list && S.view !== 'todo'));
   const board = S.view === 'board' && alive().length;
   $('#rail').innerHTML = `<button class="r-fold" data-fold data-tip="Kenar çubuğunu gizle ( [ )" aria-label="Kenar çubuğunu gizle">${ic('chev', 'sm')}</button>`
     + types.map(([t, icn, l, n]) => `<button class="${typeOn(t) ? 'on' : ''}" data-type="${t}" data-tip="${l} · ${n}" aria-label="${l}">${ic(icn)}</button>`).join('')
     + `<hr><button class="${f.star && S.view !== 'todo' ? 'on' : ''}" data-star data-tip="Yıldızlı · ${stars}" aria-label="Yıldızlı">${ic('star')}</button>`
     + `<button class="${S.view === 'todo' ? 'on' : ''}" data-todo data-tip="Yapılacaklar · ${todos}" aria-label="Yapılacaklar">${ic('todo')}${todos ? `<span class="cnt">${todos}</span>` : ''}</button>`
     + Saved.list().slice(0, 4).map(v => `<button class="${Saved.same(v) ? 'on' : ''}" data-saved="${v.id}" data-tip="${esc(v.name)}" aria-label="Kayıtlı arama: ${esc(v.name)}"><span class="sv-ab">${esc([...v.name.replace(/^[#\s]+/, '')].slice(0, 2).join(''))}</span></button>`).join('')
-    + `<button class="${moreOn ? 'on' : ''}" data-tags data-tip="${f.list && S.view !== 'todo' ? esc(listName(f.list)) : f.tag ? '#' + esc(f.tag) : 'Daha fazla: listeler, konular, şifrelerim'}" aria-label="Daha fazla">${ic('dots')}</button>`
+    + `<button data-tags data-tip="Daha fazla: listeler, kaynak, konular, şifrelerim" aria-label="Daha fazla">${ic('dots')}</button>`
     + (board ? `<button class="pal-tab${S.palOpen ? ' on' : ''}" data-paltab data-tip="${S.palOpen ? 'Çizim araçlarını kapat' : 'Çizim araçları'}" aria-label="Çizim araçları" aria-expanded="${!!S.palOpen}">${ic('pen', 'sm')}</button>` : '');
-  $('#railTab').innerHTML = `<button data-fold data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}</button>`; // 88b: only >, where < was; the palette stays
+  // 137: a filter picked under ⋯ shows on the rail at once, as its own button; a tap takes it off
+  const act = activeFilters(), was = renderChrome.act || new Set(); renderChrome.act = new Set(act.map(a => a.k + a.v));
+  if (act.length) $('#rail [data-tags]').insertAdjacentHTML('afterend', act.map(a => `<button class="r-act${was.has(a.k + a.v) ? '' : ' new'}" data-unf="${a.k}" data-tip="${esc(a.l)} · kaldır" aria-label="${esc(a.l)} süzgecini kaldır">${a.k === 'color' ? `<span class="cdot c-${a.v}"></span>` : ic(a.i, 'sm')}<span class="r-x">${ic('x', 'sm')}</span></button>`).join(''));
+  $('#railTab').innerHTML = `<button data-fold data-tip="${act.length ? 'Süzgeç açık: ' + esc(act.map(a => a.l).join(', ')) + ' · ' : ''}Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}${act.length ? '<span class="rt-dot"></span>' : ''}</button>`; // 88b: only >, where < was; the palette stays
+  $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
   const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && !i.seenAt && (i.type !== 'link' || i.read)).length;
   $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
@@ -691,6 +693,15 @@ function renderChrome() {
     + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
     || '<div class="hint" style="padding:0 10px 8px">' + aiName() + ' düzenledikçe konular burada çıkar.</div>';
   if (seen.size) $('#sideTags').insertAdjacentHTML('beforeend', `<div class="side-row vt-count" title="${aiName()} resimlere bakıp bulduğu etiketler; aramada bunlar da bulunur"><span class="hash">${ic('spark', 'sm')}</span><span class="lbl">Resimlerde bulunan etiketler</span><span class="n">${seen.size}</span></div>`);
+}
+// 137: filters that live under ⋯ (not the rail's own buttons): source, project / list, topic, colour
+function activeFilters() {
+  const f = S.filter, out = []; if (S.view === 'todo') return out;
+  if (f.src) out.push({ k: 'src', v: f.src, i: f.src.startsWith('wa:') ? 'chat' : { pc: 'cpu', phone: 'share', bookmarks: 'book' }[f.src] || 'inbox', l: srcName(f.src) });
+  if (f.list) out.push({ k: 'list', v: f.list, i: f.list.startsWith('p:') ? 'folder' : (LISTS.find(l => l[0] === f.list) || [0, f.list === 'unseen' ? 'clock' : 'flag'])[1], l: listName(f.list) });
+  if (f.tag) out.push({ k: 'tag', v: f.tag, i: 'hash', l: '#' + f.tag });
+  if (f.color) out.push({ k: 'color', v: f.color, l: (COLORS.find(c => c[0] === f.color) || [0, f.color])[1] });
+  return out;
 }
 function emptyHtml(icn, h, p, actions = '') {
   return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
@@ -4514,6 +4525,7 @@ function wire() {
     else if ('alltags' in b.dataset) { S.allTags = !S.allTags; return render(); }
     else if (b.dataset.color) f.color = f.color === b.dataset.color ? null : b.dataset.color;
     else if (b.dataset.src) { f.src = f.src === b.dataset.src ? null : b.dataset.src; leaveTodo(); }
+    else if (b.dataset.unf) f[b.dataset.unf] = null; // 137: the rail's filter button takes it off
     else if (b.dataset.saved) return Saved.apply(b.dataset.saved);
     else if (b.dataset.unsave) return Saved.remove(b.dataset.unsave);
     else if ('sortprio' in b.dataset) { S.sortPrio = !S.sortPrio; try { localStorage.setItem('hn-sortprio', S.sortPrio ? '1' : ''); } catch { } }
