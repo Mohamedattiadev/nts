@@ -446,7 +446,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (h) her şey anında + çevrimdışı; sadece doğrudan cevap ve "Yapay zekâ ile ara" köprü ister.
         Sahibin ölçütü: teknolojiden anlamayan biri ilk denemede bulmalı → 3 persona ile 15 gerçekçi arama cümlesi (tr/en/ar) testi.
 
-- [ ] 106-0. **ÖNCE ÖRNEK SAYFASI, sonra yapım** (sahip: "önce bana birkaç örnek göster, bu olur bu hayır"): `design/rich-ui.html`
+- [?] 106-0. (2026-11-23, B hattı: ÖRNEK HAZIR design/rich-ui.html — 35 canlı örnek: a link A/B/C, medya A video/B müzik/C harita, PDF A/B, kod A/B, WhatsApp A/B, not mini belge A/B; b düzenleyici "/" menüsü A liste/B ızgara/C klavye üstü şerit (Markdown kısayolları + altta saklanan Markdown); c kapak A/B, cam A/B, boş durum A/B; d geri sayım A/B/C, ilerleme A/B, onay listesi A/B, CSV grafik A/B; e yapay zekâ cevabı A kartlar/B tablo+zaman çizelgesi/C akış (bilinmeyen parça → düz metin). Her örnekte ✓/✗ + not, "Seçimlerimi indir" → rich-ui-secimler.json, "Kopyala". Telefon 390 + masaüstü, açık/koyu, taşma 0, konsol hatası 0. Sahibin seçimi bekleniyor.) **ÖNCE ÖRNEK SAYFASI, sonra yapım** (sahip: "önce bana birkaç örnek göster, bu olur bu hayır"): `design/rich-ui.html`
         (tek dosya, uygulamanın renkleri/fontu, açık+koyu, telefon genişliğinde de) — 106a–e'nin her biri için 2–3 farklı canlı örnek
         (gerçekçi Türkçe/Arapça/İngilizce örnek verilerle: link kartı varyantları, gömülü video, PDF kapak, WhatsApp balonları, "/" menülü düzenleyici,
         kapaklı pano kartı, cam efekti, geri sayım/ilerleme parçaları, zengin yapay zekâ cevabı). Her örneğin altında ✓ Olur / ✗ Olmaz + not kutusu;

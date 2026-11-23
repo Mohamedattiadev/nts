@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nts · Zengin arayüz örnekleri (106-0)</title>
+<style>
+/* Same colour tokens as style.css / design/folders.html, so a chosen example drops straight into the app */
+:root, [data-theme="dark"] {
+  --bg: #0c0c0e; --surface: #151519; --surface-2: #1c1c21; --surface-3: #24242a; --line: #24242a; --line-2: #31313a;
+  --text: #ededf2; --text-2: #a3a3ad; --muted: #8a8a95;
+  --accent: #ff9a4d; --accent-soft: rgb(255 154 77 / .14); --on-accent: #1a0d03;
+  --ok: #4ade80; --bad: #f87171;
+  --sh-1: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .35);
+  --glass: rgb(28 28 33 / .55); --glass-line: rgb(255 255 255 / .08);
+  --wa-in: #202c33; --wa-out: #005c4b; --wa-bg: #0b141a; --wa-text: #e9edef;
+  --code-bg: #111116; --k: #ff9a4d; --s: #86efac; --c: #7d7d88; --n: #93c5fd; --f: #f0abfc;
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #fafaf9; --surface: #ffffff; --surface-2: #f4f4f1; --surface-3: #ebebe7; --line: #e8e8e4; --line-2: #d8d8d2;
+  --text: #18181b; --text-2: #55555e; --muted: #6b6b74;
+  --accent: #c2410c; --accent-soft: rgb(194 65 12 / .09); --on-accent: #fff;
+  --ok: #15803d; --bad: #b91c1c;
+  --sh-1: 0 1px 2px rgb(0 0 0 / .05), 0 6px 18px rgb(0 0 0 / .06);
+  --glass: rgb(255 255 255 / .6); --glass-line: rgb(0 0 0 / .06);
+  --wa-in: #ffffff; --wa-out: #d9fdd3; --wa-bg: #efeae2; --wa-text: #111b21;
+  --code-bg: #f6f6f3; --k: #b4410c; --s: #15803d; --c: #8a8a92; --n: #1d4ed8; --f: #a21caf;
+  color-scheme: only light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 14.5px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 90px max(20px, env(safe-area-inset-left)); }
+.wrap { max-width: 1100px; margin: 0 auto; }
+header.top { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; flex-wrap: wrap; }
+header.top h1 { font-size: 19px; margin: 0; font-weight: 650; letter-spacing: -.01em; flex: 1; min-width: 200px; }
+.btn { min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--text); font: inherit; font-weight: 550; cursor: pointer; }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+p.lead { color: var(--text-2); margin: 0 0 22px; max-width: 75ch; }
+nav.toc { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 30px; }
+nav.toc a { color: var(--text); text-decoration: none; padding: 10px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-weight: 550; font-size: 13.5px; }
+section.grp { margin: 0 0 54px; scroll-margin-top: 16px; }
+section.grp > h2 { font-size: 17px; margin: 0 0 2px; font-weight: 680; }
+section.grp > p { color: var(--text-2); margin: 0 0 18px; font-size: 13.5px; max-width: 80ch; }
+h3.sub { font-size: 14px; margin: 26px 0 10px; font-weight: 650; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.row { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+.ex { background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; padding: 14px; min-width: 0; }
+.ex > h4 { margin: 0 0 12px; font-size: 13.5px; font-weight: 650; display: flex; gap: 8px; align-items: baseline; }
+.ex > h4 .l { font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 7px; }
+.ex > h4 small { font-weight: 450; color: var(--muted); }
+.demo { min-width: 0; }
+.pick { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.pick .btn { flex: 0 0 auto; }
+.pick .btn[aria-pressed="true"].yes { background: #15803d; border-color: #15803d; color: #fff; }
+.pick .btn[aria-pressed="true"].no { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.pick textarea { flex: 1 1 100%; min-height: 44px; resize: vertical; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--text); font: inherit; font-size: 13.5px; padding: 10px 12px; }
+.bar-send { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;
+  padding: 10px max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: var(--glass); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-top: 1px solid var(--glass-line); z-index: 5; }
+.bar-send span { color: var(--text-2); font-size: 13px; }
+@media (max-width: 600px) {
+  body { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- shared card + fake "photos" (gradients, no outside images) ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--sh-1); position: relative; }
+.card .bd { padding: 11px 13px 12px; }
+.card .t { font-weight: 650; font-size: 14px; line-height: 1.3; }
+.card .s { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.card .x { color: var(--text-2); font-size: 13px; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.site { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.site i { width: 16px; height: 16px; border-radius: 4px; display: inline-grid; place-items: center; font: 700 10px/1 system-ui; color: #fff; font-style: normal; }
+.p1 { background: radial-gradient(circle at 75% 28%, #fff4cf 0 8%, transparent 9%), linear-gradient(180deg, #8ab9de, #d4e7f2 52%, #4a7a96 53%, #2a4d63); }
+.p2 { background: linear-gradient(180deg, #f4c58e 0 36%, transparent 36%), radial-gradient(120% 70% at 30% 100%, #6b8f5a 0 45%, transparent 46%), linear-gradient(#e9a86a, #c97f4e); }
+.p3 { background: linear-gradient(160deg, #ff7a59, #d6336c 60%, #7b2ff7); }
+.p4 { background: radial-gradient(80% 60% at 50% 110%, #2e6b4f 0 60%, transparent 61%), linear-gradient(#bfe3d0, #e8f4ec); }
+.p5 { background: linear-gradient(135deg, #1f2937, #0f172a); }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-2); }
+
+/* ---------- 106a link cards ---------- */
+.lkA .img { height: 150px; }
+.lkA .bar { height: 3px; background: var(--sc); }
+.lkB { display: grid; grid-template-columns: 1fr 92px; }
+.lkB .img { min-height: 100%; }
+.lkC { background: color-mix(in srgb, var(--sc) 10%, var(--surface)); border-color: color-mix(in srgb, var(--sc) 28%, var(--line)); }
+.lkC .bd { padding: 14px; }
+.lkC .big { font: 700 22px/1 system-ui; width: 38px; height: 38px; border-radius: 10px; background: var(--sc); color: #fff; display: grid; place-items: center; margin-bottom: 10px; }
+/* media */
+.vid { position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; cursor: pointer; border: 0; width: 100%; padding: 0; }
+.vid .play { width: 54px; height: 54px; border-radius: 50%; background: rgb(0 0 0 / .55); display: grid; place-items: center; backdrop-filter: blur(6px); }
+.vid .play::before { content: ""; border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; margin-left: 4px; }
+.vid .dur { position: absolute; right: 8px; bottom: 8px; background: rgb(0 0 0 / .7); color: #fff; font-size: 11.5px; padding: 1px 6px; border-radius: 5px; }
+.vid.on .play { display: none; }
+.vid .live { display: none; position: absolute; left: 10px; right: 10px; bottom: 10px; height: 4px; border-radius: 2px; background: rgb(255 255 255 / .35); overflow: hidden; }
+.vid.on .live { display: block; }
+.vid .live b { display: block; height: 100%; width: 0; background: #fff; animation: grow 30s linear forwards; }
+.vid.on .dur { bottom: 22px; }
+@keyframes grow { to { width: 100%; } }
+.mus { display: flex; align-items: center; gap: 12px; padding: 10px; }
+.mus .cov { width: 56px; height: 56px; border-radius: 9px; flex: none; }
+.mus .pb { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--text); color: var(--bg); display: grid; place-items: center; cursor: pointer; flex: none; margin-left: auto; font-size: 16px; }
+.mus .tr { height: 3px; border-radius: 2px; background: var(--surface-3); margin-top: 8px; overflow: hidden; }
+.mus .tr b { display: block; height: 100%; width: 0; background: var(--accent); }
+.mus.on .tr b { animation: grow 20s linear forwards; }
+.map { height: 130px; position: relative; background:
+  linear-gradient(90deg, transparent 47%, #fff8 47% 49%, transparent 49%), linear-gradient(20deg, transparent 60%, #fff6 60% 62%, transparent 62%),
+  linear-gradient(-35deg, transparent 30%, #fff6 30% 31.5%, transparent 31.5%), radial-gradient(60% 50% at 20% 30%, #b9dbb1 0 60%, transparent 61%), #e6e2d8; }
+[data-theme="dark"] .map { filter: brightness(.55) saturate(.8); }
+.map .pin { position: absolute; left: 58%; top: 38%; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #dc2626; box-shadow: 0 2px 6px #0006; }
+/* pdf */
+.pdfA { display: grid; grid-template-columns: 96px 1fr; gap: 0; }
+.pdfA .pg { margin: 10px 0 10px 10px; aspect-ratio: 1 / 1.414; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px #0003; padding: 8px 7px; position: relative; }
+.pdfA .pg b { display: block; font: 700 7px/1.2 system-ui; color: #111; margin-bottom: 5px; }
+.pdfA .pg i { display: block; height: 3px; background: #d4d4d0; border-radius: 2px; margin-top: 3px; }
+.pdfA .pg i:nth-child(odd) { width: 80%; } .pdfA .pg .fig { height: 26px; margin-top: 5px; border-radius: 2px; background: linear-gradient(90deg, #93c5fd 0 30%, #c4b5fd 30% 55%, #fca5a5 55%); }
+.pdfA .n { position: absolute; right: -6px; bottom: -6px; background: #b91c1c; color: #fff; font: 700 10px/1 system-ui; padding: 3px 5px; border-radius: 5px; }
+.pdfB { padding: 12px 13px; display: flex; gap: 12px; }
+.pdfB .ic { width: 40px; height: 50px; flex: none; position: relative; background: #fee2e2; border-radius: 4px 12px 4px 4px; color: #b91c1c; font: 800 10px/50px system-ui; text-align: center; }
+[data-theme="dark"] .pdfB .ic { background: #3f1d1d; color: #fca5a5; }
+.pdfB .q { color: var(--text-2); font-size: 12.5px; margin-top: 6px; border-left: 2px solid var(--line-2); padding-left: 8px; }
+/* code */
+pre.code { margin: 0; padding: 12px 13px; font: 12.5px/1.55 ui-monospace, "JetBrains Mono", Menlo, monospace; background: var(--code-bg); overflow-x: auto; white-space: pre; }
+.code .k { color: var(--k); } .code .s { color: var(--s); } .code .c { color: var(--c); font-style: italic; } .code .n { color: var(--n); } .code .f { color: var(--f); }
+.cdA .hd { display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.cdA .hd .chip { margin-left: auto; }
+.cdB { background: #0d0d10; border-color: #23232a; }
+.cdB .hd { display: flex; gap: 6px; padding: 10px 12px; }
+.cdB .hd i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; } .cdB .hd i:nth-child(2) { background: #febc2e; } .cdB .hd i:nth-child(3) { background: #28c840; }
+.cdB .hd span { margin-left: 8px; color: #8a8a95; font-size: 12px; }
+.cdB pre.code { background: transparent; color: #e5e5ea; --k: #ff9a4d; --s: #86efac; --c: #6b6b76; --n: #93c5fd; --f: #f0abfc; }
+/* whatsapp */
+.waA { background: var(--wa-bg); padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+.waA .m { max-width: 82%; padding: 6px 9px 4px; border-radius: 9px; background: var(--wa-in); color: var(--wa-text); font-size: 13.5px; box-shadow: 0 1px 1px #0000001a; }
+.waA .m.o { align-self: flex-end; background: var(--wa-out); }
+.waA .m small { display: block; text-align: end; font-size: 10.5px; opacity: .6; }
+.waA .m .who { display: block; font-size: 12px; font-weight: 650; color: #c2410c; }
+[data-theme="dark"] .waA .m .who { color: #ff9a4d; }
+.waB .ln { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.waB .ln:first-child { border-top: 0; }
+.waB .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 system-ui; color: #fff; }
+.waB .ln b { font-size: 12.5px; } .waB .ln small { color: var(--muted); font-size: 11.5px; margin-inline-start: 6px; }
+/* note mini doc (130e) */
+.nd h5 { margin: 0 0 6px; font-size: 14.5px; }
+.nd label { display: flex; gap: 9px; align-items: center; min-height: 32px; font-size: 13.5px; cursor: pointer; }
+.nd input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.nd label:has(input:checked) span { text-decoration: line-through; color: var(--muted); }
+.nd .ph { height: 84px; border-radius: 9px; margin: 8px 0 4px; }
+.nd .pr { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; margin: 2px 0 8px; } .nd .pr b { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+
+/* ---------- 106b editor ---------- */
+.ed { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 18px; position: relative; }
+.ed .area { outline: none; min-height: 190px; font-size: 14.5px; }
+.ed .area > * { margin: 0 0 6px; position: relative; }
+.ed h1 { font-size: 20px; } .ed h2 { font-size: 16.5px; }
+.ed blockquote { border-left: 3px solid var(--accent); padding-left: 10px; color: var(--text-2); }
+.ed pre { background: var(--code-bg); padding: 8px 10px; border-radius: 8px; font: 12.5px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+.ed .todo { display: flex; gap: 8px; align-items: baseline; } .ed .todo input { accent-color: var(--accent); width: 16px; height: 16px; }
+.ed hr { border: 0; border-top: 1px solid var(--line-2); margin: 12px 0; }
+.ed table { border-collapse: collapse; width: 100%; font-size: 13px; } .ed td, .ed th { border: 1px solid var(--line-2); padding: 5px 8px; text-align: start; } .ed th { background: var(--surface-2); }
+.ed [data-ph]:empty::before { content: attr(data-ph); color: var(--muted); pointer-events: none; }
+.slash { position: absolute; z-index: 3; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--sh-1); padding: 6px; display: none; }
+.slash.on { display: block; }
+.slash button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 8px; min-height: 40px; padding: 4px 8px; width: 100%; font-size: 13.5px; }
+.slash button[aria-selected="true"], .slash button:hover { background: var(--accent-soft); }
+.slash .gi { width: 28px; height: 28px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
+.slash small { display: block; color: var(--muted); font-size: 11.5px; }
+.slash.list { width: 250px; max-height: 260px; overflow-y: auto; }
+.slash.grid { width: 236px; } .slash.grid .in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.slash.grid button { flex-direction: column; gap: 3px; font-size: 11px; padding: 6px 2px; text-align: center; min-height: 54px; } .slash.grid small { display: none; }
+.slash.bar { left: 0 !important; right: 0; top: auto !important; bottom: -1px; border-radius: 0 0 14px 14px; padding: 6px; overflow-x: auto; }
+.slash.bar .in { display: flex; gap: 4px; } .slash.bar button { width: auto; flex: none; padding: 4px 10px; border: 1px solid var(--line); } .slash.bar small { display: none; }
+.md { margin-top: 10px; font: 11.5px/1.45 ui-monospace, monospace; color: var(--muted); background: var(--surface); border: 1px dashed var(--line-2); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; max-height: 120px; overflow: auto; }
+
+/* ---------- 106c livelier ---------- */
+.bcA .cov { height: 110px; } .bcA .bd { padding-top: 10px; }
+.bcB .cov { height: 34px; } .bcB .bd .em { width: 40px; height: 40px; margin-top: -30px; border-radius: 10px; border: 3px solid var(--surface); display: grid; place-items: center; font-size: 20px; background: var(--surface-2); }
+.glassbox { position: relative; height: 210px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.glassbox .under { position: absolute; inset: 0; padding: 60px 12px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.glassbox .under div { border-radius: 10px; }
+.glassbox .tb { position: absolute; left: 8px; right: 8px; top: 8px; height: 46px; border-radius: 13px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 13px; color: var(--text-2); }
+.glassbox .tb b { color: var(--text); }
+.glassbox .tb.g { background: var(--glass); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); border: 1px solid var(--glass-line); }
+.glassbox .tb.s { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+.empty { text-align: center; padding: 22px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.empty svg { width: 120px; height: 90px; color: var(--muted); }
+.empty .t { font-weight: 650; margin-top: 8px; } .empty .s { color: var(--muted); font-size: 13px; margin: 2px 0 12px; }
+.empty .big { font-size: 40px; line-height: 1; }
+
+/* ---------- 106d widgets ---------- */
+.cdn { display: flex; align-items: center; gap: 14px; padding: 14px; }
+.cdn .num { font: 800 38px/1 system-ui; letter-spacing: -.03em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.cdn .num small { font-size: 14px; font-weight: 650; color: var(--text-2); margin-left: 3px; letter-spacing: 0; }
+.ring { width: 64px; height: 64px; flex: none; } .ring circle { fill: none; stroke-width: 7; } .ring .bgc { stroke: var(--surface-3); } .ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .3s; }
+.ring text { font: 700 15px system-ui; fill: var(--text); }
+.cdC { display: flex; gap: 6px; padding: 12px; } .cdC div { flex: 1; text-align: center; background: var(--surface-2); border-radius: 10px; padding: 8px 2px; }
+.cdC b { display: block; font: 750 22px/1.1 system-ui; font-variant-numeric: tabular-nums; } .cdC small { color: var(--muted); font-size: 11px; }
+.pgA .tr { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; margin-top: 8px; } .pgA .tr b { display: block; height: 100%; border-radius: 4px; background: var(--accent); transition: width .25s; }
+.pgB .steps { display: flex; gap: 4px; margin-top: 10px; } .pgB .steps i { flex: 1; height: 8px; border-radius: 3px; background: var(--surface-3); transition: background .2s; } .pgB .steps i.on { background: var(--accent); }
+.step-btns { display: flex; gap: 6px; margin-top: 10px; } .step-btns .btn { min-height: 40px; padding: 0 12px; font-size: 13px; }
+.clA .hd, .clB .hd { display: flex; align-items: center; gap: 8px; }
+.clA .pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 650; padding: 3px 9px 3px 4px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.clA .pill .ring { width: 20px; height: 20px; } .clA .pill .ring circle { stroke-width: 4; }
+.clB .tr { height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; margin: 6px 0 4px; } .clB .tr b { display: block; height: 100%; background: var(--ok); transition: width .2s; }
+.clB .cnt { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .ax { stroke: var(--line-2); } .chart text { fill: var(--muted); font: 10.5px system-ui; }
+.chart .b { fill: var(--accent); opacity: .85; } .chart .b:hover { opacity: 1; }
+.chart .ln { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; } .chart .ar { fill: var(--accent-soft); }
+.csv { font: 11px/1.4 ui-monospace, monospace; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; margin-top: 8px; white-space: pre; overflow-x: auto; }
+
+/* ---------- 106e AI answers ---------- */
+.ai { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.ai .q { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; } .ai .q b { color: var(--text-2); }
+.ai .ans { font-size: 14.5px; line-height: 1.5; }
+.ai .ans mark { background: var(--accent-soft); color: inherit; border-radius: 4px; padding: 0 3px; }
+.ai .recs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 4px; scroll-snap-type: x mandatory; }
+.ai .rec { flex: 0 0 150px; scroll-snap-align: start; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; background: var(--surface-2); font-size: 12.5px; }
+.ai .rec .im { height: 60px; } .ai .rec div { padding: 6px 8px; } .ai .rec small { display: block; color: var(--muted); font-size: 11px; }
+.ai .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; } .ai .acts .btn { min-height: 40px; font-size: 13px; padding: 0 12px; }
+.ai table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; } .ai th, .ai td { text-align: start; padding: 6px 4px; border-bottom: 1px solid var(--line); } .ai th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.ai td.num { text-align: end; font-variant-numeric: tabular-nums; }
+.tl { list-style: none; margin: 10px 0 0; padding: 0 0 0 14px; border-left: 2px solid var(--line-2); }
+.tl li { position: relative; padding: 0 0 10px 6px; font-size: 13px; } .tl li::before { content: ""; position: absolute; left: -21px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.tl li b { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+.ai .part { animation: rise .22s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+.ai .typing::after { content: "▍"; color: var(--accent); animation: blink 1s steps(1) infinite; } @keyframes blink { 50% { opacity: 0; } }
+.ai .unk { font-size: 12.5px; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 8px; padding: 6px 8px; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Nts · Zengin arayüz örnekleri</h1>
+    <button class="btn" id="theme" aria-label="Açık / koyu tema">◐ Tema</button>
+  </header>
+  <p class="lead">Madde 106-0. Her parçanın 2–3 farklı hâli var, hepsi canlı: dokun, oynat, işaretle, yaz. Her örneğin altında
+    <b>✓ Olur</b> / <b>✗ Olmaz</b> ve isteğe bağlı not var; seçimler bu cihazda saklanır. Bitince alttaki <b>Seçimlerimi indir</b>
+    düğmesi <code>rich-ui-secimler.json</code> dosyasını verir; onu <code>design/</code> klasörüne koy (ya da bana yapıştır). Sadece ✓ alanlar yapılır.</p>
+  <nav class="toc" aria-label="Bölümler">
+    <a href="#a">a · Kart önizlemeleri</a><a href="#b">b · Not düzenleyici</a><a href="#c">c · Canlı görünüm</a><a href="#d">d · Etkileşimli parçalar</a><a href="#e">e · Yapay zekâ cevapları</a>
+  </nav>
+
+  <!-- ================= 106a ================= -->
+  <section class="grp" id="a">
+    <h2>106a · Zengin kart önizlemeleri</h2>
+    <p>Liste, galeri ve panodaki kartlar içeriğe göre şekil alır. Hepsi önce küçük resim gösterir; oynatıcı ancak dokununca yüklenir (hız).</p>
+
+    <h3 class="sub">Link kartı</h3>
+    <div class="row">
+      <div class="ex" data-id="a-link-A"><h4><span class="l">A</span>Büyük görsel <small>+ alt çizgide site rengi</small></h4><div class="demo">
+        <div class="card lkA" style="--sc:#e11d48"><div class="img p1"></div><div class="bar"></div><div class="bd">
+          <span class="site"><i style="background:#e11d48">A</i>atlasobscura.com</span>
+          <div class="t">Kapadokya'da bilinmeyen 7 yeraltı şehri</div><div class="x">Derinkuyu'dan çok daha eski, turistlerin hiç gitmediği yerler ve nasıl gidilir.</div></div></div>
+      </div></div>
+      <div class="ex" data-id="a-link-B"><h4><span class="l">B</span>Yan küçük görsel <small>sık liste için</small></h4><div class="demo">
+        <div class="card lkB"><div class="bd"><span class="site"><i style="background:#0a66c2">in</i>linkedin.com</span>
+          <div class="t">Locus: Mac için görsel defter</div><div class="s">Pavel Macek · 3 dk okuma</div></div><div class="img p3"></div></div>
+        <div style="height:10px"></div>
+        <div class="card lkB"><div class="bd"><span class="site"><i style="background:#16a34a">G</i>github.com</span>
+          <div class="t">thesysdev/openui</div><div class="s">MIT · 4.1k ★</div></div><div class="img p5"></div></div>
+      </div></div>
+      <div class="ex" data-id="a-link-C"><h4><span class="l">C</span>Görsel yok, site rengi zemin <small>görselsiz linkler için</small></h4><div class="demo">
+        <div class="card lkC" style="--sc:#7c3aed"><div class="bd"><div class="big">N</div>
+          <div class="t">Notion vs Obsidian: 2026'da hangisi?</div><div class="s">notion.so · 14 Kas</div></div></div>
+      </div></div>
+    </div>
+
+    <h3 class="sub">Gömülü video / müzik / harita</h3>
+    <div class="row">
+      <div class="ex" data-id="a-media-A"><h4><span class="l">A</span>Kartın içinde oynar <small>dokun → oynat</small></h4><div class="demo">
+        <div class="card"><button class="vid p2" aria-label="Videoyu oynat"><span class="play"></span><span class="dur">12:48</span><span class="live"><b></b></span></button>
+          <div class="bd"><span class="site"><i style="background:#ff0000">▶</i>youtube.com</span><div class="t">Ekşi maya: 3 günde ilk ekmek</div></div></div>
+      </div></div>
+      <div class="ex" data-id="a-media-B"><h4><span class="l">B</span>İnce oynatıcı şerit <small>müzik/podcast</small></h4><div class="demo">
+        <div class="card mus"><div class="cov p3"></div><div style="min-width:0"><div class="t" dir="auto">أم كلثوم — ألف ليلة وليلة</div>
+          <div class="s">open.spotify.com · 58 dk</div><div class="tr"><b></b></div></div><button class="pb" aria-label="Çal">▶</button></div>
+      </div></div>
+      <div class="ex" data-id="a-media-C"><h4><span class="l">C</span>Harita kartı <small>konum linkleri</small></h4><div class="demo">
+        <div class="card"><div class="map"><span class="pin"></span></div><div class="bd"><div class="t">Kadıköy Moda sahili</div><div class="s">maps.google.com · 2,3 km uzakta</div></div></div>
+      </div></div>
+    </div>
+
+    <h3 class="sub">PDF</h3>
+    <div class="row">
+      <div class="ex" data-id="a-pdf-A"><h4><span class="l">A</span>İlk sayfa kapak</h4><div class="demo">
+        <div class="card pdfA"><div class="pg"><b>Yapay Zekâ ile Tarım Raporu 2026</b><i></i><i></i><i></i><div class="fig"></div><i></i><i></i><span class="n">PDF</span></div>
+          <div class="bd"><div class="t">tarim-ai-rapor.pdf</div><div class="s">24 sayfa · 3,1 MB</div><div class="x">Kümes sıcaklığı tahmini ile ölüm oranı %18 azaldı…</div></div></div>
+      </div></div>
+      <div class="ex" data-id="a-pdf-B"><h4><span class="l">B</span>Simge + ilk cümle alıntısı</h4><div class="demo">
+        <div class="card pdfB"><div class="ic">PDF</div><div style="min-width:0"><div class="t">Kira sözleşmesi — Moda daire</div><div class="s">6 sayfa · imzalı</div>
+          <div class="q">"Kiracı, kira bedelini her ayın 5'ine kadar…"</div></div></div>
+      </div></div>
+    </div>
+
+    <h3 class="sub">Kod dosyası</h3>
+    <div class="row">
+      <div class="ex" data-id="a-code-A"><h4><span class="l">A</span>Temaya uyan renkli kod</h4><div class="demo">
+        <div class="card cdA"><div class="hd"><b>sem.js</b><span class="chip">JavaScript</span></div>
+<pre class="code"><span class="c">// cosine similarity, vectors are normalised</span>
+<span class="k">export function</span> <span class="f">sim</span>(a, b) {
+  <span class="k">let</span> s = <span class="n">0</span>;
+  <span class="k">for</span> (<span class="k">let</span> i = <span class="n">0</span>; i &lt; a.length; i++) s += a[i] * b[i];
+  <span class="k">return</span> s;
+}</pre></div>
+      </div></div>
+      <div class="ex" data-id="a-code-B"><h4><span class="l">B</span>Her zaman koyu "terminal"</h4><div class="demo">
+        <div class="card cdB"><div class="hd"><i></i><i></i><i></i><span>deploy.sh</span></div>
+<pre class="code"><span class="c"># push and wait for Pages</span>
+git push origin <span class="s">HEAD:main</span>
+<span class="k">until</span> curl -s <span class="s">"$URL/sw.js"</span> | grep -q <span class="s">"v$V"</span>; <span class="k">do</span>
+  sleep <span class="n">5</span>
+<span class="k">done</span></pre></div>
+      </div></div>
+    </div>
+
+    <h3 class="sub">WhatsApp sohbeti</h3>
+    <div class="row">
+      <div class="ex" data-id="a-wa-A"><h4><span class="l">A</span>Balonlar <small>WhatsApp'a benzer</small></h4><div class="demo">
+        <div class="card"><div class="waA">
+          <div class="m" dir="auto"><span class="who">Ahmet</span>Yarın kümeste sensör kurulumu saat kaçta?<small>09:12</small></div>
+          <div class="m o" dir="auto">10'da oradayım, kabloları getiriyorum<small>09:14 ✓✓</small></div>
+          <div class="m" dir="auto"><span class="who">سارة</span>تمام، سأرسل لك الموقع الآن<small>09:15</small></div>
+        </div></div>
+      </div></div>
+      <div class="ex" data-id="a-wa-B"><h4><span class="l">B</span>Sade döküm <small>avatar + ad + saat</small></h4><div class="demo">
+        <div class="card"><div class="bd waB">
+          <div class="ln"><span class="av" style="background:#0ea5e9">A</span><div dir="auto"><b>Ahmet</b><small>09:12</small><br>Yarın kümeste sensör kurulumu saat kaçta?</div></div>
+          <div class="ln"><span class="av" style="background:#c2410c">S</span><div dir="auto"><b>Sen</b><small>09:14</small><br>10'da oradayım, kabloları getiriyorum</div></div>
+          <div class="ln"><span class="av" style="background:#a21caf">س</span><div dir="auto"><b>سارة</b><small>09:15</small><br>تمام، سأرسل لك الموقع الآن</div></div>
+        </div></div>
+      </div></div>
+    </div>
+
+    <h3 class="sub">Not = gerçek mini belge (130e)</h3>
+    <div class="row">
+      <div class="ex" data-id="a-note-A"><h4><span class="l">A</span>Kartta işaretlenebilir liste + resim + ilerleme</h4><div class="demo">
+        <div class="card"><div class="bd nd" data-prog>
+          <h5>Hafta sonu Bursa</h5><div class="pr"><b></b></div>
+          <label><input type="checkbox" checked><span>Otel rezervasyonu</span></label>
+          <label><input type="checkbox"><span>İskender — Kebapçı İskender</span></label>
+          <label><input type="checkbox"><span>Uludağ teleferik bileti</span></label>
+          <div class="ph p4"></div></div></div>
+      </div></div>
+      <div class="ex" data-id="a-note-B"><h4><span class="l">B</span>Sade metin önizleme <small>bugünkü gibi</small></h4><div class="demo">
+        <div class="card"><div class="bd"><div class="t">Hafta sonu Bursa</div><div class="x">☑ Otel rezervasyonu ☐ İskender — Kebapçı İskender ☐ Uludağ teleferik bileti</div><div class="s">3 madde · 1 resim</div></div></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ================= 106b ================= -->
+  <section class="grp" id="b">
+    <h2>106b · Zengin not düzenleyici</h2>
+    <p>Hepsi aynı düzenleyici, sadece blok menüsü farklı. Dene: boş satırda <b>/</b> yaz (ok tuşları + Enter), ya da satır başında
+      <code># </code>, <code>- </code>, <code>[] </code>, <code>&gt; </code>, <code>---</code>; satır içinde <code>**kalın**</code>. Altta saklanan Markdown görünür.</p>
+    <div class="row">
+      <div class="ex" data-id="b-menu-A"><h4><span class="l">A</span>"/" açıklamalı liste <small>Notion gibi</small></h4><div class="demo"><div class="ed" data-mode="list"></div></div></div>
+      <div class="ex" data-id="b-menu-B"><h4><span class="l">B</span>"/" simge ızgarası <small>kısa</small></h4><div class="demo"><div class="ed" data-mode="grid"></div></div></div>
+      <div class="ex" data-id="b-menu-C"><h4><span class="l">C</span>Klavye üstü şerit <small>telefon için, "/" de çalışır</small></h4><div class="demo"><div class="ed" data-mode="bar"></div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 106c ================= -->
+  <section class="grp" id="c">
+    <h2>106c · Daha canlı görünüm (ölçülü)</h2>
+    <p>Renk ve derinlik biraz artar; kontrast AA kalır.</p>
+    <h3 class="sub">Kapaklı pano kartı</h3>
+    <div class="row">
+      <div class="ex" data-id="c-cover-A"><h4><span class="l">A</span>Büyük kapak resmi</h4><div class="demo">
+        <div class="card bcA" style="max-width:260px"><div class="cov p1"></div><div class="bd"><div class="t">Yaz 2027 Ege turu</div><div class="s">12 kayıt · 3 bağlı</div></div></div></div></div>
+      <div class="ex" data-id="c-cover-B"><h4><span class="l">B</span>İnce bant + simge</h4><div class="demo">
+        <div class="card bcB" style="max-width:260px"><div class="cov p2"></div><div class="bd"><div class="em">🏖️</div><div class="t" style="margin-top:6px">Yaz 2027 Ege turu</div><div class="s">12 kayıt · 3 bağlı</div></div></div></div></div>
+    </div>
+    <h3 class="sub">Üst çubuk / menüler</h3>
+    <div class="row">
+      <div class="ex" data-id="c-glass-A"><h4><span class="l">A</span>Hafif cam <small>arkası bulanık görünür</small></h4><div class="demo">
+        <div class="glassbox"><div class="under"><div class="p1"></div><div class="p3"></div><div class="p4"></div><div class="p2"></div></div><div class="tb g"><b>Nts</b> · Ara, yaz, sor…</div></div></div></div>
+      <div class="ex" data-id="c-glass-B"><h4><span class="l">B</span>Düz <small>bugünkü gibi, karşılaştırma için</small></h4><div class="demo">
+        <div class="glassbox"><div class="under"><div class="p1"></div><div class="p3"></div><div class="p4"></div><div class="p2"></div></div><div class="tb s"><b>Nts</b> · Ara, yaz, sor…</div></div></div></div>
+    </div>
+    <h3 class="sub">Boş durum</h3>
+    <div class="row">
+      <div class="ex" data-id="c-empty-A"><h4><span class="l">A</span>Çizgi çizim</h4><div class="demo"><div class="empty">
+        <svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="22" y="22" width="56" height="50" rx="6"/><path d="M32 36h36M32 46h28M32 56h18"/><rect x="58" y="12" width="40" height="46" rx="6" fill="var(--surface)"/><path d="M66 26h24M66 35h16"/><path d="M88 66l8 8M80 70a10 10 0 1 0 0-.1" stroke="var(--accent)"/></svg>
+        <div class="t">Bu süzgeçte kayıt yok</div><div class="s">Süzgeci kaldır ya da yeni bir şey yaz.</div><button class="btn">Süzgeci kaldır</button></div></div></div>
+      <div class="ex" data-id="c-empty-B"><h4><span class="l">B</span>Büyük emoji + metin</h4><div class="demo"><div class="empty">
+        <div class="big">🗂️</div><div class="t">Bu süzgeçte kayıt yok</div><div class="s">Süzgeci kaldır ya da yeni bir şey yaz.</div><button class="btn">Süzgeci kaldır</button></div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 106d ================= -->
+  <section class="grp" id="d">
+    <h2>106d · Etkileşimli parçalar</h2>
+    <p>Bir notun içine yazılan küçük işaretlerden oluşur (ör. <code>sayaç: 2026-12-05 Sınav</code>, <code>ilerleme: 4/10</code>, CSV yapıştırma).</p>
+    <h3 class="sub">Geri sayım</h3>
+    <div class="row">
+      <div class="ex" data-id="d-count-A"><h4><span class="l">A</span>Büyük sayı</h4><div class="demo"><div class="card cdn"><div class="num" data-days>12<small>gün</small></div><div><div class="t">Ehliyet sınavı</div><div class="s">5 Aralık Cumartesi · 09:30</div></div></div></div></div>
+      <div class="ex" data-id="d-count-B"><h4><span class="l">B</span>Halka <small>30 günden ne kadar kaldı</small></h4><div class="demo"><div class="card cdn">
+        <svg class="ring" viewBox="0 0 64 64"><circle class="bgc" cx="32" cy="32" r="27"/><circle class="fg" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="67.8" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle">12g</text></svg>
+        <div><div class="t">Ehliyet sınavı</div><div class="s">5 Aralık · 09:30</div></div></div></div></div>
+      <div class="ex" data-id="d-count-C"><h4><span class="l">C</span>Gün · saat · dakika <small>canlı</small></h4><div class="demo"><div class="card">
+        <div class="bd" style="padding-bottom:0"><div class="t">Ehliyet sınavı</div></div><div class="cdC" data-live><div><b>12</b><small>gün</small></div><div><b>07</b><small>saat</small></div><div><b>41</b><small>dk</small></div><div><b>09</b><small>sn</small></div></div></div></div></div>
+    </div>
+    <h3 class="sub">İlerleme</h3>
+    <div class="row">
+      <div class="ex" data-id="d-prog-A"><h4><span class="l">A</span>Düz çubuk</h4><div class="demo"><div class="card"><div class="bd pgA" data-pg="4" data-max="10">
+        <div style="display:flex"><span class="t">Kitap: Sapiens</span><span class="s" style="margin-left:auto" data-lbl></span></div><div class="tr"><b></b></div>
+        <div class="step-btns"><button class="btn" data-d="-1">−</button><button class="btn" data-d="1">+ bölüm</button></div></div></div></div></div>
+      <div class="ex" data-id="d-prog-B"><h4><span class="l">B</span>Basamaklar</h4><div class="demo"><div class="card"><div class="bd pgB" data-pg="4" data-max="10">
+        <div style="display:flex"><span class="t">Kitap: Sapiens</span><span class="s" style="margin-left:auto" data-lbl></span></div><div class="steps"></div>
+        <div class="step-btns"><button class="btn" data-d="-1">−</button><button class="btn" data-d="1">+ bölüm</button></div></div></div></div></div>
+    </div>
+    <h3 class="sub">Onay listesi ilerlemesi</h3>
+    <div class="row">
+      <div class="ex" data-id="d-check-A"><h4><span class="l">A</span>Başlıkta "3/7" halkası</h4><div class="demo"><div class="card"><div class="bd nd clA" data-cl>
+        <div class="hd"><b>Taşınma</b><span class="pill"><svg class="ring" viewBox="0 0 64 64"><circle class="bgc" cx="32" cy="32" r="24"/><circle class="fg" cx="32" cy="32" r="24" stroke-dasharray="150.8" transform="rotate(-90 32 32)"/></svg><span data-lbl></span></span></div>
+        <label><input type="checkbox" checked><span>Koli al</span></label><label><input type="checkbox" checked><span>Nakliye ara</span></label><label><input type="checkbox" checked><span>Adres değişikliği (e-Devlet)</span></label>
+        <label><input type="checkbox"><span>İnternet taşı</span></label><label><input type="checkbox"><span>Elektrik/su abonelik</span></label><label><input type="checkbox"><span>Anahtar teslim</span></label><label><input type="checkbox"><span>Depozito iadesi</span></label></div></div></div></div>
+      <div class="ex" data-id="d-check-B"><h4><span class="l">B</span>Başlık altında ince çubuk</h4><div class="demo"><div class="card"><div class="bd nd clB" data-cl>
+        <div class="hd"><b>Taşınma</b><span class="cnt" data-lbl></span></div><div class="tr"><b></b></div>
+        <label><input type="checkbox" checked><span>Koli al</span></label><label><input type="checkbox" checked><span>Nakliye ara</span></label><label><input type="checkbox" checked><span>Adres değişikliği (e-Devlet)</span></label>
+        <label><input type="checkbox"><span>İnternet taşı</span></label><label><input type="checkbox"><span>Elektrik/su abonelik</span></label><label><input type="checkbox"><span>Anahtar teslim</span></label><label><input type="checkbox"><span>Depozito iadesi</span></label></div></div></div></div>
+    </div>
+    <h3 class="sub">CSV'den grafik</h3>
+    <div class="row">
+      <div class="ex" data-id="d-chart-A"><h4><span class="l">A</span>Sütun grafik</h4><div class="demo"><div class="card"><div class="bd chart" data-chart="bar"><div class="t">Aylık harcama (₺)</div></div></div></div></div>
+      <div class="ex" data-id="d-chart-B"><h4><span class="l">B</span>Çizgi + alan</h4><div class="demo"><div class="card"><div class="bd chart" data-chart="line"><div class="t">Aylık harcama (₺)</div></div></div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 106e ================= -->
+  <section class="grp" id="e">
+    <h2>106e · Zengin yapay zekâ cevapları</h2>
+    <p>Köprü cevabı sadece izinli parçalarla döner (cevap, kayıt kartları, tablo, zaman çizelgesi, onay listesi, grafik, eylem düğmeleri). Bilinmeyen parça düz metin olur.</p>
+    <div class="row">
+      <div class="ex" data-id="e-ans-A"><h4><span class="l">A</span>Cevap + kayıt kartları + eylemler</h4><div class="demo"><div class="ai">
+        <div class="q">Sordun: <b>"geçen ay kaydettiğim tavuk sağlığı videoları"</b></div>
+        <div class="ans"><mark>5 video</mark> buldum; 3'ü <b>ısı stresi</b>, 2'si <b>aşı takvimi</b> hakkında. En çok açtığın: "Yazın kümes havalandırma".</div>
+        <div class="recs"><div class="rec"><div class="im p2"></div><div>Yazın kümes havalandırma<small>youtube · 4 Eki</small></div></div><div class="rec"><div class="im p4"></div><div>Isı stresi belirtileri<small>youtube · 9 Eki</small></div></div><div class="rec"><div class="im p1"></div><div>Newcastle aşı takvimi<small>youtube · 21 Eki</small></div></div></div>
+        <div class="acts"><button class="btn pri">Pano yap</button><button class="btn">Hepsini aç</button><button class="btn">Etiketle: #sağlık</button></div></div></div></div>
+      <div class="ex" data-id="e-ans-B"><h4><span class="l">B</span>Tablo + zaman çizelgesi</h4><div class="demo"><div class="ai">
+        <div class="q">Sordun: <b>"bu yıl hangi aboneliklere ne ödüyorum?"</b></div>
+        <div class="ans">Kayıtlarında <mark>4 abonelik</mark> var, toplam ayda <b>₺1.046</b>.</div>
+        <table><thead><tr><th>Abonelik</th><th>Yenileme</th><th class="num">Aylık</th></tr></thead><tbody>
+          <tr><td>Spotify</td><td>3 Ara</td><td class="num">₺99</td></tr><tr><td>iCloud 200 GB</td><td>12 Ara</td><td class="num">₺130</td></tr><tr><td>Netflix</td><td>17 Ara</td><td class="num">₺299</td></tr><tr><td>ChatGPT</td><td>28 Ara</td><td class="num">₺518</td></tr></tbody></table>
+        <ul class="tl"><li><b>3 Ara</b>Spotify yenilenir</li><li><b>12 Ara</b>iCloud — fiyat artışı maili geldi</li><li><b>28 Ara</b>ChatGPT</li></ul>
+        <div class="acts"><button class="btn pri">Hatırlatıcı kur</button><button class="btn">Not olarak kaydet</button></div></div></div></div>
+      <div class="ex" data-id="e-ans-C"><h4><span class="l">C</span>Akış: parçalar geldikçe çizilir</h4><div class="demo"><div class="ai" id="stream">
+        <div class="q">Sordun: <b>"İzmir gezisi için ne hazırlamıştım?"</b></div><div id="st-out"></div>
+        <div class="acts"><button class="btn" id="st-go">↻ Yeniden oynat</button></div></div></div></div>
+    </div>
+  </section>
+</div>
+<div class="bar-send"><span id="cnt">0 seçim</span><button class="btn pri" id="dl">Seçimlerimi indir</button><button class="btn" id="cp">Kopyala</button></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+// ---------- theme ----------
+const root = document.documentElement, qp = new URLSearchParams(location.search);
+root.dataset.theme = qp.get('theme') || store.get('nts-rich-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+$('#theme').onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; store.set('nts-rich-theme', root.dataset.theme); };
+
+// ---------- ✓ / ✗ + note per example ----------
+const K = 'nts-rich-picks', picks = JSON.parse(store.get(K) || '{}');
+const save = () => { store.set(K, JSON.stringify(picks)); $('#cnt').textContent = Object.values(picks).filter(p => p.v).length + ' / ' + $$('.ex').length + ' seçim'; };
+$$('.ex').forEach(ex => {
+  const id = ex.dataset.id, p = picks[id] || (picks[id] = { v: '', note: '' });
+  const box = document.createElement('div'); box.className = 'pick';
+  box.innerHTML = `<button class="btn yes" aria-pressed="false">✓ Olur</button><button class="btn no" aria-pressed="false">✗ Olmaz</button><textarea rows="1" placeholder="Not (isteğe bağlı)" aria-label="Not: ${id}"></textarea>`;
+  ex.append(box);
+  const ta = $('textarea', box); ta.value = p.note;
+  const paint = () => { $('.yes', box).setAttribute('aria-pressed', String(p.v === 'y')); $('.no', box).setAttribute('aria-pressed', String(p.v === 'n')); };
+  box.onclick = e => { const b = e.target.closest('.btn'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; p.v = p.v === v ? '' : v; paint(); save(); };
+  ta.oninput = () => { p.note = ta.value; save(); };
+  paint();
+});
+save();
+const out = () => JSON.stringify({ madde: '106-0', tarih: new Date().toISOString(), secimler: Object.fromEntries(Object.entries(picks).filter(([, p]) => p.v || p.note)) }, null, 2);
+$('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out()], { type: 'application/json' })); a.download = 'rich-ui-secimler.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$('#cp').onclick = async () => { try { await navigator.clipboard.writeText(out()); $('#cp').textContent = 'Kopyalandı ✓'; } catch { $('#cp').textContent = 'Kopyalanamadı'; } setTimeout(() => $('#cp').textContent = 'Kopyala', 1500); };
+
+// ---------- 106a media ----------
+$$('.vid').forEach(v => v.onclick = () => { v.classList.add('on'); v.setAttribute('aria-label', 'Oynatılıyor'); });
+$$('.mus .pb').forEach(b => b.onclick = () => { const m = b.closest('.mus'); const on = m.classList.toggle('on'); b.textContent = on ? '❚❚' : '▶'; b.setAttribute('aria-label', on ? 'Duraklat' : 'Çal'); $('.tr b', m).style.animationPlayState = on ? 'running' : 'paused'; });
+$$('[data-prog]').forEach(n => { const f = () => { const c = $$('input', n); $('.pr b', n).style.width = (c.filter(x => x.checked).length / c.length * 100) + '%'; }; n.onchange = f; f(); });
+
+// ---------- 106b editor ----------
+const BLOCKS = [
+  ['h1', 'H1', 'Başlık', 'Büyük bölüm başlığı'], ['h2', 'H2', 'Alt başlık', 'Orta boy başlık'], ['ul', '•', 'Madde', 'Madde işaretli liste'],
+  ['todo', '☑', 'Onay listesi', 'İşaretlenebilir görev'], ['quote', '❝', 'Alıntı', 'Yan çizgili alıntı'], ['code', '{}', 'Kod', 'Tek aralıklı kod bloğu'],
+  ['table', '▦', 'Tablo', '3 × 3 tablo'], ['img', '🖼', 'Resim', 'Dosyadan ya da panodan'], ['hr', '—', 'Ayırıcı', 'Yatay çizgi'],
+];
+const mk = t => {
+  if (t === 'h1' || t === 'h2') return Object.assign(document.createElement(t), { innerHTML: '<br>' });
+  if (t === 'ul') { const l = document.createElement('ul'); l.innerHTML = '<li><br></li>'; return l; }
+  if (t === 'todo') { const d = document.createElement('div'); d.className = 'todo'; d.innerHTML = '<input type="checkbox" contenteditable="false"><span><br></span>'; return d; }
+  if (t === 'quote') return Object.assign(document.createElement('blockquote'), { innerHTML: '<br>' });
+  if (t === 'code') return Object.assign(document.createElement('pre'), { innerHTML: '<br>' });
+  if (t === 'hr') return document.createElement('hr');
+  if (t === 'table') { const tb = document.createElement('table'); tb.innerHTML = '<tr><th>Gün</th><th>Yer</th><th>Not</th></tr><tr><td>Cmt</td><td>Moda</td><td><br></td></tr><tr><td>Paz</td><td><br></td><td><br></td></tr>'; return tb; }
+  if (t === 'img') { const d = document.createElement('div'); d.className = 'p4'; d.style.cssText = 'height:90px;border-radius:10px'; d.contentEditable = 'false'; return d; }
+  return Object.assign(document.createElement('p'), { innerHTML: '<br>' });
+};
+const toMd = el => [...el.children].map(b => {
+  const t = b.textContent.replace(/​/g, '');
+  switch (b.tagName) {
+    case 'H1': return '# ' + t; case 'H2': return '## ' + t; case 'BLOCKQUOTE': return '> ' + t; case 'PRE': return '```\n' + t + '\n```'; case 'HR': return '---';
+    case 'UL': return [...b.children].map(li => '- ' + li.textContent).join('\n');
+    case 'TABLE': { const r = [...b.rows].map(row => '| ' + [...row.cells].map(c => c.textContent).join(' | ') + ' |'); r.splice(1, 0, '|' + ' --- |'.repeat(b.rows[0].cells.length)); return r.join('\n'); }
+    default:
+      if (b.classList.contains('todo')) return (b.querySelector('input').checked ? '- [x] ' : '- [ ] ') + t;
+      if (b.classList.contains('p4')) return '![resim](foto.jpg)';
+      return b.innerHTML.replace(/<b>(.*?)<\/b>|<strong>(.*?)<\/strong>/g, (_, a, c) => '**' + (a ?? c) + '**').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+  }
+}).join('\n');
+function caretTo(n) { const r = document.createRange(), s = getSelection(); const tgt = n.querySelector('li, span') || n; r.selectNodeContents(tgt); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
+function blockOf(node, area) { while (node && node.parentNode !== area) node = node.parentNode; return node; }
+$$('.ed').forEach(ed => {
+  const mode = ed.dataset.mode;
+  ed.innerHTML = `<div class="area" contenteditable="true" spellcheck="false" aria-label="Not düzenleyici"><h1>Pazar planı</h1><p>Sabah <b>pazar</b> alışverişi, sonra Moda.</p><div class="todo"><input type="checkbox" contenteditable="false"><span>Domates, peynir</span></div><p data-ph="&quot;/&quot; yaz ya da yazmaya başla"><br></p></div>
+    <div class="slash ${mode}" role="listbox" aria-label="Blok ekle"><div class="in">${BLOCKS.map(([k, g, n, d]) => `<button role="option" data-k="${k}"><span class="gi">${g}</span><span>${n}<small>${d}</small></span></button>`).join('')}</div></div><div class="md"></div>`;
+  const area = $(".area", ed), menu = $('.slash', ed), md = $('.md', ed);
+  let sel = 0, target = null;
+  const sync = () => { md.textContent = toMd(area); };
+  const opts = () => $$('button', menu);
+  const hi = () => opts().forEach((b, i) => b.setAttribute('aria-selected', String(i === sel)));
+  const show = blk => {
+    target = blk; sel = 0; hi(); menu.classList.add('on');
+    if (mode !== 'bar') { const r = blk.getBoundingClientRect(), e = ed.getBoundingClientRect(); menu.style.left = Math.min(r.left - e.left, e.width - menu.offsetWidth - 4) + 'px'; menu.style.top = (r.bottom - e.top + 4) + 'px'; }
+  };
+  const hide = () => { menu.classList.remove('on'); if (mode === 'bar') menu.classList.add('on'); };
+  if (mode === 'bar') { menu.classList.add('on'); ed.style.paddingBottom = '64px'; }
+  const insert = k => {
+    let blk = target || blockOf(getSelection().anchorNode, area) || area.lastElementChild;
+    if (blk && /^\/?$/.test(blk.textContent.trim()) && blk.tagName === 'P') { const n = mk(k); blk.replaceWith(n); blk = n; }
+    else { const n = mk(k); blk ? blk.after(n) : area.append(n); blk = n; }
+    if (k === 'hr' || k === 'img') { const p = mk('p'); blk.after(p); blk = p; }
+    caretTo(blk); target = null; hide(); sync();
+  };
+  menu.onmousedown = e => e.preventDefault();
+  menu.onclick = e => { const b = e.target.closest('button'); if (b) insert(b.dataset.k); };
+  area.addEventListener('keydown', e => {
+    if (menu.classList.contains('on') && mode !== 'bar' || (mode === 'bar' && target)) {
+      const n = opts().length;
+      if (e.key === 'ArrowDown' || (mode === 'grid' && e.key === 'ArrowRight')) { sel = (sel + 1) % n; hi(); e.preventDefault(); return; }
+      if (e.key === 'ArrowUp' || (mode === 'grid' && e.key === 'ArrowLeft')) { sel = (sel + n - 1) % n; hi(); e.preventDefault(); return; }
+      if (e.key === 'Enter') { insert(opts()[sel].dataset.k); e.preventDefault(); return; }
+      if (e.key === 'Escape') { target = null; hide(); return; }
+    }
+  });
+  area.addEventListener('input', () => {
+    const s = getSelection(), blk = blockOf(s.anchorNode, area);
+    if (blk) {
+      const t = blk.textContent;
+      if (t === '/') show(blk); else if (menu.classList.contains('on') && target && !t.startsWith('/')) { target = null; hide(); }
+      const rules = [[/^#\s$/, 'h1'], [/^##\s$/, 'h2'], [/^[-*]\s$/, 'ul'], [/^\[\s?\]\s$/, 'todo'], [/^>\s$/, 'quote'], [/^---$/, 'hr'], [/^```$/, 'code']];
+      const hit = blk.tagName === 'P' && rules.find(([re]) => re.test(t.replace(/ /g, ' ')));
+      if (hit) { blk.textContent = ''; target = blk; insert(hit[1]); return; }
+      const m = blk.tagName !== 'PRE' && blk.innerHTML.match(/\*\*([^*<]+)\*\*/);
+      if (m) { blk.innerHTML = blk.innerHTML.replace(m[0], '<b>' + m[1] + '</b>​'); caretTo(blk); }
+    }
+    sync();
+  });
+  area.addEventListener('change', sync);
+  area.addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); });
+  area.addEventListener('blur', () => setTimeout(() => { if (!ed.contains(document.activeElement)) { target = null; hide(); } }, 120));
+  sync();
+});
+
+// ---------- 106d ----------
+const exam = new Date(); exam.setDate(exam.getDate() + 12); exam.setHours(exam.getHours() + 7, exam.getMinutes() + 41);
+const live = $('[data-live]');
+setInterval(() => { let s = Math.max(0, Math.floor((exam - Date.now()) / 1000)); const v = [Math.floor(s / 86400), Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60];
+  $$('b', live).forEach((b, i) => b.textContent = String(v[i]).padStart(2, '0')); }, 1000);
+$$('[data-pg]').forEach(n => {
+  const max = +n.dataset.max, steps = $('.steps', n); if (steps) steps.innerHTML = '<i></i>'.repeat(max);
+  const draw = () => { const v = +n.dataset.pg; $('[data-lbl]', n).textContent = v + ' / ' + max + ' bölüm'; const b = $('.tr b', n); if (b) b.style.width = v / max * 100 + '%'; if (steps) $$('i', steps).forEach((x, i) => x.classList.toggle('on', i < v)); };
+  n.onclick = e => { const b = e.target.closest('[data-d]'); if (!b) return; n.dataset.pg = Math.max(0, Math.min(max, +n.dataset.pg + +b.dataset.d)); draw(); };
+  draw();
+});
+$$('[data-cl]').forEach(n => { const f = () => { const c = $$('input', n), k = c.filter(x => x.checked).length; $('[data-lbl]', n).textContent = k + '/' + c.length;
+  const fg = $('.fg', n); if (fg) fg.style.strokeDashoffset = 150.8 * (1 - k / c.length); const b = $('.tr b', n); if (b) b.style.width = k / c.length * 100 + '%'; }; n.onchange = f; f(); });
+const CSV = 'ay,tutar\nTem,8420\nAğu,9310\nEyl,7650\nEki,10240\nKas,8890\nAra,11900';
+$$('[data-chart]').forEach(n => {
+  const rows = CSV.split('\n').slice(1).map(l => l.split(',')), max = Math.max(...rows.map(r => +r[1])) * 1.1, W = 300, H = 140, P = 22, bw = (W - P) / rows.length;
+  const y = v => H - 18 - (v / max) * (H - 30);
+  let g = `<line class="ax" x1="${P}" x2="${W}" y1="${H - 18}" y2="${H - 18}"/>`;
+  if (n.dataset.chart === 'bar') g += rows.map((r, i) => `<rect class="b" x="${P + i * bw + 6}" y="${y(+r[1])}" width="${bw - 12}" height="${H - 18 - y(+r[1])}" rx="4"><title>${r[0]}: ₺${(+r[1]).toLocaleString('tr')}</title></rect>`).join('');
+  else { const pts = rows.map((r, i) => [P + i * bw + bw / 2, y(+r[1])]); g += `<path class="ar" d="M${pts[0][0]},${H - 18} L${pts.map(p => p.join(',')).join(' L')} L${pts.at(-1)[0]},${H - 18}Z"/><path class="ln" d="M${pts.map(p => p.join(',')).join(' L')}"/>` + pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--accent)"/>`).join(''); }
+  g += rows.map((r, i) => `<text x="${P + i * bw + bw / 2}" y="${H - 4}" text-anchor="middle">${r[0]}</text>`).join('') + `<text x="0" y="${y(max / 1.1) + 4}">${Math.round(max / 1100)}k</text>`;
+  n.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aylık harcama grafiği">${g}</svg><div class="csv">${CSV}</div>`);
+});
+
+// ---------- 106e streaming: the bridge returns typed parts, only known ones are drawn ----------
+const PARTS = [
+  { type: 'answer', text: 'Ekim\'de <mark>İzmir</mark> için 9 kayıt açmışsın: otel, 4 yemek yeri ve bir rota.' },
+  { type: 'timeline', items: [['Cuma', 'Alsancak — Kordon\'da akşam yürüyüşü'], ['Cumartesi', 'Şirince + Efes (araba kiralık)'], ['Pazar', 'Urla bağ yolu, dönüş 18:00']] },
+  { type: 'checklist', title: 'Eksikler', items: ['Araba rezervasyonu onayı', 'Efes müze kart', 'Urla şarap evi yer ayırtma'] },
+  { type: 'weather_widget', text: 'Hava durumu parçası (bilinmeyen tür → düz metin): Cumartesi 19°, güneşli.' },
+  { type: 'actions', items: ['Pano yap', 'Göreve çevir', 'Kaydet'] },
+];
+const draw = p => {
+  if (p.type === 'answer') return `<div class="ans part">${p.text}</div>`;
+  if (p.type === 'timeline') return `<ul class="tl part">${p.items.map(([d, t]) => `<li><b>${d}</b>${t}</li>`).join('')}</ul>`;
+  if (p.type === 'checklist') return `<div class="nd part" style="margin-top:10px"><b style="font-size:13px">${p.title}</b>${p.items.map(t => `<label><input type="checkbox"><span>${t}</span></label>`).join('')}</div>`;
+  if (p.type === 'actions') return `<div class="acts part">${p.items.map((t, i) => `<button class="btn${i ? '' : ' pri'}">${t}</button>`).join('')}</div>`;
+  return `<div class="unk part">${String(p.text || '').replace(/</g, '&lt;')}</div>`;
+};
+let stT = [];
+function stream() {
+  stT.forEach(clearTimeout); stT = []; const o = $('#st-out'); o.innerHTML = '<div class="ans typing"></div>';
+  PARTS.forEach((p, i) => stT.push(setTimeout(() => { o.querySelector('.typing')?.remove(); o.insertAdjacentHTML('beforeend', draw(p) + (i < PARTS.length - 1 ? '<div class="ans typing"></div>' : '')); }, 500 + i * 650)));
+}
+$('#st-go').onclick = stream;
+stream(); new IntersectionObserver((en, ob) => { if (en[0].isIntersecting) { stream(); ob.disconnect(); } }).observe($('#stream'));
+</script>
+</body>
+</html>
