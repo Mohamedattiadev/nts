@@ -1,0 +1,48 @@
+diff --git a/app.js b/app.js
+index e76cb61..1a80863 100644
+--- a/app.js
++++ b/app.js
+@@ -359,6 +359,12 @@ const ytId = i => { if (i.type !== 'link') return null; try { const u = new URL(
+   const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
+   return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
+ const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image) || !!(i.cover && byId(i.cover));
++// 102: image shapes (id → w/h) so the item window keeps the image's room from the first frame; growTo animates a box to its new height
++const AR = new Map();
++function growTo(box, change) {
++  const h0 = box.offsetHeight; change(); const h1 = box.offsetHeight;
++  if (Math.abs(h1 - h0) > 4 && !matchMedia('(prefers-reduced-motion: reduce)').matches) box.animate([{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' });
++}
+ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
+   if (!e.isIntersecting) return;
+   thumbIO.unobserve(e.target);
+@@ -368,7 +374,7 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
+   const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.decoding = 'async';
+   img.onerror = () => img.remove(); img.src = u;
+   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
+-    .then(() => { e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
++    .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight); e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
+ }), { rootMargin: '400px' });
+ function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
+   const k = fileKind(i);
+@@ -845,7 +851,7 @@ function openItem(id) {
+     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
+     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+     ${media ? lcard : ''}
+-    ${i.type === 'file' ? `<div class="preview" id="filePrev"><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
++    ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
+     ${media ? '</div><div class="d-info">' : ''}
+     <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
+     <div id="explainBox">${explainHtml(i)}</div>
+@@ -921,7 +927,11 @@ async function showPreview(i, box = $('#filePrev')) {
+   if (!box) return;
+   const u = await blobFor(i), k = fileKind(i);
+   if (!u) { box.innerHTML = `<div class="prev-empty">${ic('cloud', 'xl')}<span>Dosya bu cihazda yok${i.fileSynced ? ', senkron ayarlarını kontrol et' : ''}.</span></div>`; return; }
+-  if (k === 'image') box.innerHTML = `<img src="${u}" alt="">`;
++  if (k === 'image') { // decoded first, then one smooth grow (no jump when the picture arrives)
++    const im = new Image(); im.alt = ''; im.src = u; await (im.decode ? im.decode() : new Promise(ok => { im.onload = im.onerror = ok; })).catch(() => {});
++    if (im.naturalWidth) AR.set(i.id, im.naturalWidth / im.naturalHeight);
++    growTo(box, () => { box.style.aspectRatio = ''; box.replaceChildren(im); });
++  }
+   else if (k === 'video') box.innerHTML = `<video src="${u}" controls playsinline preload="metadata"></video>`;
+   else if (k === 'audio') box.innerHTML = `<audio src="${u}" controls></audio>`;
+   else if (k === 'text' || Docs.can(i)) { try { box.innerHTML = await Docs.render(i, await (await fetch(u)).blob()); Tex.math(box); } catch (e) { box.innerHTML = `<div class="prev-empty">${ic('file', 'xl')}<span>Önizleme açılamadı: ${esc(e.message)}</span></div>`; } }
