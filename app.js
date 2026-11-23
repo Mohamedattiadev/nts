@@ -117,7 +117,7 @@ const KIND_LABEL = { link: 'Link', note: 'Not', image: 'Resim', video: 'Video', 
 const extOf = i => ((i.fileName || '').split('.').pop() || '').slice(0, 4).toUpperCase();
 function titleOf(i) {
   if (i.conv) return i.title || `${shortDay(dayKey(i.ts))} · ${i.conv.n} mesaj`; // a conversation: Claude's title, else date + count
-  if (i.type === 'note' && i.text && !i.userTitle) return i.text.split('\n')[0].slice(0, 140); // the user's own words come first
+  if (i.type === 'note' && i.text && !i.userTitle) return (i.sticky ? stPlain(i.text) : i.text).split('\n')[0].slice(0, 140); // the user's own words come first
   if (i.title && !(i.type === 'file' && !i.userTitle && i.title === i.fileName)) return i.title;
   if (i.type === 'file') { const a = autoTitle(i); if (a) return a; }
   if (i.type === 'link') { if (i.meta?.title) return i.meta.title; try { const u = new URL(i.url); return domain(i.url) + decodeURI(u.pathname).replace(/\/$/, ''); } catch { return i.url; } }
@@ -3115,7 +3115,7 @@ const Ink = {
   at(e, r = $('#board').getBoundingClientRect()) { return [Math.round((e.clientX - r.left - S.cam.x) / S.cam.k), Math.round((e.clientY - r.top - S.cam.y) / S.cam.k)]; },
   start(e) {
     const t = S.tool;
-    if (t === 'note' || t === 'text') { if (e.target.closest('.bcard')) return null; this.sticky(t, e); this.use('select'); return { ink: 'done' }; }
+    if (t === 'note' || t === 'text') { if (e.target.closest('.bcard')) return null; e.preventDefault(); this.sticky(t, e); this.use('select'); return { ink: 'done' }; } // 140: preventDefault - no mouse/focus events after the tap, the new note keeps the caret
     if (t === 'eraser') { this._gone = new Set(); this.erase(e); return { ink: 'erase' }; }
     const p = this.at(e), live = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     live.setAttribute('class', 'k-' + t); live.style.stroke = INK_COLORS[S.ink]; $('#ink').appendChild(live);
@@ -3198,21 +3198,164 @@ const Ink = {
     this.rec({ add: i.id }); await upsert([i], { sync: false });
     requestAnimationFrame(() => { const c = document.querySelector(`.bcard[data-id="${i.id}"]`); if (c) this.edit(c); });
   },
-  edit(card) {
+  // 140: a board note is picked by the first tap, written in by the second (or a double click); a checkbox ticks without opening it
+  tap(card, e, t) {
+    const ln = t?.closest?.('.ln.ck');
+    if (ln) { const r = ln.getBoundingClientRect(), fs = parseFloat(getComputedStyle(ln).fontSize) * S.cam.k, rtl = getComputedStyle(ln).direction === 'rtl';
+      if ((rtl ? r.right - e.clientX : e.clientX - r.left) < fs * 1.7) return this.tick(card, ln); }
+    const id = card.dataset.id;
+    if (Link.sel.size === 1 && Link.sel.has(id)) return this.edit(card, e);
+    Link.sel.clear(); Link.toggle(id);
+  },
+  async tick(card, ln) {
+    const i = byId(card.dataset.id); if (!i) return;
+    const n = [...ln.parentNode.children].indexOf(ln), lines = (i.text || '').split('\n');
+    if (!/^\[( |x|X)\]/.test(lines[n] || '')) return;
+    lines[n] = (lines[n][1] === ' ' ? '[x]' : '[ ]') + lines[n].slice(3); ln.classList.toggle('on'); haptic(8);
+    await upsert([{ ...i, text: lines.join('\n') }]);
+  },
+  line() { const b = this.cur?.body; let n = getSelection().anchorNode; while (n && n.parentNode !== b) n = n.parentNode; return n?.nodeType === 1 ? n : null; },
+  edit(card, e) {
     const body = card.querySelector('.st-body'), id = card.dataset.id; if (!body || body.isContentEditable) return;
-    body.contentEditable = 'plaintext-only'; if (!body.isContentEditable) body.contentEditable = 'true';
-    body.focus(); const r = document.createRange(); r.selectNodeContents(body); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    if (this.cur) this.cur.body.blur();
+    if (Link.sel.size) Link.end();
+    body.contentEditable = 'true'; card.classList.add('editing');
+    if (!body.firstElementChild) body.innerHTML = '<div class="ln"><br></div>';
+    body.focus({ preventScroll: true });
+    const at = e && document.caretRangeFromPoint?.(e.clientX, e.clientY), sel = getSelection();
+    let r = at && body.contains(at.startContainer) ? at : null;
+    if (!r) { r = document.createRange(); r.selectNodeContents(body.lastElementChild || body); r.collapse(false); }
+    sel.removeAllRanges(); sel.addRange(r);
+    const cur = this.cur = { card, body, id, props: {} };
+    this.bar(); this.place(); this.reveal();
     const done = async () => {
-      body.removeEventListener('blur', done); body.contentEditable = 'false';
-      const text = body.innerText.trim(), i = byId(id); if (!i) return;
-      if (!text) { await upsert([{ id, deleted: true, ts: i.ts, updatedAt: now() }]); return; } // empty note: gone
-      if (text !== (i.text || '')) await upsert([{ ...i, text, title: undefined, pending: true }]);
-      AI.kick();
+      body.removeEventListener('blur', done); body.removeAttribute('contenteditable'); card.classList.remove('editing');
+      if (this.cur === cur) { this.cur = null; if (this.barEl) this.barEl.hidden = true; }
+      const text = stDom(body), i = byId(id); if (!i) return;
+      if (!stPlain(text).trim()) { await upsert([{ id, deleted: true, ts: i.ts, updatedAt: now() }]); return; } // empty note: gone
+      const changed = text !== (i.text || ''), props = Object.entries(cur.props).some(([k, v]) => v !== i[k]);
+      if (changed || props) await upsert([{ ...i, ...cur.props, text, ...(changed ? { title: undefined, pending: true } : {}) }]);
+      if (changed) AI.kick();
     };
     body.addEventListener('blur', done);
-    body.onkeydown = e => { if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); body.blur(); } };
+    body.onkeydown = ev => {
+      if (ev.key === 'Escape' || (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); body.blur(); return; }
+      const ln = this.line(), kind = ln && ['h', 'li', 'ck'].find(c => ln.classList.contains(c));
+      if (ev.key === 'Enter' && !ev.shiftKey) {
+        if (kind && kind !== 'h' && !ln.textContent.trim()) { ev.preventDefault(); ln.className = 'ln'; return; } // Enter on an empty bullet ends the list
+      }
+      if (ev.key === 'Backspace' && kind) { const s = getSelection(); if (s.isCollapsed) { const rr = document.createRange(); rr.selectNodeContents(ln); rr.setEnd(s.anchorNode, s.anchorOffset);
+        if (!rr.toString()) { ev.preventDefault(); ln.className = 'ln'; } } }
+    };
+    body.oninput = ev => {
+      const ln = this.line(); if (!ln) return;
+      if (ev.inputType === 'insertParagraph') ln.classList.remove('h', 'on'); // a new line after a heading is plain text, after a ticked box an empty box
+      if (ln.className === 'ln' || !ln.className) {
+        const m = ln.textContent.match(/^(#{1,3}|[-*•]|\[\s?\]|\[[xX]\])[\s ]/);
+        if (m) {
+          const tn = document.createTreeWalker(ln, NodeFilter.SHOW_TEXT).nextNode();
+          if (tn && tn.data.length >= m[0].length) { // the editor's own delete keeps Ctrl+Z right; the caret goes back to where it was
+            const s = getSelection(), pre = document.createRange(); pre.selectNodeContents(ln); pre.setEnd(s.anchorNode, s.anchorOffset); const at = Math.max(0, pre.toString().length - m[0].length);
+            const rr = document.createRange(); rr.setStart(tn, 0); rr.setEnd(tn, m[0].length); s.removeAllRanges(); s.addRange(rr); document.execCommand('delete');
+            const w = document.createTreeWalker(this.line() || ln, NodeFilter.SHOW_TEXT); let left = at, t2;
+            while ((t2 = w.nextNode())) { if (left <= t2.data.length) { s.collapse(t2, left); break; } left -= t2.data.length; } }
+          const now1 = this.line() || ln; now1.className = 'ln ' + (m[1][0] === '#' ? 'h' : m[1][0] === '[' ? 'ck' + (/x/i.test(m[1]) ? ' on' : '') : 'li');
+        }
+      }
+      this.place(); this.reveal(); this.mark();
+    };
+    body.onpaste = ev => { ev.preventDefault(); document.execCommand('insertText', false, ev.clipboardData.getData('text/plain')); }; // pasted pages come in as plain words
+  },
+  // the small floating bar over the note being written: bold, italic, heading, list, checkbox, alignment, size, colour
+  bar() {
+    let b = this.barEl;
+    if (!b) {
+      b = this.barEl = document.createElement('div'); b.id = 'stBar'; b.className = 'st-bar'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Yazı biçimi'); document.body.appendChild(b);
+      b.addEventListener('pointerdown', e => e.preventDefault()); // the note keeps the caret
+      b.addEventListener('click', e => this.fmt(e.target.closest('button')));
+      document.addEventListener('selectionchange', () => this.cur && this.mark());
+      visualViewport?.addEventListener('resize', () => { this.place(); this.reveal(); });
+    }
+    const text = this.cur.card.classList.contains('text'), cols = text ? ['', 'red', 'orange', 'green', 'blue', 'purple'] : ['yellow', 'orange', 'green', 'blue', 'purple', 'red'];
+    const B = (f, label, inner) => `<button type="button" class="st-b" data-f="${f}" title="${label}" aria-label="${label}">${inner}</button>`;
+    b.innerHTML = B('b', 'Kalın (Ctrl+B)', '<b>B</b>') + B('i', 'İtalik (Ctrl+I)', '<i>I</i>') + B('h', 'Başlık (# )', '<b>H</b>')
+      + B('li', 'Madde (- )', '<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="3" cy="4" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="3" cy="12" r="1.4"/><path d="M6.5 4h7M6.5 8h7M6.5 12h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>')
+      + B('ck', 'Onay kutusu ([] )', '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="3"/><path d="M5 8l2 2 4-4"/></svg>')
+      + '<span class="st-sep"></span>' + B('al', 'Hizala', '<svg viewBox="0 0 16 16" width="16" height="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path class="al-a" d="M2 4h12M2 8h8M2 12h10"/></svg>')
+      + B('s-', 'Küçült', '<span class="st-a sm">A</span>') + B('s+', 'Büyüt', '<span class="st-a">A</span>') + '<span class="st-sep"></span>'
+      + cols.map(c => `<button type="button" class="st-c${c ? ' c-' + c : ' none'}" data-c="${c}" title="${c ? KIND_COLOR_TR[c] : 'Yazı rengi'}" aria-label="Renk: ${c ? KIND_COLOR_TR[c] : 'varsayılan'}"></button>`).join('');
+    b.hidden = false; this.mark();
+  },
+  fmt(btn) {
+    const c = this.cur; if (!btn || !c) return;
+    const f = btn.dataset.f, i = byId(c.id) || {}, card = c.card, body = c.body;
+    if (f === 'b' || f === 'i') document.execCommand(f === 'b' ? 'bold' : 'italic');
+    else if (f === 'h' || f === 'li' || f === 'ck') { const ln = this.line(); if (ln) { const on = ln.classList.contains(f); ln.className = 'ln' + (on ? '' : ' ' + f); } }
+    else if (f === 'al') { const order = [undefined, 'center', 'right'], now0 = c.props.align !== undefined ? c.props.align : i.align; c.props.align = order[(order.indexOf(now0 || undefined) + 1) % 3]; body.style.textAlign = c.props.align || ''; }
+    else if (f === 's-' || f === 's+') { const text = card.classList.contains('text'), cur = parseFloat(getComputedStyle(body).fontSize), st = text ? 4 : 1.5;
+      c.props.fs = Math.round(Math.max(10, Math.min(120, cur + (f === 's+' ? st : -st))) * 2) / 2; body.style.fontSize = c.props.fs + 'px'; }
+    else if ('c' in btn.dataset) { const v = btn.dataset.c || undefined; c.props.color = v; card.className = card.className.replace(/ c-\w+/g, '') + (v ? ' c-' + v : ''); haptic(6); }
+    this.mark(); this.place();
+  },
+  mark() {
+    const b = this.barEl, c = this.cur; if (!b || !c) return;
+    const ln = this.line(), i = byId(c.id) || {}, col = 'color' in c.props ? c.props.color : i.color, al = 'align' in c.props ? c.props.align : i.align;
+    for (const x of b.querySelectorAll('[data-f]')) { const f = x.dataset.f;
+      const on = f === 'b' ? document.queryCommandState('bold') : f === 'i' ? document.queryCommandState('italic') : ['h', 'li', 'ck'].includes(f) ? !!ln?.classList.contains(f) : f === 'al' ? !!al : false;
+      x.setAttribute('aria-pressed', String(on)); }
+    b.querySelector('.al-a')?.setAttribute('d', al === 'center' ? 'M2 4h12M4 8h8M3 12h10' : al === 'right' ? 'M2 4h12M6 8h8M4 12h10' : 'M2 4h12M2 8h8M2 12h10');
+    const def = c.card.classList.contains('text') ? '' : 'yellow';
+    for (const x of b.querySelectorAll('[data-c]')) x.setAttribute('aria-pressed', String(x.dataset.c === (col || def)));
+  },
+  place() {
+    const c = this.cur, b = this.barEl; if (!c || !b || b.hidden) return;
+    const r = c.card.getBoundingClientRect(), vv = visualViewport, vt = vv ? vv.offsetTop : 0, vh = vv ? vv.height : innerHeight, bw = b.offsetWidth, bh = b.offsetHeight;
+    let top = r.top - bh - 10; if (top < vt + 60) top = Math.min(r.bottom + 10, vt + vh - bh - 8);
+    const left = Math.max(8, Math.min(innerWidth - bw - 8, r.left + r.width / 2 - bw / 2));
+    b.style.transform = `translate(${Math.round(left)}px, ${Math.round(Math.max(vt + 8, top))}px)`;
+  },
+  // the phone keyboard must not cover the line being written: the board slides up under it
+  reveal() {
+    const c = this.cur; if (!c || !S.cam) return;
+    const s = getSelection(); if (!s.rangeCount) return;
+    let r = s.getRangeAt(0).getBoundingClientRect(); if (!r.height) r = (this.line() || c.body).getBoundingClientRect();
+    const vv = visualViewport, vb = vv ? vv.offsetTop + vv.height : innerHeight, top = (vv ? vv.offsetTop : 0) + 70, box = $('#input')?.parentNode?.getBoundingClientRect();
+    const bottom = Math.min(vb, box && box.top > vb / 2 ? box.top : vb) - 16 - (this.barEl?.offsetHeight || 0); // above the keyboard, the bottom box and the format bar
+    const dy = r.bottom > bottom ? bottom - r.bottom : r.top < top ? top - r.top : 0;
+    if (Math.abs(dy) > 2) { S.cam.y += dy; Board.apply(); }
   },
 };
+
+// 140: board notes keep Markdown (sync, search and Claude read it as before); on the board each line is a block
+const KIND_COLOR_TR = { red: 'Kırmızı', orange: 'Turuncu', yellow: 'Sarı', green: 'Yeşil', blue: 'Mavi', purple: 'Mor' };
+function stInline(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\w)/g, '$1<i>$2</i>'); }
+function stHtml(md) {
+  return md.split('\n').map(l => {
+    let c = '', m;
+    if ((m = l.match(/^#{1,3}\s+/))) { c = 'h'; l = l.slice(m[0].length); }
+    else if ((m = l.match(/^[-*•]\s+/))) { c = 'li'; l = l.slice(m[0].length); }
+    else if ((m = l.match(/^\[( |x|X)\]\s?/))) { c = m[1] === ' ' ? 'ck' : 'ck on'; l = l.slice(m[0].length); }
+    return `<div class="ln${c ? ' ' + c : ''}" dir="auto">${stInline(l) || '<br>'}</div>`;
+  }).join('');
+}
+function stDom(body) {
+  const inl = n => n.nodeType === 3 ? n.data.replace(/ /g, ' ').replace(/​/g, '') : n.nodeType !== 1 ? '' : n.tagName === 'BR' ? (n.nextSibling ? '\n' : '')
+    : (() => { const x = [...n.childNodes].map(inl).join(''); if (!x.trim()) return x;
+      const B = n.tagName === 'B' || n.tagName === 'STRONG' || +getComputedStyle(n).fontWeight >= 600 && n.tagName === 'SPAN', I = n.tagName === 'I' || n.tagName === 'EM';
+      return B ? '**' + x + '**' : I ? '*' + x + '*' : /^(DIV|P|LI)$/.test(n.tagName) ? '\n' + x : x; })();
+  const lines = []; let loose = '';
+  for (const n of body.childNodes) {
+    if (n.nodeType === 1 && /^(DIV|P|H\d|LI|UL)$/.test(n.tagName)) {
+      if (loose) { lines.push(loose); loose = ''; }
+      const k = n.classList, pre = k.contains('h') ? '# ' : k.contains('li') ? '- ' : k.contains('ck') ? (k.contains('on') ? '[x] ' : '[ ] ') : '';
+      const t = [...n.childNodes].map(inl).join('').replace(/^\n/, '');
+      lines.push(...(pre + t).split('\n'));
+    } else loose += inl(n);
+  }
+  if (loose) lines.push(loose);
+  return lines.join('\n').replace(/\s+$/, '');
+}
+function stPlain(md) { return md.replace(/^(#{1,3}\s+|[-*•]\s+|\[( |x|X)\]\s?)/gm, '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/(^|[^*\w])\*([^*]+?)\*(?!\w)/g, '$1$2'); }
 
 // ---------- board ----------
 const Board = {
@@ -3221,7 +3364,7 @@ const Board = {
   // cards you never moved are stacked in day columns to the right of the placed ones.
   // card height without the DOM (title ≤ 2 lines, text ≤ 3 lines, meta 1 line): 10,000 cards are laid out in memory
   est(i) {
-    if (i.sticky) return i.sticky === 'text' ? 40 : 140;
+    if (i.sticky) return i.sticky === 'text' ? 40 : Math.max(140, i.h || 0);
     const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / 24))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
     return 2 + (hasVisual(i) ? 132 : 0) + 21 + tl * 19 + (sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
   },
@@ -3251,7 +3394,10 @@ const Board = {
     const c = document.createElement('div'); c.dataset.id = i.id;
     if (i.sticky) { // a note written right on the board
       c.className = 'bcard sticky' + (i.sticky === 'text' ? ' text' : '') + (Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
-      c.innerHTML = `<div class="st-body" data-ph="${i.sticky === 'text' ? 'Yazı' : 'Not yaz…'}"${i.fs ? ` style="font-size:${i.fs}px"` : ''}>${esc(i.text || '')}</div>${i.sticky === 'text' ? '<span class="st-size" title="Sürükle: büyüt / küçült"></span>' : ''}`;
+      const st = [i.fs ? `font-size:${i.fs}px` : '', i.align ? `text-align:${i.align}` : ''].filter(Boolean).join(';');
+      if (i.sticky === 'note' && i.w) c.style.width = i.w + 'px';
+      if (i.sticky === 'note' && i.h) c.style.minHeight = i.h + 'px';
+      c.innerHTML = `<div class="st-body" data-ph="${i.sticky === 'text' ? 'Yazı' : 'Not yaz…'}"${st ? ` style="${st}"` : ''}>${stHtml(i.text || '')}</div><span class="st-size" title="${i.sticky === 'text' ? 'Sürükle: yazıyı büyüt / küçült' : 'Sürükle: notu boyutlandır'}"></span>`;
       return c;
     }
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
@@ -3276,7 +3422,7 @@ const Board = {
     this.M = new Map(); this.heads = []; this.mounted = new Map(); this.mountedHeads = new Map(); this.mountedMonths = new Map(); this.y0 = y0;
     const rb = $('#rangeBtn'); if (rb) { rb.innerHTML = `${ic('clock', 'sm')}<span>${rangeLabel()}</span>`; rb.hidden = !onMain(); }
     const bb = $('#boardBtn'); if (bb) bb.innerHTML = `${ic('board', 'sm')}<span>${onMain() ? 'Genel' : esc(S.board)}</span>${ic('chev', 'sm rot')}`;
-    for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
+    for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : i.w || 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
     let cx = x0; const today = dayKey(now()), { links: rl } = relIndex();
@@ -3422,6 +3568,8 @@ const Board = {
   },
   apply() {
     const c = S.cam, pl = $('#plane'); pl.style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`;
+    if (c.k !== this._lk) { this._lk = c.k; pl.classList.add('moving'); clearTimeout(this._sharp); this._sharp = setTimeout(() => pl.classList.remove('moving'), 180); } // 140: crisp letters once the zoom rests
+    Ink.place();
     pl.style.setProperty('--hs', Math.max(1, 1 / c.k)); // day labels keep a readable size at any zoom
     const b = $('#board'); b.classList.toggle('far', c.k < .7); b.classList.toggle('nowire', c.k < this.WIREK); const g = 24 * c.k * 2 ** Math.max(0, Math.ceil(Math.log2(12 / (24 * c.k)))); b.style.backgroundSize = `${g}px ${g}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
     const p = $('#zoomPct'); if (p) p.textContent = (c.k < .1 ? (c.k * 100).toFixed(1) : Math.round(c.k * 100)) + '%';
@@ -3575,12 +3723,13 @@ const Board = {
         drag?.card?.classList.remove('dragging'); drag = null;
         const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; return;
       }
-      if (S.tool !== 'select' && !space && e.button !== 1 && !e.target.closest('.st-body[contenteditable]')) { drag = Ink.start(e); if (drag) { this.busy = true; return; } }
-      if (e.target.closest('.st-body[contenteditable]')) return;
+      if (S.tool !== 'select' && !space && e.button !== 1 && !e.target.closest('.st-body[contenteditable="true"]')) { drag = Ink.start(e); if (drag) { this.busy = true; return; } }
+      if (e.target.closest('.st-body[contenteditable="true"]')) return;
       const sz = e.target.closest('.st-size');
-      if (sz) { const body = sz.parentNode.querySelector('.st-body'); drag = { resize: sz.parentNode, body, sx: e.clientX, sy: e.clientY, fs0: parseFloat(getComputedStyle(body).fontSize) }; this.busy = true; return; }
+      if (sz) { const card = sz.parentNode, body = card.querySelector('.st-body'); e.preventDefault(); // 140: a text grows its letters, a note its box
+        drag = { resize: card, body, note: !card.classList.contains('text'), sx: e.clientX, sy: e.clientY, fs0: parseFloat(getComputedStyle(body).fontSize), w0: card.offsetWidth, h0: card.offsetHeight }; this.busy = true; return; }
       const card = space || e.button === 1 ? null : e.target.closest('.bcard');
-      drag = { card, tile: null, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop, mods: e.shiftKey ? 'add' : e.ctrlKey || e.metaKey ? 'flip' : '' };
+      drag = { card, t: e.target, tile: null, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop, mods: e.shiftKey ? 'add' : e.ctrlKey || e.metaKey ? 'flip' : '' };
       // 139: on empty space a mouse draws a selection box (Space / middle button still pan); inside the frame of 2+ picked things it moves them all.
       // A finger pans; held still for a moment it draws the box instead
       if (!card && !space && e.button === 0 && !e.target.closest('#months') && S.tool === 'select' && !S.linkFrom) {
@@ -3600,6 +3749,8 @@ const Board = {
       }
       if (!drag) return;
       if (drag.ink) return Ink.move(drag, e);
+      if (drag.resize && drag.note) { drag.w = Math.round(Math.max(120, Math.min(640, drag.w0 + (e.clientX - drag.sx) / S.cam.k))); drag.h = Math.round(Math.max(80, Math.min(900, drag.h0 + (e.clientY - drag.sy) / S.cam.k)));
+        drag.resize.style.width = drag.w + 'px'; drag.resize.style.minHeight = drag.h + 'px'; Ink.place(); return; }
       if (drag.resize) { // text size follows the corner handle
         drag.fs = Math.round(Math.max(10, Math.min(160, drag.fs0 + ((e.clientX - drag.sx) + (e.clientY - drag.sy)) / 2 / S.cam.k * .6)));
         drag.body.style.fontSize = drag.fs + 'px'; return;
@@ -3633,12 +3784,15 @@ const Board = {
       if (d.grp) return this.groupDrop(d, (e.clientX - d.sx) / S.cam.k, (e.clientY - d.sy) / S.cam.k);
       if (!d.card && !d.moved && !d.grab && e.type === 'pointerup' && !d.mods && Link.sel.size && !S.linkFrom) return Link.end(); // a click on empty space lets the selection go
       if (d.tile && !d.moved) return this.zoomMonth(d.tile);
-      if (d.resize) { const i = byId(d.resize.dataset.id); if (i && d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
+      if (d.resize) { const i = byId(d.resize.dataset.id); if (!i) return;
+        if (d.note) { if (d.w && (d.w !== i.w || d.h !== i.h)) { const m = this.M?.get(i.id); if (m) m.w = d.w; await upsert([{ ...i, w: d.w, h: d.h }]); } return; }
+        if (d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
       if (!d.card || !d.card.isConnected) return;
       if (!d.moved) { if (e.type !== 'pointerup' || Ctx.el && !Ctx.el.hidden) return; // 138: a long press opened the card menu, the finger lifting must not open the card too
         if (S.linkFrom) return Link.pick(d.card.dataset.id); // 138: "Bağla…" is waiting for the other card
+        if (!(e.shiftKey || e.ctrlKey || e.metaKey) && byId(d.card.dataset.id)?.sticky) return Ink.tap(d.card, e, d.t); // 140: pick, then write
         if (e.shiftKey || e.ctrlKey || e.metaKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138/139: Shift / Ctrl-click picks (then taps add/remove)
-        return byId(d.card.dataset.id)?.sticky ? Ink.edit(d.card) : openItem(d.card.dataset.id); }
+        return openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging');
       const i = byId(d.card.dataset.id); if (!i) return;
       setPos(i, { x: Math.round(d.card.offsetLeft), y: Math.round(d.card.offsetTop) });
@@ -3647,7 +3801,7 @@ const Board = {
       await this.savePos([i]); // only this card moves; the day columns stay where they are
     };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
-    b.addEventListener('dblclick', e => { if (S.tool === 'select' && !e.target.closest('.bcard')) Ink.sticky('note', e); });
+    b.addEventListener('dblclick', e => { const c = e.target.closest('.bcard.sticky'); if (c) return Ink.edit(c, e); if (S.tool === 'select' && !e.target.closest('.bcard')) Ink.sticky('note', e); });
     Ink.init();
     b.addEventListener('click', e => { const a = e.target.closest('.act'); if (a) { e.stopPropagation(); itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); } });
     b.addEventListener('wheel', e => {
@@ -3670,7 +3824,7 @@ const Board = {
     $('#boardBtn').onclick = e => this.boardMenu(e.currentTarget);
     try { S.board = localStorage.getItem('hn-board') || null; } catch { }
     try { S.boardRange = localStorage.getItem('hn-range') || '30'; } catch { S.boardRange = '30'; }
-    addEventListener('resize', () => { if (S.view === 'board' && !$('#board').hidden && !this.anyVisible()) this.fit(false); });
+    addEventListener('resize', () => { if (S.view === 'board' && !Ink.cur && !$('#board').hidden && !this.anyVisible()) this.fit(false); });
     $('#tidyBtn').onclick = () => this.tidy();
     $('#months').addEventListener('click', e => { const t = e.target.closest('[data-month]'); if (t) this.zoomMonth(t.dataset.month); });
   },
