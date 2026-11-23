@@ -76,6 +76,8 @@ const I = {
   split: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>',
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
   dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/>',
+  mappin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
   kbd: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 16h8"/>', // 141
   install: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
@@ -491,7 +493,7 @@ const Prev = {
   async thumb(i) { // url of a small image for any item, or null
     if (i.cover && byId(i.cover)) return this.thumb(byId(i.cover)); // a conversation shows its first photo
     if (this.thumbs.has(i.id)) return this.thumbs.get(i.id);
-    if (i.type === 'link') { const u = i.meta?.image || null; this.thumbs.set(i.id, u); return u; }
+    if (i.type === 'link') { const y = ytId(i), u = i.meta?.image || (y ? `https://i.ytimg.com/vi/${y}/mqdefault.jpg` : null); this.thumbs.set(i.id, u); return u; }
     const blob = await this.thumbBlob(i), url = blob ? URL.createObjectURL(blob) : null;
     this.thumbs.set(i.id, url); return url;
   },
@@ -530,7 +532,7 @@ const _yt = new WeakMap(), ytId = i => { if (i.type !== 'link') return null; let
 const ytId0 = i => { try { const u = new URL(i.url), h = u.hostname.replace(/^www\.|^m\./, '');
   const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
   return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
-const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image) || !!(i.cover && byId(i.cover));
+const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && (i.meta?.image || ytId(i))) || !!(i.cover && byId(i.cover));
 // 102: image shapes (id → w/h) so the item window keeps the image's room from the first frame; growTo animates a box to its new height
 const AR = new Map();
 function growTo(box, change) {
@@ -722,6 +724,97 @@ function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image
 }
 const hookThumbs = root => root.querySelectorAll('[data-tid]').forEach(el => thumbIO.observe(el));
 const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i.type === 'link' && i.meta?.logo ? `<img class="fav" src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.replaceWith(document.createRange().createContextualFragment(ic('link')))">` : ic(fileKind(i) === 'text' ? 'note' : fileKind(i))}</div>`;
+
+// 106a (+130e): rich card previews on the board. Only what the item really holds (PLAN 106s): a video/music/map link plays inside the
+// card (a picture first, the player only after a tap), a WhatsApp talk shows its last messages as bubbles, a note with a check list is a
+// small document whose boxes tick without opening it, a code file shows its first lines coloured. Nothing made up: no picture → plain + icon.
+const Rich = {
+  on: new Set(), // ids whose player was started (kept across board redraws)
+  embed(i) {
+    if (i.type !== 'link') return null;
+    const yt = ytId(i); if (yt) return { k: 'yt', src: `https://www.youtube-nocookie.com/embed/${yt}?autoplay=1`, h: 135, label: 'YouTube' };
+    let u; try { u = new URL(i.url); } catch { return null; }
+    const h = u.hostname.replace(/^www\.|^m\./, ''), p = u.pathname;
+    if (h === 'vimeo.com' || h === 'player.vimeo.com') { const v = p.match(/(?:^|\/)(\d{6,12})(?:\/|$)/); if (v) return { k: 'vimeo', src: `https://player.vimeo.com/video/${v[1]}?autoplay=1&dnt=1`, h: 135, label: 'Vimeo' }; }
+    if (h === 'open.spotify.com') { const s = p.match(/^\/(?:intl-[\w-]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]{10,40})/); if (s) return { k: 'spotify', src: `https://open.spotify.com/embed/${s[1]}/${s[2]}`, h: s[1] === 'track' || s[1] === 'episode' ? 80 : 152, label: 'Spotify' }; }
+    if (/^(google\.[a-z.]+|maps\.google\.[a-z.]+)$/.test(h) && (h.startsWith('maps.') || p.startsWith('/maps'))) {
+      const place = p.match(/\/place\/([^/]+)/)?.[1], at = p.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/), q = u.searchParams.get('q') || u.searchParams.get('query') || (place && decodeURIComponent(place.replace(/\+/g, ' '))) || (at && at[1] + ',' + at[2]);
+      if (q) return { k: 'map', src: `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`, h: 150, label: 'Harita', q };
+    }
+    return null;
+  },
+  // the block under the picture; '' = the card stays as it was
+  html(i) {
+    const e = this.embed(i);
+    if (e) {
+      if (this.on.has(i.id)) return `<div class="r-emb on ${e.k}" style="height:${e.h}px"><iframe src="${esc(e.src)}" title="${e.label}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+      const lab = e.k === 'map' ? 'Haritayı kartta aç' : 'Kartta oynat';
+      if (!hasVisual(i)) return `<div class="r-emb ${e.k}"><button class="r-plain" data-rich="play" aria-label="${lab}">${ic(e.k === 'map' ? 'mappin' : e.k === 'spotify' ? 'audio' : 'video', 'lg')}${e.q && !titleOf(i).includes(e.q) ? `<span class="q" dir="auto">${esc(e.q)}</span>` : ''}<span class="go">${ic(e.k === 'map' ? 'mappin' : 'play', 'sm')}${lab}</span></button></div>`;
+      return `<div class="r-emb ${e.k}">${thumbBox(i)}<button class="r-play" data-rich="play" aria-label="${lab}" title="${lab}">${ic('play')}</button></div>`;
+    }
+    return '';
+  },
+  // replaces the grey sub line when the item has a better shape for it
+  body(i) {
+    if (i.conv?.log?.length) {
+      const first = i.conv.who[0], many = i.conv.who.length > 2, log = i.conv.log.filter(l => l.text).slice(-3);
+      return log.length ? `<div class="r-chat">${log.map(l => `<div class="r-b${l.who === first ? '' : ' me'}" dir="auto">${many && l.who !== first ? `<b>${esc(l.who)}</b>` : ''}${esc(l.text.slice(0, 90))}</div>`).join('')}</div>` : '';
+    }
+    if (i.type === 'note' && !i.sticky && i.text && /^\s*(?:[-*]\s*)?\[( |x|X)\]\s/m.test(i.text)) {
+      const lines = i.text.split('\n'), first = !i.userTitle ? 1 : 0, out = []; let n = 0, done = 0, all = 0;
+      lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*]\s*)?\[( |x|X)\]\s+(.*)/); if (c) { all++; if (c[1] !== ' ') done++; } if (k < first || !l.trim()) return;
+        if (n >= 6) { n++; return; } n++;
+        if (c) out.push(`<button class="r-ck${c[1] !== ' ' ? ' on' : ''}" data-rich="tick" data-ln="${k}" role="checkbox" aria-checked="${c[1] !== ' '}"><span class="bx">${ic('check', 'sm')}</span><span dir="auto">${esc(c[2])}</span></button>`);
+        else if (/^#{1,3}\s/.test(l)) out.push(`<div class="r-h" dir="auto">${esc(l.replace(/^#+\s*/, ''))}</div>`);
+        else if (/^\s*[-*•]\s/.test(l)) out.push(`<div class="r-li" dir="auto">${esc(l.replace(/^\s*[-*•]\s*/, ''))}</div>`);
+        else out.push(`<div class="r-p" dir="auto">${esc(l)}</div>`); });
+      return `<div class="r-doc">${out.join('')}${n > 6 ? `<div class="r-more">+${n - 6} satır</div>` : ''}<div class="r-cnt">${done}/${all} bitti</div></div>`;
+    }
+    if (this.code(i)) return `<pre class="r-code" data-cid="${i.id}" dir="ltr"></pre>`;
+    return null;
+  },
+  code: i => i.type === 'file' && /\.(js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|swift|sql|sh|bash|zsh|css|scss|json|ya?ml|toml|html?|xml)$/i.test(i.fileName || ''),
+  // heights for Board.est (rough, like the rest): the picture/player box, and the body when it replaces the sub line (null = it does not)
+  embH(i) { const e = this.embed(i); return !e ? 0 : this.on.has(i.id) ? e.h - (hasVisual(i) ? 132 : 0) : hasVisual(i) ? 0 : 132; },
+  bodyH(i) {
+    if (i.conv?.log?.length) return 8 + i.conv.log.filter(l => l.text).slice(-3).reduce((h, l) => h + 4 + (Math.min(90, l.text.length) > 28 ? 44 : 27), 0);
+    if (i.type === 'note' && !i.sticky && /^\s*(?:[-*]\s*)?\[( |x|X)\]\s/m.test(i.text || '')) {
+      const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, ls = i.text.split('\n').slice(i.userTitle ? 0 : 1).filter(l => l.trim());
+      return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (/^\s*(?:[-*]\s*)?\[( |x|X)\]\s/.test(l) ? row : 18), 0) + (ls.length > 6 ? 20 : 0) + 19;
+    }
+    return this.code(i) ? 156 : null;
+  },
+  // a tap inside a card: true when it was meant for a rich part (play, tick), so the card does not open
+  tap(card, t) {
+    const b = t?.closest?.('[data-rich]'); if (!b || !card.contains(b)) return false;
+    const i = byId(card.dataset.id); if (!i) return true;
+    if (b.dataset.rich === 'play') { this.on.add(i.id); const box = b.closest('.r-emb'); box.outerHTML = this.html(i); haptic(8); S.items = [...S.items]; render(); return true; } // the card grows: the board lays out again
+    if (b.dataset.rich === 'tick') {
+      const n = +b.dataset.ln, lines = (i.text || '').split('\n'); if (!/\[( |x|X)\]/.test(lines[n] || '')) return true;
+      const on = !b.classList.contains('on'); lines[n] = lines[n].replace(/\[( |x|X)\]/, on ? '[x]' : '[ ]');
+      b.classList.toggle('on', on); b.setAttribute('aria-checked', on); haptic(8);
+      const cnt = card.querySelector('.r-cnt'); if (cnt) { const [d, a] = cnt.textContent.split('/').map(Number); cnt.textContent = `${d + (on ? 1 : -1)}/${a}`; }
+      upsert([{ ...i, text: lines.join('\n') }]); return true;
+    }
+    return false;
+  },
+  // code: first lines of the file on this device, coloured by a tiny tokenizer (keywords, strings, comments, numbers); no file here → nothing
+  io: new IntersectionObserver(es => es.forEach(async e => {
+    if (!e.isIntersecting) return; Rich.io.unobserve(e.target);
+    const f = await DB.get('files', e.target.dataset.cid).catch(() => null); if (!f?.blob) return e.target.remove();
+    const txt = (await f.blob.slice(0, 4000).text()).split('\n').slice(0, 8).map(l => l.slice(0, 60)).join('\n');
+    e.target.innerHTML = Rich.hl(txt); e.target.classList.add('ok');
+  }), { rootMargin: '300px' }),
+  hl(s) {
+    const re = /(\/\/.*|#(?!include).*|\/\*[\s\S]*?\*\/|--.*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|\b(\d+(?:\.\d+)?)\b|\b(const|let|var|function|return|if|else|for|while|class|import|from|export|def|async|await|new|true|false|null|None|True|False|fn|pub|struct|impl|use|func|package|public|private|static|void|int|string|select|from|where|insert|update|and|or|not|in|of|type|interface)\b/g;
+    let out = '', k = 0;
+    for (const m of s.matchAll(re)) { out += esc(s.slice(k, m.index)); out += `<span class="${m[1] ? 'c' : m[2] ? 's' : m[3] ? 'n' : 'k'}">${esc(m[0])}</span>`; k = m.index + m[0].length; }
+    return out + esc(s.slice(k));
+  },
+  hook(root) { root.querySelectorAll('.r-code:not(.ok)').forEach(el => this.io.observe(el)); },
+};
+// keyboard: Enter / Space on a play button or a check box inside a board card (a pointer tap goes through Board's own handler)
+document.addEventListener('click', e => { if (e.detail) return; const c = e.target.closest?.('.bcard'), b = e.target.closest?.('[data-rich]'); if (c && b && Rich.tap(c, b)) e.preventDefault(); });
 
 // ---------- render ----------
 function actsHtml(i) {
@@ -1753,7 +1846,7 @@ function openItem(id) {
   const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
   dlg.dataset.id = id;
-  const yt = ytId(i), media = yt || i.type === 'file' || (i.type === 'link' && i.meta?.image);
+  const yt = ytId(i), emb = !yt && Rich.embed(i), media = yt || emb || i.type === 'file' || (i.type === 'link' && i.meta?.image); // 106a: Vimeo / Spotify / map play here too
   dlg.classList.toggle('wide', !!media);
   const lcard = i.type === 'link' ? `<a class="linkcard" href="${esc(i.url)}" target="_blank" rel="noopener">
         ${i.meta?.image && !ytId(i) ? `<img src="${esc(i.meta.image)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ''}
@@ -1772,6 +1865,7 @@ function openItem(id) {
       <button class="icon-btn" data-act="star" title="Yıldızla">${ic('star', i.starred ? 'fill star-on' : '')}</button><button class="icon-btn" data-act="close" title="Kapat">${ic('x')}</button></div>
     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+    ${emb ? `<div class="d-emb ${emb.k}" style="${emb.k === 'vimeo' ? 'aspect-ratio:16/9' : `height:${emb.k === 'spotify' ? emb.h : 320}px`}"><iframe src="${esc(emb.src.replace(/[?&]autoplay=1/, ''))}" title="${emb.label}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${media ? lcard : ''}
     ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     ${media ? '</div><div class="d-info">' : ''}
@@ -3671,7 +3765,8 @@ const Board = {
   est(i) {
     if (i.sticky) return i.sticky === 'text' ? 40 : Math.max(140, i.h || 0);
     const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / 24))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
-    return 2 + (hasVisual(i) ? 132 : 0) + 21 + tl * 19 + (sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
+    const rh = Rich.bodyH(i); // 106a
+    return 2 + (hasVisual(i) ? 132 : 0) + Rich.embH(i) + 21 + tl * 19 + (rh != null ? rh : sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
   },
   // 128: a rough width of the card's meta row (time, site, flags, tag chips); over one line → the card keeps room for a second
   metaLines(i) {
@@ -3707,8 +3802,9 @@ const Board = {
     }
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id || Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
-    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
-      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
+    const rich = Rich.html(i), rb = Rich.body(i); // 106a
+    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
+      ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
@@ -3802,7 +3898,7 @@ const Board = {
         frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
-    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t))); this.fades(fresh); }
+    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => { c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t)); Rich.hook(c); }); this.fades(fresh); }
     this.fitHeads();
     this.wires();
   },
@@ -4097,6 +4193,7 @@ const Board = {
         if (S.linkFrom) return Link.pick(d.card.dataset.id); // 138: "Bağla…" is waiting for the other card
         if (!(e.shiftKey || e.ctrlKey || e.metaKey) && byId(d.card.dataset.id)?.sticky) return Ink.tap(d.card, e, d.t); // 140: pick, then write
         if (e.shiftKey || e.ctrlKey || e.metaKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138/139: Shift / Ctrl-click picks (then taps add/remove)
+        if (Rich.tap(d.card, d.t)) return; // 106a: play / tick inside the card
         return openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging');
       const i = byId(d.card.dataset.id); if (!i) return;
