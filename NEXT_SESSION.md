@@ -88,7 +88,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 94a+94b View Transitions geçişleri + dokunma geri bildirimi (be289c8)
 - [x] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme (9164705)
 - [x] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon) (19a52b6)
-- [ ] 142 imza animasyonları uygula (PLAN 142; design/motion-choices.json): tutma m1-A (+m1-B sarkaç ÇOK DAHA AZ), sürükleme m2-A+m2-B
+- [~B] 142 imza animasyonları uygula (PLAN 142; design/motion-choices.json): tutma m1-A (+m1-B sarkaç ÇOK DAHA AZ), sürükleme m2-A+m2-B
   DAHA YAVAŞ, bırakma m3-C + m3-D abartısız, dosya m4-B, ipucu m5-B, logo m6-A (+m6-C yeniden, "çok kötü"); 60 fps, reduced-motion, telefon
 - [ ] 131 otomatik klasörler (PLAN 131; design/folders-choices.json): stiller A Cep, B Yığın (animasyonu korunsun), C Albüm, D Dosya (daha güzel
   yap), E Ayraç (etiket sekmesini sahip çok beğendi); varsayılanı E, ayarda seçilebilir
