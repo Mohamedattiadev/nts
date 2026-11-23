@@ -68,6 +68,7 @@ const I = {
   cpu: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>', // 106d
   chev: '<path d="m9 18 6-6-6-6"/>',
   rel: '<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15.5 15.5"/>',
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
@@ -771,10 +772,13 @@ const Rich = {
       const first = i.conv.who[0], many = i.conv.who.length > 2, log = i.conv.log.filter(l => l.text).slice(-3);
       return log.length ? `<div class="r-chat">${log.map(l => `<div class="r-b${l.who === first ? '' : ' me'}" dir="auto">${many && l.who !== first ? `<b>${esc(l.who)}</b>` : ''}${esc(l.text.slice(0, 90))}</div>`).join('')}</div>` : '';
     }
+    const dd = this.due(i); if (dd) return this.cdHtml(i, dd); // 106d
+    const pg = this.prog(i); if (pg) return this.progHtml(i, pg);
     if (this.isDoc(i)) { // 106b: a note with structure is a small document (same look as the editor), boxes tick right here
-      const lines = i.text.split('\n'), first = !i.userTitle ? lines.findIndex(l => l.trim()) : -1, cv = this.covLn(i), out = []; let n = 0, done = 0, all = 0, code = false;
-      lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s+(.*)/); if (c) { all++; if (c[1] !== ' ') done++; }
+      const lines = i.text.split('\n'), first = !i.userTitle ? lines.findIndex(l => l.trim()) : -1, cv = this.covLn(i), tb = this.tbl(i), out = []; let n = 0, code = false, ch = false;
+      lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s+(.*)/);
         if (/^```/.test(l)) { code = !code; return; } if (k === first || k === cv || !l.trim() || /^\|?\s*:?-{2,}[-|: ]*$/.test(l.trim()) || /^(-{3,}|\*{3,})$/.test(l.trim())) return;
+        if (tb && !code && /^\|.*\|\s*$/.test(l.trim())) { if (!ch) { ch = true; out.push(this.chartHtml(tb)); } return; } // 106d: a table of numbers is drawn as a chart
         if (n >= 6) { n++; return; } n++;
         if (code) out.push(`<div class="r-cd" dir="ltr">${esc(l)}</div>`);
         else if (c) out.push(`<button class="r-ck${c[1] !== ' ' ? ' on' : ''}" data-rich="tick" data-ln="${k}" role="checkbox" aria-checked="${c[1] !== ' '}"><span class="bx">${ic('check', 'sm')}</span><span dir="auto">${Ed.inl(c[2])}</span></button>`);
@@ -785,9 +789,10 @@ const Rich = {
         else if (Ed.IMG.test(l)) out.push(`<div class="r-p r-im">${ic('image', 'sm')}${esc(l.match(Ed.IMG)[1] || 'Resim')}</div>`);
         else out.push(`<div class="r-p" dir="auto">${Ed.inl(l)}</div>`); });
       if (!out.length) return null;
-      return `<div class="r-doc">${out.join('')}${n > 6 ? `<div class="r-more">+${n - 6} satır</div>` : ''}${all ? `<div class="r-cnt">${done}/${all} bitti</div>` : ''}</div>`;
+      return `<div class="r-doc">${out.join('')}${n > 6 ? `<div class="r-more">+${n - 6} satır</div>` : ''}</div>`; // 106d: the "3/7" count is a ring next to the title
     }
     if (this.code(i)) return `<pre class="r-code" data-cid="${i.id}" dir="ltr"></pre>`;
+    if (this.csv(i)) return `<div class="r-chart r-csv" data-cid="${i.id}"></div>`;
     return null;
   },
   isDoc: i => i.type === 'note' && !i.sticky && !!i.text && /^\s*(?:[-*+]\s*)?\[( |x|X)\]\s|^#{1,3}\s|^\s*(?:[-*+]|\d+[.)])\s+\S|^>\s|^```|^\|.*\|\s*$|^!\[[^\]]*\]\(/m.test(i.text),
@@ -797,13 +802,16 @@ const Rich = {
   embH(i) { const e = this.embed(i); return !e ? 0 : this.on.has(i.id) ? e.h - (hasVisual(i) ? 132 : 0) : hasVisual(i) ? 0 : 132; },
   bodyH(i) {
     if (i.conv?.log?.length) return 8 + i.conv.log.filter(l => l.text).slice(-3).reduce((h, l) => h + 4 + (Math.min(90, l.text.length) > 28 ? 44 : 27), 0);
+    const dd = this.due(i); if (dd) return dd.at - now() < 864e5 ? 63 : 54; // 106d
+    if (this.prog(i)) return matchMedia('(pointer: coarse)').matches ? 57 : 50;
     if (this.isDoc(i)) {
       const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, L = i.text.split('\n'), first = !i.userTitle ? L.findIndex(l => l.trim()) : -1, cv = this.covLn(i);
-      const ls = L.filter((l, k) => k !== first && k !== cv && l.trim() && !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim()));
+      const tb = this.tbl(i); let ch = false;
+      const ls = L.filter((l, k) => k !== first && k !== cv && l.trim() && !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim())).filter(l => !tb || !/^\|.*\|\s*$/.test(l.trim()) || !ch && (ch = l));
       if (!ls.length) return null;
-      return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s/.test(l) ? row : /^#{1,3}\s/.test(l) ? 21 : 18), 0) + (ls.length > 6 ? 20 : 0) + (/\[( |x|X)\]/.test(i.text) ? 19 : 0);
+      return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (l === ch ? this.CH : /^\s*(?:[-*+]\s*)?\[( |x|X)\]\s/.test(l) ? row : /^#{1,3}\s/.test(l) ? 21 : 18), 0) + (ls.length > 6 ? 20 : 0);
     }
-    return this.code(i) ? 156 : null;
+    return this.code(i) ? 156 : this.csv(i) ? this.CH : null;
   },
   // a tap inside a card: true when it was meant for a rich part (play, tick), so the card does not open
   tap(card, t) {
@@ -814,15 +822,21 @@ const Rich = {
       const n = +b.dataset.ln, lines = (i.text || '').split('\n'); if (!/\[( |x|X)\]/.test(lines[n] || '')) return true;
       const on = !b.classList.contains('on'); lines[n] = lines[n].replace(/\[( |x|X)\]/, on ? '[x]' : '[ ]');
       b.classList.toggle('on', on); b.setAttribute('aria-checked', on); haptic(8);
-      const cnt = card.querySelector('.r-cnt'); if (cnt) { const [d, a] = cnt.textContent.split('/').map(Number); cnt.textContent = `${d + (on ? 1 : -1)}/${a}`; }
-      upsert([{ ...i, text: lines.join('\n') }]); return true;
+      const nx = { ...i, text: lines.join('\n') }, pl = card.querySelector('.r-pill'); if (pl) pl.outerHTML = this.pill(nx); // 106d: the ring moves at once
+      upsert([nx]); return true;
     }
+    if (b.dataset.rich === 'pg') { const p = this.prog(i); if (!p || b.disabled) return true; const v = Math.max(0, Math.min(p.max, p.n + +b.dataset.d)), src = i.todo?.text ?? i.text;
+      const txt = src.slice(0, p.at) + v + src.slice(p.at + String(p.n).length); haptic(8);
+      const nx = i.todo ? { ...i, todo: { ...i.todo, text: txt }, ...(i.text === i.todo.text ? { text: txt } : {}) } : { ...i, text: txt };
+      b.closest('.r-pg').outerHTML = this.progHtml(nx); card.querySelector(`.r-pg [data-d="${b.dataset.d}"]`)?.focus({ preventScroll: true }); upsert([nx]); return true; }
+    if (b.dataset.rich === 'bar') { this.chartTip(b, +b.dataset.k); haptic(6); return true; }
     return false;
   },
   // code: first lines of the file on this device, coloured by a tiny tokenizer (keywords, strings, comments, numbers); no file here → nothing
   io: new IntersectionObserver(es => es.forEach(async e => {
     if (!e.isIntersecting) return; Rich.io.unobserve(e.target);
     const f = await DB.get('files', e.target.dataset.cid).catch(() => null); if (!f?.blob) return e.target.remove();
+    if (e.target.classList.contains('r-csv')) { const s = Rich.parseCsv(await f.blob.slice(0, 20000).text()); if (!s) return e.target.remove(); e.target.outerHTML = Rich.chartHtml(s).replace('class="r-chart"', 'class="r-chart r-csv ok"'); return; } // 106d
     const txt = (await f.blob.slice(0, 4000).text()).split('\n').slice(0, 8).map(l => l.slice(0, 60)).join('\n');
     e.target.innerHTML = Rich.hl(txt); e.target.classList.add('ok');
   }), { rootMargin: '300px' }),
@@ -832,10 +846,82 @@ const Rich = {
     for (const m of s.matchAll(re)) { out += esc(s.slice(k, m.index)); out += `<span class="${m[1] ? 'c' : m[2] ? 's' : m[3] ? 'n' : 'k'}">${esc(m[0])}</span>`; k = m.index + m[0].length; }
     return out + esc(s.slice(k));
   },
-  hook(root) { root.querySelectorAll('.r-code:not(.ok)').forEach(el => this.io.observe(el)); },
+  hook(root) { root.querySelectorAll('.r-code:not(.ok), .r-csv:not(.ok)').forEach(el => this.io.observe(el)); if (root.querySelector?.('.r-cdC')) this.live(); },
+  // ---------- 106d: interactive parts, only from what the record really holds ----------
+  // a ring (fraction f of it drawn); r is the radius in a 24 box
+  ring: (f, r = 9) => { const c = 2 * Math.PI * r; return `<svg class="r-ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="bg" cx="12" cy="12" r="${r}"/><circle class="fg" cx="12" cy="12" r="${r}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - Math.max(0, Math.min(1, f)))).toFixed(1)}" transform="rotate(-90 12 12)"/></svg>`; },
+  // check list "3/7" ring next to the title (d-check-A)
+  checks(i) { if (!this.isDoc(i)) return null; let d = 0, a = 0; for (const m of i.text.matchAll(/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s+\S/gm)) { a++; if (m[1] !== ' ') d++; } return a ? { d, a } : null; },
+  pill(i) { const c = this.checks(i); return c ? `<span class="r-pill${c.d === c.a ? ' all' : ''}" title="${c.d}/${c.a} bitti">${this.ring(c.d / c.a)}<span>${c.d}/${c.a}</span></span>` : ''; },
+  // countdown (d-count-A/B/C): an open task with a date ahead. A day or more: ring (time gone since it was written) + days; under a day: live hours/minutes/seconds
+  due(i) { const t = i.todo; if (!t || t.done || !t.due) return null; const d = dueInfo(t.due); return d && d.ms > 0 && d.ms < 400 * 864e5 ? d : null; },
+  cdHtml(i, d = this.due(i)) {
+    const ms = d.at - now();
+    if (ms < 864e5) { const s = Math.floor(ms / 1e3), p = n => String(n).padStart(2, '0');
+      return `<div class="r-cdC" data-at="${d.at}" role="timer" aria-label="${Math.floor(s / 3600)} saat ${Math.floor(s / 60) % 60} dakika kaldı">${[[Math.floor(s / 3600), 'saat'], [Math.floor(s / 60) % 60, 'dk'], [s % 60, 'sn']].map(([n, l]) => `<div><b>${p(n)}</b><small>${l}</small></div>`).join('')}</div>`; }
+    const days = Math.ceil((d.at - new Date(new Date().toDateString()).getTime() - 864e5) / 864e5) || 1, from = i.todo.createdAt || i.createdAt || i.ts, f = d.at > from ? (d.at - now()) / (d.at - from) : 1;
+    const when = new Date(d.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }) + (i.todo.due.includes('T') ? ' · ' + i.todo.due.slice(11, 16) : '');
+    return `<div class="r-cd2">${this.ring(f, 10)}<div><div class="big">${days}<small>gün</small></div><div class="s">${esc(when)}</div></div></div>`;
+  },
+  // stepped progress (d-prog-B): "Sapiens 4/10 bölüm", "ders 3/12", "صفحة 20/300"; a unit word must stand by the numbers (so 4/10 as a date is not taken)
+  PROG: /(?:^|[\s(:·-])(\d{1,3})\s?\/\s?(\d{1,3})(?![\d/.,])/,
+  UNIT: /bölüm|sayfa|ders|ünite|kısım|adım|gün|hafta|ay\b|bölümü|sezon|kitap|seri|ilerleme|chapter|\bch\b|page|lesson|part|episode|\bep\b|unit|step|day|week|module|progress|فصل|صفحة|درس|حلقة|جزء|يوم|أسبوع|وحدة/i,
+  prog(i) {
+    if (i.sticky || i.conv || !['note'].includes(i.type) && !i.todo || this.isDoc(i)) return null;
+    const s = i.todo?.text || i.text || ''; if (!s || (s.match(/\d+\s?\/\s?\d+/g) || []).length !== 1) return null;
+    const m = s.match(this.PROG); if (!m) return null; const n = +m[1], max = +m[2];
+    if (max < 2 || max > 400 || n > max || !this.UNIT.test(s)) return null;
+    return { n, max, at: m.index + m[0].indexOf(m[1]), len: m[0].length - m[0].indexOf(m[1]) };
+  },
+  progHtml(i, p = this.prog(i)) {
+    const seg = p.max <= 30 ? Array.from({ length: p.max }, (_, k) => `<i${k < p.n ? ' class="on"' : ''}></i>`).join('') : `<i class="on" style="flex:${p.n}"></i><i style="flex:${p.max - p.n}"></i>`;
+    return `<div class="r-pg"${/^[^A-Za-zÀ-ž]*[\u0590-\u08ff]/.test(i.todo?.text || i.text || '') ? ' dir="rtl"' : ''}><div class="st${p.max > 30 ? ' bar' : ''}">${seg}</div><div class="rw"><span class="lb">${p.n}/${p.max}</span>
+      <button class="r-sb" data-rich="pg" data-d="-1" aria-label="Bir geri" title="Bir geri"${p.n ? '' : ' disabled'}>${ic('minus', 'sm')}</button><button class="r-sb" data-rich="pg" data-d="1" aria-label="Bir ileri" title="Bir ileri"${p.n < p.max ? '' : ' disabled'}>${ic('plus', 'sm')}</button></div></div>`;
+  },
+  // a chart from a Markdown table in a note (label column + a number column, 3+ rows) or from a .csv file on this device (d-chart-A bars ≤12, d-chart-B line)
+  num(s) { s = String(s).replace(/[\s₺$€£%]|TL|USD|EUR/gi, ''); if (!/^-?[\d.,]+$/.test(s) || !/\d/.test(s)) return NaN;
+    const d = s.lastIndexOf(','), p = s.lastIndexOf('.');
+    if (d >= 0 && p >= 0) s = d > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    else if (d >= 0) s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // Turkish thousands: 11.240
+    return +s; },
+  series(rows) { // rows: arrays of cells, first may be the header
+    rows = rows.filter(r => r.some(c => c.trim())); if (rows.length < 3) return null;
+    const head = rows[0].some(c => c.trim() && isNaN(this.num(c))) && rows.slice(1).some(r => r.some(c => !isNaN(this.num(c)))) ? rows.shift() : null;
+    const w = Math.max(...rows.map(r => r.length)), ok = k => rows.every(r => !isNaN(this.num(r[k] ?? '')));
+    let v = -1; for (let k = w - 1; k >= 0; k--) if (ok(k) && k > 0) { v = k; break; } if (v < 0) return null;
+    const lab = rows[0].findIndex((c, k) => k !== v && isNaN(this.num(c))), pts = rows.slice(0, 60).map((r, k) => ({ l: (lab >= 0 ? r[lab] : String(k + 1)).trim().slice(0, 16), v: this.num(r[v]) }));
+    return pts.length >= 3 ? { name: head ? head[v].trim() : '', pts } : null;
+  },
+  tbl(i) { if (i.type !== 'note' || !i.text || !/^\|.*\|\s*$/m.test(i.text)) return null;
+    const L = i.text.split('\n').filter(l => /^\|.*\|\s*$/.test(l.trim()) && !/^\|?\s*:?-{2,}[-|: ]*$/.test(l.trim()));
+    return this.series(L.map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => Ed.plain(c.trim())))); },
+  csv: i => i.type === 'file' && /\.(csv|tsv)$/i.test(i.fileName || ''),
+  parseCsv(t) { const L = t.split(/\r?\n/).filter(l => l.trim()).slice(0, 62), d = [';', '\t', ','].sort((a, b) => L[0].split(b).length - L[0].split(a).length)[0];
+    return this.series(L.map(l => l.split(d).map(c => c.replace(/^"|"$/g, '')))); },
+  fmtN: v => v.toLocaleString('tr-TR', { maximumFractionDigits: Math.abs(v) < 10 ? 2 : 0 }),
+  chartSvg(s) {
+    const W = 216, H = 78, B = 14, n = s.pts.length, vs = s.pts.map(p => p.v), lo = Math.min(0, ...vs), hi = Math.max(...vs, lo + 1), y = v => 4 + (H - 4) * (1 - (v - lo) / (hi - lo)), bar = n <= 12;
+    const cw = W / n, hit = s.pts.map((p, k) => `<rect class="h" data-rich="bar" data-k="${k}" data-l="${esc(p.l)}" data-v="${this.fmtN(p.v)}" x="${(k * cw).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H + B}"/>`).join('');
+    const lab = k => `<text x="${((k + .5) * cw).toFixed(1)}" y="${H + B - 2}" text-anchor="${k === 0 && !bar ? 'start' : k === n - 1 && !bar ? 'end' : 'middle'}">${esc(s.pts[k].l.slice(0, bar && n > 6 ? 3 : 8))}</text>`;
+    const ticks = bar && n <= 6 ? s.pts.map((_, k) => lab(k)) : [lab(0), lab(n - 1)];
+    let marks;
+    if (bar) { const bw = Math.min(26, cw * .64); marks = s.pts.map((p, k) => `<rect class="b" data-k="${k}" x="${((k + .5) * cw - bw / 2).toFixed(1)}" y="${Math.min(y(p.v), y(0)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, Math.abs(y(0) - y(p.v))).toFixed(1)}" rx="3"/>`).join(''); }
+    else { const P = s.pts.map((p, k) => `${((k + .5) * cw).toFixed(1)},${y(p.v).toFixed(1)}`); marks = `<path class="ar" d="M${P[0]} L${P.join(' L')} L${((n - .5) * cw).toFixed(1)},${y(lo)} L${(cw / 2).toFixed(1)},${y(lo)} Z"/><polyline class="ln" points="${P.join(' ')}"/>` + s.pts.map((p, k) => `<circle class="dt" data-k="${k}" cx="${((k + .5) * cw).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3"/>`).join(''); }
+    return `<svg viewBox="0 0 ${W} ${H + B}" role="img" aria-label="${esc((s.name ? s.name + ': ' : '') + s.pts.map(p => p.l + ' ' + this.fmtN(p.v)).join(', '))}"><line class="ax" x1="0" x2="${W}" y1="${y(lo === 0 ? 0 : lo)}" y2="${y(lo === 0 ? 0 : lo)}"/>${marks}${ticks.join('')}${hit}</svg>`;
+  },
+  chartHtml(s) { const mx = s.pts.reduce((a, p) => p.v > a.v ? p : a); return `<div class="r-chart" data-n="${esc(s.name)}">${this.chartSvg(s)}<div class="r-tip"><span>${esc(s.name || 'En yüksek')}</span> <b>${esc(mx.l)} · ${this.fmtN(mx.v)}</b></div></div>`; },
+  chartTip(el, k) { const c = el.closest('.r-chart'); if (!c) return; c.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); c.querySelectorAll(`[data-k="${k}"]:not(.h)`).forEach(x => x.classList.add('sel'));
+    c.querySelector('.r-tip').innerHTML = `${c.dataset.n ? `<span>${esc(c.dataset.n)}</span> ` : ''}<b>${esc(el.dataset.l)} · ${el.dataset.v}</b>`; },
+  CH: 116, // chart block height (svg 92 + tip) for Board.est
+  // live seconds for every countdown under a day that is on screen (one timer, stops when none is left)
+  live() { if (this.lt) return; this.lt = setInterval(() => { const els = document.querySelectorAll('.r-cdC'); if (!els.length) { clearInterval(this.lt); this.lt = 0; return; }
+    for (const el of els) { const s = Math.max(0, Math.floor((+el.dataset.at - now()) / 1e3)), b = el.querySelectorAll('b'), p = n => String(n).padStart(2, '0'); b[0].textContent = p(Math.floor(s / 3600)); b[1].textContent = p(Math.floor(s / 60) % 60); b[2].textContent = p(s % 60); } }, 1000); },
+
 };
 // keyboard: Enter / Space on a play button or a check box inside a board card (a pointer tap goes through Board's own handler)
 document.addEventListener('click', e => { if (e.detail) return; const c = e.target.closest?.('.bcard'), b = e.target.closest?.('[data-rich]'); if (c && b && Rich.tap(c, b)) e.preventDefault(); });
+document.addEventListener('pointerover', e => { if (e.pointerType !== 'mouse') return; const b = e.target.closest?.('.r-chart [data-rich="bar"]'); if (b) Rich.chartTip(b, +b.dataset.k); }); // 106d: hover shows a bar's value
 
 // ---------- render ----------
 function actsHtml(i) {
@@ -860,14 +946,14 @@ function tagChip(t) {
   let h = 0; for (const ch of k) h = (h * 31 + ch.codePointAt(0)) >>> 0;
   return `<span class="tg" style="--tc:var(--c-${TAG_COLS[h % TAG_COLS.length]})" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
 }
-function metaHtml(i, { tags = 2, acts = false, day = false } = {}) {
+function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
   return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
     ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>` : ''}
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
     ${i.prio === 'high' ? `<span class="m-prio">${ic('flag', 'sm')}Yüksek</span>` : ''}
-    ${i.todo ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : d ? d.label : 'Görev'}</span>`; })() : ''}
+    ${i.todo && due ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : d ? d.label : 'Görev'}</span>`; })() : ''}
     ${rel ? `<span class="rel">${ic('rel', 'sm')}${rel}</span>` : ''}
     ${(i.tags || []).slice(0, tags).map(tagChip).join('')}
     ${(i.tags || []).length > tags ? `<span class="tg more" title="${i.tags.length - tags} etiket daha">+${i.tags.length - tags}</span>` : ''}
@@ -3805,14 +3891,14 @@ const Board = {
   // card height without the DOM (title ≤ 2 lines, text ≤ 3 lines, meta 1 line): 10,000 cards are laid out in memory
   est(i) {
     if (i.sticky) return i.sticky === 'text' ? 40 : Math.max(140, i.h || 0);
-    const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / 24))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
+    const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / (Rich.checks(i) ? 19 : 24)))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
     const rh = Rich.bodyH(i); // 106a
     return 2 + (hasVisual(i) ? 132 : 0) + Rich.embH(i) + 21 + tl * 19 + (rh != null ? rh : sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
   },
   // 128: a rough width of the card's meta row (time, site, flags, tag chips); over one line → the card keeps room for a second
   metaLines(i) {
     const cw = 6.3, chip = t => 26 + t.length * cw;
-    let w = 46 + (i.type === 'link' ? 6 + domain(i.url).length * cw : 0) + (i.type === 'file' && i.size ? 50 : 0) + (i.starred ? 20 : 0) + (i.prio === 'high' ? 70 : 0) + (i.todo ? 70 : 0) + (relatedOf(i).length ? 34 : 0);
+    let w = 46 + (i.type === 'link' ? 6 + domain(i.url).length * cw : 0) + (i.type === 'file' && i.size ? 50 : 0) + (i.starred ? 20 : 0) + (i.prio === 'high' ? 70 : 0) + (i.todo && !Rich.due(i) ? 70 : 0) + (relatedOf(i).length ? 34 : 0);
     for (const t of (i.tags || []).slice(0, 2)) w += 6 + chip(t);
     if ((i.tags || []).length > 2) w += 36; // 130f: the "+N" chip
     return w > this.COLW - 26 ? 2 : 1;
@@ -3844,8 +3930,8 @@ const Board = {
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id || Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
     const rich = Rich.html(i), rb = Rich.body(i); // 106a
-    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
-      ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
+    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div>${Rich.pill(i)}</div>
+      ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i), due: !Rich.due(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
