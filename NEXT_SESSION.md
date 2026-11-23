@@ -95,7 +95,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 131b (c3819ba) otomatik klasörlere yapay zekâ: 104f gömmeleriyle kümeleme, köprü kümeye kısa ad verir, yeni kayıt en yakın klasöre; birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm (PLAN 131 notu)
 - [x] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi (a78ded9)
 - [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
-- [ ] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
+- [~B] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
 - [ ] 116 logo = pano seçici (sağ alttan taşı)
 - [ ] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
 - [ ] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer)
