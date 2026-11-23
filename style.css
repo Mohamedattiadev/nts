@@ -1778,3 +1778,125 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .mo-ring { position: absolute; z-index: 11; border-radius: 14px; border: 2px solid var(--accent); pointer-events: none; }
 .toast .t-mark { width: 22px; height: 22px; border-radius: 7px; flex: none; } .toast .t-mark svg { width: 14px; height: 14px; }
 @media (prefers-reduced-motion: reduce) { .bcard.dragging { transform: none; } .mo-slot::before { animation: none; } .tip::after { transition: none; } }
+
+/* ---------- 131: automatic folders (design/folders.html → A Cep · B Yığın · C Albüm · D Dosya · E Ayraç) ---------- */
+.folders, .f-head { --paper: #202026; --paper-line: #3a3a44; --f-back: #1d1d23; --f-front: rgb(30 30 36 / .72); --f-edge: rgb(255 255 255 / .07);
+  --f-sh1: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .35); --f-sh2: 0 2px 4px rgb(0 0 0 / .45), 0 16px 36px rgb(0 0 0 / .45);
+  --f-shi: 0 1px 2px rgb(0 0 0 / .45), 0 4px 10px rgb(0 0 0 / .3); --f-ease: cubic-bezier(.2, .8, .2, 1); }
+[data-theme="light"] .folders, [data-theme="light"] .f-head { --paper: #fff; --paper-line: #e4e4df; --f-back: #ecebe7; --f-front: rgb(255 255 255 / .74); --f-edge: rgb(255 255 255 / .9);
+  --f-sh1: 0 1px 2px rgb(0 0 0 / .05), 0 6px 18px rgb(0 0 0 / .06); --f-sh2: 0 2px 4px rgb(0 0 0 / .06), 0 16px 36px rgb(0 0 0 / .11);
+  --f-shi: 0 1px 2px rgb(0 0 0 / .1), 0 4px 10px rgb(0 0 0 / .07); }
+.folders { margin: 4px 0 22px; grid-column: 1 / -1; }
+.f-top { display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; }
+.f-top h2 { font-size: 13px; font-weight: 650; margin: 0; color: var(--text-2); letter-spacing: .01em; }
+.f-top .n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.f-top .sp, .f-head .sp { flex: 1; }
+.f-top .link-btn { min-height: 44px; padding: 0 6px; }
+.f-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 22px 18px; }
+.fs-E .f-grid { row-gap: 30px; }
+@media (max-width: 600px) { .f-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; } .fs-E .f-grid { row-gap: 26px; } }
+.fold { all: unset; box-sizing: border-box; position: relative; display: block; cursor: pointer; border-radius: 16px; min-width: 0; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+.fold *, .fold *::before, .fold *::after { box-sizing: border-box; }
+.fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.f-name { font-weight: 620; font-size: 14px; line-height: 1.25; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-cnt { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the little items that peek out: real thumbnails, else a paper note / link card */
+.f-it { position: absolute; border-radius: 7px; overflow: hidden; box-shadow: var(--f-shi); background: var(--paper); transition: transform .18s var(--f-ease); color: var(--muted); }
+.f-it.img { display: grid; place-items: center; background: var(--surface-2); }
+.f-it.img > svg { width: 22px; height: 22px; opacity: .55; }
+.f-it.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
+.f-it.img img.ok { opacity: 1; }
+.f-it .badge { position: absolute; left: 4px; bottom: 4px; font-size: 8.5px; font-weight: 700; padding: 1px 4px; border-radius: 4px; background: var(--surface-3); color: var(--text-2); }
+.f-it.note, .f-it.link { padding: 8px 9px; border: 1px solid var(--paper-line); }
+.f-it.note b, .f-it.link b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 9.5px; line-height: 1.25; font-weight: 650; color: var(--text); overflow: hidden; overflow-wrap: anywhere; }
+.f-it.note i { display: block; height: 4px; border-radius: 2px; background: var(--paper-line); margin-top: 6px; }
+.f-it.note i:nth-of-type(2) { width: 80%; } .f-it.note i:nth-of-type(3) { width: 62%; }
+.f-it.link em { display: block; width: 14px; height: 14px; border-radius: 4px; margin-bottom: 6px; background: var(--c); overflow: hidden; }
+.f-it.link em img { width: 100%; height: 100%; object-fit: cover; display: block; background: #fff; }
+.f-it.link small { display: block; font-size: 8.5px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A · Cep */
+.fa { aspect-ratio: 1.32; }
+.fa .f-back { position: absolute; inset: 12px 0 0; background: var(--f-back); border-radius: 4px 16px 16px 16px; box-shadow: var(--f-sh1); transition: box-shadow .18s; }
+.fa .f-back::before { content: ""; position: absolute; left: 0; bottom: 100%; width: 42%; height: 13px; background: var(--f-back); border-radius: 12px 12px 0 0; clip-path: polygon(0 0, 82% 0, 100% 100%, 0 100%); }
+.fa .f-pk { position: absolute; inset: 22px 10px 0; }
+.fa .f-pk .f-it { top: 0; height: 70%; }
+.fa .f-pk .f-it:nth-child(1) { left: 2%; width: 44%; transform: rotate(-4deg); }
+.fa .f-pk .f-it:nth-child(2) { left: 29%; width: 42%; transform: rotate(1.5deg) translateY(-4px); z-index: 1; }
+.fa .f-pk .f-it:nth-child(3) { right: 2%; width: 42%; transform: rotate(5deg) translateY(3px); }
+.fa .f-front { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; border-radius: 14px 14px 16px 16px; background: var(--f-front);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); box-shadow: inset 0 1px 0 var(--f-edge);
+  padding: 0 14px 12px; display: flex; flex-direction: column; justify-content: flex-end; z-index: 2; }
+.fa:hover .f-back, .fa:focus-visible .f-back { box-shadow: var(--f-sh2); }
+.fa:hover .f-it:nth-child(1), .fa:focus-visible .f-it:nth-child(1) { transform: rotate(-6deg) translate(-3px, -9px); }
+.fa:hover .f-it:nth-child(2), .fa:focus-visible .f-it:nth-child(2) { transform: rotate(1deg) translateY(-14px); transition-delay: .03s; }
+.fa:hover .f-it:nth-child(3), .fa:focus-visible .f-it:nth-child(3) { transform: rotate(7deg) translate(3px, -8px); transition-delay: .06s; }
+/* B · Yığın (fan opens on hover — the owner liked this animation) */
+.fb .f-st { position: relative; aspect-ratio: 1.32; }
+.fb .f-st .f-it { left: 17%; right: 17%; top: 9%; bottom: 7%; border: 4px solid var(--paper); border-radius: 10px; transform-origin: 50% 90%; }
+.fb .f-st .f-it.note, .fb .f-st .f-it.link { border-width: 1px; padding: 12px 13px; }
+.fb .f-st .f-it.note b, .fb .f-st .f-it.link b { font-size: 11px; }
+.fb .f-st .f-it:nth-last-child(3) { transform: rotate(-8deg) translateX(-6%); }
+.fb .f-st .f-it:nth-last-child(2) { transform: rotate(6deg) translateX(6%); }
+.fb .f-st .f-it:last-child { transform: none; z-index: 1; box-shadow: var(--f-sh2); }
+.fb:hover .f-st .f-it:nth-last-child(3), .fb:focus-visible .f-st .f-it:nth-last-child(3) { transform: rotate(-13deg) translateX(-12%); }
+.fb:hover .f-st .f-it:nth-last-child(2), .fb:focus-visible .f-st .f-it:nth-last-child(2) { transform: rotate(11deg) translateX(12%); }
+.fb:hover .f-st .f-it:last-child, .fb:focus-visible .f-st .f-it:last-child { transform: translateY(-5px); }
+.fb .f-cap { padding: 6px 4px 0; text-align: center; }
+/* C · Albüm */
+.fc { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; box-shadow: var(--f-sh1); transition: box-shadow .18s, transform .18s var(--f-ease); }
+.fc .f-mos { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; aspect-ratio: 1.5; border-radius: 10px; overflow: hidden; }
+.fc .f-mos .f-it { position: relative; min-width: 0; border-radius: 0; box-shadow: none; }
+.fc .f-mos .f-it:first-child { grid-row: 1 / 3; }
+.fc .f-mos .f-it.note, .fc .f-mos .f-it.link { border: 0; background: var(--surface-2); }
+.fc .f-it.more span { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / .45); color: #fff; font-weight: 650; font-size: 13px; z-index: 2; }
+.fc .f-cap { display: flex; align-items: center; gap: 8px; padding: 9px 4px 2px; }
+.fc .f-cap > div { min-width: 0; }
+.f-ic { width: 22px; height: 17px; flex: none; position: relative; }
+.f-ic::before { content: ""; position: absolute; inset: 3px 0 0; border-radius: 2px 4px 4px 4px; background: var(--c); opacity: .9; }
+.f-ic::after { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 5px; border-radius: 2px 2px 0 0; background: var(--c); opacity: .9; }
+.fc:hover, .fc:focus-visible { box-shadow: var(--f-sh2); transform: translateY(-2px); }
+/* D · Dosya (owner: "daha güzel olmalı" → paper sheets inside, a soft fold line, a deeper shadow and a real flap opening) */
+.fd { text-align: center; padding: 8px 4px 6px; }
+.fd .f-ico { position: relative; width: 78%; margin: 0 auto 10px; aspect-ratio: 1.3; perspective: 420px; filter: drop-shadow(0 6px 10px rgb(0 0 0 / .14)); }
+.fd .f-bk { position: absolute; inset: 12% 0 0; border-radius: 5px 12px 12px 12px; background: linear-gradient(color-mix(in oklab, var(--c) 74%, #000), color-mix(in oklab, var(--c) 86%, #000)); }
+.fd .f-bk::before { content: ""; position: absolute; left: 0; bottom: 99%; width: 40%; height: 14%; min-height: 9px; border-radius: 6px 9px 0 0; background: color-mix(in oklab, var(--c) 74%, #000); }
+.fd .f-pk { position: absolute; inset: 17% 9% 22%; }
+.fd .f-pk .f-it { top: 0; height: 100%; width: 58%; transition: transform .24s var(--f-ease); }
+.fd .f-pk .f-it:nth-child(1) { left: 0; transform: rotate(-5deg); } .fd .f-pk .f-it:nth-child(2) { right: 0; transform: rotate(4deg) translateY(4px); }
+.fd .f-fr { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; border-radius: 9px 9px 12px 12px; transform-origin: 50% 100%;
+  background: linear-gradient(color-mix(in oklab, var(--c) 58%, #fff), color-mix(in oklab, var(--c) 78%, #fff));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), inset 0 -10px 18px -12px rgb(0 0 0 / .25), 0 1px 3px rgb(0 0 0 / .18); display: grid; place-items: center;
+  font: 800 clamp(20px, 3.2vw, 28px)/1 Inter, system-ui, sans-serif; color: color-mix(in oklab, var(--c) 70%, #000); transition: transform .24s var(--f-ease), box-shadow .24s; }
+.fd .f-fr::before { content: ""; position: absolute; left: 10%; right: 10%; top: 16%; height: 1px; background: rgb(255 255 255 / .45); }
+.fd .f-fr span { opacity: .5; text-shadow: 0 1px 0 rgb(255 255 255 / .35); }
+.fd:hover .f-fr, .fd:focus-visible .f-fr { transform: rotateX(-26deg); box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 8px 14px -6px rgb(0 0 0 / .3); }
+.fd:hover .f-pk .f-it:nth-child(1), .fd:focus-visible .f-pk .f-it:nth-child(1) { transform: rotate(-8deg) translateY(-10px); }
+.fd:hover .f-pk .f-it:nth-child(2), .fd:focus-visible .f-pk .f-it:nth-child(2) { transform: rotate(7deg) translateY(-7px); }
+.fd .f-name { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 6px; }
+.fd:focus-visible { outline: none; } .fd:focus-visible .f-name { background: var(--accent); color: var(--bg); }
+/* E · Ayraç (default; the owner liked the coloured tab) */
+.fe { padding-top: 24px; isolation: isolate; }
+.fe .f-tab { position: absolute; top: 0; left: 12px; max-width: calc(100% - 40px); height: 28px; padding: 0 12px; border-radius: 10px 10px 0 0;
+  background: var(--c); color: #fff; font-size: 12.5px; font-weight: 650; line-height: 27px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: transform .18s var(--f-ease); }
+.fe .f-tab .f-pin svg { width: 11px; height: 11px; vertical-align: -1px; }
+.fe .f-pg { position: absolute; left: 6px; right: 0; top: 30px; bottom: -6px; border-radius: 6px 14px 14px 14px; background: var(--surface-2); border: 1px solid var(--line); transition: transform .2s var(--f-ease); }
+.fe .f-pg + .f-pg { left: 12px; right: -6px; top: 36px; bottom: -12px; background: var(--surface-3); z-index: -1; }
+.fe .f-body { position: relative; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 4px 14px 14px 14px; padding: 10px; box-shadow: var(--f-sh1); }
+.fe .f-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.fe .f-row .f-it { position: relative; aspect-ratio: 1; border-radius: 8px; padding: 6px; box-shadow: none; }
+.fe .f-row .f-it.note i, .fe .f-row .f-it.link small { display: none; }
+.fe .f-cnt { margin-top: 8px; }
+.fe:hover .f-tab, .fe:focus-visible .f-tab { transform: translateY(-4px); }
+.fe:hover .f-pg, .fe:focus-visible .f-pg { transform: translate(3px, 3px) rotate(1deg); }
+.fold:active { transform: scale(.985); }
+/* inside a folder */
+.f-head { display: flex; align-items: center; gap: 8px; margin: 2px 0 14px; padding: 6px 6px 6px 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); grid-column: 1 / -1; }
+.f-head [data-fback] svg { transform: rotate(180deg); }
+.f-head .f-t { display: flex; flex-direction: column; min-width: 0; }
+.f-head .f-t b { font-size: 15px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-head .f-t small { font-size: 12px; color: var(--muted); }
+.f-head .icon-btn { min-width: 44px; min-height: 44px; }
+.f-head .icon-btn.on { color: var(--accent); }
+.f-rename { font: inherit; font-size: 15px; font-weight: 650; min-width: 0; width: 100%; max-width: 360px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); }
+.f-set .seg { flex-wrap: wrap; justify-content: flex-end; }
+@media (prefers-reduced-motion: reduce) { .fold, .fold * { transition: none !important; } .fold:active { transform: none; } }

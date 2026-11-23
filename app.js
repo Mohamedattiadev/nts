@@ -427,7 +427,7 @@ let _rs; const inRange = ts => { const [a, b] = _rs || (_rs = rangeStart()); ret
 const rangeLabel = () => (RANGES().find(r => r[0] === (S.boardRange || '30')) || [0, 'Son 30 gün'])[1];
 let _vis = {};
 function visible(keepAll = false) { // same list, same filter → same answer (render runs often)
-  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.boardRange, S.board].map(String).join('|') + (keepAll ? 'k' : '');
+  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.boardRange, S.board, S.folder].map(String).join('|') + (keepAll ? 'k' : '');
   if (_vis.items === S.items && _vis.hits === S.hits && _vis.key === key) return _vis.out;
   const out = visible0(keepAll); _vis = { items: S.items, hits: S.hits, key, out }; return out;
 }
@@ -440,6 +440,7 @@ function visible0(keepAll) {
     && (!f.list || inList(i, f.list))
     && (!f.color || i.color === f.color)
     && (!f.src || srcMatch(i, f.src))
+    && (!inFolder() || Folders.test(i, S.folder))
     && !HIDDEN.has(i.type)
     && (keepAll || !S.searchOn || !S.hits || S.hits.has(i.id))
     // photos inside a conversation: in the gallery and in search results, not as their own rows/cards
@@ -990,7 +991,7 @@ function renderList(items, append = false) {
     $('#more')?.remove(); el.insertAdjacentHTML('beforeend', rows(add, prev ? dayKey(prev.ts) : '', null) + more());
   } else {
     const head = S.listFrom ? `<div class="l-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : '';
-    el.innerHTML = topBtns() + head + otdHtml() + rows(shown, '', null) + more();
+    el.innerHTML = Folders.head() + topBtns() + head + Folders.html(items) + otdHtml() + rows(shown, '', null) + more();
   }
   el._shown = shown.length; el._items = items; el._start = start;
   hookThumbs(el);
@@ -1027,11 +1028,133 @@ function renderGallery(items) { // month headers stick to the top while scrollin
     html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0">
     ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
-  el.innerHTML = media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
-    : filtered() ? emptyHtml('filter', 'Bu süzgeçte görsel yok', 'Resim, PDF, video ya da görseli olan link bu süzgeçte yok.', unfilterBtn()) : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
+  el.innerHTML = Folders.head() + (media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + Folders.html(media) + html
+    : filtered() ? emptyHtml('filter', 'Bu süzgeçte görsel yok', 'Resim, PDF, video ya da görseli olan link bu süzgeçte yok.', unfilterBtn()) : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.'));
   hookThumbs(el);
   Peek.dock(); // no tiles → no docked "hover a card" panel Sel.paint();
 }
+// 131: automatic folders at the top of the list and the gallery ("5000 things = 5000 scrolls" → ~20-40 folders). Virtual: an item is
+// never moved and can sit in several folders. Made without AI from what items already carry: tag, project, WhatsApp chat, bookmarks,
+// site, kind, year. Styles A Cep · B Yığın · C Albüm · D Dosya · E Ayraç (default) from design/folders-choices.json, picked in Settings.
+const Folders = {
+  STYLES: [['E', 'Ayraç'], ['A', 'Cep'], ['B', 'Yığın'], ['C', 'Albüm'], ['D', 'Dosya']],
+  COLS: ['#c2410c', '#4f5fd6', '#15803d', '#c2255c', '#0b6bcb', '#7c3aed', '#b45309', '#0f766e'],
+  KINDS: { image: 'Resimler', video: 'Videolar', pdf: "PDF'ler", audio: 'Sesler' },
+  cfg() { return (S.settings ||= {}).folders ||= {}; },
+  style() { const s = this.cfg().style; return this.STYLES.some(x => x[0] === s) ? s : 'E'; },
+  host: i => i.type === 'link' && i.url ? (/^https?:\/\/(?:www\.|m\.)?([^/:?#]+)/i.exec(i.url)?.[1] || '').toLowerCase() : '',
+  test(i, k) {
+    const c = k.indexOf(':'), t = k.slice(0, c), v = k.slice(c + 1);
+    if (t === 'tag') return (i.tags || []).includes(v);
+    if (t === 'proj') return i.project === v;
+    if (t === 'src') return srcMatch(i, v);
+    if (t === 'site') return this.host(i) === v;
+    if (t === 'kind') return fileKind(i) === v;
+    if (t === 'year') return new Date(i.ts).getFullYear() === +v;
+    return false;
+  },
+  label(k) {
+    const n = this.cfg().names?.[k]; if (n) return n;
+    const c = k.indexOf(':'), t = k.slice(0, c), v = k.slice(c + 1);
+    return t === 'tag' ? '#' + v : t === 'src' ? (v.startsWith('wa:') ? (v.slice(3) || 'WhatsApp') + ' · WhatsApp' : srcName(v)) : t === 'kind' ? this.KINDS[v] || v : v;
+  },
+  color(k) {
+    const t = k.slice(0, k.indexOf(':'));
+    if (t === 'src') return k.startsWith('src:wa:') ? '#15803d' : '#b45309';
+    if (t === 'site') return '#6e7781'; if (t === 'year') return '#0b6bcb'; if (t === 'kind') return '#7c3aed';
+    let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) | 0; return this.COLS[Math.abs(h) % this.COLS.length];
+  },
+  // the strip is for browsing everything: a filter, a search, "from date" or an open folder hide it
+  shown: () => !S.folder && !filtered() && !(S.searchOn && S.q.trim()) && !S.listFrom,
+  _c: null,
+  build(items) { // one pass over the items; same list → same folders (render runs often)
+    const cf = this.cfg(), key = JSON.stringify([cf.pin, cf.hide, cf.names]);
+    if (this._c?.items === items && this._c.key === key) return this._c.out;
+    const m = new Map(), add = (k, i) => { let f = m.get(k); if (!f) m.set(k, f = { k, n: 0, top: [], kinds: {} }); f.n++; if (f.top.length < 3) f.top.push(i); const fk = fileKind(i); f.kinds[fk] = (f.kinds[fk] || 0) + 1; };
+    const years = new Set();
+    for (const i of items) {
+      for (const t of i.tags || []) add('tag:' + t, i);
+      if (i.project) add('proj:' + i.project, i);
+      if (i.source === 'whatsapp') add('src:wa:' + (i.chat || ''), i); else if (i.source === 'bookmarks') add('src:bookmarks', i);
+      const h = this.host(i); if (h) add('site:' + h, i);
+      const fk = fileKind(i); if (this.KINDS[fk]) add('kind:' + fk, i);
+      const y = new Date(i.ts).getFullYear(); years.add(y); add('year:' + y, i);
+    }
+    const hide = new Set(cf.hide || []), pin = cf.pin || [], min = { tag: 3, proj: 2, src: 3, site: 4, kind: 5, year: 5 }, rank = k => ({ kind: 1, year: 2 })[k.slice(0, k.indexOf(':'))] || 0;
+    const out = [...m.values()].filter(f => { const t = f.k.slice(0, f.k.indexOf(':'));
+      return !hide.has(f.k) && f.n >= min[t] && f.n < items.length && (t !== 'year' || years.size > 1); })
+      .sort((a, b) => (pin.includes(b.k) - pin.includes(a.k)) || rank(a.k) - rank(b.k) || b.n - a.n) // what you made (tag, project, chat, site) before kind and year.slice(0, 40);
+    this._c = { items, key, out }; return out;
+  },
+  meta(f) { // "13 resim · 2 not"
+    const L = { image: 'resim', video: 'video', pdf: 'PDF', audio: 'ses', link: 'bağlantı', note: 'not', text: 'metin', file: 'dosya' };
+    return Object.entries(f.kinds).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => n + ' ' + (L[k] || k)).join(' · ');
+  },
+  mini(i) { // a small item that peeks out of the folder: the real picture, else a little paper note / link card
+    if (hasVisual(i)) return thumbBox(i, 'f-it img');
+    if (i.type === 'link') return `<div class="f-it link" dir="auto"><em>${i.meta?.logo ? `<img src="${esc(i.meta.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</em><b>${esc(titleOf(i))}</b><small>${esc(this.host(i))}</small></div>`;
+    return `<div class="f-it note" dir="auto"><b>${esc(titleOf(i))}</b><i></i><i></i><i></i></div>`;
+  },
+  card(f, st) {
+    const name = esc(this.label(f.k)), meta = this.meta(f), c = this.color(f.k), top = f.top, fill = n => Array.from({ length: n }, (_, k) => top[k % top.length]);
+    const cap = `<div class="f-name" dir="auto">${name}</div><div class="f-cnt">${meta}</div>`, pin = (this.cfg().pin || []).includes(f.k) ? ` <span class="f-pin">${ic('pin', 'sm')}</span>` : '';
+    const a = `class="fold f${st.toLowerCase()}" data-fold="${esc(f.k)}" style="--c:${c}" aria-label="${name}, ${f.n} kayıt"`;
+    if (st === 'A') return `<button ${a}><div class="f-back"></div><div class="f-pk">${top.map(i => this.mini(i)).join('')}</div><div class="f-front">${cap}</div></button>`;
+    if (st === 'B') return `<button ${a}><div class="f-st">${top.slice().reverse().map(i => this.mini(i)).join('')}</div><div class="f-cap">${cap}</div></button>`;
+    if (st === 'C') { const tiles = fill(3).map((i, k) => k === 2 && f.n > 3 ? this.mini(i).replace('class="f-it', 'class="f-it more').replace(/<\/div>$/, `<span>+${f.n - 2}</span></div>`) : this.mini(i));
+      return `<button ${a}><div class="f-mos">${tiles.join('')}</div><div class="f-cap"><span class="f-ic"></span><div>${cap}</div></div></button>`; }
+    if (st === 'D') return `<button ${a}><div class="f-ico"><div class="f-bk"></div><div class="f-pk">${top.slice(0, 2).map(i => this.mini(i)).join('')}</div><div class="f-fr"><span>${esc([...this.label(f.k).replace(/^#/, '')][0] || '·')}</span></div></div>${cap}</button>`;
+    return `<button ${a}><div class="f-tab" dir="auto">${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div><div class="f-cnt">${f.n} kayıt · ${meta}</div></div></button>`;
+  },
+  html(items) {
+    if (!this.shown() || items.length < 24) return '';
+    const all = this.build(items); if (all.length < 2) return '';
+    const st = this.style(), cap = innerWidth < 600 ? 4 : innerWidth < 1100 ? 6 : 8, list = S.foldAll ? all : all.slice(0, cap);
+    return `<section class="folders fs-${st}" aria-label="Klasörler"><div class="f-top"><h2>Klasörler</h2><span class="n">${all.length}</span><span class="sp"></span>${all.length > cap ? `<button class="link-btn" data-foldall>${S.foldAll ? 'Daha az' : `Tümü (${all.length})`}</button>` : ''}</div>`
+      + `<div class="f-grid">${list.map(f => this.card(f, st)).join('')}</div></section>`;
+  },
+  head() { // inside a folder: back, name, count, pin / rename / hide
+    if (!inFolder()) return '';
+    const k = S.folder, pinned = (this.cfg().pin || []).includes(k), n = visible().length;
+    return `<div class="f-head" style="--c:${this.color(k)}"><button class="icon-btn" data-fback title="Klasörlerden çık (Esc)" aria-label="Klasörlerden çık">${ic('chev')}</button>`
+      + `<span class="f-ic"></span><div class="f-t"><b dir="auto">${esc(this.label(k))}</b><small>${n} kayıt</small></div><span class="sp"></span>`
+      + `<button class="icon-btn${pinned ? ' on' : ''}" data-fpin aria-pressed="${pinned}" title="${pinned ? 'Sabitlemeyi kaldır' : 'Başa sabitle'}" aria-label="Başa sabitle">${ic('pin', 'sm')}</button>`
+      + `<button class="icon-btn" data-fname title="Yeniden adlandır" aria-label="Yeniden adlandır">${ic('pen', 'sm')}</button>`
+      + `<button class="icon-btn" data-fhide title="Bu klasörü gizle" aria-label="Bu klasörü gizle">${ic('eye', 'sm')}</button></div>`;
+  },
+  open(k, el) {
+    const r = el?.getBoundingClientRect();
+    S.folder = k; S.limit = 300; history.pushState({ nts: 'folder' }, ''); scrollTo(0, 0); render();
+    const box = $('#' + (S.view === 'gallery' ? 'gallery' : 'list'));
+    if (r && box && !reduced()) { const b = box.getBoundingClientRect(); // 102: the folder grows into the page
+      box.animate([{ transformOrigin: `${r.left + r.width / 2 - b.left}px ${r.top + r.height / 2 - b.top}px`, transform: `scale(${Math.max(.3, r.width / b.width)})`, opacity: 0 }, { transformOrigin: `${r.left + r.width / 2 - b.left}px ${r.top + r.height / 2 - b.top}px`, transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.2, .8, .2, 1)' }); }
+    $('.f-head [data-fback]')?.focus({ preventScroll: true });
+  },
+  close(fromPop) {
+    if (!S.folder) return; const k = S.folder; S.folder = null;
+    if (!fromPop && history.state?.nts === 'folder') { Back._skip = true; history.back(); }
+    render(); const c = document.querySelector(`[data-fold="${CSS.escape(k)}"]`); c?.focus({ preventScroll: true }); c?.scrollIntoView({ block: 'nearest' });
+  },
+  async set(fn) { fn(this.cfg()); this._c = null; await saveSettings(); render(); },
+  click(e) { // true = handled
+    const t = e.target;
+    const f = t.closest('[data-fold]'); if (f) { this.open(f.dataset.fold, f); return true; }
+    if (t.closest('[data-foldall]')) { S.foldAll = !S.foldAll; render(); return true; }
+    if (t.closest('[data-fback]')) { this.close(); return true; }
+    const k = S.folder; if (!k) return false;
+    if (t.closest('[data-fpin]')) { this.set(c => { const p = c.pin ||= []; const at = p.indexOf(k); at < 0 ? p.unshift(k) : p.splice(at, 1); }); return true; }
+    if (t.closest('[data-fhide]')) { this.set(c => (c.hide ||= []).push(k)); this.close(); toast('Klasör gizlendi', 6000, 'eye', { label: 'Geri al', fn: () => this.set(c => c.hide = (c.hide || []).filter(x => x !== k)) }); return true; }
+    if (t.closest('[data-fname]')) { const b = $('.f-head .f-t b'); if (!b) return true;
+      const inp = document.createElement('input'); inp.className = 'f-rename'; inp.value = this.label(k); inp.setAttribute('aria-label', 'Klasör adı'); b.replaceWith(inp); inp.focus(); inp.select();
+      const done = ok => { inp.onblur = null; const v = inp.value.trim(); if (ok && v && v !== this.label(k)) this.set(c => (c.names ||= {})[k] = v); else render(); };
+      inp.onkeydown = ev => { if (ev.key === 'Enter') done(true); if (ev.key === 'Escape') { ev.stopPropagation(); done(false); } }; inp.onblur = () => done(true); return true; }
+    return false;
+  },
+  init() {
+    addEventListener('popstate', () => { if (S.folder && history.state?.nts !== 'folder') this.close(true); });
+    document.addEventListener('keydown', e => { if (e.key !== 'Escape' || !S.folder || e.defaultPrevented || document.querySelector('dialog[open]') || e.target.closest?.('input,textarea,[contenteditable="true"]')) return; this.close(); });
+  },
+};
 function renderTopics(items) {
   const el = $('#topics'), by = new Map();
   for (const i of items) {
@@ -1120,7 +1243,8 @@ function emptyHtml(icn, h, p, actions = '') {
   const art = EMPTY_ART[icn] ? `<svg class="e-art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EMPTY_ART[icn]}</svg>` : `<div class="e-ico">${ic(icn, 'lg')}</div>`;
   return `<div class="empty">${art}<h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
 }
-const filtered = () => { const f = S.filter; return f.type !== 'all' || f.star || !!(f.list || f.tag || f.color || f.src); };
+const filtered = () => { const f = S.filter; return f.type !== 'all' || f.star || !!(f.list || f.tag || f.color || f.src || inFolder()); };
+const inFolder = () => !!S.folder && (S.view === 'list' || S.view === 'gallery'); // 131: a folder holds in the list and the gallery, not on the board
 const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic('x', 'sm')}Süzgeci kaldır</button>`;
 
 let renderQueued = false;
@@ -1131,7 +1255,7 @@ function render(force) {
     renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + JSON.stringify(S.settings?.folders || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
     renderHits();
@@ -5626,6 +5750,8 @@ function openSettings(page = 'main') {
       <div class="set-line"><span>Tema</span><div class="seg sm"><button data-do="light" class="${dark ? '' : 'on'}">${ic('sun', 'sm')}Açık</button><button data-do="dark" class="${dark ? 'on' : ''}">${ic('moon', 'sm')}Koyu</button></div></div>
       <div class="set-line"><span>Ana renk</span><div class="swatches">${ACCENTS.map(([k, n, l, d]) => `<button class="sw${k === cur ? ' on' : ''}" data-accent="${k}" title="${n}" style="--c:${dark ? d : l}"></button>`).join('')}
         <label class="sw custom${cur === 'custom' ? ' on' : ''}" title="Özel renk" style="--c:${cur === 'custom' ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)'}"><input type="color" id="accentPick" value="${(() => { try { const v = localStorage.getItem('hn-accent'); return v?.startsWith('#') ? v : '#e8590c'; } catch { return '#e8590c'; } })()}"></label></div></div>
+      <div class="set-line f-set"><span>Klasör stili</span><div class="seg sm">${Folders.STYLES.map(([k, l]) => `<button data-fstyle="${k}" class="${Folders.style() === k ? 'on' : ''}" aria-pressed="${Folders.style() === k}">${l}</button>`).join('')}</div></div>
+      ${(Folders.cfg().hide || []).length ? `<button class="set-row" data-fshow>${ic('eye')}<span>Gizli klasörleri geri getir (${Folders.cfg().hide.length})<small>${esc(Folders.cfg().hide.map(k => Folders.label(k)).slice(0, 4).join(', '))}</small></span></button>` : ''}
       ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle<small>Ana ekrana ekle, Paylaş menüsünde çıksın</small></span></button>` : ''}
     </div>
     <div class="set-sec"><h4>Yapay zekâ</h4>
@@ -5677,6 +5803,8 @@ function openSettings(page = 'main') {
     const d = e.target.closest('[data-do]')?.dataset.do, acc = e.target.closest('[data-accent]')?.dataset.accent;
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
+    const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
+    if (e.target.closest('[data-fshow]')) { Folders.set(c => c.hide = []).then(openSettings); return; }
     if (!d) return;
     if (d === 'wa') $('#waInput').click();
     else if (d === 'move') openSettings('move');
@@ -5877,6 +6005,7 @@ function wire() {
   Todo.init();
   Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
+    if ((id === '#list' || id === '#gallery') && Folders.click(e)) return;
     if (id === '#gallery' && Sel.click(e)) return;
     const a = e.target.closest('.act'); if (a) { e.stopPropagation(); return itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); }
     if (e.target.closest('[data-ljump]')) return monthJump(e.target.closest('[data-ljump]'));
@@ -5884,7 +6013,7 @@ function wire() {
     const od = e.target.closest('[data-otd]'); if (od) return showFrom(dayEnd(od.dataset.otd));
     if (e.target.closest('[data-otdx]')) { try { localStorage.setItem('hn-otd-hide', dayKey(now())); } catch { } return render(true); }
     if (e.target.closest('[data-lnow]')) { S.listFrom = null; S.limit = 300; render(); return scrollTo(0, 0); }
-    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'unfilter') { Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); return render(); } if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
+    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'unfilter') { if (S.folder) return Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); return render(); } if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
     const th = e.target.closest('.topic-head');
     if (th) { const t = th.dataset.tag; S.filter.tag = t === '(etiketsiz)' ? null : t; setView('list'); scrollTo(0, 0); return; }
     const it = e.target.closest('[data-id]'); if (it) openItem(it.dataset.id);
@@ -5903,7 +6032,7 @@ function wire() {
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
   addEventListener('online', () => { Sync.schedule(); Live.check(); });
-  Board.init(); Back.init(); Morph.init(); Native.init();
+  Board.init(); Back.init(); Folders.init(); Morph.init(); Native.init();
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;

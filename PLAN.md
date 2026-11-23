@@ -643,7 +643,7 @@ Site:
             (düşük doygunluk, AA kontrast korunur), kartta en çok 2 çip + "+N", tür simgesi tek renkli; seçim çerçevesi tek vurgu rengi.
         Alınmaz: Mac'e özel yerel uygulama, iCloud, diskte klasör saklama (Nts PWA + IndexedDB + GitHub; Markdown dışa aktarma zaten 107j).
 
-- [ ] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
+- [~] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
         SEÇİM (sahip 2026-11-24, design/folders-choices.json): A Cep, B Yığın (\"animasyon iyi\"), C Albüm, D Dosya (\"güzel ama daha güzel
         olmalı\" → gölge/kağıt dokusu/kapak açılışı iyileştir), E Ayraç (\"bu etiketi beğendim\" → varsayılan). F–J alınmaz. Ayarda stil seçimi.
         gibi klasör kartları: kartın üstünde içindeki 2–3 kaydın küçük önizlemesi klasör sekmesinden taşar, altta ad + "13 resim · 2 not".
@@ -660,6 +660,17 @@ Site:
         üstüne gelince/dokununca içindekiler biraz yukarı çıkar (150–200 ms, reduced-motion'da yok); açılınca kart klasörün içine
         büyüyerek geçer (FLIP, 102); koyu temada da aynı kalite; telefonda 2 sütun, 44 px. Örnek sayfada her stilin ekran görüntüsü
         (masaüstü + telefon, açık + koyu) design/ux'e; görüntüye bakmadan "güzel" deme.
+        [x] 2026-11-24, B hattı (yapay zekâsız kısım): liste ve galerinin başında "Klasörler N" şeridi (süzgeç/arama/tarihten/klasör açıkken yok,
+            ≥24 kayıt + ≥2 klasör). Kaynak: etiket (≥3), proje (≥2), WhatsApp sohbeti / yer imleri (≥3), site (≥4), tür (Resimler, Videolar,
+            PDF'ler, Sesler ≥5), yıl (≥5, en az 2 yıl varsa); sıra: sabitlenen → etiket/proje/sohbet/site → tür → yıl, kayıt sayısına göre; en
+            çok 40; masaüstü 8 / tablet 6 / telefon 4 + "Tümü (N)". Sanal: Folders.test süzgeci (S.folder, yalnız liste/galeride, panoda yok).
+            Stiller A Cep · B Yığın · C Albüm · D Dosya (daha güzel: içte kâğıtlar, kapakta katlama çizgisi, gölge, kapak 26° açılır) · E Ayraç
+            (varsayılan); Ayarlar → Görünüm → "Klasör stili". Önizlemede gerçek küçük resimler (thumbBox, tembel), resimsizse kâğıt not / link
+            kartı. Tıkla → klasör sayfayla büyüyerek açılır (240 ms, reduced-motion'da yok), üstte başlık: ← · ad · N kayıt · sabitle · yeniden
+            adlandır (yerinde) · gizle (+ "Geri al" bildirimi; Ayarlar'da "Gizli klasörleri geri getir"). Geri tuşu / Esc / ← kapatır, odak
+            klasöre döner. Ayarlar S.settings.folders {style, pin, hide, names}. Test: 4 yapılandırma, aç/geri/Esc/sabitle/adlandır, 44 px,
+            yatay taşma yok, konsol hatası yok. KALAN → 131b: 104f gömmeleriyle kümeleme + köprü kümeye ad verir, yeni kayıt en yakın klasöre;
+            birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm.
 - [x] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
         arama çiplerinde renk noktaları; "siyah beyaz" otomatik. 104d dilbilgisine `renk:` alanı (tr/en/ar: renk/color/لون).
         [x] 2026-11-23, A hattı: query.js palette() 32×32 pikselden 12 renk kovası (kırmızı…mor + pembe, kahverengi, siyah, beyaz, gri),
