@@ -395,6 +395,10 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         Türkçe İ/ı büyük-küçük doğru, şğüöç yazılmasa da bul; arama dili anahtar sözcükleri üç dilde (tarih:/date:/تاريخ:, etiket:/tag:/وسم:,
         is:yıldızlı/is:starred, VEYA/OR/أو, dün/yesterday/أمس …); anlamsal model üç dili birlikte bilen çok dilli model (fatura ↔ invoice ↔ فاتورة).
         Birim testlerinde her dilden örnek. Arayüz yazıları Türkçe kalır.
+        [x] 104d (2026-11-23, A hattı): query.js = tek ayrıştırıcı (sözcük, "ifade", /regex/ ReDoS korumalı, joker, VEYA/OR/أو/|, -hariç,
+            parantez, alanlar tr/en/ar, tarih/son:/is:/has:/boyut:/tür:/renk:/sırala:); sözdizimi yoksa eski hızlı bulanık arama. Bozuk parça
+            çökertmez, metin olarak aranır + 1,2 sn sonra uyarı. norm() Arapça normalleştirme + Arapça sözcük bölme; kutu dir="auto".
+            tools/test/query.test.mjs: 156 kontrol geçiyor, 10k kayıtta ~17 ms. Eksik: is:silindi çöpü göstermez (görünüm silinmişleri süzüyor).
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);

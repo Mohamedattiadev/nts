@@ -2,7 +2,9 @@
 /* Nts — app. Depends on db.js (DB, newId, itemsFromInput, saveItems, URL_RE) and vendor/jszip. */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const norm = s => (s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[̀-ͯ]/g, '');
+// same folding as query.js (104d): Turkish İ/ı, accents, Arabic harakat/tatweel, أإآ→ا, ة→ه, ى→ي, Arabic/Persian digits
+const norm = s => (s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, '')
+  .replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ٱ/g, 'ا').replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x660).replace(/[\u06f0-\u06f9]/g, d => d.charCodeAt(0) - 0x6f0);
 const now = () => Date.now();
 
 const S = {
@@ -150,7 +152,7 @@ function relatedOf(i) {
 // ---------- search ----------
 const rawText = i => [i.title, i.meta?.title, i.meta?.description, i.meta?.site, i.text, i.url, i.url && domain(i.url),
   i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
-const idxEntry = h => ({ h, w: [...new Set(h.split(/[^a-z0-9]+/).filter(Boolean))] });
+const idxEntry = h => ({ h, w: [...new Set(h.split(/[^\p{L}\p{N}]+/u).filter(Boolean))] });
 function indexItem(i) {
   if (HIDDEN.has(i.type) && i.type !== 'draw') return; // never searchable
   S.idx.set(i.id, idxEntry(norm(rawText(i))));
@@ -161,7 +163,7 @@ const Indexer = {
   worker() {
     if (this.w !== null) return this.w;
     try {
-      const src = `const norm = ${norm.toString()}; onmessage = e => postMessage(e.data.map(([id, t]) => { const h = norm(t); return [id, h, [...new Set(h.split(/[^a-z0-9]+/).filter(Boolean))]]; }));`;
+      const src = `const norm = ${norm.toString()}; onmessage = e => postMessage(e.data.map(([id, t]) => { const h = norm(t); return [id, h, [...new Set(h.split(/[^\\p{L}\\p{N}]+/u).filter(Boolean))]]; }));`;
       this.w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
       this.w.onmessage = e => { for (const [id, h, w] of e.data) if (!S.idx.has(id)) S.idx.set(id, { h, w }); };
     } catch { this.w = false; }
@@ -191,9 +193,24 @@ function scoreItem(i, toks, any) {
   return hit ? score + (i.starred ? .5 : 0) : 0;
 }
 const tokens = q => norm(q).split(/\s+/).filter(t => t.length > 1 || /\d/.test(t));
+// 104d: a query with syntax (fields, "phrase", /regex/, OR, -word, poul*, tarih:, is:, sırala: …) goes through query.js
+const qHay = i => { let x = S.idx.get(i.id); if (!x) { indexItem(i); x = S.idx.get(i.id); } return x ? x.h : ''; };
+const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share' ? i.source === 'share' : srcMatch(i, s);
+let qWarnT;
 function runSearch() {
-  const q = S.q.trim();
+  const q = S.q.trim(); S.qx = null; clearTimeout(qWarnT);
   if (!q || q.startsWith('?') || q.endsWith('?')) { S.hits = null; return; } // a question goes to Claude, it doesn't filter
+  if (window.NtsQuery && !NtsQuery.isPlain(q)) {
+    const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
+    const toks = tokens(x.terms.join(' ')); S.hits = new Map();
+    for (const i of S.items) {
+      if (i.deleted || HIDDEN.has(i.type) || !x.test(i)) continue;
+      S.hits.set(i.id, x.sort === 'old' ? -i.ts : x.sort === 'new' ? i.ts : (toks.length && scoreItem(i, toks, true)) || 1 + (i.starred ? .5 : 0));
+    }
+    // a broken piece never breaks the search: it's searched as text and the warning shows once the typing stops
+    if (x.warnings.length) qWarnT = setTimeout(() => { if (S.qx === x) toast(x.warnings[0], 2600); }, 1200);
+    return;
+  }
   const toks = tokens(q); S.hits = new Map();
   for (const i of S.items) { if (i.deleted) continue; const s = scoreItem(i, toks); if (s) S.hits.set(i.id, s); }
 }
@@ -201,7 +218,7 @@ const CH = { i: '[iıİI]', s: '[sşŞ]', g: '[gğĞ]', u: '[uüÜ]', o: '[oöÖ
 function hl(text) {
   const out = esc(text);
   if (!S.hits || !S.q.trim()) return out;
-  const toks = tokens(S.q).filter(t => t.length > 1);
+  const toks = tokens(S.qx ? S.qx.terms.join(' ') : S.q).filter(t => t.length > 1);
   if (!toks.length) return out;
   const re = new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
   return out.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(re, '<mark>$1</mark>'));
@@ -274,7 +291,7 @@ function visible0(keepAll) {
     && (S.view !== 'board' || !onMain() || !i.archive || i.pos || i.onBoard)
     // the main board is a workspace: the chosen time range, plus whatever you put or moved there (a project board shows all of its cards)
     && (S.view !== 'board' || !onMain() || i.pos || i.onBoard || i.sticky || inRange(i.ts))
-  ).sort((a, b) => (S.sortPrio ? prioRank(a) - prioRank(b) : 0) || b.ts - a.ts);
+  ).sort((a, b) => (S.sortPrio ? prioRank(a) - prioRank(b) : 0) || (S.searchOn && S.qx?.sort === 'old' ? a.ts - b.ts : b.ts - a.ts));
 }
 const prioRank = i => i.prio === 'high' ? 0 : i.prio === 'low' ? 2 : 1;
 

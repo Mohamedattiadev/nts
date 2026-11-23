@@ -99,7 +99,7 @@
       <div id="attachList" class="attach-list"></div>
       <div class="c-row">
         <label class="c-btn" title="Dosya ekle"><span id="clipIco"></span><input id="fileInput" type="file" multiple hidden></label>
-        <textarea id="input" rows="1" placeholder="Not, link ya da soru yaz…" enterkeyhint="send" autocomplete="off"></textarea>
+        <textarea id="input" dir="auto" rows="1" placeholder="Not, link ya da soru yaz…" enterkeyhint="send" autocomplete="off"></textarea>
         <button id="saveBtn" class="send" title="Kaydet (Enter)" disabled></button>
       </div>
       <div id="cHint" class="c-hint" hidden></div>
@@ -117,6 +117,7 @@
 
 <script src="vendor/jszip.min.js" defer></script>
 <script src="db.js" defer></script>
+<script src="query.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>
