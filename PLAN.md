@@ -535,6 +535,7 @@ Site:
         ("Ev tadilatı", "Logo fikirleri"); yeni kayıt gelince en yakın klasöre kendiliğinden girer. Kullanıcı: adlandır, sabitle, birleştir,
         gizle, "bu kayıt buraya ait değil". 5000 kayıt → ~20–40 klasör; 10k kayıtta hızlı (sanal liste, önizlemeler tembel).
         (0) ÖNCE `design/folders.html`: 2–3 klasör kartı stili, açık/koyu + telefon; sahip seçsin. 130d bunun içinde, 99a ile uyumlu.
+            [?] (2026-11-23, B hattı) örnek hazır: design/folders.html — A Cep (Locus gibi sekmeli arka kapak, 3 kayıt eğik taşar, buzlu ön kapak), B Yığın (yelpaze deste, kutusuz), C Albüm (1 büyük + 2 küçük mozaik, renkli klasör simgesi). Üstüne gelince kalkma, tıklayınca FLIP ile açılma + geri tuşu/Esc, reduced-motion, telefonda 2 sütun. Görüntüler design/ux/131-folders-*.png. Sahip ✓/✗ verince 131 seçilen stille yapılır.
         GÜZEL GÖRÜNÜM ŞART (sahip, 2026-11-23: "güzel görünümlü olsun"): Locus kalitesi — gerçek klasör hissi (arka sekme + öndeki kapak,
         içeriden 2–3 kart/resim hafif eğik taşar), yumuşak katmanlı gölge, 14–16 px köşe, bol boşluk, sakin yazı (ad 600, sayı gri küçük);
         üstüne gelince/dokununca içindekiler biraz yukarı çıkar (150–200 ms, reduced-motion'da yok); açılınca kart klasörün içine

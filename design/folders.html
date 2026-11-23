@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nts · Klasör kartı örnekleri (131-0)</title>
+<style>
+/* Same colour tokens as style.css so the chosen style drops straight into the app */
+:root, [data-theme="dark"] {
+  --bg: #0c0c0e; --surface: #151519; --surface-2: #1c1c21; --surface-3: #24242a; --line: #24242a; --line-2: #31313a;
+  --text: #ededf2; --text-2: #a3a3ad; --muted: #8a8a95;
+  --accent: #ff9a4d; --accent-soft: rgb(255 154 77 / .14);
+  --paper: #202026; --paper-line: #3a3a44;
+  --f-back: #1d1d23; --f-tab: #23232a; --f-front: rgb(30 30 36 / .72); --f-edge: rgb(255 255 255 / .07);
+  --sh-1: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .35);
+  --sh-2: 0 2px 4px rgb(0 0 0 / .45), 0 16px 36px rgb(0 0 0 / .45);
+  --sh-item: 0 1px 2px rgb(0 0 0 / .45), 0 4px 10px rgb(0 0 0 / .3);
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #fafaf9; --surface: #ffffff; --surface-2: #f4f4f1; --surface-3: #ebebe7; --line: #e8e8e4; --line-2: #d8d8d2;
+  --text: #18181b; --text-2: #55555e; --muted: #6b6b74;
+  --accent: #c2410c; --accent-soft: rgb(194 65 12 / .09);
+  --paper: #ffffff; --paper-line: #e4e4df;
+  --f-back: #ecebe7; --f-tab: #e4e3de; --f-front: rgb(255 255 255 / .74); --f-edge: rgb(255 255 255 / .9);
+  --sh-1: 0 1px 2px rgb(0 0 0 / .05), 0 6px 18px rgb(0 0 0 / .06);
+  --sh-2: 0 2px 4px rgb(0 0 0 / .06), 0 16px 36px rgb(0 0 0 / .11);
+  --sh-item: 0 1px 2px rgb(0 0 0 / .1), 0 4px 10px rgb(0 0 0 / .07);
+  color-scheme: only light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 14.5px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 60px max(20px, env(safe-area-inset-left)); }
+.wrap { max-width: 1100px; margin: 0 auto; }
+header.top { display: flex; align-items: center; gap: 12px; margin: 8px 0 6px; }
+header.top h1 { font-size: 19px; margin: 0; font-weight: 650; letter-spacing: -.01em; flex: 1; }
+.btn { min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--text); font: inherit; font-weight: 550; cursor: pointer; }
+.btn:focus-visible, .fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+p.lead { color: var(--text-2); margin: 0 0 26px; max-width: 70ch; }
+section.style { margin: 0 0 44px; }
+section.style > h2 { font-size: 16px; margin: 0 0 2px; font-weight: 650; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+section.style > h2 .tag { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 1px 9px; }
+section.style > .note { color: var(--text-2); margin: 0 0 16px; font-size: 13.5px; max-width: 80ch; }
+.pick { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.pick .btn[aria-pressed="true"].yes { background: #15803d; border-color: #15803d; color: #fff; }
+.pick .btn[aria-pressed="true"].no { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px 20px; }
+@media (max-width: 600px) {
+  body { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+}
+
+/* ---------- mini items that peek out of a folder ---------- */
+.it { position: absolute; border-radius: 7px; overflow: hidden; box-shadow: var(--sh-item); background: var(--paper);
+  transition: transform .18s cubic-bezier(.2, .8, .2, 1); }
+.it.img { background-size: cover; }
+.it.note { padding: 8px 9px; border: 1px solid var(--paper-line); }
+.it.note b { display: block; font-size: 9.5px; line-height: 1.2; font-weight: 650; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it.note i { display: block; height: 4px; border-radius: 2px; background: var(--paper-line); margin-top: 6px; }
+.it.note i:nth-of-type(2) { width: 80%; } .it.note i:nth-of-type(3) { width: 62%; }
+.it.note u { display: flex; align-items: center; gap: 4px; margin-top: 6px; text-decoration: none; }
+.it.note u::before { content: ""; width: 7px; height: 7px; border-radius: 2px; border: 1.3px solid var(--muted); flex: none; }
+.it.note u::after { content: ""; height: 4px; flex: 1; border-radius: 2px; background: var(--paper-line); }
+.it.link { padding: 8px 9px; border: 1px solid var(--paper-line); }
+.it.link em { display: block; width: 14px; height: 14px; border-radius: 4px; margin-bottom: 6px; }
+.it.link b { display: block; font-size: 9.5px; line-height: 1.25; font-weight: 650; color: var(--text); }
+.it.link small { display: block; font-size: 8.5px; color: var(--muted); margin-top: 3px; }
+/* "photos" painted with gradients (no outside images) */
+.a1 { background: linear-gradient(180deg, #f4c58e 0 38%, transparent 38%), radial-gradient(120% 70% at 30% 100%, #6b8f5a 0 45%, transparent 46%), linear-gradient(#e9a86a, #c97f4e); }
+.a2 { background: radial-gradient(circle at 70% 30%, #fff6d8 0 9%, transparent 10%), linear-gradient(180deg, #7fb2d9, #cfe4f1 55%, #3f6e8f 56%, #2c4f68); }
+.a3 { background: linear-gradient(135deg, #1f1f24 0 50%, #2c2c33 50%); }
+.a3::after { content: ""; position: absolute; inset: 30% 34%; border-radius: 30%; background: #fff; box-shadow: 16px 10px 0 -4px #f2b544; }
+.a4 { background: linear-gradient(160deg, #ff7a59, #d6336c 60%, #7b2ff7); }
+.a5 { background: repeating-linear-gradient(90deg, #d9d4ca 0 14px, #cfc9bd 14px 15px), #d9d4ca; }
+.a5::after { content: ""; position: absolute; left: 18%; right: 18%; top: 22%; bottom: 0; background: linear-gradient(#a3a39b, #8e8e86); border-radius: 4px 4px 0 0; }
+.a6 { background: radial-gradient(80% 60% at 50% 110%, #2e6b4f 0 60%, transparent 61%), linear-gradient(#bfe3d0, #e8f4ec); }
+.a7 { background: linear-gradient(#0f172a, #1e293b); }
+.a7::after { content: "L"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 26px/1 Inter, system-ui, sans-serif; color: #fff; }
+.a8 { background: conic-gradient(from 210deg at 60% 60%, #f6d365, #fda085, #f6d365); }
+.fav-g { background: #24292f; } .fav-y { background: #ff0000; } .fav-w { background: #25d366; } .fav-d { background: #e44d26; }
+
+/* ---------- A · Cep (Locus-like folder: back + tab, items peek out, frosted front cover) ---------- */
+.fold { all: unset; position: relative; display: block; cursor: pointer; border-radius: 16px; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.fa { aspect-ratio: 1.32; }
+.fa .back { position: absolute; inset: 12px 0 0; background: var(--f-back); border-radius: 4px 16px 16px 16px; box-shadow: var(--sh-1); }
+.fa .back::before { content: ""; position: absolute; left: 0; bottom: 100%; width: 42%; height: 13px; background: var(--f-back);
+  border-radius: 12px 12px 0 0; clip-path: polygon(0 0, 82% 0, 100% 100%, 0 100%); }
+.fa .peek { position: absolute; inset: 22px 10px 0; }
+.fa .peek .it { top: 0; height: 70%; }
+.fa .peek .it:nth-child(1) { left: 2%; width: 44%; transform: rotate(-4deg); }
+.fa .peek .it:nth-child(2) { left: 29%; width: 42%; transform: rotate(1.5deg) translateY(-4px); z-index: 1; }
+.fa .peek .it:nth-child(3) { right: 2%; width: 42%; transform: rotate(5deg) translateY(3px); }
+.fa .front { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; border-radius: 14px 14px 16px 16px; background: var(--f-front);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 1px 0 var(--f-edge), 0 -1px 0 rgb(0 0 0 / .03); padding: 0 14px 12px; display: flex; flex-direction: column; justify-content: flex-end; z-index: 2; }
+.name { font-weight: 620; font-size: 14px; line-height: 1.25; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.count { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fa:hover .back, .fa:focus-visible .back { box-shadow: var(--sh-2); }
+.fa:hover .peek .it:nth-child(1), .fa:focus-visible .peek .it:nth-child(1) { transform: rotate(-6deg) translate(-3px, -9px); }
+.fa:hover .peek .it:nth-child(2), .fa:focus-visible .peek .it:nth-child(2) { transform: rotate(1deg) translateY(-14px); transition-delay: .03s; }
+.fa:hover .peek .it:nth-child(3), .fa:focus-visible .peek .it:nth-child(3) { transform: rotate(7deg) translate(3px, -8px); transition-delay: .06s; }
+.fa:active { transform: scale(.985); }
+
+/* ---------- B · Yığın (fanned photo stack, title under it, no box) ---------- */
+.fb .stack { position: relative; aspect-ratio: 1.32; }
+.fb .stack .it { left: 17%; right: 17%; top: 9%; bottom: 7%; border: 4px solid var(--paper); border-radius: 10px; transform-origin: 50% 90%; }
+.fb .stack .it.note, .fb .stack .it.link { border-width: 1px; padding: 12px 13px; }
+.fb .stack .it:nth-child(1) { transform: rotate(-8deg) translateX(-6%); }
+.fb .stack .it:nth-child(2) { transform: rotate(6deg) translateX(6%); }
+.fb .stack .it:nth-child(3) { transform: none; z-index: 1; box-shadow: var(--sh-2); }
+.fb:hover .stack .it:nth-child(1), .fb:focus-visible .stack .it:nth-child(1) { transform: rotate(-13deg) translateX(-12%); }
+.fb:hover .stack .it:nth-child(2), .fb:focus-visible .stack .it:nth-child(2) { transform: rotate(11deg) translateX(12%); }
+.fb:hover .stack .it:nth-child(3), .fb:focus-visible .stack .it:nth-child(3) { transform: translateY(-5px); }
+.fb .cap { padding: 6px 4px 0; text-align: center; }
+.fb .stack .it.note b, .fb .stack .it.link b { font-size: 11px; }
+
+/* ---------- C · Albüm (calm surface card, 1 big + 2 small mosaic, small folder tab) ---------- */
+.fc { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; box-shadow: var(--sh-1);
+  transition: box-shadow .18s, transform .18s cubic-bezier(.2, .8, .2, 1); }
+.fc .mos { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; aspect-ratio: 1.5; border-radius: 10px; overflow: hidden; }
+.fc .mos .it { position: relative; min-width: 0; border-radius: 0; box-shadow: none; }
+.fc .mos .it:first-child { grid-row: 1 / 3; }
+.fc .mos .it.note, .fc .mos .it.link { border: 0; background: var(--surface-2); }
+.fc .cap { display: flex; align-items: center; gap: 8px; padding: 9px 4px 2px; }
+.fc .cap .ic { width: 22px; height: 17px; flex: none; position: relative; }
+.fc .cap .ic::before { content: ""; position: absolute; inset: 3px 0 0; border-radius: 2px 4px 4px 4px; background: var(--c, var(--accent)); opacity: .9; }
+.fc .cap .ic::after { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 5px; border-radius: 2px 2px 0 0; background: var(--c, var(--accent)); opacity: .9; }
+.fc .cap > div { min-width: 0; }
+.fc:hover, .fc:focus-visible { box-shadow: var(--sh-2); transform: translateY(-2px); }
+.fc .more { position: relative; }
+.fc .more span { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / .42); color: #fff; font-weight: 650; font-size: 13px; z-index: 2; }
+
+/* ---------- open: card grows into the folder (FLIP) ---------- */
+.sheet { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: none; flex-direction: column;
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left)); overflow: auto; }
+.sheet.on { display: flex; }
+.sheet .bar { display: flex; align-items: center; gap: 10px; position: sticky; top: 0; background: var(--bg); padding: 6px 0 12px; z-index: 1; }
+.sheet .bar h3 { margin: 0; font-size: 17px; font-weight: 650; }
+.sheet .bar .count { margin: 0; }
+.sheet .inner { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-width: 1100px; width: 100%; margin: 0 auto; }
+.sheet .inner .it { position: relative; aspect-ratio: 1.25; border-radius: 12px; }
+.sheet .inner .it.note b, .sheet .inner .it.link b { font-size: 12px; }
+@media (max-width: 600px) { .sheet .inner { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .it, .fc { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Klasör kartı örnekleri</h1>
+    <button class="btn" id="theme" aria-label="Açık / koyu tema">◐ Tema</button>
+  </header>
+  <p class="lead">Madde 131-0 (+130d). Galerinin ve listenin en üstünde duracak yapay zekâ klasörleri için üç stil. Üstüne gel (telefonda dokun):
+    içindekiler biraz kalkar. Tıkla: kart klasörün içine büyüyerek açılır, geri tuşu / Esc kapatır. Her stile ✓ ya da ✗ ver, istersen not yaz.</p>
+
+  <section class="style" data-s="A">
+    <h2>A · Cep <span class="tag">Locus'a en yakın</span></h2>
+    <p class="note">Gerçek klasör: arkada sekmeli kapak, içinden 3 kayıt hafif eğik taşar, önde buzlu cam kapakta ad + sayı. En "klasör" hissi; görsel ağırlıklı galeride çok iyi durur. Not ve bağlantılar da küçük belge kartı olarak taşar.</p>
+    <div class="grid" data-kind="A"></div>
+  </section>
+
+  <section class="style" data-s="B">
+    <h2>B · Yığın <span class="tag">fotoğraf destesi</span></h2>
+    <p class="note">Kutu yok: 3 kayıt yelpaze gibi üst üste, altta ortalı ad + sayı. Üstüne gelince deste açılır. Hafif ve oyuncu; çok resimli klasörlerde güzel, yalnız notlu klasörlerde biraz boş kalır.</p>
+    <div class="grid" data-kind="B"></div>
+  </section>
+
+  <section class="style" data-s="C">
+    <h2>C · Albüm <span class="tag">sakin, düzenli</span></h2>
+    <p class="note">Beyaz kart, üstte 1 büyük + 2 küçük önizleme (fazlası "+10"), altta renkli küçük klasör simgesi + ad + sayı. En sakin ve en okunur; 40 klasörde bile düzenli görünür, ama "klasör" hissi en azı bu.</p>
+    <div class="grid" data-kind="C"></div>
+  </section>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+  <div class="bar"><button class="btn" id="back" aria-label="Geri">‹ Geri</button><div><h3 id="sh-t"></h3><div class="count" id="sh-c"></div></div></div>
+  <div class="inner" id="sh-in"></div>
+</div>
+
+<script>
+// sample folders: the kinds 131 makes first without AI (tag, chat, site, type, time) plus one AI-named cluster
+const F = [
+  { n: 'Ev tadilatı', c: '#c2410c', items: ['i:a1', 'i:a5', 'n:Mutfak ölçüleri', 'i:a6', 'i:a2', 'n:Usta telefonları'], meta: '13 resim · 2 not' },
+  { n: 'Logo fikirleri', c: '#4f5fd6', items: ['i:a7', 'i:a4', 'i:a3', 'i:a8'], meta: '38 resim' },
+  { n: 'Annem · WhatsApp', c: '#15803d', items: ['i:a6', 'n:Bayram listesi', 'l:fav-w|Sesli mesaj 0:42|whatsapp'], meta: '214 mesaj · 31 resim' },
+  { n: 'github.com', c: '#6e7781', items: ['l:fav-g|nts · Issues|github.com', 'l:fav-g|Bubblewrap TWA|github.com', 'l:fav-g|pdf.js|github.com'], meta: '27 bağlantı' },
+  { n: 'Okunacaklar', c: '#c2255c', items: ['n:Haftalık plan', 'l:fav-d|Web Components|developer.mozilla.org', 'n:Kitap notları'], meta: '9 not · 6 bağlantı' },
+  { n: 'Kasım 2025', c: '#0b6bcb', items: ['i:a2', 'i:a8', 'i:a1', 'i:a4'], meta: '64 resim · 12 not · 3 klasör' },
+];
+const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+function item(code) {
+  const [t, v] = [code[0], code.slice(2)];
+  if (t === 'i') return `<div class="it img ${v}"></div>`;
+  if (t === 'n') return `<div class="it note" dir="auto"><b>${esc(v)}</b><i></i><i></i><u></u><u></u><i></i></div>`;
+  const [fav, title, site] = v.split('|');
+  return `<div class="it link" dir="auto"><em class="${fav}"></em><b>${esc(title)}</b><small>${esc(site)}</small></div>`;
+}
+const cap = f => `<div class="name" dir="auto">${esc(f.n)}</div><div class="count">${f.meta}</div>`;
+const R = {
+  A: f => `<button class="fold fa" aria-label="${esc(f.n)}, ${f.meta}"><div class="back"></div><div class="peek">${f.items.slice(0, 3).map(item).join('')}</div><div class="front">${cap(f)}</div></button>`,
+  B: f => `<button class="fold fb" aria-label="${esc(f.n)}, ${f.meta}"><div class="stack">${f.items.slice(0, 3).map(item).join('')}</div><div class="cap">${cap(f)}</div></button>`,
+  C: f => {
+    const more = f.items.length > 3 ? `<div class="it more ${f.items[2].startsWith('i:') ? 'img ' + f.items[2].slice(2) : ''}"><span>+${f.items.length + 7}</span></div>` : '';
+    const tiles = f.items.slice(0, more ? 2 : 3).map(item).join('') + more;
+    return `<button class="fold fc" aria-label="${esc(f.n)}, ${f.meta}"><div class="mos">${tiles}</div><div class="cap"><span class="ic" style="--c:${f.c}"></span><div>${cap(f)}</div></div></button>`;
+  },
+};
+document.querySelectorAll('.grid').forEach(g => { g.innerHTML = F.map(R[g.dataset.kind]).join(''); [...g.children].forEach((b, i) => b.dataset.i = i); });
+
+// ✓ / ✗ per style, remembered on this device
+document.querySelectorAll('section.style').forEach(sec => {
+  const k = 'nts-folders-' + sec.dataset.s;
+  const box = document.createElement('div'); box.className = 'pick';
+  box.innerHTML = `<button class="btn yes" aria-pressed="false">✓ Beğendim</button><button class="btn no" aria-pressed="false">✗ Olmasın</button>`;
+  sec.append(box);
+  const paint = () => box.querySelectorAll('.btn').forEach(b => b.setAttribute('aria-pressed', String(localStorage[k] === (b.classList.contains('yes') ? 'y' : 'n'))));
+  box.onclick = e => { const b = e.target.closest('.btn'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; localStorage[k] = localStorage[k] === v ? '' : v; paint(); };
+  paint();
+});
+
+// theme
+const root = document.documentElement;
+root.dataset.theme = localStorage['nts-folders-theme'] || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+if (new URLSearchParams(location.search).get('theme')) root.dataset.theme = new URLSearchParams(location.search).get('theme');
+document.getElementById('theme').onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage['nts-folders-theme'] = root.dataset.theme; };
+
+// open: the card grows into the full folder (FLIP), back/Esc shrinks it into the card again
+const sheet = document.getElementById('sheet'), reduce = matchMedia('(prefers-reduced-motion: reduce)');
+let from = null;
+function flip(el, a, b, back) {
+  if (reduce.matches || !el.animate) return Promise.resolve();
+  const t = `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`;
+  const k = [{ transform: t, opacity: 0.4, borderRadius: '16px' }, { transform: 'none', opacity: 1, borderRadius: '0' }];
+  return el.animate(back ? k.reverse() : k, { duration: back ? 170 : 220, easing: 'cubic-bezier(.2,.8,.2,1)', fill: back ? 'forwards' : 'none' }).finished;
+}
+function open(btn) {
+  const f = F[btn.dataset.i]; from = btn;
+  document.getElementById('sh-t').textContent = f.n; document.getElementById('sh-c').textContent = f.meta;
+  const all = [...f.items, ...f.items.filter(c => c[0] === 'i'), ...f.items].slice(0, 12);
+  document.getElementById('sh-in').innerHTML = all.map(item).join('');
+  sheet.style.transformOrigin = '0 0'; sheet.classList.add('on');
+  flip(sheet, btn.getBoundingClientRect(), sheet.getBoundingClientRect());
+  history.pushState({ folder: 1 }, ''); document.getElementById('back').focus();
+}
+async function close() {
+  if (!sheet.classList.contains('on')) return;
+  if (from && from.isConnected) await flip(sheet, from.getBoundingClientRect(), sheet.getBoundingClientRect(), true);
+  sheet.getAnimations().forEach(a => a.cancel()); sheet.classList.remove('on'); from && from.focus({ preventScroll: true });
+}
+document.addEventListener('click', e => { const b = e.target.closest('.fold'); if (b) open(b); });
+document.getElementById('back').onclick = () => history.back();
+addEventListener('popstate', close);
+addEventListener('keydown', e => { if (e.key === 'Escape' && sheet.classList.contains('on')) history.back(); });
+</script>
+</body>
+</html>

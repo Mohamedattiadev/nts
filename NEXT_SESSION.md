@@ -43,7 +43,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [~A] 102 (başlangıç işi tools/wip-102.patch: `git apply tools/wip-102.patch`, resim önizlemesi yer tutar + growTo; sonra patch'i sil) hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [x] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108) (71c37c4)
 - [x] 130 Locus'tan alınacaklar: 130b (resimlere otomatik içerik etiketi) + 130f (sakin çipler) yapıldı (9a74f81); kalanlar bağlı maddelerde: 130a → 103b/104e, 130c → 99a, 130d → 131-0, 130e → 106a
-- [~B] 131-0 (+130d) ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
+- [?] 131-0 (+130d) ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131) — ÖRNEK HAZIR: design/folders.html (A Cep · B Yığın · C Albüm), sahibin seçimi bekleniyor
 - [ ] 103b (+130a görsel arama penceresi, PLAN 130a) tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
