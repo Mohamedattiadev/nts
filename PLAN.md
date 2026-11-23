@@ -351,11 +351,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         kaydırma, × ile kapanır, kapanınca arkada artık iz/kilitli kaydırma kalmaz. Sonuç tablosunu `design/ux-review.md`'ye "(c) telefon"
         olarak yaz, hepsini 0'a indir, öncesi/sonrası ekran görüntüsü. Bundan sonra her arayüz işinde phone-audit 0 hata olmadan "bitti" deme.
 
-- [ ] 102. **Hareket kuralları: tamamen akıcı, zıplama yok** (sahip): açılan her şey geldiği yere geri döner (kayıt penceresi tıklanan karta
+- [x] 102. **Hareket kuralları: tamamen akıcı, zıplama yok** (sahip): açılan her şey geldiği yere geri döner (kayıt penceresi tıklanan karta
         küçülür, menü düğmesine toplanır, panel kenarına kayar); öğe eklenince/silinince/sıralama değişince diğerleri yeni yerine FLIP ile
         kayar, hiçbir şey birden yukarı/aşağı zıplamaz (yükleme, resim gelince, bildirim çıkınca da). Süre 150–250 ms, tek easing, sadece
         transform/opacity, 60 fps; `prefers-reduced-motion` kapalı. Doğrulama: Playwright'ta `PerformanceObserver('layout-shift')` her
         ekranda ~0 (beklenmeyen kayma), açıp kapama videosu/kare dizisiyle bak; telefonda da (101'in denetimine ekle).
+        YAPILDI (2026-11-23, A): Flip (app.js) — liste/galeri/görevler aynı görünümde yeniden çizilince kartlar eski yerinden 200 ms
+        kayar, yeniler 180 ms belirir (yalnız transform/opacity, ekranda ≤150 kart, reduced-motion'da kapalı, görünüm değişiminde 94a).
+        Resim önizlemesi: oran (AR) küçük resimden bilinir → pencere ilk karede doğru boyda; resim çözülünce growTo ile yumuşak büyür.
+        Morph.revive: kapanırken tekrar açılan pencereyi eski kapanış kapatmıyordu (hata) → düzeldi. Ölçüm: layout-shift masaüstü
+        0.0013, telefon 0; ekle/sil sonrası 6–7 kart FLIP ile kayıyor (4 yapılandırma, konsol hatası yok).
 
 - [ ] 103. **Arama listesi + tek kutu modları** (sahip, ekran görüntüleri):
         (a) [x] (2026-11-21: setView ve her pencere açılışında (Back.open) liste kapanır, yazı kalır; kutuya tıklayınca/yazınca geri gelir; liste açıkken .peek gizli) Görünüm/sayfa değişince (Pano/Liste/Galeri, yapılacaklar, ayarlar, kayıt penceresi) açık arama sonuç listesi kapansın; yazı kutuda

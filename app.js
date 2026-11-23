@@ -359,6 +359,37 @@ const ytId = i => { if (i.type !== 'link') return null; try { const u = new URL(
   const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
   return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
 const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image) || !!(i.cover && byId(i.cover));
+// 102: image shapes (id → w/h) so the item window keeps the image's room from the first frame; growTo animates a box to its new height
+const AR = new Map();
+function growTo(box, change) {
+  const h0 = box.offsetHeight; change(); const h1 = box.offsetHeight;
+  if (Math.abs(h1 - h0) > 4 && !matchMedia('(prefers-reduced-motion: reduce)').matches) box.animate([{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+}
+// 102: FLIP - before a view is rebuilt, note where each card on screen was; after, cards that moved slide from the old place
+// (transform only, 200 ms), new ones fade in where they belong. Off for reduced motion, view changes and big lists.
+const Flip = {
+  SEL: '[data-id],[data-tid]',
+  key: el => el.dataset.id || el.dataset.tid,
+  snap(root) {
+    if (!root || root.hidden || reduced()) return null;
+    const m = new Map(); let n = 0;
+    for (const el of root.querySelectorAll(this.SEL)) {
+      const r = el.getBoundingClientRect(); if (r.bottom < -200 || r.top > innerHeight + 200 || !r.height) continue;
+      if (++n > 150) return null; m.set(this.key(el), r);
+    }
+    return m.size ? m : null;
+  },
+  play(root, before) {
+    if (!before || !root || root.hidden) return;
+    const ease = 'cubic-bezier(.2,.8,.2,1)';
+    for (const el of root.querySelectorAll(this.SEL)) {
+      const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight || !r.height) continue;
+      const b = before.get(this.key(el));
+      if (b) { const dx = b.left - r.left, dy = b.top - r.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 200, easing: ease }); }
+      else if (!el.matches('.new') && !el.querySelector('.fresh')) el.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: ease });
+    }
+  },
+};
 const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   if (!e.isIntersecting) return;
   thumbIO.unobserve(e.target);
@@ -368,7 +399,7 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.decoding = 'async';
   img.onerror = () => img.remove(); img.src = u;
   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
-    .then(() => { e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
+    .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight); e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
 }), { rootMargin: '400px' });
 function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
   const k = fileKind(i);
@@ -562,6 +593,8 @@ function render(force) {
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     renderHits(); if (same && S.view !== 'todo') return;
     const items = visible(), none = !alive().length;
+    const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
+    const fr = fv && S._fv === fv && !onlyMore && $('#' + fv), fb = fr && Flip.snap(fr); S._fv = fv;
     renderChrome();
     for (const v of ['list', 'board', 'gallery', 'topics', 'todo']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
@@ -580,6 +613,7 @@ function render(force) {
     }
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
+    Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' ? [] : items);
     $('#splash').classList.add('gone');
   });
@@ -774,8 +808,11 @@ const Morph = {
     if (reduced() || !dlg.animate) return dlg.close();
     const el = dlg._src && this.src(dlg._src); dlg._closing = true; dlg.classList.add('morph', 'shut');
     const to = el ? { transform: this.frames(dlg, el), opacity: 0 } : { transform: 'translateY(24px)', opacity: 0 };
-    dlg.animate([{ transform: 'none', opacity: 1 }, to], { duration: el ? 200 : 160, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' })
-      .finished.catch(() => { }).finally(() => { dlg._closing = false; dlg.close(); dlg.getAnimations().forEach(a => a.cancel()); dlg.classList.remove('morph', 'shut'); });
+    const a = dlg._shut = dlg.animate([{ transform: 'none', opacity: 1 }, to], { duration: el ? 200 : 160, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+    a.finished.catch(() => { }).finally(() => { if (dlg._shut !== a) return; dlg._shut = null; dlg._closing = false; dlg.close(); dlg.getAnimations().forEach(x => x.cancel()); dlg.classList.remove('morph', 'shut'); });
+  },
+  revive(dlg) { // 102: opened again while it was shrinking away → stop the shrink, stay open (the old close must not shut the new window)
+    const a = dlg._shut; if (!a) return; dlg._shut = null; dlg._closing = false; a.cancel(); dlg.classList.remove('shut');
   },
 };
 
@@ -850,7 +887,7 @@ function openItem(id) {
     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${media ? lcard : ''}
-    ${i.type === 'file' ? `<div class="preview" id="filePrev"><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
+    ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     ${media ? '</div><div class="d-info">' : ''}
     <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
     <div id="explainBox">${explainHtml(i)}</div>
@@ -919,7 +956,7 @@ function openItem(id) {
   dlg.querySelector('.t-due-in')?.addEventListener('change', async e => { await commit(); const c = byId(i.id); await upsert([{ ...c, todo: { ...c.todo, due: validDue(e.target.value) || undefined, user: true } }]); });
   dlg.querySelector('.tag-in').onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await commit(); openItem(i.id); } };
   dlg.oncancel = e => { commit(); e.preventDefault(); Morph.close(dlg); };
-  const was = dlg.open; Back.open(dlg); if (!was) Morph.open(dlg, id);
+  Morph.revive(dlg); const was = dlg.open; Back.open(dlg); if (!was) Morph.open(dlg, id);
   requestAnimationFrame(fit);
   if (i.type === 'file') showPreview(i);
 }
@@ -927,7 +964,11 @@ async function showPreview(i, box = $('#filePrev')) {
   if (!box) return;
   const u = await blobFor(i), k = fileKind(i);
   if (!u) { box.innerHTML = `<div class="prev-empty">${ic('cloud', 'xl')}<span>Dosya bu cihazda yok${i.fileSynced ? ', senkron ayarlarını kontrol et' : ''}.</span></div>`; return; }
-  if (k === 'image') box.innerHTML = `<img src="${u}" alt="">`;
+  if (k === 'image') { // decoded first, then one smooth grow (no jump when the picture arrives)
+    const im = new Image(); im.alt = ''; im.src = u; await (im.decode ? im.decode() : new Promise(ok => { im.onload = im.onerror = ok; })).catch(() => {});
+    if (im.naturalWidth) AR.set(i.id, im.naturalWidth / im.naturalHeight);
+    growTo(box, () => { box.style.aspectRatio = ''; box.replaceChildren(im); });
+  }
   else if (k === 'video') box.innerHTML = `<video src="${u}" controls playsinline preload="metadata"></video>`;
   else if (k === 'audio') box.innerHTML = `<audio src="${u}" controls></audio>`;
   else if (k === 'text' || Docs.can(i)) { try { box.innerHTML = await Docs.render(i, await (await fetch(u)).blob()); Tex.math(box); } catch (e) { box.innerHTML = `<div class="prev-empty">${ic('file', 'xl')}<span>Önizleme açılamadı: ${esc(e.message)}</span></div>`; } }
