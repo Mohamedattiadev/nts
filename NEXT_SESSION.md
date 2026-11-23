@@ -42,9 +42,9 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 129 "Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgisi görünmüyor → ≥48 px (108 ile) (d90b5fe)
 - [~A] 102 (başlangıç işi tools/wip-102.patch: `git apply tools/wip-102.patch`, resim önizlemesi yer tutar + growTo; sonra patch'i sil) hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [x] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108) (71c37c4)
-- [~B] 130 Locus'tan alınacaklar (PLAN 130 a–f; kareler design/ref-locus/): 130a görsel arama penceresini 103b/104e ile birlikte yap, 130c'yi 99a ile
-- [ ] 131-0 ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
-- [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
+- [x] 130 Locus'tan alınacaklar: 130b (resimlere otomatik içerik etiketi) + 130f (sakin çipler) yapıldı (HASH); kalanlar bağlı maddelerde: 130a → 103b/104e, 130c → 99a, 130d → 131-0, 130e → 106a
+- [ ] 131-0 (+130d) ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
+- [ ] 103b (+130a görsel arama penceresi, PLAN 130a) tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
 - [ ] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil
@@ -59,7 +59,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 134 galeride çoklu seçim
 - [ ] 135 ekran görüntüsüne otomatik başlık
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
-- [ ] 106a zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
+- [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
 - [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
 - [ ] 106d etkileşimli parçalar (geri sayım, ilerleme, onay listesi ilerlemesi, CSV grafik) — sahip: kalsın; varyantları 106-0'da göster
@@ -183,7 +183,7 @@ BİLGİ (önceki oturum, 2026-11-21): 56–65, 74, 76–85 bitti (son commit 572
 `#ink` innerHTML'ini baştan kuruyor (titremenin sebebi). Sol çubuk: Rail.fold / #railTab (index.html), palet #pal.
 Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supabase CLI yok, sahibin girişi lazım), gerçek "GitHub'ı bağla"
 (uygulamada sahip yapar), gerçek WhatsApp sohbet zip'i (Downloads'taki zip sohbet değil, sadece 3 foto), 3/3a/3b + 74 gerçek cihaz testi (sahip yapacak).
-- [ ] 99a galeri gerçekten görsel (masonry, yazısız)
+- [ ] 99a galeri gerçekten görsel (masonry, yazısız) + 130c galeri↔pano aynı kartlarla uçarak geçiş
 - [ ] 99b Takvim görünümü
 - [ ] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100)
 - [ ] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)

@@ -149,7 +149,7 @@ function relatedOf(i) {
 
 // ---------- search ----------
 const rawText = i => [i.title, i.meta?.title, i.meta?.description, i.meta?.site, i.text, i.url, i.url && domain(i.url),
-  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
+  i.fileName, i.content, i.ocr, i.summary, (i.tags || []).join(' '), (i.vtags || []).join(' '), i.todo?.text, i.project, i.chat, (i.highlights || []).map(h => h.text).join(' ')].filter(Boolean).join(' ');
 const idxEntry = h => ({ h, w: [...new Set(h.split(/[^a-z0-9]+/).filter(Boolean))] });
 function indexItem(i) {
   if (HIDDEN.has(i.type) && i.type !== 'draw') return; // never searchable
@@ -393,12 +393,14 @@ const TAG_ICONS = [[/kod|code|yaz[ıi]l[ıi]m|dev|program|github|cpu/, 'cpu'], [
   [/video|youtube|film|dizi/, 'video'], [/m[üu]zik|music|şark|podcast/, 'audio'], [/aile|^ev$|anne|baba|family|ki[şs]isel/, 'heart'], [/^i[şs]$|proje|work|toplant|müşteri/, 'folder'],
   [/foto|resim|image|tasar[ıi]m|design/, 'image'], [/g[öo]rev|todo|yap[ıi]lacak/, 'todo'], [/link|site|web/, 'link'], [/fikir|idea/, 'spark'], [/ders|okul|[üu]niversite|tez|doktora/, 'book']];
 const TAG_COLS = ['blue', 'purple', 'green', 'orange', 'red', 'yellow'];
+// 130b: labels the AI saw in a picture (kedi, mavi, siyah-beyaz): short, lowercase, no '#', at most 6, never a copy of a user tag
+const cleanVtags = a => [...new Set(a.map(t => String(t).toLocaleLowerCase('tr').replace(/^#/, '').trim().replace(/\s+/g, '-')).filter(t => t && t.length <= 24))].slice(0, 6);
 function tagChip(t) {
   const k = t.toLocaleLowerCase('tr'), icn = (TAG_ICONS.find(([re]) => re.test(k)) || [, 'hash'])[1];
   let h = 0; for (const ch of k) h = (h * 31 + ch.codePointAt(0)) >>> 0;
   return `<span class="tg" style="--tc:var(--c-${TAG_COLS[h % TAG_COLS.length]})" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
 }
-function metaHtml(i, { tags = 3, acts = false, day = false } = {}) {
+function metaHtml(i, { tags = 2, acts = false, day = false } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
   return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
     ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>` : ''}
@@ -408,6 +410,7 @@ function metaHtml(i, { tags = 3, acts = false, day = false } = {}) {
     ${i.todo ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : d ? d.label : 'Görev'}</span>`; })() : ''}
     ${rel ? `<span class="rel">${ic('rel', 'sm')}${rel}</span>` : ''}
     ${(i.tags || []).slice(0, tags).map(tagChip).join('')}
+    ${(i.tags || []).length > tags ? `<span class="tg more" title="${i.tags.length - tags} etiket daha">+${i.tags.length - tags}</span>` : ''}
     ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}${acts ? actsHtml(i) : ''}</div>`;
 }
 function itemRow(i, { acts = true } = {}) {
@@ -534,6 +537,7 @@ function renderChrome() {
   $('#sideProjects').innerHTML = [...projs].sort((a, b) => b[1] - a[1]).map(([p, n]) => `<button class="side-row${f.list === 'p:' + p ? ' on' : ''}" data-list="p:${esc(p)}">${ic('folder', 'sm')}<span class="lbl">${esc(p)}</span><span class="n">${n || ''}</span></button>`).join('');
   const counts = new Map(); live.forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
   const all = [...counts].sort((a, b) => b[1] - a[1]), tags = S.allTags ? all : all.slice(0, 10);
+  const seen = new Set(); live.forEach(i => (i.vtags || []).forEach(t => seen.add(t))); // 130b
   if (f.tag && !tags.some(([t]) => t === f.tag)) tags.push([f.tag, counts.get(f.tag) || 0]);
   const used = new Set(live.map(i => i.color).filter(Boolean));
   $('#sideMarks').innerHTML = `<div class="mark-dots">${COLORS.filter(([c]) => used.has(c) || f.color === c).map(([c, n]) => `<button class="cdot c-${c}${f.color === c ? ' on' : ''}" data-color="${c}" title="${n}" aria-label="${n}"></button>`).join('') || '<span class="hint">Kayıtlara renk verince burada çıkar.</span>'}</div>
@@ -541,6 +545,7 @@ function renderChrome() {
   $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">${ic('hash', 'sm')}</span><span class="lbl">${esc(t)}</span><span class="n">${n || ''}</span></button>`).join('')
     + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
     || '<div class="hint" style="padding:0 10px 8px">' + aiName() + ' düzenledikçe konular burada çıkar.</div>';
+  if (seen.size) $('#sideTags').insertAdjacentHTML('beforeend', `<div class="side-row vt-count" title="${aiName()} resimlere bakıp bulduğu etiketler; aramada bunlar da bulunur"><span class="hash">${ic('spark', 'sm')}</span><span class="lbl">Resimlerde bulunan etiketler</span><span class="n">${seen.size}</span></div>`);
 }
 function emptyHtml(icn, h, p, actions = '') {
   return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
@@ -852,6 +857,7 @@ function openItem(id) {
     ${i.conv ? convHtml(i) : ''}
     ${i.archive && !i.onBoard && !i.pos ? `<div class="d-arch">${ic('inbox', 'sm')}<span>Arşivde${i.chat ? ` · WhatsApp: ${esc(i.chat)}` : ''}. Listede, galeride ve aramada var, panoda yok.</span><button class="btn secondary sm" data-act="toboard">${ic('board', 'sm')}Panoya koy</button></div>` : ''}
     ${i.ocr ? `<details class="d-ocr"><summary>${ic('text', 'sm')}${fileKind(i) === 'pdf' ? 'Sayfadaki yazı' : 'Resimdeki yazı'}<button class="link-btn" data-act="copyocr">Kopyala</button></summary><pre>${esc(i.ocr)}</pre></details>` : ''}
+    ${i.vtags?.length ? `<div class="d-vtags" title="${aiName()} resme bakıp buldu; aramada bulunur">${ic('spark', 'sm')}<span>Resimde:</span>${i.vtags.map(t => `<span class="tchip">${esc(t)}</span>`).join('')}</div>` : ''}
     ${media ? '' : lcard}
     <div class="field-label">Not</div>
     <textarea class="d-text" placeholder="Bir şey ekle…">${esc(i.text || '')}</textarea>
@@ -1793,7 +1799,7 @@ const Peek = {
     this.el.innerHTML = `${hasVisual(i) ? `<div class="pk-media">${ic(k === 'text' ? 'note' : k, 'xl')}</div>` : ''}
       <div class="pk-b"><div class="pk-t">${esc(titleOf(i))}</div>
         ${i.type === 'note' && i.text ? `<div class="pk-text">${esc(i.text.slice(0, 600))}</div>` : sub ? `<div class="pk-s">${esc(sub.slice(0, 300))}</div>` : ''}
-        ${metaHtml(i, { tags: 4, day: true })}</div>
+        ${metaHtml(i, { day: true })}</div>
       <div class="pk-acts"><button class="btn secondary" data-pa="open">${ic('ext', 'sm')}Aç</button>
         ${i.type === 'link' ? `<a class="btn secondary" data-pa="link" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('link', 'sm')}Siteye git</a>` : ''}
         <span class="sp"></span><button class="icon-btn" data-pa="copy" title="Kopyala">${ic('copy', 'sm')}</button>
@@ -2317,7 +2323,8 @@ const Board = {
   metaLines(i) {
     const cw = 6.3, chip = t => 26 + t.length * cw;
     let w = 46 + (i.type === 'link' ? 6 + domain(i.url).length * cw : 0) + (i.type === 'file' && i.size ? 50 : 0) + (i.starred ? 20 : 0) + (i.prio === 'high' ? 70 : 0) + (i.todo ? 70 : 0) + (relatedOf(i).length ? 34 : 0);
-    for (const t of i.tags || []) w += 6 + chip(t);
+    for (const t of (i.tags || []).slice(0, 2)) w += 6 + chip(t);
+    if ((i.tags || []).length > 2) w += 36; // 130f: the "+N" chip
     return w > this.COLW - 26 ? 2 : 1;
   },
   // no "…": text that does not fit fades out at the end of its last line (one batched read, then one write)
@@ -2327,8 +2334,8 @@ const Board = {
     // 128: tag chips wrap to a second line; those that still don't fit give way to one "+N" chip (never half a chip)
     for (const m of cards.map(c => c.querySelector('.meta')).filter(Boolean)) {
       if (m.scrollHeight <= m.clientHeight + 1) continue;
-      const tg = [...m.querySelectorAll('.tg')], more = document.createElement('span'); more.className = 'tg more';
-      let n = 0; m.appendChild(more);
+      const tg = [...m.querySelectorAll('.tg:not(.more)')], more = m.querySelector('.tg.more') || m.appendChild(Object.assign(document.createElement('span'), { className: 'tg more' }));
+      let n = +more.textContent.slice(1) || 0; // 130f: the card may already carry "+N" for tags past the first two
       for (const t of tg.filter(t => t.offsetWidth > m.clientWidth - 40)) { tg.splice(tg.indexOf(t), 1); t.remove(); more.textContent = '+' + ++n; } // a chip wider than the row never fits
       while (tg.length && m.scrollHeight > m.clientHeight + 1) { tg.pop().remove(); more.textContent = '+' + ++n; }
       more.title = n + ' etiket daha';
@@ -2344,7 +2351,7 @@ const Board = {
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '') + markCls(i);
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
-      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 99, day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
+      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
@@ -2727,12 +2734,16 @@ const AI = {
   async ocrBackfill() { // images saved before text reading existed: a few at a time, newest first, only when idle
     if (this._ocr || S.aiBusy || !S.bridgeOk) return; this._ocr = true;
     try {
-      const todo = S.items.filter(i => !i.deleted && !i.pending && i.ocr === undefined && (fileKind(i) === 'image' || (fileKind(i) === 'pdf' && i.content != null && i.content.length < 40))).sort((a, b) => b.ts - a.ts).slice(0, 4);
+      // 130b: images also get 3-6 "seen" labels (vtags: objects, colours, style) for search; an older bridge without labels → only text
+      const needV = i => fileKind(i) === 'image' && i.vtags === undefined && !this._noLabels;
+      const todo = S.items.filter(i => !i.deleted && !i.pending && ((i.ocr === undefined && (fileKind(i) === 'image' || (fileKind(i) === 'pdf' && i.content != null && i.content.length < 40))) || needV(i))).sort((a, b) => b.ts - a.ts).slice(0, 4);
       const batch = (await Promise.all(todo.map(async i => ({ id: i.id, image: await this.ocrImage(i) })))).filter(x => x.image);
-      const skip = todo.filter(i => !batch.some(b => b.id === i.id)); if (skip.length) await upsert(skip.map(i => ({ ...byId(i.id), ocr: '' })), { sync: false });
+      const skip = todo.filter(i => !batch.some(b => b.id === i.id)); if (skip.length) await upsert(skip.map(i => ({ ...byId(i.id), ocr: byId(i.id).ocr ?? '', ...(fileKind(i) === 'image' ? { vtags: [] } : {}) })), { sync: false });
       if (!batch.length) return;
-      const r = await this.call('/ocr', { items: batch }, 180000), got = new Map((r.items || []).map(x => [x.id, x.text || '']));
-      await upsert(batch.map(b => ({ ...byId(b.id), ocr: (got.get(b.id) || '').slice(0, 3000) })));
+      const r = await this.call('/ocr', { items: batch }, 180000), got = new Map((r.items || []).map(x => [x.id, x]));
+      if ((r.items || []).length && !(r.items || []).some(x => Array.isArray(x.labels))) this._noLabels = true;
+      await upsert(batch.map(b => { const x = got.get(b.id) || {}, i = byId(b.id);
+        return { ...i, ocr: i.ocr ?? (x.text || '').slice(0, 3000), ...(Array.isArray(x.labels) && fileKind(i) === 'image' ? { vtags: cleanVtags(x.labels) } : {}) }; }));
     } catch (e) { console.warn('ocr', e); } finally { this._ocr = false; }
   },
   async call(path, body, ms = 200000) {
@@ -2824,7 +2835,7 @@ const AI = {
       const ids = new Set(S.items.map(i => i.id)), got = new Map((r.items || []).map(x => [x.id, x]));
       await upsert(batch.map(b => {
         const i = byId(b.id) || b, x = got.get(i.id); if (!x) return { ...i, pending: false };
-        return { ...i, pending: false, title: i.userTitle ? i.title : x.title, summary: x.summary, ...(typeof x.ocr === 'string' && b.image ? { ocr: x.ocr.slice(0, 3000) } : {}),
+        return { ...i, pending: false, title: i.userTitle ? i.title : x.title, summary: x.summary, ...(typeof x.ocr === 'string' && b.image ? { ocr: x.ocr.slice(0, 3000) } : {}), ...(Array.isArray(x.labels) && b.image && fileKind(i) === 'image' ? { vtags: cleanVtags(x.labels) } : {}),
           tags: [...new Set([...(i.tags || []), ...(x.tags || []).map(t => t.toLowerCase().replace(/^#/, ''))])].slice(0, 6),
           related: [...new Set([...(i.related || []), ...(x.related || []).filter(id => ids.has(id) && id !== i.id)])],
           ...(x.todo?.text && !i.todo && !i.noTodo ? { todo: { text: x.todo.text, due: validDue(x.todo.due), done: false } } : {}),

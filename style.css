@@ -1159,21 +1159,6 @@ img.fadein { opacity: 0; transition: opacity .25s; } img.fadein.ok { opacity: 1;
 /* 103a: while the search list is open, floating cards (gallery peek) step aside so nothing overlaps */
 .peek { transition: opacity .15s; }
 body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-events: none; }
-/* 114: tags are small coloured chips with an icon (list, gallery, board); the board card gets a tinted type icon and no "…" */
-.meta .tg { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; border-radius: 999px; line-height: 1.5;
-  background: color-mix(in srgb, var(--tc, var(--muted)) 13%, transparent); color: color-mix(in srgb, var(--tc, var(--muted)) 72%, var(--text)); font-weight: 500; }
-.meta .tg .i { width: 12px; height: 12px; flex: none; }
-[data-theme="dark"] .meta .tg { background: color-mix(in srgb, var(--tc, var(--muted)) 18%, transparent); color: color-mix(in srgb, var(--tc, var(--muted)) 55%, #fff); }
-.bcard .b-ico { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; margin-top: -2px; background: color-mix(in srgb, currentColor 13%, transparent); }
-.bcard .b-head .b-ico .i { margin: 0; width: 14px; height: 14px; }
-.bcard .b-head { align-items: flex-start; }
-.bcard .title { font-weight: 600; display: block; -webkit-line-clamp: unset; max-height: 2lh; line-height: 1.4; }
-.bcard .sub { display: block; -webkit-line-clamp: unset; max-height: 3lh; line-height: 1.45; }
-.bcard .title.ov, .bcard .sub.ov { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat;
-  mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat; }
-.bcard .meta { gap: 4px 6px; }
-.bcard .meta > span:first-child { margin-right: 2px; }
-
 /* 101: phone first - every tap target at least 44 px (WCAG 2.5.5), the toast never sits on the open search list / AI answer */
 @media (max-width: 899px) {
   #viewSwitch button { width: 44px; height: 44px; }
@@ -1229,3 +1214,17 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 .bcard .meta { max-height: 20px; overflow: hidden; } .bcard .meta.m2 { max-height: 43px; }
 .bcard .meta > * { white-space: nowrap; flex: none; }
 .bcard .meta .tg.more { padding: 1px 7px; background: var(--surface-2); color: var(--text-2); }
+/* 130f: calmer look (Locus lesson) - tag colours are muted (low saturation, AA kept), cards show at most 2 tags + "+N",
+   the type icon on a card is one quiet colour, a selected card gets one 2 px accent frame */
+.meta .tg { background: color-mix(in srgb, var(--tc, var(--muted)) 8%, var(--surface-2)); color: color-mix(in srgb, var(--tc, var(--muted)) 45%, var(--text)); }
+.meta .tg .i { color: color-mix(in srgb, var(--tc, var(--muted)) 70%, var(--text-2)); }
+[data-theme="dark"] .meta .tg { background: color-mix(in srgb, var(--tc, var(--muted)) 10%, var(--surface-2)); color: color-mix(in srgb, var(--tc, var(--muted)) 30%, var(--text-2)); }
+.meta .tg.more { padding: 1px 7px; background: var(--surface-2); color: var(--text-2); }
+.item .ico.link, .item .ico.note, .item .ico.file, .bcard .b-ico { color: var(--text-2); }
+.bcard .b-ico { background: var(--surface-2); }
+.bcard.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+/* 130b: what the AI saw in a picture (detail panel) and the sidebar count of those labels */
+.d-vtags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.d-vtags .tchip { height: 24px; }
+.side-row.vt-count { cursor: default; color: var(--muted); }
+.side-row.vt-count:hover { background: none; }

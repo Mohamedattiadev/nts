@@ -162,6 +162,7 @@ const ORGANIZE_SCHEMA = {
         lists: { type: 'array', items: { type: 'string', enum: ['bakilacak', 'begendim', 'onemli'] },
           description: 'smart lists, zero or more: bakilacak = to read/watch/check later (articles, videos, tools to try); begendim = something the person liked/inspiration (designs, quotes, products); onemli = important to keep (documents, IDs, contracts, receipts, passwords hints, key decisions)' },
         ocr: { type: 'string', description: 'ONLY for an "image" file (photo, screenshot, scanned page): the readable text you see in it, verbatim, in reading order (signs, receipts, documents, UI text), max ~1500 characters; empty string if there is no text' },
+        labels: { type: 'array', items: { type: 'string' }, description: 'ONLY for an "image" file: 3-6 short lowercase Turkish words for what is SEEN in it, for search: main objects, colours, style (e.g. kedi, deniz, mavi, siyah-beyaz, logo, ekran-görüntüsü, el-yazısı, grafik); no sentences' },
         project: { type: 'string', description: 'name of a clear ongoing project or product this belongs to (lowercase, e.g. poultrycare), reuse an existing project name; omit if none' },
       } } },
   },
@@ -189,12 +190,13 @@ async function organize(items, existingTags, projects = []) {
   finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
 }
 
-// text inside images (photos, screenshots, scanned PDF pages) for search, for items organized before this existed
+// text inside images (photos, screenshots, scanned PDF pages) + 130b content labels (what is seen) for search, for items organized before this existed
 const OCR_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['id', 'text'],
-  properties: { id: { type: 'string' }, text: { type: 'string', description: 'all readable text in the image, verbatim, reading order, max ~1500 chars; empty string if none' } } } } } };
+  properties: { id: { type: 'string' }, text: { type: 'string', description: 'all readable text in the image, verbatim, reading order, max ~1500 chars; empty string if none' },
+    labels: { type: 'array', items: { type: 'string' }, description: '3-6 short lowercase Turkish words for what is SEEN in it, for search: main objects, colours, style (e.g. kedi, deniz, mavi, siyah-beyaz, logo, ekran-görüntüsü, el-yazısı, grafik); no sentences' } } } } } };
 async function ocr(items) {
   for (const i of items) { const p = join(WORK_DIR, `ocr-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
-  const system = 'You read text in images. For each item, open its "image" file with the Read tool and copy the readable text verbatim (any language), in reading order. Do not describe the image. Empty string if there is no text. Output only per schema.';
+  const system = 'You read text in images. For each item, open its "image" file with the Read tool and copy the readable text verbatim (any language), in reading order; empty string if there is no text. Do not describe the image in "text"; put 3-6 short lowercase Turkish words for what is seen (objects, colours, style) in "labels". Output only per schema.';
   const prompt = `Items:\n${JSON.stringify(items.map(i => ({ id: i.id, image: i._imgPath })))}`;
   try { return await runClaude({ prompt, system, schema: OCR_SCHEMA, model: conf.organizeModel, readDir: WORK_DIR }); }
   finally { for (const i of items) try { unlinkSync(i._imgPath); } catch { } }
