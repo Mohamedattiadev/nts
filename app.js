@@ -121,7 +121,7 @@ const KIND_LABEL = { link: 'Link', note: 'Not', image: 'Resim', video: 'Video', 
 const extOf = i => ((i.fileName || '').split('.').pop() || '').slice(0, 4).toUpperCase();
 function titleOf(i) {
   if (i.conv) return i.title || `${shortDay(dayKey(i.ts))} · ${i.conv.n} mesaj`; // a conversation: Claude's title, else date + count
-  if (i.type === 'note' && i.text && !i.userTitle) return (i.sticky ? stPlain(i.text) : i.text).split('\n')[0].slice(0, 140); // the user's own words come first
+  if (i.type === 'note' && i.text && !i.userTitle) return (i.sticky ? stPlain(i.text) : Ed.plain(i.text.split('\n').find(l => l.trim() && !/^```|^\|?\s*:?-{2,}|^(-{3,}|\*{3,})$/.test(l.trim())) || i.text.split('\n')[0])).slice(0, 140); // the user's own words come first
   if (i.title && !(i.type === 'file' && !i.userTitle && i.title === i.fileName)) return i.title;
   if (i.type === 'file') { const a = autoTitle(i); if (a) return a; }
   if (i.type === 'link') { if (i.meta?.title) return i.meta.title; try { const u = new URL(i.url); return domain(i.url) + decodeURI(u.pathname).replace(/\/$/, ''); } catch { return i.url; } }
@@ -160,12 +160,13 @@ function autoTitle(i) {
 }
 function subOf(i) {
   if (i.conv) return i.summary || `${i.conv.who.join(', ')} · ${i.conv.log.find(l => l.text)?.text || ''}`;
-  if (i.type === 'link') return i.text || i.summary || i.meta?.description || '';
-  if (i.type === 'file') { if (autoTitle(i)) return [i.fileName, i.text].filter(Boolean).join(' · '); return i.text || i.summary || ''; }
+  if (i.type === 'link') return mdPlain(i.text || '') || i.summary || i.meta?.description || '';
+  if (i.type === 'file') { if (autoTitle(i)) return [i.fileName, i.text].filter(Boolean).join(' · '); return mdPlain(i.text || '') || i.summary || ''; }
   const t = i.text || '';
-  if (i.userTitle) return t;
-  return t.includes('\n') ? t.slice(t.indexOf('\n') + 1) : '';
+  if (i.userTitle) return mdPlain(t);
+  return t.includes('\n') ? mdPlain(t.slice(t.indexOf('\n') + 1)) : '';
 }
+const mdPlain = t => !/[*=`#>|!\[]|^\s*[-+\d]/m.test(t) ? t : t.split('\n').filter(l => !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim())).map(Ed.plain).join('\n'); // 106b: no Markdown marks in one-line previews
 const HIDDEN = new Set(['draw', 'vault', 'bridge', 'ghlink', 'boards', 'summaries', 'saved']); // drawings live only on the board; the vault is its own place; 'bridge' is the phone's Claude address
 const alive = () => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type));
 // lookups rebuilt only when the item list changes (S.items is always replaced, never mutated in place)
@@ -760,27 +761,36 @@ const Rich = {
       const first = i.conv.who[0], many = i.conv.who.length > 2, log = i.conv.log.filter(l => l.text).slice(-3);
       return log.length ? `<div class="r-chat">${log.map(l => `<div class="r-b${l.who === first ? '' : ' me'}" dir="auto">${many && l.who !== first ? `<b>${esc(l.who)}</b>` : ''}${esc(l.text.slice(0, 90))}</div>`).join('')}</div>` : '';
     }
-    if (i.type === 'note' && !i.sticky && i.text && /^\s*(?:[-*]\s*)?\[( |x|X)\]\s/m.test(i.text)) {
-      const lines = i.text.split('\n'), first = !i.userTitle ? 1 : 0, out = []; let n = 0, done = 0, all = 0;
-      lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*]\s*)?\[( |x|X)\]\s+(.*)/); if (c) { all++; if (c[1] !== ' ') done++; } if (k < first || !l.trim()) return;
+    if (this.isDoc(i)) { // 106b: a note with structure is a small document (same look as the editor), boxes tick right here
+      const lines = i.text.split('\n'), first = !i.userTitle ? lines.findIndex(l => l.trim()) : -1, out = []; let n = 0, done = 0, all = 0, code = false;
+      lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s+(.*)/); if (c) { all++; if (c[1] !== ' ') done++; }
+        if (/^```/.test(l)) { code = !code; return; } if (k === first || !l.trim() || /^\|?\s*:?-{2,}[-|: ]*$/.test(l.trim()) || /^(-{3,}|\*{3,})$/.test(l.trim())) return;
         if (n >= 6) { n++; return; } n++;
-        if (c) out.push(`<button class="r-ck${c[1] !== ' ' ? ' on' : ''}" data-rich="tick" data-ln="${k}" role="checkbox" aria-checked="${c[1] !== ' '}"><span class="bx">${ic('check', 'sm')}</span><span dir="auto">${esc(c[2])}</span></button>`);
-        else if (/^#{1,3}\s/.test(l)) out.push(`<div class="r-h" dir="auto">${esc(l.replace(/^#+\s*/, ''))}</div>`);
-        else if (/^\s*[-*•]\s/.test(l)) out.push(`<div class="r-li" dir="auto">${esc(l.replace(/^\s*[-*•]\s*/, ''))}</div>`);
-        else out.push(`<div class="r-p" dir="auto">${esc(l)}</div>`); });
-      return `<div class="r-doc">${out.join('')}${n > 6 ? `<div class="r-more">+${n - 6} satır</div>` : ''}<div class="r-cnt">${done}/${all} bitti</div></div>`;
+        if (code) out.push(`<div class="r-cd" dir="ltr">${esc(l)}</div>`);
+        else if (c) out.push(`<button class="r-ck${c[1] !== ' ' ? ' on' : ''}" data-rich="tick" data-ln="${k}" role="checkbox" aria-checked="${c[1] !== ' '}"><span class="bx">${ic('check', 'sm')}</span><span dir="auto">${Ed.inl(c[2])}</span></button>`);
+        else if (/^#{1,3}\s/.test(l)) out.push(`<div class="r-h" dir="auto">${Ed.inl(l.replace(/^#+\s*/, ''))}</div>`);
+        else if (/^\s*(?:[-*•+]|\d+[.)])\s/.test(l)) out.push(`<div class="r-li${/^\s*\d/.test(l) ? ' ol' : ''}" dir="auto"${/^\s*\d/.test(l) ? ` data-n="${l.match(/\d+/)[0]}."` : ''}>${Ed.inl(l.replace(/^\s*(?:[-*•+]|\d+[.)])\s*/, ''))}</div>`);
+        else if (/^>\s?/.test(l)) out.push(`<div class="r-q" dir="auto">${Ed.inl(l.replace(/^>\s?/, ''))}</div>`);
+        else if (/^\|.*\|\s*$/.test(l)) out.push(`<div class="r-tr">${l.trim().replace(/^\||\|$/g, '').split('|').map(x => `<span dir="auto">${Ed.inl(x.trim())}</span>`).join('')}</div>`);
+        else if (Ed.IMG.test(l)) out.push(`<div class="r-p r-im">${ic('image', 'sm')}${esc(l.match(Ed.IMG)[1] || 'Resim')}</div>`);
+        else out.push(`<div class="r-p" dir="auto">${Ed.inl(l)}</div>`); });
+      if (!out.length) return null;
+      return `<div class="r-doc">${out.join('')}${n > 6 ? `<div class="r-more">+${n - 6} satır</div>` : ''}${all ? `<div class="r-cnt">${done}/${all} bitti</div>` : ''}</div>`;
     }
     if (this.code(i)) return `<pre class="r-code" data-cid="${i.id}" dir="ltr"></pre>`;
     return null;
   },
+  isDoc: i => i.type === 'note' && !i.sticky && !!i.text && /^\s*(?:[-*+]\s*)?\[( |x|X)\]\s|^#{1,3}\s|^\s*(?:[-*+]|\d+[.)])\s+\S|^>\s|^```|^\|.*\|\s*$|^!\[[^\]]*\]\(/m.test(i.text),
   code: i => i.type === 'file' && /\.(js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|swift|sql|sh|bash|zsh|css|scss|json|ya?ml|toml|html?|xml)$/i.test(i.fileName || ''),
   // heights for Board.est (rough, like the rest): the picture/player box, and the body when it replaces the sub line (null = it does not)
   embH(i) { const e = this.embed(i); return !e ? 0 : this.on.has(i.id) ? e.h - (hasVisual(i) ? 132 : 0) : hasVisual(i) ? 0 : 132; },
   bodyH(i) {
     if (i.conv?.log?.length) return 8 + i.conv.log.filter(l => l.text).slice(-3).reduce((h, l) => h + 4 + (Math.min(90, l.text.length) > 28 ? 44 : 27), 0);
-    if (i.type === 'note' && !i.sticky && /^\s*(?:[-*]\s*)?\[( |x|X)\]\s/m.test(i.text || '')) {
-      const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, ls = i.text.split('\n').slice(i.userTitle ? 0 : 1).filter(l => l.trim());
-      return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (/^\s*(?:[-*]\s*)?\[( |x|X)\]\s/.test(l) ? row : 18), 0) + (ls.length > 6 ? 20 : 0) + 19;
+    if (this.isDoc(i)) {
+      const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, L = i.text.split('\n'), first = !i.userTitle ? L.findIndex(l => l.trim()) : -1;
+      const ls = L.filter((l, k) => k !== first && l.trim() && !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim()));
+      if (!ls.length) return null;
+      return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s/.test(l) ? row : /^#{1,3}\s/.test(l) ? 21 : 18), 0) + (ls.length > 6 ? 20 : 0) + (/\[( |x|X)\]/.test(i.text) ? 19 : 0);
     }
     return this.code(i) ? 156 : null;
   },
@@ -1842,6 +1852,11 @@ async function simFill(i, box) {
   const row = box.querySelector('.sim-row'), x = row?.scrollLeft || 0;
   box.innerHTML = simHtml(list, ids); hookThumbs(box); if (box.querySelector('.sim-row')) box.querySelector('.sim-row').scrollLeft = x;
 }
+async function noteImage(i, f) { // 106b: a picture in a note is its own file item (synced like any file), linked from the text as nts:<id>
+  const [it] = itemsFromInput({ files: [f], source: 'note' }); if (!it) return null;
+  Object.assign(it, { parent: i.id, archive: true, createdAt: now(), dev: deviceNow() });
+  const saved = await saveItems([it]); await upsert(saved); AI.kick(); return 'nts:' + it.id;
+}
 function openItem(id) {
   const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
@@ -1878,7 +1893,7 @@ function openItem(id) {
     ${i.vtags?.length ? `<div class="d-vtags" title="${aiName()} resme bakıp buldu; aramada bulunur">${ic('spark', 'sm')}<span>Resimde:</span>${i.vtags.map(t => `<span class="tchip">${esc(t)}</span>`).join('')}</div>` : ''}
     ${media ? '' : lcard}
     <div class="field-label">Not</div>
-    <textarea class="d-text" placeholder="Bir şey ekle…">${esc(i.text || '')}</textarea>
+    <div class="d-text" data-ed></div>
     <div class="tags-edit">${(i.tags || []).map(t => `<span class="tagpill">${esc(t)}<button data-untag="${esc(t)}" title="Kaldır">${ic('x', 'sm')}</button></span>`).join('')}
       <input class="tag-in" placeholder="+ konu" enterkeyhint="done"></div>
     ${tagRowHtml(i)}
@@ -1898,11 +1913,13 @@ function openItem(id) {
   </div>`;
   simFill(i, dlg.querySelector('#simBox'));
   hookThumbs(dlg);
+  dlg._ed?.destroy(); // 106b: the note is a rich editor, stored as Markdown
+  const ned = dlg._ed = Ed.mount(dlg.querySelector('[data-ed]'), i.text || '', { placeholder: i.type === 'note' ? 'Yaz ya da "/" ile blok ekle…' : 'Bir şey ekle… ("/" ile blok)', onImage: f => noteImage(i, f) });
   const ta = dlg.querySelector('.d-title'); const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
   ta.addEventListener('input', fit);
   const commit = async () => {
     const cur = byId(i.id); if (!cur || cur.deleted) return;
-    const title = ta.value.trim().replace(/\n/g, ' '), text = dlg.querySelector('.d-text').value;
+    const title = ta.value.trim().replace(/\n/g, ' '), text = ned.value;
     const ch = {};
     if (title && title !== titleOf(cur)) { ch.title = title; ch.userTitle = true; }
     if (text !== (cur.text || '')) ch.text = text;
@@ -2262,7 +2279,7 @@ const Docs = {
       <div class="tbl-wrap"><table>${rows.map((r, k) => `<tr>${r.map(c => k ? `<td>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join('')}</tr>`).join('')}</table></div>`).join('') || '<p class="hint">Tablo boş.</p>'}</div>`;
   },
   md(t) { // small, safe markdown: escape first, then headings, lists, quotes, code, bold/italic, links, tables
-    const inl = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>')
+    const inl = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>').replace(/==(.+?)==/g, '<mark>$1</mark>')
       .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     const L = esc(t).split('\n'), out = []; let list = null, code = false, buf = [];
     const flush = () => { if (list) { out.push(`</${list}>`); list = null; } };
@@ -2272,7 +2289,7 @@ const Docs = {
       if (code) { buf.push(l); continue; }
       let m;
       if ((m = l.match(/^(#{1,6})\s+(.*)/))) { flush(); const n = Math.min(4, m[1].length + 1); out.push(`<h${n}>${inl(m[2])}</h${n}>`); }
-      else if ((m = l.match(/^\s*[-*+]\s+(\[[ xX]\]\s+)?(.*)/))) { if (list !== 'ul') { flush(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${m[1] ? (/x/i.test(m[1]) ? '☑ ' : '☐ ') : ''}${inl(m[2])}</li>`); }
+      else if ((m = l.match(/^\s*[-*+]\s+(\[[ xX]\]\s+)?(.*)/))) { if (list !== 'ul') { flush(); out.push('<ul>'); list = 'ul'; } out.push(m[1] ? `<li class="md-todo${/x/i.test(m[1]) ? ' on' : ''}"><span class="ck" aria-hidden="true"></span>${inl(m[2])}</li>` : `<li>${inl(m[2])}</li>`); } // 106b: the same boxes as the editor
       else if ((m = l.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== 'ol') { flush(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inl(m[1])}</li>`); }
       else if ((m = l.match(/^&gt;\s?(.*)/))) { flush(); out.push(`<blockquote>${inl(m[1])}</blockquote>`); }
       else if (/^\|.*\|\s*$/.test(l) && /^\|?\s*:?-{2,}/.test(L[k + 1] || '')) {
@@ -2283,6 +2300,7 @@ const Docs = {
       }
       else if (/^(-{3,}|\*{3,})$/.test(l.trim())) { flush(); out.push('<hr>'); }
       else if (!l.trim()) flush();
+      else if ((m = l.match(/^!\[([^\]]*)\]\(((?:https?:|nts:)[^)\s]+)\)\s*$/))) { flush(); out.push(`<img class="md-img" alt="${m[1]}" data-src="${m[2]}"${m[2].startsWith('nts:') ? '' : ` src="${m[2]}" referrerpolicy="no-referrer"`}>`); }
       else { flush(); out.push(`<p>${inl(l)}</p>`); }
     }
     if (code) out.push(`<pre>${buf.join('\n')}</pre>`); flush();
@@ -2322,7 +2340,7 @@ const Read = {
     const mark = x => { let h = esc(x); for (const hl of hs) { const t = esc(hl.text); if (t.length > 2 && h.includes(t)) h = h.split(t).join(`<mark data-h="${hl.id}">${t}</mark>`); } return h; };
     if (i.type === 'link') { const tag = { h: 'h3', p: 'p', li: 'li', q: 'blockquote', code: 'pre' }, r = i.read;
       return `${r.byline ? `<div class="r-by">${esc(r.byline)}</div>` : ''}${r.image ? `<img class="r-img" src="${esc(r.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}${r.blocks.map(b => `<${tag[b.t] || 'p'}>${mark(b.x)}</${tag[b.t] || 'p'}>`).join('')}`; }
-    if (i.type === 'note') return i.text.split(/\n{2,}/).map(p => `<p>${mark(p).replace(/\n/g, '<br>')}</p>`).join('');
+    if (i.type === 'note') { let h = Docs.md(i.text); for (const hl of hs) { const t = esc(hl.text); if (t.length > 2 && h.includes(t)) h = h.split(t).join(`<mark data-h="${hl.id}">${t}</mark>`); } return `<div class="doc md">${h}</div>`; } // 106b
     return '<div class="rp-file"><div class="prev-empty">Açılıyor…</div></div>';
   },
   draw() {
@@ -2344,7 +2362,7 @@ const Read = {
         <div class="field-label">İşaretlediklerin · ${hs.length}</div>
         ${hs.length ? hs.map(h => `<blockquote data-goto="${h.id}">${esc(h.text)}<button class="link-btn" data-hrm="${h.id}">Kaldır</button></blockquote>`).join('') : '<p class="hint">Henüz yok.</p>'}
       </aside>` : ''}</div>`;
-    const f = d.querySelector('.rp-file'); if (f) Docs.can(i) || fileKind(i) !== 'pdf' ? showPreview(i, f) : this.pdf(i, f);
+    Ed.hydrate(d); const f = d.querySelector('.rp-file'); if (f) Docs.can(i) || fileKind(i) !== 'pdf' ? showPreview(i, f) : this.pdf(i, f);
   },
   async pdf(i, box) { // pages fill the reading column
     try {
