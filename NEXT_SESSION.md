@@ -54,7 +54,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
 - [ ] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
-- [ ] 132 renkle arama (104d'ye renk: alanı)
+- [~A] 132 renkle arama (104d'ye renk: alanı)
 - [ ] 133 benzer kayıtlar şeridi (104f'den sonra)
 - [ ] 134 galeride çoklu seçim
 - [ ] 135 ekran görüntüsüne otomatik başlık
