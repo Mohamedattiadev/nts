@@ -48,7 +48,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap) (db99aa5)
 - [x] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104) (91a534a)
 - [x] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil (f8faa08)
-- [~B] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri
+- [x] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri (da76e01)
 - [ ] 104f ÇOK ÖNEMLİ anlamsal arama: cihazda çok dilli gömme modeli (Worker, IndexedDB vektörler, ~25 MB bir kez) + "Yapay zekâ ile ara" + model ar/en/tr birlikte (fatura↔invoice↔فاتورة)
 - [ ] 104g ÇOK ÖNEMLİ uçtan uca: 10k kayıtta tuş < 50 ms, telefonda da, kayıtlı aramalar yeni dili saklar; ekran görüntüleri + PLAN notu
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
