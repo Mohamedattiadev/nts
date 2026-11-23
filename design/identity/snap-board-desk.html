@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="tr" style="--dock-h: 48px; --dock-full: 48px; --bt-w: 376px;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Kendine attığın link, not ve dosyaları topla, düzenle, sor.">
+<title>Nts</title>
+
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body class="board-view" style="--rt-top: 368px;">
+
+
+<div class="app">
+  <!-- floating chrome: the canvas is the whole screen -->
+  <div class="hud hud-l">
+    <span class="mark" title="Nts"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"></path><path class="mk-l" d="M34 38h30M34 52h18"></path><circle class="mk-d" cx="79" cy="21" r="10"></circle></svg></span>
+    <button class="chip m-only" id="filterBtn" title="Filtre"><span id="filterLbl">Tümü</span><svg class="i sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></button>
+  </div>
+  <!-- desktop: small vertical toolbar, left middle -->
+  <nav class="rail d-only" id="rail" aria-label="Filtre"><button class="r-fold" data-fold="" data-tip="Kenar çubuğunu gizle ( [ )" aria-label="Kenar çubuğunu gizle"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><button class="on" data-type="all" data-tip="Tümü · 8" aria-label="Tümü"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg></button><button class="" data-type="link" data-tip="Linkler · 2" aria-label="Linkler"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button><button class="" data-type="note" data-tip="Notlar · 4" aria-label="Notlar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></button><button class="" data-type="photo" data-tip="Fotoğraflar · 2" aria-label="Fotoğraflar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></button><button class="" data-type="file" data-tip="Dosyalar · 0" aria-label="Dosyalar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></button><hr><button class="" data-star="" data-tip="Yıldızlı · 1" aria-label="Yıldızlı"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button><button class="" data-todo="" data-tip="Yapılacaklar · 1" aria-label="Yapılacaklar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg><span class="cnt">1</span></button><button data-tags="" data-tip="Daha fazla: listeler, kaynak, konular, şifrelerim" aria-label="Daha fazla"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button><button class="pal-tab" data-paltab="" data-tip="Çizim araçları" aria-label="Çizim araçları" aria-expanded="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg></button></nav>
+  <div class="rail-tab d-only" id="railTab" hidden=""><button data-fold="" data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button></div>
+  <div id="filterPop" class="pop" hidden="">
+    <div class="side-label" id="savedLabel" hidden="">Kayıtlı aramalar</div>
+    <div id="popSaved" class="nav"></div>
+    <div class="side-label m-only-b">Göster</div>
+    <div id="popTypes" class="nav m-only-b"><button class="side-row on" data-type="all"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span class="lbl">Tümü</span><span class="n">8</span></button><button class="side-row" data-type="link"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="lbl">Linkler</span><span class="n">2</span></button><button class="side-row" data-type="note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg><span class="lbl">Notlar</span><span class="n">4</span></button><button class="side-row" data-type="photo"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><span class="lbl">Fotoğraflar</span><span class="n">2</span></button><button class="side-row" data-type="file"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg><span class="lbl">Dosyalar</span><span class="n"></span></button><button class="side-row" data-star=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg><span class="lbl">Yıldızlı</span><span class="n">1</span></button><button class="side-row" data-todo=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg><span class="lbl">Yapılacaklar</span><span class="n">1</span></button><button class="side-row" data-list="bakilacak"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="lbl">Bakılacaklar</span><span class="n"></span></button><button class="side-row" data-list="begendim"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg><span class="lbl">Beğendiklerim</span><span class="n"></span></button><button class="side-row" data-list="onemli"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önemli</span><span class="n"></span></button><button class="side-row" data-readq=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg><span class="lbl">Okuma listesi</span><span class="n"></span></button><button class="side-row" data-trash=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg><span class="lbl">Çöp kutusu</span><span class="n"></span></button><button class="side-row" data-vault=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span class="lbl">Şifrelerim</span><span class="n"></span></button></div>
+    <div class="side-label d-only-b">Listeler</div>
+    <div id="popLists" class="nav d-only-b"><button class="side-row" data-readq=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg><span class="lbl">Okuma listesi</span><span class="n"></span></button><button class="side-row" data-list="bakilacak"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="lbl">Bakılacaklar</span><span class="n"></span></button><button class="side-row" data-list="begendim"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg><span class="lbl">Beğendiklerim</span><span class="n"></span></button><button class="side-row" data-list="onemli"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önemli</span><span class="n"></span></button><button class="side-row" data-trash=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg><span class="lbl">Çöp kutusu</span><span class="n"></span></button><button class="side-row" data-vault=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span class="lbl">Şifrelerim</span><span class="n"></span></button></div>
+    <div class="side-label" id="srcLabel" hidden="">Kaynak</div>
+    <div id="popSrc" class="nav"></div>
+    <div class="side-label">Renk ve sıra</div>
+    <div id="sideMarks"><div class="mark-dots"><button class="cdot c-green" data-color="green" title="Yeşil" aria-label="Yeşil"></button></div>
+    <button class="side-row" data-sortprio=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önce yüksek öncelik</span><span class="n"></span></button></div>
+    <div class="side-label" id="projLabel" hidden="">Projeler</div>
+    <div id="sideProjects" class="side-tags"></div>
+    <div class="side-label">Konular</div>
+    <div id="sideTags" class="side-tags"><button class="side-row" data-tag="kitap"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">kitap</span><span class="n">1</span></button><button class="side-row" data-tag="video"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">video</span><span class="n">1</span></button><button class="side-row" data-tag="aile"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">aile</span><span class="n">1</span></button><button class="side-row" data-tag="kod"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">kod</span><span class="n">1</span></button><button class="side-row" data-tag="iş"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">iş</span><span class="n">1</span></button><button class="side-row" data-tag="öğrenme"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">öğrenme</span><span class="n">1</span></button></div>
+  </div>
+  <div class="hud hud-c"><div class="seg" id="viewSwitch"><button class="on" data-view="board" title="Pano"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="8" height="7" rx="1.5"></rect><rect x="14" y="14" width="8" height="7" rx="1.5"></rect><path d="M10 6.5h3a2 2 0 0 1 2 2V14"></path></svg><span>Pano</span></button><button class="" data-view="list" title="Liste"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg><span>Liste</span></button><button class="" data-view="gallery" title="Galeri"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg><span>Galeri</span></button></div></div>
+  <div class="hud hud-r">
+    <button id="settingsBtn" class="chip icon ai" title="Ayarlar · Claude köprüsü kapalı"><span id="setIco"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg></span><span class="dot badge"></span></button>
+  </div>
+
+  <main id="main">
+    <div id="list" class="list" hidden=""></div>
+    <div id="gallery" class="gallery" hidden=""></div>
+    <div id="topics" class="list" hidden=""></div>
+    <div id="todo" class="todo" hidden=""></div>
+    <div id="study" class="study" hidden=""></div>
+    <div id="board" class="board" data-tool="select" style="background-size: 20.5122px 20.5122px; background-position: 175.322px 64px;">
+      <div id="plane" class="plane" style="--dayh: 729px; transform: translate3d(175.322px, 64px, 0px) scale(0.854676); --hs: 1.17003367003367; --ik: 1.17003367003367;"><svg id="wires" class="wires"></svg><svg id="ink" class="ink"></svg><div data-id="s6" class="bcard c-green auto" style="height: 66px; left: 0px; top: 30px;"><span class="b-date">20 Kas</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title">Kitap önerisi: Sapiens</div></div>
+      <div class="meta"><span>22:17</span>
+    
+    
+    <svg class="i sm fill star-on" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg>
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-orange)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg>kitap</span>
+    
+    </div></div></div><div data-id="s5" class="bcard auto" style="height: 66px; left: 316px; top: 30px;"><span class="b-date">21 Kas</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title">Süt al</div></div>
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    <span class="m-todo "><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>Görev</span>
+    
+    
+    
+    </div></div></div><div data-id="s4" class="bcard auto" style="height: 66px; left: 632px; top: 30px;"><span class="b-date">Dün</span><div class="b-in"><div class="b-head"><span class="b-ico link-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span><div class="title">Bir video</div></div>
+      <div class="meta"><span>20:53</span>
+    <span>youtube.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-purple)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="m22 8-6 4 6 4z"></path></svg>video</span>
+    
+    </div></div></div><div data-id="s3" class="bcard auto" style="height: 85px; left: 632px; top: 110px;"><span class="b-date">Dün</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title">Annemi ara, doğum günü hediyesi</div></div>
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-orange)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg>aile</span>
+    
+    </div></div></div><div data-id="s2" class="bcard auto" style="height: 86px; left: 948px; top: 30px;"><span class="b-date">Bugün</span><div class="b-in"><div class="b-head"><span class="b-ico link-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span><div class="title">Claude Code</div></div>
+      <div class="sub">Agentic coding tool</div><div class="meta"><span>20:17</span>
+    <span>github.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M9 9h6v6H9zM9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"></path></svg>kod</span>
+    
+    </div></div></div><div data-id="s1" class="bcard auto" style="height: 85px; left: 948px; top: 130px;"><span class="b-date">Bugün</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title ov">Pazartesi toplantısı için sunum hazırla, grafikler eksik</div></div>
+      <div class="meta"><span>21:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>iş</span>
+    
+    </div></div></div><div data-id="img2" class="bcard auto" style="height: 198px; left: 948px; top: 229px;"><span class="b-date">Bugün</span><div class="thumb" data-tid="img2"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div><div class="b-in"><div class="b-head"><span class="b-ico file-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></span><div class="title">Geniş ekran görüntüsü</div></div>
+      <div class="meta"><span>22:15</span>
+    
+    <span>43 KB</span>
+    
+    
+    
+    
+    
+    
+    </div></div></div><div data-id="img1" class="bcard auto" style="height: 254px; left: 948px; top: 441px;"><span class="b-date">Bugün</span><div class="thumb" data-tid="img1"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div><div class="b-in"><div class="b-head"><span class="b-ico file-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></span><div class="title">Üniversite logosu</div></div>
+      <div class="sub ov">Yuvarlak, turkuaz bir amblem; kurumsal kullanım için kaydedilmiş bir görsel. Uzun bir açıklama satırı daha.</div><div class="meta"><span>22:16</span>
+    
+    <span>42 KB</span>
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-green)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>öğrenme</span>
+    
+    </div></div></div><div class="day-band" style="left: -12px; top: -12px; width: 264px; height: 130px; --w: 240px;"><div class="col-head"><span class="l">20 Kasım Cuma</span><span class="s">20 Kas</span><span class="cnt">1</span></div></div><div class="day-band alt" style="left: 304px; top: -12px; width: 264px; height: 130px; --w: 240px;"><div class="col-head"><span class="l">21 Kasım Cumartesi</span><span class="s">21 Kas</span><span class="cnt">1</span></div></div><div class="day-band" style="left: 620px; top: -12px; width: 264px; height: 229px; --w: 240px;"><div class="col-head"><span class="l">Dün<span class="dt"> · 22 Kasım Pazar</span></span><span class="s">Dün</span><span class="cnt">2</span></div></div><div class="day-band alt today" style="left: 936px; top: -12px; width: 264px; height: 729px; --w: 240px;"><div class="col-head"><span class="l">Bugün<span class="dt"> · 23 Kasım Pazartesi</span></span><span class="s">Bugün</span><span class="cnt">4</span></div></div></div>
+      <div id="months" class="months-grid" hidden=""></div>
+    </div>
+    <div id="empty" class="empty" hidden=""></div>
+  </main>
+
+  <div class="board-tools pal" id="pal" hidden="" aria-label="Araçlar"><button class="tool on" data-tool="select" title="Seç (V)" aria-label="Seç (V)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 8-6 2-2 6z"></path></svg></button><button class="tool" data-tool="note" title="Not (N)" aria-label="Not (N)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1z"></path><path d="M14 20v-5a1 1 0 0 1 1-1h5"></path></svg></button><button class="tool" data-tool="pen" title="Kalem (P)" aria-label="Kalem (P)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg></button><button class="tool" data-tool="arrow" title="Ok (A)" aria-label="Ok (A)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M9 5h10v10"></path></svg></button><button class="tool" data-tool="rect" title="Dikdörtgen (R)" aria-label="Dikdörtgen (R)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5"></rect></svg></button><button class="tool" data-tool="text" title="Yazı (T)" aria-label="Yazı (T)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V5h14v1M12 5v14M9 19h6"></path></svg></button><button class="tool" data-tool="eraser" title="Silgi (E)" aria-label="Silgi (E)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 10-10 7 7-7 7zM13 21h8"></path><path d="m9 11 6 6"></path></svg></button><button class="tool inkc" data-inkc="" title="Renk" aria-label="Renk"><span style="background: var(--text);"></span></button></div>
+  <div class="board-tools" id="boardTools"><button id="penBtn" class="tool m-only" title="Çizim araçları" aria-label="Çizim araçları" aria-pressed="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg></button>
+    <button id="zoomOut" class="tool" title="Uzaklaş"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14"></path></svg></button>
+    <button id="zoomPct" class="tool pct" title="%100'e dön">85%</button>
+    <button id="zoomIn" class="tool" title="Yakınlaş"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button id="boardBtn" class="tool range" title="Hangi pano"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="8" height="7" rx="1.5"></rect><rect x="14" y="14" width="8" height="7" rx="1.5"></rect><path d="M10 6.5h3a2 2 0 0 1 2 2V14"></path></svg><span>Genel</span><svg class="i sm rot" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+    <button id="rangeBtn" class="tool range" title="Panoda hangi zaman"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Son 30 gün</span></button>
+    <button id="fitBtn" class="tool" title="Hepsini göster (Shift+1)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"></path></svg></button>
+    <button id="tidyBtn" class="tool" title="Otomatik diz: günlere göre"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7z"></path><path d="m2 17 10 5 10-5M2 12l10 5 10-5"></path></svg></button>
+  </div>
+
+  <!-- the one box, bottom centre (like a chat box) -->
+  <div class="dock">
+    <div id="answer" class="answer" hidden=""></div>
+    <div id="hits" class="hits" hidden=""></div>
+    <section class="composer" id="composer">
+      <div id="attachList" class="attach-list"></div>
+      <div class="c-row">
+        <label class="c-btn" title="Dosya ekle" tabindex="0" role="button" aria-label="Dosya ekle"><span id="clipIco"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span><input id="fileInput" type="file" multiple="" hidden="" style=""></label>
+        <div id="modes" class="modes"><button type="button" class="m-b" data-m="note" title="Not: Enter kaydeder · Tab ya da dokun: Ara" aria-label="Mod: Not. Değiştir: Ara"><span class="m-in"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg><span>Not</span></span></button></div>
+        <textarea id="input" rows="1" placeholder="Not yaz…" enterkeyhint="send" dir="auto" autocomplete="off" style=""></textarea>
+        <button id="saveBtn" class="send round" title="Kaydet (Enter) · Tab: sonraki mod" disabled="" data-k="upfalse" aria-label="Kaydet"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+      </div>
+      <div id="cHint" class="c-hint" hidden="" data-k=""></div>
+    </section>
+  </div>
+</div>
+
+
+
+
+
+<input id="waInput" type="file" accept=".zip,.txt,application/zip,text/plain" hidden="" style="">
+<input id="backupInput" type="file" accept=".zip" hidden="" style="">
+<input id="bmInput" type="file" accept=".html,.htm,text/html" hidden="" style="">
+
+
+
+
+
+
+
+<div class="scrub" hidden="" role="slider" aria-label="Zamanda git" tabindex="0"></div><div class="ctx pop" hidden=""></div><aside class="peek" hidden=""></aside></body></html>

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="tr" class="" style="--dock-h: 58px; --dock-full: 58px; --bt-w: 203px;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Kendine attığın link, not ve dosyaları topla, düzenle, sor.">
+<title>Nts</title>
+
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body style="--rt-top: 406px;" class="">
+
+
+<div class="app">
+  <!-- floating chrome: the canvas is the whole screen -->
+  <div class="hud hud-l">
+    <span class="mark" title="Nts"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"></path><path class="mk-l" d="M34 38h30M34 52h18"></path><circle class="mk-d" cx="79" cy="21" r="10"></circle></svg></span>
+    <button class="chip m-only" id="filterBtn" title="Filtre"><span id="filterLbl">Tümü</span><svg class="i sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></button>
+  </div>
+  <!-- desktop: small vertical toolbar, left middle -->
+  <nav class="rail d-only" id="rail" aria-label="Filtre"><button class="r-fold" data-fold="" data-tip="Kenar çubuğunu gizle ( [ )" aria-label="Kenar çubuğunu gizle"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><button class="on" data-type="all" data-tip="Tümü · 8" aria-label="Tümü"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg></button><button class="" data-type="link" data-tip="Linkler · 2" aria-label="Linkler"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button><button class="" data-type="note" data-tip="Notlar · 4" aria-label="Notlar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></button><button class="" data-type="photo" data-tip="Fotoğraflar · 2" aria-label="Fotoğraflar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></button><button class="" data-type="file" data-tip="Dosyalar · 0" aria-label="Dosyalar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></button><hr><button class="" data-star="" data-tip="Yıldızlı · 1" aria-label="Yıldızlı"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button><button class="" data-todo="" data-tip="Yapılacaklar · 1" aria-label="Yapılacaklar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg><span class="cnt">1</span></button><button data-tags="" data-tip="Daha fazla: listeler, kaynak, konular, şifrelerim" aria-label="Daha fazla"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button></nav>
+  <div class="rail-tab d-only" id="railTab" hidden=""><button data-fold="" data-tip="Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button></div>
+  <div id="filterPop" class="pop" hidden="">
+    <div class="side-label" id="savedLabel" hidden="">Kayıtlı aramalar</div>
+    <div id="popSaved" class="nav"></div>
+    <div class="side-label m-only-b">Göster</div>
+    <div id="popTypes" class="nav m-only-b"><button class="side-row on" data-type="all"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span class="lbl">Tümü</span><span class="n">8</span></button><button class="side-row" data-type="link"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="lbl">Linkler</span><span class="n">2</span></button><button class="side-row" data-type="note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg><span class="lbl">Notlar</span><span class="n">4</span></button><button class="side-row" data-type="photo"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><span class="lbl">Fotoğraflar</span><span class="n">2</span></button><button class="side-row" data-type="file"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg><span class="lbl">Dosyalar</span><span class="n"></span></button><button class="side-row" data-star=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg><span class="lbl">Yıldızlı</span><span class="n">1</span></button><button class="side-row" data-todo=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg><span class="lbl">Yapılacaklar</span><span class="n">1</span></button><button class="side-row" data-list="bakilacak"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="lbl">Bakılacaklar</span><span class="n"></span></button><button class="side-row" data-list="begendim"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg><span class="lbl">Beğendiklerim</span><span class="n"></span></button><button class="side-row" data-list="onemli"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önemli</span><span class="n"></span></button><button class="side-row" data-readq=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg><span class="lbl">Okuma listesi</span><span class="n"></span></button><button class="side-row" data-trash=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg><span class="lbl">Çöp kutusu</span><span class="n"></span></button><button class="side-row" data-vault=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span class="lbl">Şifrelerim</span><span class="n"></span></button></div>
+    <div class="side-label d-only-b">Listeler</div>
+    <div id="popLists" class="nav d-only-b"><button class="side-row" data-readq=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg><span class="lbl">Okuma listesi</span><span class="n"></span></button><button class="side-row" data-list="bakilacak"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="lbl">Bakılacaklar</span><span class="n"></span></button><button class="side-row" data-list="begendim"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg><span class="lbl">Beğendiklerim</span><span class="n"></span></button><button class="side-row" data-list="onemli"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önemli</span><span class="n"></span></button><button class="side-row" data-trash=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg><span class="lbl">Çöp kutusu</span><span class="n"></span></button><button class="side-row" data-vault=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span class="lbl">Şifrelerim</span><span class="n"></span></button></div>
+    <div class="side-label" id="srcLabel" hidden="">Kaynak</div>
+    <div id="popSrc" class="nav"></div>
+    <div class="side-label">Renk ve sıra</div>
+    <div id="sideMarks"><div class="mark-dots"><button class="cdot c-green" data-color="green" title="Yeşil" aria-label="Yeşil"></button></div>
+    <button class="side-row" data-sortprio=""><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg><span class="lbl">Önce yüksek öncelik</span><span class="n"></span></button></div>
+    <div class="side-label" id="projLabel" hidden="">Projeler</div>
+    <div id="sideProjects" class="side-tags"></div>
+    <div class="side-label">Konular</div>
+    <div id="sideTags" class="side-tags"><button class="side-row" data-tag="kitap"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">kitap</span><span class="n">1</span></button><button class="side-row" data-tag="video"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">video</span><span class="n">1</span></button><button class="side-row" data-tag="aile"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">aile</span><span class="n">1</span></button><button class="side-row" data-tag="kod"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">kod</span><span class="n">1</span></button><button class="side-row" data-tag="iş"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">iş</span><span class="n">1</span></button><button class="side-row" data-tag="öğrenme"><span class="hash"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span class="lbl">öğrenme</span><span class="n">1</span></button></div>
+  </div>
+  <div class="hud hud-c"><div class="seg" id="viewSwitch"><button class="" data-view="board" title="Pano"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="8" height="7" rx="1.5"></rect><rect x="14" y="14" width="8" height="7" rx="1.5"></rect><path d="M10 6.5h3a2 2 0 0 1 2 2V14"></path></svg><span>Pano</span></button><button class="on" data-view="list" title="Liste"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg><span>Liste</span></button><button class="" data-view="gallery" title="Galeri"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg><span>Galeri</span></button></div></div>
+  <div class="hud hud-r">
+    <button id="settingsBtn" class="chip icon ai" title="Ayarlar · Claude köprüsü kapalı"><span id="setIco"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg></span><span class="dot badge"></span></button>
+  </div>
+
+  <main id="main">
+    <div id="list" class="list"><div class="l-top "><button class="l-jump" data-ljump="" title="Tarihe git"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Tarihe git</span></button></div><div class="day">Bugün<span class="cnt">4</span></div><div class="group"><div class="item" data-id="img1">
+    <div class="thumb" data-tid="img1"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div>
+    <div class="body">
+      <div class="title">Üniversite logosu</div>
+      <div class="sub" dir="auto">Yuvarlak, turkuaz bir amblem; kurumsal kullanım için kaydedilmiş bir görsel. Uzun bir açıklama satırı daha.</div>
+      <div class="meta"><span>22:16</span>
+    
+    <span>42 KB</span>
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-green)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>öğrenme</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    <button class="act" data-a="download" title="İndir"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg></button>
+  </div></div>
+    </div></div><div class="item" data-id="img2">
+    <div class="thumb" data-tid="img2"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div>
+    <div class="body">
+      <div class="title">Geniş ekran görüntüsü</div>
+      
+      <div class="meta"><span>22:15</span>
+    
+    <span>43 KB</span>
+    
+    
+    
+    
+    
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    <button class="act" data-a="download" title="İndir"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg></button>
+  </div></div>
+    </div></div><div class="item" data-id="s1">
+    <div class="ico note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></div>
+    <div class="body">
+      <div class="title">Pazartesi toplantısı için sunum hazırla, grafikler eksik</div>
+      
+      <div class="meta"><span>21:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>iş</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    
+  </div></div>
+    </div></div><div class="item" data-id="s2">
+    <div class="ico link"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+    <div class="body">
+      <div class="title">Claude Code</div>
+      <div class="sub" dir="auto">Agentic coding tool</div>
+      <div class="meta"><span>20:17</span>
+    <span>github.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M9 9h6v6H9zM9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"></path></svg>kod</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    <button class="act" data-a="open" title="Linki aç"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></button>
+    
+  </div></div>
+    </div></div></div><div class="day">Dün<span class="cnt">2</span></div><div class="group"><div class="item" data-id="s3">
+    <div class="ico note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></div>
+    <div class="body">
+      <div class="title">Annemi ara, doğum günü hediyesi</div>
+      
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-orange)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg>aile</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    
+  </div></div>
+    </div></div><div class="item" data-id="s4">
+    <div class="ico link"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+    <div class="body">
+      <div class="title">Bir video</div>
+      
+      <div class="meta"><span>20:53</span>
+    <span>youtube.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-purple)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="m22 8-6 4 6 4z"></path></svg>video</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    <button class="act" data-a="open" title="Linki aç"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></button>
+    
+  </div></div>
+    </div></div></div><div class="day">21 Kasım Cumartesi<span class="cnt">1</span></div><div class="group"><div class="item" data-id="s5">
+    <div class="ico note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></div>
+    <div class="body">
+      <div class="title">Süt al</div>
+      
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    <span class="m-todo "><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>Görev</span>
+    
+    
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    
+  </div></div>
+    </div></div></div><div class="day">20 Kasım Cuma<span class="cnt">1</span></div><div class="group"><div class="item c-green" data-id="s6">
+    <div class="ico note"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></div>
+    <div class="body">
+      <div class="title">Kitap önerisi: Sapiens</div>
+      
+      <div class="meta"><span>22:17</span>
+    
+    
+    <svg class="i sm fill star-on" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg>
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-orange)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg>kitap</span>
+    
+    <div class="acts">
+    
+    <button class="act ai" data-a="explain" title="Claude anlatsın"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 3v4M17 5h4M5 17v4M3 19h4"></path></svg>Anlat</button>
+    <button class="act" data-a="copy" title="Kopyala"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    <button class="act" data-a="star" title="Yıldızla"><svg class="i sm fill star-on" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></button>
+    
+    
+  </div></div>
+    </div></div></div></div>
+    <div id="gallery" class="gallery" hidden=""></div>
+    <div id="topics" class="list" hidden=""></div>
+    <div id="todo" class="todo" hidden=""></div>
+    <div id="study" class="study" hidden=""></div>
+    <div id="board" class="board" data-tool="select" style="background-size: 24px 24px; background-position: -822px 64px;" hidden="">
+      <div id="plane" class="plane" style="--dayh: 729px; transform: translate3d(-822px, 64px, 0px) scale(1); --hs: 1; --ik: 1;"><svg id="wires" class="wires"></svg><svg id="ink" class="ink"></svg><div data-id="s5" class="bcard auto" style="height: 66px; left: 316px; top: 30px;"><span class="b-date">21 Kas</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title">Süt al</div></div>
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    <span class="m-todo "><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>Görev</span>
+    
+    
+    
+    </div></div></div><div data-id="s4" class="bcard auto" style="height: 66px; left: 632px; top: 30px;"><span class="b-date">Dün</span><div class="b-in"><div class="b-head"><span class="b-ico link-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span><div class="title">Bir video</div></div>
+      <div class="meta"><span>20:53</span>
+    <span>youtube.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-purple)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="m22 8-6 4 6 4z"></path></svg>video</span>
+    
+    </div></div></div><div data-id="s3" class="bcard auto" style="height: 85px; left: 632px; top: 110px;"><span class="b-date">Dün</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title">Annemi ara, doğum günü hediyesi</div></div>
+      <div class="meta"><span>22:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-orange)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"></path></svg>aile</span>
+    
+    </div></div></div><div data-id="s2" class="bcard auto" style="height: 86px; left: 948px; top: 30px;"><span class="b-date">Bugün</span><div class="b-in"><div class="b-head"><span class="b-ico link-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span><div class="title">Claude Code</div></div>
+      <div class="sub">Agentic coding tool</div><div class="meta"><span>20:17</span>
+    <span>github.com</span>
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M9 9h6v6H9zM9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"></path></svg>kod</span>
+    
+    </div></div></div><div data-id="s1" class="bcard auto" style="height: 85px; left: 948px; top: 130px;"><span class="b-date">Bugün</span><div class="b-in"><div class="b-head"><span class="b-ico note-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><div class="title ov">Pazartesi toplantısı için sunum hazırla, grafikler eksik</div></div>
+      <div class="meta"><span>21:17</span>
+    
+    
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-blue)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>iş</span>
+    
+    </div></div></div><div data-id="img2" class="bcard auto" style="height: 198px; left: 948px; top: 229px;"><span class="b-date">Bugün</span><div class="thumb" data-tid="img2"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div><div class="b-in"><div class="b-head"><span class="b-ico file-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></span><div class="title">Geniş ekran görüntüsü</div></div>
+      <div class="meta"><span>22:15</span>
+    
+    <span>43 KB</span>
+    
+    
+    
+    
+    
+    
+    </div></div></div><div data-id="img1" class="bcard auto" style="height: 254px; left: 948px; top: 441px;"><span class="b-date">Bugün</span><div class="thumb" data-tid="img1"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg><img alt="" referrerpolicy="no-referrer" decoding="async" src="data:image/webp;base64,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" class="ok"></div><div class="b-in"><div class="b-head"><span class="b-ico file-c"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg></span><div class="title">Üniversite logosu</div></div>
+      <div class="sub ov">Yuvarlak, turkuaz bir amblem; kurumsal kullanım için kaydedilmiş bir görsel. Uzun bir açıklama satırı daha.</div><div class="meta"><span>22:16</span>
+    
+    <span>42 KB</span>
+    
+    
+    
+    
+    <span class="tg" style="--tc:var(--c-green)" dir="auto"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>öğrenme</span>
+    
+    </div></div></div><div class="day-band alt" style="left: 304px; top: -12px; width: 264px; height: 130px; --w: 240px;"><div class="col-head"><span class="l">21 Kasım Cumartesi</span><span class="s">21 Kas</span><span class="cnt">1</span></div></div><div class="day-band" style="left: 620px; top: -12px; width: 264px; height: 229px; --w: 240px;"><div class="col-head"><span class="l">Dün<span class="dt"> · 22 Kasım Pazar</span></span><span class="s">Dün</span><span class="cnt">2</span></div></div><div class="day-band alt today" style="left: 936px; top: -12px; width: 264px; height: 729px; --w: 240px;"><div class="col-head"><span class="l">Bugün<span class="dt"> · 23 Kasım Pazartesi</span></span><span class="s">Bugün</span><span class="cnt">4</span></div></div></div>
+      <div id="months" class="months-grid" hidden=""></div>
+    </div>
+    <div id="empty" class="empty" hidden=""></div>
+  </main>
+
+  <div class="board-tools pal" id="pal" hidden="" aria-label="Araçlar"><button class="tool on" data-tool="select" title="Seç (V)" aria-label="Seç (V)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 8-6 2-2 6z"></path></svg></button><button class="tool" data-tool="note" title="Not (N)" aria-label="Not (N)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1z"></path><path d="M14 20v-5a1 1 0 0 1 1-1h5"></path></svg></button><button class="tool" data-tool="pen" title="Kalem (P)" aria-label="Kalem (P)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg></button><button class="tool" data-tool="arrow" title="Ok (A)" aria-label="Ok (A)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M9 5h10v10"></path></svg></button><button class="tool" data-tool="rect" title="Dikdörtgen (R)" aria-label="Dikdörtgen (R)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5"></rect></svg></button><button class="tool" data-tool="text" title="Yazı (T)" aria-label="Yazı (T)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V5h14v1M12 5v14M9 19h6"></path></svg></button><button class="tool" data-tool="eraser" title="Silgi (E)" aria-label="Silgi (E)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 10-10 7 7-7 7zM13 21h8"></path><path d="m9 11 6 6"></path></svg></button><button class="tool inkc" data-inkc="" title="Renk" aria-label="Renk"><span style="background: var(--text);"></span></button></div>
+  <div class="board-tools" id="boardTools" hidden=""><button id="penBtn" class="tool m-only" title="Çizim araçları" aria-label="Çizim araçları" aria-pressed="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg></button>
+    <button id="zoomOut" class="tool" title="Uzaklaş"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12h14"></path></svg></button>
+    <button id="zoomPct" class="tool pct" title="%100'e dön">100%</button>
+    <button id="zoomIn" class="tool" title="Yakınlaş"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button id="boardBtn" class="tool range" title="Hangi pano"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="8" height="7" rx="1.5"></rect><rect x="14" y="14" width="8" height="7" rx="1.5"></rect><path d="M10 6.5h3a2 2 0 0 1 2 2V14"></path></svg><span>Genel</span><svg class="i sm rot" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+    <button id="rangeBtn" class="tool range" title="Panoda hangi zaman"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Son 30 gün</span></button>
+    <button id="fitBtn" class="tool" title="Hepsini göster (Shift+1)"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"></path></svg></button>
+    <button id="tidyBtn" class="tool" title="Otomatik diz: günlere göre"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7z"></path><path d="m2 17 10 5 10-5M2 12l10 5 10-5"></path></svg></button>
+  </div>
+
+  <!-- the one box, bottom centre (like a chat box) -->
+  <div class="dock">
+    <div id="answer" class="answer" hidden=""></div>
+    <div id="hits" class="hits" hidden=""></div>
+    <section class="composer" id="composer">
+      <div id="attachList" class="attach-list"></div>
+      <div class="c-row">
+        <label class="c-btn" title="Dosya ekle" tabindex="0" role="button" aria-label="Dosya ekle"><span id="clipIco"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span><input id="fileInput" type="file" multiple="" hidden="" style=""></label>
+        <div id="modes" class="modes"><button type="button" class="m-b" data-m="note" title="Not: Enter kaydeder · Tab ya da dokun: Ara" aria-label="Mod: Not. Değiştir: Ara"><span class="m-in"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"></path><path d="m14 7 3 3"></path></svg><span>Not</span></span></button></div>
+        <textarea id="input" rows="1" placeholder="Not yaz…" enterkeyhint="send" dir="auto" autocomplete="off" style=""></textarea>
+        <button id="saveBtn" class="send round" title="Kaydet (Enter) · Tab: sonraki mod" disabled="" data-k="uptrue" aria-label="Kaydet"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+      </div>
+      <div id="cHint" class="c-hint" hidden="" data-k=""></div>
+    </section>
+  </div>
+</div>
+
+
+
+
+
+<input id="waInput" type="file" accept=".zip,.txt,application/zip,text/plain" hidden="" style="">
+<input id="backupInput" type="file" accept=".zip" hidden="" style="">
+<input id="bmInput" type="file" accept=".html,.htm,text/html" hidden="" style="">
+
+
+
+
+
+
+
+<div class="scrub idle" hidden="" role="slider" aria-label="Zamanda git" tabindex="0"></div><div class="ctx pop" hidden=""></div><aside class="peek" hidden=""></aside></body></html>

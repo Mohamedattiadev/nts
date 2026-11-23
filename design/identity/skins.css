@@ -1,0 +1,61 @@
+/* 143-0 (2nd round): our own design stays; each skin is a thin layer on top of the real style.css.
+   html[data-skin="…"] is set by identity.html on a static snapshot of the real app (snap-*.html). */
+
+/* ---------- 1 · İşaret: the logo's bubble corner, two strokes and amber dot, used sparingly ---------- */
+html[data-skin="mark"] { --bub: 14px 14px 14px 5px; --dot: #f5a524; }
+html[data-skin="mark"] .bcard, html[data-skin="mark"] .group, html[data-skin="mark"] .composer,
+html[data-skin="mark"] .seg, html[data-skin="mark"] .rail, html[data-skin="mark"] .mark { border-radius: var(--bub); }
+html[data-skin="mark"] .composer { border-radius: 24px 24px 24px 8px; }
+html[data-skin="mark"] .seg .on, html[data-skin="mark"] .m-b { border-radius: 9px 9px 9px 3px; }
+html[data-skin="mark"] .day-band.today > .col-head::before, html[data-skin="mark"] .day:first-of-type::before {
+  content: ""; width: 16px; height: 11px; flex: none; margin-right: 2px; align-self: center;
+  background: linear-gradient(var(--accent) 0 0) 0 0 / 16px 3.5px no-repeat, linear-gradient(var(--accent) 0 0) 0 7px / 10px 3.5px no-repeat; border-radius: 2px; }
+html[data-skin="mark"] .day { display: flex; align-items: center; gap: 8px; }
+/* the two newest records (in the app: unseen ones) */
+html[data-skin="mark"] .bcard:is([data-id="s2"], [data-id="img1"])::after, html[data-skin="mark"] .item:is([data-id="img1"], [data-id="img2"])::after {
+  content: ""; position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: var(--dot); border: 2px solid var(--bg); }
+html[data-skin="mark"] .item:is([data-id="img1"], [data-id="img2"])::after { top: 14px; right: 12px; }
+html[data-skin="mark"] .b-ico, html[data-skin="mark"] .item > .thumb { border-radius: 8px 8px 8px 3px; }
+html[data-skin="mark"] .rail .on { border-radius: 10px 10px 10px 3px; }
+html[data-skin="mark"] .bcard:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+
+/* ---------- 2 · Sıcak: same layout, warmer paper-like neutrals, softer shadows, a little more air ---------- */
+html[data-skin="warm"][data-theme="light"] { --bg: #f6f4ef; --side: #efece5; --surface: #fffdf9; --surface-2: #f3efe7; --surface-3: #e9e4da; --line: #e9e3d8; --line-2: #dad3c6;
+  --text: #1f1c18; --text-2: #5d574e; --muted: #7a7368;
+  --shadow-sm: 0 1px 2px rgb(80 60 30 / .06); --shadow: 0 1px 2px rgb(80 60 30 / .06), 0 12px 28px -8px rgb(80 60 30 / .14); }
+html[data-skin="warm"][data-theme="dark"] { --bg: #12110f; --side: #171614; --surface: #1c1a17; --surface-2: #24221e; --surface-3: #2d2a25; --line: #2a2723; --line-2: #3a362f;
+  --text: #f0ebe2; --text-2: #b3ab9e; --muted: #948c80; }
+html[data-skin="warm"] .bcard { border-radius: 14px; box-shadow: var(--shadow-sm), 0 6px 16px -10px rgb(80 60 30 / .25); }
+html[data-skin="warm"] .bcard .title, html[data-skin="warm"] .item .title { letter-spacing: -.005em; }
+html[data-skin="warm"] .group { border-radius: 16px; box-shadow: var(--shadow-sm); }
+html[data-skin="warm"] .day-band { border-radius: 20px; }
+html[data-skin="warm"] .day-band.today { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+html[data-skin="warm"] .composer { box-shadow: 0 1px 0 rgb(255 255 255 / .6) inset, var(--shadow); }
+
+/* ---------- 3 · Derinlik: chrome floats as frosted glass over the board, cards lift ---------- */
+html[data-skin="depth"] .rail, html[data-skin="depth"] .seg, html[data-skin="depth"] .composer, html[data-skin="depth"] .hud .chip, html[data-skin="depth"] .tool, html[data-skin="depth"] .mark {
+  background: color-mix(in srgb, var(--surface) 70%, transparent) !important; backdrop-filter: blur(18px) saturate(1.6); -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border-color: color-mix(in srgb, var(--text) 9%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 1px 2px rgb(0 0 0 / .06), 0 14px 36px -10px rgb(0 0 0 / .22) !important; }
+html[data-skin="depth"][data-theme="dark"] .rail, html[data-skin="depth"][data-theme="dark"] .seg, html[data-skin="depth"][data-theme="dark"] .composer, html[data-skin="depth"][data-theme="dark"] .mark {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .07), 0 14px 36px -10px rgb(0 0 0 / .7) !important; }
+html[data-skin="depth"] .composer { border-radius: 26px; }
+html[data-skin="depth"] .bcard { border-color: transparent; border-radius: 14px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent), 0 2px 4px rgb(0 0 0 / .04), 0 10px 24px -12px rgb(0 0 0 / .22); }
+html[data-skin="depth"] .bcard:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 4px 8px rgb(0 0 0 / .05), 0 22px 40px -16px rgb(0 0 0 / .3); }
+html[data-skin="depth"] .day-band { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), transparent 70%); }
+html[data-skin="depth"] .day-band.today { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%); }
+html[data-skin="depth"] .group { border: 0; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent), 0 10px 24px -14px rgb(0 0 0 / .2); }
+
+/* ---------- 4 · Tür rengi: every kind has its colour (link blue, note violet, file green), calm tints ---------- */
+html[data-skin="kind"] .bcard:has(.b-ico.link-c) { --k: var(--t-link); }
+html[data-skin="kind"] .bcard:has(.b-ico.note-c) { --k: var(--t-note); }
+html[data-skin="kind"] .bcard:has(.b-ico.file-c) { --k: var(--t-file); }
+html[data-skin="kind"] .bcard { border-top: 3px solid var(--k, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--k, transparent) 6%, var(--surface)), var(--surface) 60%); }
+html[data-skin="kind"] .b-ico { background: color-mix(in srgb, var(--k, var(--muted)) 14%, transparent) !important; color: var(--k, var(--muted)) !important; border-radius: 7px; }
+html[data-skin="kind"] .item:has(.thumb > svg:only-child) .thumb, html[data-skin="kind"] .item .thumb { color: var(--k, var(--muted)); }
+html[data-skin="kind"] .item:has(path[d^="M10 13a5"]), html[data-skin="kind"] .item:has(.l-link) { --k: var(--t-link); }
+html[data-skin="kind"] .item .thumb { background: color-mix(in srgb, var(--k, var(--muted)) 12%, var(--surface-2)); }
+html[data-skin="kind"] .rail .on { color: var(--accent); background: var(--accent-soft); }
+html[data-skin="kind"] .day-band.today > .col-head { background: var(--accent); color: var(--accent-text) !important; padding: 2px 8px; border-radius: 6px; }
+html[data-skin="kind"] .day-band.today > .col-head .cnt { color: var(--accent-text) !important; opacity: .8; }
