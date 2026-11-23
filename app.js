@@ -76,6 +76,7 @@ const I = {
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
   dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  kbd: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 16h8"/>', // 141
   install: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
 };
 const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || I.file}</svg>`;
@@ -618,7 +619,7 @@ function metaHtml(i, { tags = 2, acts = false, day = false } = {}) {
 }
 function itemRow(i, { acts = true } = {}) {
   const sub = snipHtml(i, 300);
-  return `<div class="item${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}">
+  return `<div class="item${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0">
     ${leadOf(i)}
     <div class="body">
       <div class="title">${hl(titleOf(i))}</div>
@@ -681,7 +682,7 @@ function renderGallery(items) { // month headers stick to the top while scrollin
   for (const i of media) {
     const m = dayKey(i.ts).slice(0, 7);
     if (m !== last) { const [y, mo] = m.split('-').map(Number); html += `<div class="g-month">${new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>`; last = m; }
-    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}">
+    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0">
     ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
   el.innerHTML = media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
@@ -914,7 +915,7 @@ const Trash = {
         : `<p class="hint v-empty">Çöp kutusu boş.</p>`}</div>`;
   },
 };
-async function toggleStar(id) { const i = byId(id); if (i) await upsert([{ ...i, starred: !i.starred }]); }
+async function toggleStar(id) { const i = byId(id); if (i) { haptic(); await upsert([{ ...i, starred: !i.starred }]); } } // 141: a small tick on the phone
 async function itemAction(a, id) {
   const i = byId(id); if (!i) return;
   if (a === 'star') return toggleStar(id);
@@ -1375,6 +1376,7 @@ const Morph = {
   },
   close(dlg) { // back into the card if it is still on screen, else down/out; then the real close
     if (dlg._closing || !dlg.open) return;
+    if (dlg._dragged) return dlg.close(); // 141: already swiped off the screen by the finger
     if (reduced() || !dlg.animate) return dlg.close();
     const el = dlg._src && this.src(dlg._src); dlg._closing = true; dlg.classList.add('morph', 'shut');
     const to = el ? { transform: this.frames(dlg, el), opacity: 0 } : { transform: 'translateY(24px)', opacity: 0 };
@@ -1383,6 +1385,81 @@ const Morph = {
   },
   revive(dlg) { // 102: opened again while it was shrinking away → stop the shrink, stay open (the old close must not shut the new window)
     const a = dlg._shut; if (!a) return; dlg._shut = null; dlg._closing = false; a.cancel(); dlg.classList.remove('shut');
+  },
+};
+
+// ---------- 141: native feel: one tooltip for every button, swipe a sheet down to close, "?" lists the keys ----------
+const Native = {
+  init() { this.tips(); this.sheets(); this.keys(); },
+  // Tooltip: the browser's own title tip is slow, plain and never on the keyboard. Every [title] becomes data-ti (aria-label kept),
+  // shows after 450 ms, moves instantly to the next button while one is up, and hides on press / scroll / typing. Mouse only.
+  tips() {
+    if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    const tip = this.tip = document.createElement('div'); tip.className = 'tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true; document.body.appendChild(tip);
+    let timer = 0, cur = null, lastHide = 0;
+    const adopt = el => { const t = el.getAttribute('title'); if (!t) return; el.removeAttribute('title'); el.dataset.ti = t;
+      if (!el.hasAttribute('aria-label') && !el.textContent.trim()) el.setAttribute('aria-label', t); };
+    const place = el => { const r = el.getBoundingClientRect(); tip.textContent = el.dataset.ti; tip.hidden = false; tip.classList.remove('in');
+      const w = tip.offsetWidth, h = tip.offsetHeight, below = r.bottom + h + 10 < innerHeight;
+      tip.style.left = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 6)) + 'px'; tip.style.top = (below ? r.bottom + 7 : r.top - h - 7) + 'px';
+      tip.dataset.side = below ? 'b' : 't'; requestAnimationFrame(() => tip.classList.add('in')); };
+    const hide = () => { clearTimeout(timer); if (!tip.hidden) lastHide = performance.now(); cur = null; tip.hidden = true; tip.classList.remove('in'); };
+    const show = (el, fast) => { clearTimeout(timer); cur = el; const go = () => { if (cur === el && el.isConnected && el.dataset.ti) place(el); };
+      fast || performance.now() - lastHide < 300 ? go() : (timer = setTimeout(go, 450)); };
+    document.addEventListener('pointerover', e => {
+      const el = e.target.closest?.('[title],[data-ti]'); if (el?.hasAttribute('title')) adopt(el);
+      if (!el?.dataset.ti || el.closest('.rail,.rail-tab')) { if (cur && !cur.contains(e.target)) hide(); return; } // the rail has its own side tips
+      if (el !== cur) { const wasUp = !tip.hidden; hide(); show(el, wasUp); }
+    });
+    document.addEventListener('focusin', e => { const el = e.target.closest?.('[title],[data-ti]'); if (!el || !el.matches(':focus-visible')) return; if (el.hasAttribute('title')) adopt(el); if (el.dataset.ti && !el.closest('.rail,.rail-tab')) show(el, true); });
+    document.addEventListener('focusout', () => { if (!cur?.matches(':hover')) hide(); });
+    for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, hide, { capture: true, passive: true });
+    addEventListener('scroll', hide, true);
+  },
+  // Phone sheets: a grab bar on top; pull the sheet down (from the bar, or anywhere once its content is scrolled to the top) and let go
+  // past a third of it, or flick it, to close, exactly like Esc / the back button. Less than that springs back.
+  sheets() {
+    let d = null, y0 = 0, t0 = 0, dy = 0, on = false;
+    const scrolledIn = (el, dlg) => { for (let n = el; n && n !== dlg.parentNode; n = n.parentElement) if (n.scrollTop > 0) return true; return false; };
+    document.addEventListener('touchstart', e => {
+      const dlg = e.target.closest?.('dialog.drawer[open]'); d = null; on = false;
+      if (!dlg || innerWidth >= 900 || e.touches.length > 1 || dlg._closing || e.target.closest('input,textarea,select,[contenteditable="true"],[contenteditable="plaintext-only"],.sim-row,.rp-pages,canvas')) return;
+      const top = e.touches[0].clientY - dlg.getBoundingClientRect().top;
+      if (top > 44 && scrolledIn(e.target, dlg)) return; d = dlg; y0 = e.touches[0].clientY; t0 = performance.now(); dy = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+      if (!d) return; dy = e.touches[0].clientY - y0;
+      if (!on) { if (dy < -4) { d = null; return; } if (dy < 10) return; on = true; d.style.transition = 'none'; }
+      if (e.cancelable) e.preventDefault(); d.style.transform = `translateY(${Math.max(0, dy - 10)}px)`;
+    }, { passive: false });
+    document.addEventListener('touchend', () => {
+      const dlg = d; d = null; if (!dlg || !on) return; on = false;
+      const h = dlg.offsetHeight, v = dy / Math.max(1, performance.now() - t0), shut = dy > h / 3 || (v > .6 && dy > 40);
+      dlg.style.transition = ''; dlg.style.transform = '';
+      if (!shut) { if (!reduced()) dlg.animate([{ transform: `translateY(${Math.max(0, dy - 10)}px)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }); return; }
+      haptic(8); dlg._dragged = true;
+      const out = reduced() ? null : dlg.animate([{ transform: `translateY(${Math.max(0, dy - 10)}px)` }, { transform: `translateY(${h + 40}px)` }], { duration: 180, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' });
+      const fin = () => { const ev = new Event('cancel', { cancelable: true }); if (dlg.dispatchEvent(ev) && dlg.open) dlg.close(); dlg._dragged = false; out?.cancel(); };
+      out ? out.finished.then(fin, fin) : fin();
+    });
+  },
+  // "?" (or the settings row): every keyboard shortcut in one short list
+  keys() {
+    addEventListener('keydown', e => { if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') || document.querySelector('dialog[open]')) return; e.preventDefault(); this.keysOpen(); });
+  },
+  keysOpen() {
+    let d = $('#keys');
+    if (!d) { d = document.createElement('dialog'); d.id = 'keys'; d.className = 'drawer modal narrow'; d.setAttribute('aria-label', 'Klavye kısayolları'); document.body.appendChild(d);
+      d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-x]')) d.close(); });
+      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; }); }
+    const k = (...a) => a.map(x => `<kbd>${x}</kbd>`).join(' '), mod = /Mac|iP/.test(navigator.platform) ? '⌘' : 'Ctrl';
+    const G = [['Genel', [[k('/'), 'Ara'], [k('N'), 'Kutuya yaz'], [k('Tab'), 'Kutuda mod: Not · Ara · Sor'], [k('['), 'Kenar çubuğunu aç / kapat'], [k(mod, 'Z'), 'Geri al'], [k('Shift', 'F10'), 'Seçili kaydın menüsü'], [k('Esc'), 'Kapat / vazgeç'], [k('?'), 'Bu liste']]],
+      ['Arama sonuçları', [[k('↑') + ' ' + k('↓'), 'Sonuçlarda gez'], [k('Enter'), 'Aç'], [k('Tab'), 'Tamamla']]],
+      ['Pano', TOOLS.map(t => [k(t[3].toUpperCase()), t[2].replace(/ \(.\)$/, '')]).concat([[k('Boşluk') + ' + sürükle', 'Kaydır'], [k('Shift', '1'), 'Hepsini sığdır'], [k('Shift', '0'), '%100'], [k(mod, 'A'), 'Hepsini seç'], [k('Delete'), 'Seçilenleri sil'], [k(mod, 'Z') + ' / ' + k(mod, 'Y'), 'Çizimi geri al / yinele']])],
+      ['Pencereler', [[k('←') + ' ' + k('→'), 'Önceki / sonraki sayfa'], [k('Esc'), 'Pencereyi kapat']]]];
+    d.innerHTML = `<div class="d-body keys" tabindex="-1"><div class="d-head"><span class="type">${ic('kbd', 'sm')}Klavye kısayolları</span><span class="sp"></span><button class="icon-btn sm" data-x title="Kapat (Esc)" aria-label="Kapat">${ic('x', 'sm')}</button></div>`
+      + G.map(([h, rows]) => `<section><h3>${h}</h3><dl>${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>`).join('') + '</div>';
+    Back.open(d);
   },
 };
 
@@ -2891,7 +2968,27 @@ const Ctx = {
     document.addEventListener('touchend', e => { if (lp === 'fired' && e.cancelable) e.preventDefault(); cancel(); lp = null; });
     document.addEventListener('pointerdown', e => { if (!e.target.closest('.ctx')) this.hide(); }, true);
     addEventListener('keydown', e => { if (e.key === 'Escape') this.hide(); });
+    addEventListener('keydown', e => { // 141: the menu key or Shift+F10 opens the same menu for the focused card / row
+      if (!(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) return; const t = document.activeElement?.closest?.('[data-id],[data-tid]');
+      if (!t || t.closest('dialog,.dock')) return; e.preventDefault(); const r = t.getBoundingClientRect(); this.show(t.dataset.id || t.dataset.tid, r.left + 12, r.top + Math.min(r.height, 40), t); });
+    el.addEventListener('keydown', e => { // 141: arrows / Home / End move through the menu, Tab stays inside, Esc goes back to the card
+      const bs = [...el.querySelectorAll('button:not(:disabled)')], k = bs.indexOf(document.activeElement);
+      const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? -1 : e.key === 'Tab' ? k + (e.shiftKey ? -1 : 1) : null;
+      if (to !== null) { e.preventDefault(); bs.at(to % bs.length)?.focus(); }
+      else if (e.key === 'Escape') { e.stopPropagation(); this.hide(); (this.from?.isConnected ? this.from : document.querySelector(`[data-id="${CSS.escape(this.id)}"]`))?.focus?.({ preventScroll: true }); }
+    });
     addEventListener('scroll', () => this.hide(), true);
+    document.addEventListener('keydown', e => { // 141: list rows and gallery tiles are reachable with Tab; Enter opens, ↑ ↓ (← → in the gallery) move
+      const r = e.target; if (!r.matches?.('.item[data-id],.tile[data-id]') || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); return openItem(r.dataset.id); }
+      const tile = r.classList.contains('tile'), step = { ArrowDown: 1, ArrowUp: -1, ...(tile ? { ArrowRight: 1, ArrowLeft: -1 } : {}) }[e.key]; if (!step) return;
+      const all = [...document.querySelectorAll(tile ? '#gallery .tile[data-id]' : '.item[data-id]')].filter(x => x.offsetParent), k = all.indexOf(r);
+      let n = all[k + step];
+      if (tile && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { const y = r.getBoundingClientRect(), x0 = y.left + y.width / 2; // the tile straight below / above
+        n = all.filter(x => { const b = x.getBoundingClientRect(); return e.key === 'ArrowDown' ? b.top > y.bottom - 2 : b.bottom < y.top + 2; })
+          .sort((a, b) => { const A = a.getBoundingClientRect(), B = b.getBoundingClientRect(); return Math.abs(A.top - y.top) - Math.abs(B.top - y.top) || Math.abs(A.left + A.width / 2 - x0) - Math.abs(B.left + B.width / 2 - x0); })[0]; }
+      if (n) { e.preventDefault(); n.focus({ preventScroll: true }); n.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); }
+    });
     el.addEventListener('click', async e => {
       const b = e.target.closest('button'); if (!b) return; const i = byId(this.id); if (!i) return this.hide();
       const many = S.view === 'board' && Link.sel.size > 1 && Link.sel.has(i.id), all = many ? Link.items().filter(x => x.type !== 'draw') : [i]; // 139: colour / priority / delete reach every picked card
@@ -2909,8 +3006,8 @@ const Ctx = {
       this.hide();
     });
   },
-  show(id, x, y) {
-    const i = byId(id); if (!i) return; this.id = id; const el = this.el;
+  show(id, x, y, from) {
+    const i = byId(id); if (!i) return; this.id = id; this.from = from || null; const el = this.el; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Kayıt menüsü');
     el.innerHTML = `<div class="side-label">Renk</div><div class="mark-dots">${COLORS.map(([c, n]) => `<button class="cdot c-${c}${i.color === c ? ' on' : ''}" data-c="${c}" title="${n}" aria-label="${n}"></button>`).join('')}<button class="cdot none" data-c="" title="Renk yok" aria-label="Renk yok">${ic('x', 'sm')}</button></div>
       <div class="side-label">Öncelik</div><div class="seg sm prio">${PRIOS.map(([v, n]) => `<button class="${(i.prio || '') === v ? 'on' : ''}" data-p="${v}">${n}</button>`).join('')}</div>
       <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">Aç</span></button>
@@ -2920,6 +3017,7 @@ const Ctx = {
     el.hidden = false;
     const w = el.offsetWidth, h = el.offsetHeight;
     el.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; el.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px';
+    if (from) el.querySelector('.side-row')?.focus({ preventScroll: true }); // 141: opened from the keyboard → keep going with the keyboard
   },
   hide() { if (this.el) this.el.hidden = true; },
 };
@@ -3029,6 +3127,7 @@ const Todo = {
       list[0].todo.next = nx.id; list.push(nx);
     }
     await upsert(list);
+    if (done) haptic(12); // 141
     if (done) toast(i.todo.repeat ? 'Bitti · sıradaki eklendi' : 'Bitti', 4000, 'check', { label: 'Geri al', fn: () => this.undo(id) });
   },
   async undo(id) { const i = byId(id); if (!i) return; const nx = i.todo.next && byId(i.todo.next); await upsert([{ ...i, todo: { ...i.todo, done: false, doneAt: undefined, next: undefined } }, ...(nx ? [{ id: nx.id, deleted: true, ts: nx.ts, updatedAt: now() }] : [])]); },
@@ -4914,6 +5013,7 @@ function openSettings(page = 'main') {
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
     <div class="set-sec">
+      <button class="set-row d-only" data-do="keys">${ic('kbd')}<span>Klavye kısayolları<small>Her yerde <kbd>?</kbd> tuşu da açar</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="tour">${ic('spark')}<span>Nasıl kullanılır?<small>6 adımlık kısa tur</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="lists">${ic('flag')}<span>Listeler<small>${aiOf()} doldurduğu listelerin adı ve görünürlüğü</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="move">${ic('upload')}<span>Kayıtları taşı<small>WhatsApp'tan içe aktar, yedek indir, yedekten geri yükle</small></span>${ic('chev', 'sm')}</button>
@@ -4962,6 +5062,7 @@ function openSettings(page = 'main') {
     else if (d === 'lists') openSettings('lists');
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
     else if (d === 'tour') { m.close(); setTimeout(() => Tour.start(), 250); }
+    else if (d === 'keys') { m.close(); setTimeout(() => Native.keysOpen(), 250); }
     else if (d === 'back') openSettings();
     else if (d === 'import') $('#backupInput').click();
     else if (d === 'bookmarks') $('#bmInput').click();
@@ -5168,7 +5269,7 @@ function wire() {
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
   addEventListener('online', () => { Sync.schedule(); Live.check(); });
-  Board.init(); Back.init(); Morph.init();
+  Board.init(); Back.init(); Morph.init(); Native.init();
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
@@ -5228,6 +5329,7 @@ const Boot = {
     if (v === 'todo') setView('todo');
     if (d === 'new') setTimeout(() => $('#input').focus(), 300);
     if (d === 'vault') setTimeout(() => Vault.open(), 300);
+    if (d === 'find') setTimeout(() => { setMode('find'); $('#input').focus(); }, 300); // 141: "Ara" home-screen shortcut
     if (v || d) history.replaceState(null, '', location.pathname);
   }
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }

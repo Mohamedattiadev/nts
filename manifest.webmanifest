@@ -5,9 +5,21 @@
   "start_url": "./",
   "scope": "./",
   "id": "./",
+  "lang": "tr",
+  "dir": "auto",
   "display": "standalone",
   "background_color": "#0c0c0e",
   "theme_color": "#0c0c0e",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
   "icons": [
     {
       "src": "icons/icon.svg",
@@ -65,6 +77,18 @@
       "icons": [
         {
           "src": "icons/sc-note.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ara",
+      "short_name": "Ara",
+      "url": "./?do=find",
+      "icons": [
+        {
+          "src": "icons/sc-find.png",
           "sizes": "96x96",
           "type": "image/png"
         }

@@ -653,5 +653,13 @@ Site:
         hatası yok. Not: kartlar taşınınca "yerleşmiş" olur ve taşınmamış gün sütunları onların sağına geçer (eski davranış, 91/109 ile aynı).
 - [x] 140. (2026-11-23, B hattı) **Panodaki not ve yazı araçları yeniden** (sahip: "çok kötü"): araçla tıkla/dokun → kutu açılır ve imleç orada (dokunmadan sonraki fare olayları engellendi, telefonda odak kaçmıyor); notta bir dokunuş seçer, ikinci dokunuş ya da çift tık imlecin olduğu yerden yazdırır; dışarı tıkla / Esc / Ctrl+Enter bitirir; boş kalırsa silinir. Satır blokları: `# ` başlık, `- ` madde, `[] ` onay kutusu (yazarken dönüşür, boş maddede Enter listeyi bitirir, satır başında Backspace geri alır), Ctrl+B/I kalın/italik; saklama yine Markdown (stHtml/stDom/stPlain, başlıkta işaretler görünmez). Onay kutusu kartı açmadan işaretlenir. Yazarken notun üstünde yüzen biçim çubuğu: B, I, H, madde, onay, hizala (sol/orta/sağ), A−/A+, 6 renk (yazıda varsayılan + 5 renk); telefonda iki satır, 44 px. Not köşeden boyutlandırılır (i.w/i.h), yazının köşesi harf boyunu değiştirir. Telefonda klavye açılınca pano notu klavyenin, alt kutunun ve çubuğun üstüne kaydırır (yeniden boyutta fit yapılmaz). Yakınlaştırma durunca katman bırakılır → yazılar keskin (.plane.moving). 1366 + 390, açık/koyu, konsol hatası yok.
 
+- [x] 141. (2026-11-23, B hattı) **Genel native'leşme** (sahip: "başka ne native'leşmesi lazımsa yap"): önce tools/native-audit.md (24 konu: ✓ vardı /
+        ★ yapıldı / → başka madde), sonra 11 iş: her `title` tek tip ipucu (450 ms, ardışıkta anında, klavye odağında da); "?" = klavye kısayolları
+        listesi (Ayarlar'da da); sağ tık menüsü klavyeyle (Menü tuşu/Shift+F10, ↑↓ Home End, Esc karta döner); liste satırı ve galeri kutucuğu
+        Tab ile odaklanır, Enter açar, oklar gezer; telefonda alt sayfa tutamağı + aşağı çekip kapatma (azı yaylanır, kapanış Esc ile aynı yol);
+        arayüz yazısı seçilemez + iOS uzun bas önizlemesi yok (yazı alanları seçilebilir); her düğmede basılma; ince kaydırma çubukları;
+        titreşim (yıldız, görev bitti, sayfa kapandı); manifest: "Ara" kısayolu (sc-find.png, ?do=find), launch_handler navigate-existing, lang.
+        Playwright 1366 açık/koyu + 390 açık/koyu (CDP dokunmayla sürükleme), konsol hatası yok.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

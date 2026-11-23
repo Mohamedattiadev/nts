@@ -1471,3 +1471,40 @@ body.linking .dock { opacity: 0; pointer-events: none; visibility: hidden; }
 }
 .sel-frame[hidden] { display: none; }
 .bcard.sticky.sel { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---------- 141: native feel ---------- */
+/* interface text is not text to select (a long press on a button must not pop the copy menu); typed and saved text still is */
+button, [role="button"], .rail, .rail-tab, .hud, .seg, .chip, .side-label, .sel-bar, .ctx, .board-tools, .tip, .toast, .d-head, .cnt, kbd,
+[data-id]:not(dialog [data-id]) { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.d-head .t, .d-head input, .d-head textarea { -webkit-user-select: text; user-select: text; }
+/* every button answers the press (scale is separate from transform, so buttons that already move keep moving) */
+@media (prefers-reduced-motion: no-preference) {
+  .side-row, .set-row, .sel-b, .sugg button, .tool, .m-b, .rail button, .rail-tab button, .seg button, .qchip button, .att button, .a-head button, .f-acv, .cdot {
+    transition-property: background, color, border-color, box-shadow, opacity, transform, scale; transition-duration: .15s; }
+  .side-row:active, .set-row:active, .sugg button:active { scale: .985; transition-duration: .06s; }
+  .sel-b:active, .tool:active, .m-b:active, .rail button:active, .rail-tab button:active, .qchip button:active, .att button:active, .a-head button:active, .f-acv:active, .cdot:active { scale: .92; transition-duration: .06s; }
+}
+.side-row:active, .set-row:active, .sugg button:active { background: var(--surface-2); }
+/* thin scroll bars everywhere, in the theme colours */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+/* phone sheets: grab bar, the finger pulls the sheet down (Native.sheets) */
+@media (max-width: 899px) {
+  dialog.drawer::before { content: ''; position: sticky; top: 0; z-index: 3; display: block; width: 38px; height: 5px; margin: 7px auto -12px; border-radius: 3px;
+    background: var(--line-2); pointer-events: none; }
+  dialog.drawer { will-change: auto; }
+}
+/* one tooltip for every [title] button (mouse) */
+.tip { position: fixed; z-index: 90; pointer-events: none; max-width: 260px; padding: 5px 8px; border-radius: 7px; background: var(--text); color: var(--bg);
+  font-size: 12px; font-weight: 550; line-height: 1.35; box-shadow: var(--shadow-sm); opacity: 0; transform: translateY(var(--tip-y, -3px)); }
+.tip[data-side="t"] { --tip-y: 3px; }
+.tip.in { opacity: 1; transform: none; transition: opacity .12s, transform .12s var(--ease); }
+.tip kbd { background: transparent; color: inherit; border-color: color-mix(in srgb, var(--bg) 35%, transparent); }
+@media (prefers-reduced-motion: reduce) { .tip.in { transition: none; } }
+/* "?" keyboard list */
+.keys section { display: flex; flex-direction: column; gap: 6px; }
+.keys h3 { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.keys dl { display: grid; grid-template-columns: 150px 1fr; gap: 7px 14px; margin: 0; align-items: center; }
+.keys dt { white-space: nowrap; color: var(--text-2); font-size: 12.5px; } .keys dd { margin: 0; font-size: 13.5px; }
+.ctx .side-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { -webkit-user-select: text !important; user-select: text !important; -webkit-touch-callout: default; }
+.item:focus-visible, .tile:focus-visible { outline-offset: -2px; }
