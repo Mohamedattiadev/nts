@@ -661,5 +661,14 @@ Site:
         titreşim (yıldız, görev bitti, sayfa kapandı); manifest: "Ara" kısayolu (sc-find.png, ?do=find), launch_handler navigate-existing, lang.
         Playwright 1366 açık/koyu + 390 açık/koyu (CDP dokunmayla sürükleme), konsol hatası yok.
 
+- [?] 142-0. (2026-11-23, B hattı) **design/motion.html — imza animasyon örnekleri** (bugünkü Nts görünümü, yeni stil yok; yalnız transform/opacity,
+        yay eğrisi CSS linear() ile; üstte "Hareketi azalt" önizlemesi + sistem ayarı). 6 konu, 22 elle denenebilir varyant: 1 tutma (A yay + hıza göre
+        eğilme ≤6°, B asılı kâğıt sarkaç, C sade kalkış, D bas–kalk dokunsal), 2 sürüklerken (A hayalet yer tutucu, B nefes alan accent yer, C kuyruklu
+        iz + sırayla FLIP), 3 bırakma (A yaylı oturma + halka, B nokta ızgarasına mıknatıs, C klasör/etiket/pano hedefi yutar + sayı, D parıltı + kıvılcım),
+        4 dışarıdan dosya (A tüm alan karşılama, B ikonlar kavisle uçup karta döner, C sessiz kenar ışığı + "+3" hapı; Oynat ya da gerçek dosya sürükle),
+        5 ipucu (A 141'deki gecikmeli + kısayol rozeti, B ok imleci izler, C tek kayan ipucu, D telefonda basılı tut + kaydır), 6 logodan imza (A nokta
+        zıplar + "Kaydedildi", B satırlar yazılır, C bağlandı: nokta karttan karta uçar, D balon nefesi). ✓/✗ + not → motion-choices.json.
+        Test: 1366/390 × açık/koyu, fare ve CDP dokunmayla sürükleme, hareketi azalt açıkken de, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
