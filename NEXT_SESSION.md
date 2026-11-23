@@ -24,7 +24,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
 - [ ] 130 Locus'tan alınacaklar (PLAN 130 a–f; kareler design/ref-locus/): 130a görsel arama penceresini 103b/104e ile birlikte yap, 130c'yi 99a ile
-- [ ] 131-0 ÖNCE design/folders.html (klasör kartı stilleri, sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
+- [ ] 131-0 ÖNCE design/folders.html (klasör kartı stilleri, ÇOK GÜZEL görünüm şart — Locus kalitesi, PLAN 131; sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)

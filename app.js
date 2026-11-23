@@ -1768,9 +1768,13 @@ const Peek = {
       if (!this.docked) { this.hide(); return; }
       el.hidden = false; this.mark(row); return this.media(i);
     }
+    // 127: the card ends above the box (dock) when they share columns; a tall card scrolls inside instead of running under it
+    const d = $('.dock')?.getBoundingClientRect(), x1 = parseFloat(el.style.left), x2 = x1 + parseFloat(el.style.width);
+    const bottom = d && d.height && d.left < x2 && d.right > x1 ? d.top - 12 : innerHeight - 16;
+    el.style.maxHeight = Math.max(160, bottom - 64) + 'px'; el.style.overflowY = 'auto';
     el.hidden = false;
     const r = row.getBoundingClientRect();
-    el.style.top = Math.max(64, Math.min(innerHeight - el.offsetHeight - 96, r.top + r.height / 2 - el.offsetHeight / 2)) + 'px';
+    el.style.top = Math.max(64, Math.min(bottom - el.offsetHeight, r.top + r.height / 2 - el.offsetHeight / 2)) + 'px';
     return this.media(i);
   },
   async media(i) { const url = await Prev.thumb(i); if (url && this.id === i.id) { const box = this.el.querySelector('.pk-media'); if (box) { const im = new Image(); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.className = 'fadein'; im.src = url; im.decode().catch(() => { }).then(() => { box.replaceChildren(im); requestAnimationFrame(() => im.classList.add('ok')); }); } } },
@@ -2307,12 +2311,28 @@ const Board = {
   est(i) {
     if (i.sticky) return i.sticky === 'text' ? 40 : 140;
     const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / 24))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
-    return 2 + (hasVisual(i) ? 132 : 0) + 21 + tl * 19 + (sl ? 2 + sl * 18 : 0) + 6 + 18;
+    return 2 + (hasVisual(i) ? 132 : 0) + 21 + tl * 19 + (sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
+  },
+  // 128: a rough width of the card's meta row (time, site, flags, tag chips); over one line → the card keeps room for a second
+  metaLines(i) {
+    const cw = 6.3, chip = t => 26 + t.length * cw;
+    let w = 46 + (i.type === 'link' ? 6 + domain(i.url).length * cw : 0) + (i.type === 'file' && i.size ? 50 : 0) + (i.starred ? 20 : 0) + (i.prio === 'high' ? 70 : 0) + (i.todo ? 70 : 0) + (relatedOf(i).length ? 34 : 0);
+    for (const t of i.tags || []) w += 6 + chip(t);
+    return w > this.COLW - 26 ? 2 : 1;
   },
   // no "…": text that does not fit fades out at the end of its last line (one batched read, then one write)
   fades(cards) {
     const els = cards.flatMap(c => [...c.querySelectorAll('.title, .sub')]), ov = els.map(e => e.scrollHeight > e.clientHeight + 1);
     els.forEach((e, k) => e.classList.toggle('ov', ov[k]));
+    // 128: tag chips wrap to a second line; those that still don't fit give way to one "+N" chip (never half a chip)
+    for (const m of cards.map(c => c.querySelector('.meta')).filter(Boolean)) {
+      if (m.scrollHeight <= m.clientHeight + 1) continue;
+      const tg = [...m.querySelectorAll('.tg')], more = document.createElement('span'); more.className = 'tg more';
+      let n = 0; m.appendChild(more);
+      for (const t of tg.filter(t => t.offsetWidth > m.clientWidth - 40)) { tg.splice(tg.indexOf(t), 1); t.remove(); more.textContent = '+' + ++n; } // a chip wider than the row never fits
+      while (tg.length && m.scrollHeight > m.clientHeight + 1) { tg.pop().remove(); more.textContent = '+' + ++n; }
+      more.title = n + ' etiket daha';
+    }
   },
   card(i) {
     const c = document.createElement('div'); c.dataset.id = i.id;
@@ -2324,12 +2344,15 @@ const Board = {
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '') + markCls(i);
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
-      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 2, day: !!posOf(i) })}</div>`;
+      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 99, day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
   // right of the placed ones. Only the cards on screen (+ a margin) are in the DOM.
   render(items) {
+    // 126: while a card is dragged (or a line drawn / a text resized) a synced update waits; rebuilding would detach the held card and drop it at x=0
+    if (this.busy) { this.pending = items; return; }
+    this.pending = null;
     const plane = $('#plane');
     plane.querySelectorAll('.bcard,.col-head,.day-band').forEach(e => e.remove());
     const list = items.slice().sort((a, b) => a.ts - b.ts);
@@ -2542,10 +2565,10 @@ const Board = {
         drag?.card?.classList.remove('dragging'); drag = null;
         const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; return;
       }
-      if (S.tool !== 'select' && !space && e.button !== 1 && !e.target.closest('.st-body[contenteditable]')) { drag = Ink.start(e); if (drag) return; }
+      if (S.tool !== 'select' && !space && e.button !== 1 && !e.target.closest('.st-body[contenteditable]')) { drag = Ink.start(e); if (drag) { this.busy = true; return; } }
       if (e.target.closest('.st-body[contenteditable]')) return;
       const sz = e.target.closest('.st-size');
-      if (sz) { const body = sz.parentNode.querySelector('.st-body'); drag = { resize: sz.parentNode, body, sx: e.clientX, sy: e.clientY, fs0: parseFloat(getComputedStyle(body).fontSize) }; return; }
+      if (sz) { const body = sz.parentNode.querySelector('.st-body'); drag = { resize: sz.parentNode, body, sx: e.clientX, sy: e.clientY, fs0: parseFloat(getComputedStyle(body).fontSize) }; this.busy = true; return; }
       const card = space || e.button === 1 ? null : e.target.closest('.bcard');
       drag = { card, tile: null, sx: e.clientX, sy: e.clientY, moved: false, cx: S.cam.x, cy: S.cam.y, ox: card?.offsetLeft, oy: card?.offsetTop };
     });
@@ -2567,21 +2590,26 @@ const Board = {
       if (!drag.moved && Math.hypot(dx, dy) < 5) return;
       if (!drag.moved && drag.card) {
         drag.card.classList.add('dragging'); drag.card.parentNode.appendChild(drag.card); // on top
+        this.busy = true;
       }
       drag.moved = true;
       if (drag.card) {
         drag.card.style.left = drag.ox + dx / S.cam.k + 'px'; drag.card.style.top = drag.oy + dy / S.cam.k + 'px'; redraw();
       } else { b.classList.add('panning'); S.cam.x = drag.cx + dx; S.cam.y = drag.cy + dy; this.apply(); }
     });
+    const flush = () => { this.busy = false; if (this.pending) this.render(visible(true)); }; // 126: apply what came in during the drag
     const up = async e => {
       pts.delete(e.pointerId); b.classList.remove('panning');
       if (pts.size < 2) pinch = null;
       if (pts.size) return;
-      const d = drag; drag = null; if (!d) return;
+      const d = drag; drag = null; if (!d) return flush();
+      try { await this.drop(d, e); } finally { flush(); }
+    };
+    this.drop = async (d, e) => {
       if (d.ink) return Ink.end(d, e);
       if (d.tile && !d.moved) return this.zoomMonth(d.tile);
       if (d.resize) { const i = byId(d.resize.dataset.id); if (i && d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
-      if (!d.card) return;
+      if (!d.card || !d.card.isConnected) return;
       if (!d.moved) { if (e.type !== 'pointerup') return; return byId(d.card.dataset.id)?.sticky ? Ink.edit(d.card) : openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging');
       const i = byId(d.card.dataset.id); if (!i) return;

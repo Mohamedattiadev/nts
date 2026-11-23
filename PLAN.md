@@ -497,14 +497,14 @@ Site:
 
 ## U. Sahibin 9. geri bildirimi + Locus incelemesi (2026-11-23, ekran görüntüleri sohbette)
 - [x] 125. (2026-11-23: telefonda kutunun yazısı 4 px aşağıdaydı → textarea 44 px, +/gönder ile aynı orta çizgi; masaüstü zaten tam ortada, ölçüldü) Kutu tam ortada mı?
-- [ ] 126. **Taşırken kart başka yere kaçıyor (HATA, önce bu)**: sahip panoda kartı tutup taşırken kart birden en sola gitti ve sayfa
+- [x] 126. (2026-11-23: kök neden kanıtlandı: sürüklerken gelen senkron Board.render ile tüm kartları silip yeniden kuruyordu, elde tutulan kart DOM'dan kopuyor, bırakınca offsetLeft 0 → x=0'a kaydediliyordu. Board.busy (kart taşıma, kalem, yazı boyutu) sürerken Board.render isteği Board.pending'e girer, bırakınca bir kez uygulanır; kopmuş kart asla kaydedilmez. İki cihaz testi: eski kod left 0, yeni kod kart elde, doğru yere (300,270) düştü, telefonun notu bırakınca geldi) **Taşırken kart başka yere kaçıyor (HATA, önce bu)**: sahip panoda kartı tutup taşırken kart birden en sola gitti ve sayfa
         "hızlı bir yenilendi". Şüphe: sürükleme sırasında senkron/Live/merge ya da render() pano DOM'unu baştan kuruyor, sürüklenen kartın
         yerine eski/uzak konum geliyor. Kural: sürükleme (ve kalem) sürerken gelen güncellemeler beklesin (S.dragging → kuyruk, bırakınca uygula),
         sürüklenen kartın konumunu hiçbir uzak güncelleme ezmesin; render "baştan çizme" değil yerinde fark. Twodevice ile kanıtla: A sürüklerken
         B bir kayıt eklesin/taşısın → A'daki kart elde kalmalı, titreme/yenilenme yok.
-- [ ] 127. **Liste görünümünde sağdaki önizleme kartı kutunun üstüne biniyor** (1366×768, sahibin ekranı): .peek kutunun (dock) üst kenarında
+- [x] 127. (2026-11-23: Peek.show liste modunda kutunun (.dock) dikdörtgenini ölçer; aynı sütunları paylaşıyorsa kart dock.top-12'de biter, uzun kart içinde kayar (max-height). 1280/1366/1440/1920 × açık/koyu: çakışma 0. Telefonda peek yok (hover ≥1100)) **Liste görünümünde sağdaki önizleme kartı kutunun üstüne biniyor** (1366×768, sahibin ekranı): .peek kutunun (dock) üst kenarında
         bitsin (max-height / bottom = dock yüksekliği + boşluk) ya da kutu peek'in solunda kalsın; 1280–1920 genişlikte ve telefonda ölç, 0 çakışma.
-- [ ] 128. **Pano kartında etiketler kesiliyor ("# y…")**: kart genişliği yetmiyorsa etiket çipleri alt satıra insin (flex-wrap), hiçbiri yarım
+- [x] 128. (2026-11-23: Board.metaLines(i) meta satırının genişliğini tahmin eder, sığmıyorsa est() ikinci satıra yer ayırır (.meta.m2); fades() sığmayan çipleri sondan kaldırıp tek bir "+N" çipi koyar, satırdan geniş çip önce gider; nowrap+overflow kaldırıldı. Masaüstü+telefon açık/koyu: kesik çip 0) **Pano kartında etiketler kesiliyor ("# y…")**: kart genişliği yetmiyorsa etiket çipleri alt satıra insin (flex-wrap), hiçbiri yarım
         görünmesin; çok etiket varsa son çip "+2". 114'teki maske/fade etiket satırına uygulanmasın.
 - [ ] 129. **"Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgileri görünmüyor**: bağlantısı olan kartlar arasında en az ~48 px boşluk
         (çizginin kıvrımı görünür), bağlı kartlar yan yana/üst üste ama çizgi kartın altında kalmasın. 108 ile birlikte.
@@ -535,6 +535,11 @@ Site:
         ("Ev tadilatı", "Logo fikirleri"); yeni kayıt gelince en yakın klasöre kendiliğinden girer. Kullanıcı: adlandır, sabitle, birleştir,
         gizle, "bu kayıt buraya ait değil". 5000 kayıt → ~20–40 klasör; 10k kayıtta hızlı (sanal liste, önizlemeler tembel).
         (0) ÖNCE `design/folders.html`: 2–3 klasör kartı stili, açık/koyu + telefon; sahip seçsin. 130d bunun içinde, 99a ile uyumlu.
+        GÜZEL GÖRÜNÜM ŞART (sahip, 2026-11-23: "güzel görünümlü olsun"): Locus kalitesi — gerçek klasör hissi (arka sekme + öndeki kapak,
+        içeriden 2–3 kart/resim hafif eğik taşar), yumuşak katmanlı gölge, 14–16 px köşe, bol boşluk, sakin yazı (ad 600, sayı gri küçük);
+        üstüne gelince/dokununca içindekiler biraz yukarı çıkar (150–200 ms, reduced-motion'da yok); açılınca kart klasörün içine
+        büyüyerek geçer (FLIP, 102); koyu temada da aynı kalite; telefonda 2 sütun, 44 px. Örnek sayfada her stilin ekran görüntüsü
+        (masaüstü + telefon, açık + koyu) design/ux'e; görüntüye bakmadan "güzel" deme.
 - [ ] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
         arama çiplerinde renk noktaları; "siyah beyaz" otomatik. 104d dilbilgisine `renk:` alanı (tr/en/ar: renk/color/لون).
 - [ ] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
