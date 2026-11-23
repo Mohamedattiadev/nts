@@ -619,7 +619,7 @@ Site:
         kapanıyor ve çubukta yalnız ⋯ hafifçe renkleniyor → fark edilmiyor. Çubukta ⋯'nin altında seçili her süzgeç için belirgin bir
         düğme (simgesi, accent zemin, köşede ×; üstüne gelince "Bilgisayar · kaldır"), seçildiği anda kısa bir "pop" animasyonu
         (reduced-motion'da yok); tıklayınca süzgeç kalkar. Çubuk gizliyken ">" kulakçığında nokta. Telefonda Filtre düğmesi accent olur.
-- [ ] 135. **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
+- [x] 135. (2026-11-23: başlık saklanmıyor, türetiliyor (titleOf → autoTitle): resim/PDF adı anlamsızsa (IMG-/VID-/PXL_/Screenshot_…_Chrome/Ekran görüntüsü/WhatsApp Image, ya da harf kelimesi kalmayan ad) OCR'nin ilk anlamlı satırı (durum çubuğu, sayı, URL atlanır; tr/ar/en; 70 harf), yoksa yapay zekâ özetinin ilk cümlesi başlık olur; dosya adı listede/galeride alt satırda, öğe penceresinde başlığın altında. Kullanıcı başlığı (userTitle) ya da anlamlı yapay zekâ başlığı varsa dokunulmaz. 4 yapılandırma ekran görüntüsü, konsol hatası yok) **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
         yapay zekâsının kısa açıklaması) başlık olur; dosya adı alt satırda kalır. Kullanıcı başlığı değiştirdiyse dokunulmaz.
 
 ## Her sürümde

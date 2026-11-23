@@ -115,15 +115,46 @@ const extOf = i => ((i.fileName || '').split('.').pop() || '').slice(0, 4).toUpp
 function titleOf(i) {
   if (i.conv) return i.title || `${shortDay(dayKey(i.ts))} · ${i.conv.n} mesaj`; // a conversation: Claude's title, else date + count
   if (i.type === 'note' && i.text && !i.userTitle) return i.text.split('\n')[0].slice(0, 140); // the user's own words come first
-  if (i.title) return i.title;
+  if (i.title && !(i.type === 'file' && !i.userTitle && i.title === i.fileName)) return i.title;
+  if (i.type === 'file') { const a = autoTitle(i); if (a) return a; }
   if (i.type === 'link') { if (i.meta?.title) return i.meta.title; try { const u = new URL(i.url); return domain(i.url) + decodeURI(u.pathname).replace(/\/$/, ''); } catch { return i.url; } }
   if (i.type === 'file') return i.fileName;
   return (i.text || '').split('\n')[0].slice(0, 140);
 }
+// 135: a camera/WhatsApp/screenshot name says nothing ("IMG-20251216-WA0014.jpg") -> the first real line of the text read from the
+// picture (or the start of the AI's short description) becomes the title; the file name moves to the line under it. Derived, never
+// stored, so the user's own title (userTitle) always wins and a later OCR simply improves it.
+const NOISE_HEAD = /^(img|vid|pxl|dsc|mvimg|photo|screenshot|screen ?shot|scr|ekran görüntüsü|whatsapp (image|video)|signal-|telegram|snapchat|capture)[\s_\-.0-9]/i;
+const NOISE_NAME = /(?<!\p{L})(img|image|imag|photo|foto|fotoğraf|pic|picture|pxl|dsc[fn]?|dcim|mvimg|wa|whatsapp|signal|telegram|screenshot|screen|shot|scr|ekran|görüntüsü|resim|capture|snap|snapshot|scan|scanned|tarama|camera|cam|file|dosya|document|download|untitled|adsız|at|from|copy|kopya|edited|burst|cover|portrait|pano|vid|video)(?!\p{L})/giu;
+function noiseName(n) {
+  if (!n) return true;
+  if (NOISE_HEAD.test(n)) return true; // a camera / screenshot name, whatever app name follows ("Screenshot_…_Chrome")
+  const b = n.replace(/\.[\w]{1,5}$/, '').replace(/[_\-.()[\]]+/g, ' ').replace(NOISE_NAME, ' ').replace(/[0-9a-f]{8,}/gi, ' ');
+  return !(b.match(/\p{L}{3,}/gu) || []).some(w => !/^(am|pm|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i.test(w));
+}
+function ocrLine(t) {
+  for (let l of (t || '').split(/\n+/).slice(0, 25)) {
+    l = l.replace(/\s+/g, ' ').replace(/^[^\p{L}\p{N}]+|[\s\-–—|:•·.,]+$/gu, '').trim();
+    const letters = (l.match(/\p{L}/gu) || []).length;
+    if (letters < 4 || letters / l.length < .55 || !/\p{L}{3,}/u.test(l)) continue; // status bar ("10:42 4G 85%"), page numbers, stray marks
+    if (/^(https?:|www\.)/i.test(l) || /^(lte|volte|wi-?fi|\d+g)\b/i.test(l)) continue;
+    return l.length > 70 ? l.slice(0, 68).replace(/\s+\S*$/, '') + '…' : l;
+  }
+  return '';
+}
+const _at = new WeakMap();
+function autoTitle(i) {
+  if (i.userTitle || (i.title && i.title !== i.fileName)) return '';
+  const k = fileKind(i); if (k !== 'image' && k !== 'pdf') return '';
+  if (_at.has(i)) return _at.get(i);
+  let a = '';
+  if (noiseName(i.fileName)) a = ocrLine(i.ocr) || (i.summary ? ocrLine(i.summary.split(/(?<=[.!?])\s/)[0]) : '');
+  _at.set(i, a); return a;
+}
 function subOf(i) {
   if (i.conv) return i.summary || `${i.conv.who.join(', ')} · ${i.conv.log.find(l => l.text)?.text || ''}`;
   if (i.type === 'link') return i.text || i.summary || i.meta?.description || '';
-  if (i.type === 'file') return i.text || i.summary || '';
+  if (i.type === 'file') { if (autoTitle(i)) return [i.fileName, i.text].filter(Boolean).join(' · '); return i.text || i.summary || ''; }
   const t = i.text || '';
   if (i.userTitle) return t;
   return t.includes('\n') ? t.slice(t.indexOf('\n') + 1) : '';
@@ -1397,6 +1428,7 @@ function openItem(id) {
     ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     ${media ? '</div><div class="d-info">' : ''}
     <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
+    ${autoTitle(i) ? `<div class="d-fn" title="Başlık resimdeki yazıdan alındı; değiştirebilirsin">${ic('file', 'sm')}<span>${esc(i.fileName)}</span></div>` : ''}
     <div id="explainBox">${explainHtml(i)}</div>
     ${i.conv ? convHtml(i) : ''}
     ${i.archive && !i.onBoard && !i.pos ? `<div class="d-arch">${ic('inbox', 'sm')}<span>Arşivde${i.chat ? ` · WhatsApp: ${esc(i.chat)}` : ''}. Listede, galeride ve aramada var, panoda yok.</span><button class="btn secondary sm" data-act="toboard">${ic('board', 'sm')}Panoya koy</button></div>` : ''}
