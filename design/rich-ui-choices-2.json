@@ -1,0 +1,171 @@
+{
+    "madde": "106-0b",
+    "tarih": "2026-11-23T19:05:07.866Z",
+    "secimler": {
+        "a-link-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-link-B": {
+            "v": "y",
+            "note": ""
+        },
+        "a-media-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-media-B": {
+            "v": "y",
+            "note": "daha iyi bi hale getir"
+        },
+        "a-media-C": {
+            "v": "y",
+            "note": "daha iyi olsun"
+        },
+        "a-pdf-A": {
+            "v": "y",
+            "note": "bulunabilise kapak daha iyi"
+        },
+        "a-code-B": {
+            "v": "y",
+            "note": "code daha native ve guzel ide gibi gorunsun"
+        },
+        "a-wa-A": {
+            "v": "y",
+            "note": " bi de baska sekiler de olabilir "
+        },
+        "a-wa-B": {
+            "v": "y",
+            "note": ""
+        },
+        "a-note-A": {
+            "v": "y",
+            "note": ""
+        },
+        "b-menu-A": {
+            "v": "n",
+            "note": ""
+        },
+        "b-menu-B": {
+            "v": "n",
+            "note": ""
+        },
+        "b-menu-C": {
+            "v": "y",
+            "note": ""
+        },
+        "c-cover-A": {
+            "v": "y",
+            "note": ""
+        },
+        "c-empty-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-count-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-count-B": {
+            "v": "y",
+            "note": ""
+        },
+        "d-count-C": {
+            "v": "y",
+            "note": ""
+        },
+        "d-prog-B": {
+            "v": "y",
+            "note": ""
+        },
+        "d-check-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-chart-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-chart-B": {
+            "v": "y",
+            "note": ""
+        },
+        "e-ans-A": {
+            "v": "y",
+            "note": ""
+        },
+        "e-ans-B": {
+            "v": "y",
+            "note": "bi tik kalabalik daha iyi olsun"
+        },
+        "e-ans-C": {
+            "v": "y",
+            "note": "bi tik kalabalik daha iyi olsun"
+        },
+        "a-event-A": {
+            "v": "y",
+            "note": "guzel de hala duzenlemeler itiyor ve maalesef sol tarfataki kisim ai slop ,ve hepsi ai slope"
+        },
+        "a-contact-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-recipe-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-receipt-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-voice-A": {
+            "v": "y",
+            "note": ""
+        },
+        "a-quote-A": {
+            "v": "y",
+            "note": ""
+        },
+        "b-sheet-A": {
+            "v": "y",
+            "note": ""
+        },
+        "b-fmt-A": {
+            "v": "y",
+            "note": ""
+        },
+        "c-list-A": {
+            "v": "y",
+            "note": ""
+        },
+        "c-seg-A": {
+            "v": "y",
+            "note": ""
+        },
+        "c-toast-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-weather-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-habit-A": {
+            "v": "y",
+            "note": ""
+        },
+        "d-timer-A": {
+            "v": "y",
+            "note": "25:00 bu disdaki daireden buyuk"
+        },
+        "e-cmp-A": {
+            "v": "y",
+            "note": "bi tik kalabalik daha iyi olsun"
+        },
+        "e-src-A": {
+            "v": "y",
+            "note": "bi tik kalabalik daha iyi olsun"
+        }
+    },
+    "sahip_notu": "not ald\u0131m; daha fazla kart fikri olabilir; var olanlar\u0131 upgrade'le, daha native, g\u00fczel, animasyonlu, bize \u00f6zg\u00fc"
+}
