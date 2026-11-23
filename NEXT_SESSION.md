@@ -65,7 +65,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 131-0b (ÖRNEK HAZIR: design/folders.html 2. tur, D–J 7 yeni yön, sahibin seçimi bekleniyor → design/folders-choices.json; 29663e3) ÖNCE design/folders.html'e DAHA FARKLI klasör stilleri (sahip: A Cep/B Yığın/C Albüm'den hiçbirini seçmedi, "daha farklı şeyler de olsun"): mevcut 3'ü kalsın, ≥5 belirgin farklı yeni yön ekle (ör. macOS/Files native klasör, renkli sekme/ayraç, kolaj mozaik, liste-satır + küçük resim şeridi, 3B kutu/çekmece, Pinterest panosu, yığılmış fotoğraf + sayı rozeti); her biri açık+koyu, telefon 2 sütun, hover/dokunma + FLIP aç; ✓/✗ + not + "Seçimlerimi indir" (rich-ui.html gibi); madde [?], sahip seçsin.
 - [x] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105) (b57c737)
 - [x] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama (c637cb7)
-- [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
+- [~B] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
 - [x] 132 renkle arama (104d'ye renk: alanı) (ad27736)
 - [x] 133 benzer kayıtlar şeridi (104f'den sonra) (7e459a6)
 - [x] 134 galeride çoklu seçim (314a354)
