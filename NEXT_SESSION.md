@@ -91,6 +91,8 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
+NOT (2026-11-23): 126+127+128'in işi (app.js, style.css, sw v45, PLAN [x]) yanlışlıkla başka bir oturumun commit'ine girdi: 9f10873 (mesajı yalnız PLAN 131 diyor). İş tam ve push'lu; tekrar commit etmeye çalışma, bu dosyada 126/127/128'i [x] 9f10873 yap ve devam et.
+
 TAM SIRADAKİ ADIM: 126 (taşırken kaçan kart — gerçek hata, önce bu), sonra 127 + 128. Sonra handoff. 102'ye başlanmış, commit'lenmemiş
 iş ağaçta duruyor (app.js: AR haritası + growTo(), resim önizlemesi yer tutar ve yumuşakça büyür; style.css'te 114 bloğu 101 bloğunun altına
 taşınmış + yabancı LaTeX bloğu): dokunmadan önce `git diff` ile bak, 102'yi yaparken bunun üstüne devam et.
