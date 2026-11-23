@@ -51,7 +51,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 104d ÇOK ÖNEMLİ arama dili ayrıştırıcısı: regex /…/ (güvenli), joker, VEYA/|, -hariç, parantez, "tam ifade", alanlar (başlık: url: site: uzantı: etiket: proje: sohbet: kaynak:), tarih (2024-03, aralık, >, son:7g, dün), is:/has:, boyut:, sırala: + ≥60 birim testi (tools/test/) + 3 dil: Arapça normalleştirme, Türkçe İ/ı, anahtar sözcükler tr/en/ar, testlerde her dil (f8faa08)
 - [x] 104e ÇOK ÖNEMLİ otomatik tamamlama + "?" sözdizimi kartı + sıralama/gruplar + boş kutu önerileri (da76e01)
 - [~B] 104f ÇOK ÖNEMLİ anlamsal arama: cihazda çok dilli gömme modeli (Worker, IndexedDB vektörler, ~25 MB bir kez) + "Yapay zekâ ile ara" + model ar/en/tr birlikte (fatura↔invoice↔فاتورة) — YARIM İŞ: `git apply tools/wip-104f.patch` (sem.js worker + app.js Sem/semMerge/aiFind/semBar/ayar satırı; node --check geçiyor). Kalan: style.css (.f-sem, .f-tile.sem ✦), sw.js ASSETS += ./sem.js + VERSION, SEM_MIN eşiğini gerçek modelle ayarla (fatura↔invoice↔فاتورة), ekran görüntüleri + phone-audit, PLAN notu. Not: en küçük çok dilli model 118 MB + 22 MB wasm ≈ 140 MB (25 MB değil) — sahibe söylendi; patch uygulanınca sil.
-- [x] 137 seçili süzgeç (Kaynak/konu/renk/proje) sol çubukta belirgin görünsün, seçildiği anda (sahip, ekran görüntüsü; PLAN 137)
+- [x] 137 seçili süzgeç (Kaynak/konu/renk/proje) sol çubukta belirgin görünsün, seçildiği anda (sahip, ekran görüntüsü; PLAN 137) (f5c8413)
 - [ ] 104g ÇOK ÖNEMLİ uçtan uca: 10k kayıtta tuş < 50 ms, telefonda da, kayıtlı aramalar yeni dili saklar; ekran görüntüleri + PLAN notu
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
 - [ ] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama
