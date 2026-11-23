@@ -433,6 +433,17 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             invoice→fatura ✗ ve فاتورة→fatura ✗ (küçük modelin sınırı). Az sonuçta "<YZ> ile ara" düğmesi: seçili yapay zekâ kelime+anlam adaylarına
             bakıp id döndürür. Sorgu ~50–120 ms, 14 kayıt gömme 1,4 sn. phone-audit (arama*, ayarlar*) 0 hata, konsol hatası yok, 4 yapılandırma görüntüsü.
             104g'ye not: 10k kayıtta ilk gömme süresini ölç (Worker'da, arayüzü kilitlemez ama dakikalar sürebilir).
+        [x] 104g (2026-11-23, A hattı): 10k kayıtta Ara'da gerçek yazma hızıyla (130 ms/tuş) 17 sorgu (düz, yazım hatası, alanlar, regex,
+            Arapça, VEYA, renk:, tarih:) ölçüldü (skill: nts-playwright-test/keybench.mjs). Önce tuş → çizim 0,3–4 sn idi: Flip ölçümü ekran dışı
+            content-visibility gruplarındaki her satırı yerleştiriyordu, aranan satır sayfada yoksa liste (300 satır) + kenar çubuğu her tuşta
+            baştan çiziliyordu. Şimdi: Flip yalnız ekrana yakın grupları ölçer; >2000 kayıtta sayfa (liste/galeri/pano) yazı 280 ms durunca bir kez
+            süzülür/çizilir, tuş başına yalnız arama + sonuç penceresi; canlı aramada liste 100 satır çizer (kaydırınca +300); sayfa yeniden çizilirken
+            kenar çubuğu çizilmez; Find.list tuş başına bir kez sıralar; normalleştirilmiş başlık dizinde (Worker); ytId kayıt başına bir kez;
+            pencere genişliği resize'dan (innerWidth her tuşta telefonda layout zorluyordu); query.js alan değerleri (etiket/proje/sohbet/url/başlık)
+            kalıcı fold önbelleğinde, etiket jokeri bir kez derlenir. Sonuç (yüklü 4 çekirdekli makine): masaüstü tuş medyanı 12–59 ms (16/17 sorgu
+            < 50), yazı durunca tek çizim 70–160 ms; telefon (390×844, 4× yavaş CPU) medyan 29–107 ms, 8/17 sorgu < 50. Kayıtlı arama sözdizimini
+            aynen saklar ve geri açar ("etiket:fatura -proje son:400g" → 178/178). Kalan (104g2): çok geniş eşleşmede ("uzun bir" 8,5k sonuç)
+            telefonda ~100 ms — Find.list'te en iyi 24'ü kısmi seçimle bulmak, sonuç penceresi FLIP ölçümünü azaltmak.
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);

@@ -6,6 +6,9 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const norm = s => (s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, '')
   .replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ٱ/g, 'ا').replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x660).replace(/[\u06f0-\u06f9]/g, d => d.charCodeAt(0) - 0x6f0);
 const now = () => Date.now();
+// 104g: the window width read on every key (send button, result window) forces a layout on phones: kept from resize events
+let _vw = innerWidth; addEventListener('resize', () => { _vw = innerWidth; });
+const narrow = () => _vw < 700;
 
 const S = {
   items: [], idx: new Map(), view: 'board', q: '', hits: null,
@@ -188,7 +191,7 @@ const readText = i => i.read?.blocks?.length ? i.read.blocks.map(b => b.x || '')
 const idxEntry = h => ({ h, w: [...new Set(h.split(/[^\p{L}\p{N}]+/u).filter(Boolean))] });
 function indexItem(i) {
   if (HIDDEN.has(i.type) && i.type !== 'draw') return; // never searchable
-  S.idx.set(i.id, idxEntry(norm(rawText(i))));
+  S.idx.set(i.id, { ...idxEntry(norm(rawText(i))), t: norm(titleOf(i)) }); // t: the folded title, for the order of results (104g)
 }
 // the search index for big batches is built in a Web Worker, so the page never freezes; search indexes on demand meanwhile
 const Indexer = {
@@ -196,13 +199,13 @@ const Indexer = {
   worker() {
     if (this.w !== null) return this.w;
     try {
-      const src = `const norm = ${norm.toString()}; onmessage = e => postMessage(e.data.map(([id, t]) => { const h = norm(t); return [id, h, [...new Set(h.split(/[^\\p{L}\\p{N}]+/u).filter(Boolean))]]; }));`;
+      const src = `const norm = ${norm.toString()}; onmessage = e => postMessage(e.data.map(([id, t, ti]) => { const h = norm(t); return [id, h, [...new Set(h.split(/[^\\p{L}\\p{N}]+/u).filter(Boolean))], norm(ti)]; }));`;
       this.w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-      this.w.onmessage = e => { for (const [id, h, w] of e.data) if (!S.idx.has(id)) S.idx.set(id, { h, w }); };
+      this.w.onmessage = e => { for (const [id, h, w, t] of e.data) if (!S.idx.has(id)) S.idx.set(id, { h, w, t }); };
     } catch { this.w = false; }
     return this.w;
   },
-  add(items) { const w = this.worker(), list = items.filter(i => i.type !== 'vault' && i.type !== 'bridge'); if (!w) return list.forEach(indexItem); w.postMessage(list.map(i => [i.id, rawText(i)])); },
+  add(items) { const w = this.worker(), list = items.filter(i => i.type !== 'vault' && i.type !== 'bridge'); if (!w) return list.forEach(indexItem); w.postMessage(list.map(i => [i.id, rawText(i), titleOf(i)])); },
 };
 function near(a, b) {
   if (Math.abs(a.length - b.length) > 1) return false;
@@ -470,7 +473,8 @@ const Prev = {
   },
 };
 // YouTube links play right in the panel (no-cookie embed)
-const ytId = i => { if (i.type !== 'link') return null; try { const u = new URL(i.url), h = u.hostname.replace(/^www\.|^m\./, '');
+const _yt = new WeakMap(), ytId = i => { if (i.type !== 'link') return null; let y = _yt.get(i); if (y === undefined || y[0] !== i.url) _yt.set(i, y = [i.url, ytId0(i)]); return y[1]; }; // 104g: once per link, not per row draw
+const ytId0 = i => { try { const u = new URL(i.url), h = u.hostname.replace(/^www\.|^m\./, '');
   const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
   return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
 const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image) || !!(i.cover && byId(i.cover));
@@ -485,10 +489,20 @@ function growTo(box, change) {
 const Flip = {
   SEL: '[data-id],[data-tid]',
   key: el => el.dataset.id || el.dataset.tid,
+  // 104g: list rows sit in content-visibility:auto groups; measuring a row of an off-screen group lays that group out
+  // (10k items: 0.2–1.5 s per key in Ara). A group's own box is cheap, so its rows are measured only when it is near the screen.
+  els(root, pad) {
+    const near = new Map(), vh = innerHeight;
+    return [...root.querySelectorAll(this.SEL)].filter(el => {
+      const g = el.parentElement?.closest('.group'); if (!g || !root.contains(g)) return true;
+      let ok = near.get(g); if (ok === undefined) { const r = g.getBoundingClientRect(); near.set(g, ok = r.bottom > -pad && r.top < vh + pad); }
+      return ok;
+    });
+  },
   snap(root) {
     if (!root || root.hidden || reduced()) return null;
     const m = new Map(); let n = 0;
-    for (const el of root.querySelectorAll(this.SEL)) {
+    for (const el of this.els(root, 200)) {
       const r = el.getBoundingClientRect(); if (r.bottom < -200 || r.top > innerHeight + 200 || !r.height) continue;
       if (++n > 150) return null; m.set(this.key(el), r);
     }
@@ -497,7 +511,7 @@ const Flip = {
   play(root, before) {
     if (!before || !root || root.hidden) return;
     const ease = 'cubic-bezier(.2,.8,.2,1)';
-    for (const el of root.querySelectorAll(this.SEL)) {
+    for (const el of this.els(root, 0)) {
       const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight || !r.height) continue;
       const b = before.get(this.key(el));
       if (b) { const dx = b.left - r.left, dy = b.top - r.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 200, easing: ease }); }
@@ -765,11 +779,22 @@ function render(force) {
     const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
-    renderHits(); if (same && S.view !== 'todo' && (!live || LiveQ.apply())) return;
+    renderHits();
+    if (same && S.view !== 'todo') {
+      if (!live) return;
+      // 104g: with a big archive the page under the result window follows once the typing rests (280 ms), not on every key:
+      // filtering / redrawing hundreds of rows costs 50–300 ms a key at 10k items, the result window alone ~10–40 ms
+      const later = () => { clearTimeout(S._lqT); S._lqT = setTimeout(() => { S._lqNow = true; render(); }, 280); };
+      if (!S._lqNow && S.items.length > 2000) return later();
+      if (LiveQ.apply()) { S._lqNow = false; return; }
+      // rows the search needs aren't on the page: the rows there are filtered now, the page is drawn when the typing rests
+      if (!S._lqNow) { LiveQ.apply(true); return later(); }
+    }
+    S._lqNow = false; clearTimeout(S._lqT);
     const items = visible(), none = !alive().length;
     const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
     const fr = fv && S._fv === fv && !onlyMore && $('#' + fv), fb = fr && Flip.snap(fr); S._fv = fv;
-    renderChrome();
+    if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
     for (const v of ['list', 'board', 'gallery', 'topics', 'todo']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
@@ -929,7 +954,12 @@ function renderHits() {
 // most common tags on top (a tap narrows); it is updated in place (tiles are kept by id and slide to their new place), never rebuilt
 const Find = {
   top: [],
-  list() {
+  list() { // 104g: the same hits are asked for more than once per key (window, send button): sorted once
+    const k = this._k, f = S.filter;
+    if (k && k[0] === S.hits && k[1] === f.tag && k[2] === S.items && k[3] === S.q && k[4] === S.hits?.size) return this._l;
+    this._k = [S.hits, f.tag, S.items, S.q, S.hits?.size]; return this._l = this.list0();
+  },
+  list0() {
     const f = S.filter;
     const rel = !S.qx || !S.qx.sort || S.qx.sort === 'rel', ph = rel ? norm((S.nl ? S.nl.rest : S.qx ? S.qx.terms.join(' ') : S.q).trim()) : '';
     return [...(S.hits || [])].map(([id, sc]) => [byId(id), sc]).filter(([i]) => i && !i.deleted && !HIDDEN.has(i.type) && (!f.tag || (i.tags || []).includes(f.tag)))
@@ -942,7 +972,7 @@ const Find = {
     const items = f.type === 'all' ? all : all.filter(i => groupOf(i) === f.type);
     const tags = new Map(); for (const i of items.slice(0, 500)) for (const t of i.tags || []) tags.set(t, (tags.get(t) || 0) + 1);
     if (f.tag && !tags.has(f.tag)) tags.set(f.tag, items.length);
-    const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, innerWidth < 700 ? 4 : 6);
+    const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, narrow() ? 4 : 6);
     const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
     this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${items.length} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
@@ -950,7 +980,7 @@ const Find = {
     const T = [['all', 'Hepsi', all.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
     this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
       + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
-    const g = el.querySelector('.f-grid'), want = items.slice(0, innerWidth < 700 ? 12 : 24), old = new Map([...g.children].filter(n => n.dataset.open).map(n => [n.dataset.open, n]));
+    const g = el.querySelector('.f-grid'), want = items.slice(0, narrow() ? 12 : 24), old = new Map([...g.children].filter(n => n.dataset.open).map(n => [n.dataset.open, n]));
     this.top = want.map(i => i.id);
     if (S.hitSel >= want.length) S.hitSel = want.length - 1;
     const anim = !reduced() && !el.classList.contains('closing'), before = new Map();
@@ -972,7 +1002,7 @@ const Find = {
     }
     const sb = semBar(items.length, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
     fresh.forEach(hookThumbs); updateSend(); // the send button opens the first result: on only when there is one
-    const phone = innerWidth < 700;
+    const phone = narrow();
     this.set(el, '.h-foot', `<span class="d-only">${S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç' : '<kbd>Enter</kbd> ilk sonucu aç · <kbd>↓</kbd> gez'} · <kbd>Tab</kbd> mod · <kbd>Esc</kbd> temizle</span>`
       + (items.length ? `<button class="link-btn" data-lpin>${ic('pin', 'sm')}${phone ? 'Sabitle' : 'Aramayı sabitle'}</button><button class="link-btn" data-all>Sayfada gör</button>` : ''));
   },
@@ -988,7 +1018,7 @@ const Find = {
 };
 // 104e: order = the whole words in the title > starred (in the score) > often opened here > newer
 let _nt = new Map(), _ntOf;
-const normTitle = i => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } let t = _nt.get(i.id); if (t === undefined) _nt.set(i.id, t = norm(titleOf(i))); return t; };
+const normTitle = i => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } let t = _nt.get(i.id); if (t === undefined) _nt.set(i.id, t = S.idx.get(i.id)?.t ?? norm(titleOf(i))); return t; };
 function rankBonus(i, ph) {
   let b = 0;
   if (ph.length > 1) { const t = normTitle(i); b = t === ph ? 4 : t.startsWith(ph) ? 3 : t.includes(ph) ? 2 : 0; }
@@ -1159,10 +1189,10 @@ function semBar(n, q) {
 // 103b: live search without redrawing the page: rows/tiles that don't match get a class and leave, the rest slide up (FLIP);
 // scroll, images and everything else stay. Only when a match is not on the page yet is the view drawn once (then narrowing is classes again)
 const LiveQ = {
-  apply() {
+  apply(part) { // part: hide what doesn't match even when some wanted rows are missing (they come with the redraw)
     if (S.view === 'board') return this.board();
-    if (S.view === 'list') return this.page($('#list'), '.item[data-id]', listShown(visible()));
-    if (S.view === 'gallery') return this.page($('#gallery'), '.tile[data-id]', galleryMedia(visible()));
+    if (S.view === 'list') return this.page($('#list'), '.item[data-id]', listShown(visible()), part);
+    if (S.view === 'gallery') return this.page($('#gallery'), '.tile[data-id]', galleryMedia(visible()), part);
     return false;
   },
   board() {
@@ -1170,10 +1200,10 @@ const LiveQ = {
     for (const c of document.querySelectorAll('#board .bcard[data-id]:not(.sticky)')) { const h = on && S.hits.has(c.dataset.id); c.classList.toggle('hit', h); c.classList.toggle('dim', on && !h); }
     return true;
   },
-  page(el, sel, want) {
-    if (!want.length || !el) return false; // the empty message is drawn once
+  page(el, sel, want, part) {
+    if (!el || (!want.length && !part)) return false; // the empty message is drawn once
     const have = new Map(); for (const n of el.querySelectorAll(sel)) have.set(n.dataset.id, n);
-    const ids = new Set(); for (const i of want) { if (!have.has(i.id)) return false; ids.add(i.id); }
+    const ids = new Set(); for (const i of want) { if (!have.has(i.id) && !part) return false; ids.add(i.id); }
     const anim = !reduced(), vh = innerHeight, near = r => r.bottom > -80 && r.top < vh + 80, before = new Map();
     // rows sit in content-visibility:auto groups: measuring a row of an off-screen group costs a layout each, so only rows of groups on screen
     const onScreen = () => { const out = [];
@@ -1245,7 +1275,7 @@ function setMode(m) {
 }
 const nextMode = (d = 1) => MODES[(MODES.findIndex(x => x[0] === S.mode) + d + MODES.length) % MODES.length][0];
 const updateSend = () => {
-  const v = $('#input').value.trim(), ask = askMode(), find = findMode(), b = $('#saveBtn'), phone = innerWidth < 700;
+  const v = $('#input').value.trim(), ask = askMode(), find = findMode(), b = $('#saveBtn'), phone = narrow();
   b.disabled = find ? !Find.top.length : !ask && !v && !S.attach.length;
   const icn = ask ? 'spark' : find ? 'search' : !S.attach.length && TODO_LINE.test(v) ? 'todo' : 'up'; // 118: the button says what Enter will do
   const key = icn + phone;
@@ -4600,7 +4630,7 @@ function wire() {
       const m = inp.value === '/' ? 'find' : 'ask'; inp.value = ''; setMode(m);
     }
     autoGrow(); clearTimeout(st); S.hitSel = -1; S.hitsOff = false;
-    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); if (!findMode()) S.limit = 300; runSearch(); updateSend(); render(); }, 80);
+    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); S.limit = findMode() ? 100 : 300; runSearch(); /* 104g: a live search draws 100 rows (scrolling adds 300), so a redraw per key stays small */ updateSend(); render(); }, 80);
     clearTimeout(rt); rt = setTimeout(() => { if (findMode() && S.hits?.size && S.q.trim()) Recent.add(S.q); }, 2500); // 104e: a search that rested with results is remembered
   });
   let sugT;

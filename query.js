@@ -9,6 +9,9 @@
   const fold = s => String(s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD')
     .replace(/[̀-ًͯ-ٰٟـ]/g, '').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ٱ/g, 'ا')
     .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x660).replace(/[۰-۹]/g, d => d.charCodeAt(0) - 0x6f0);
+  // 104g: field values (tags, project, chat, title, url, file name) repeat across thousands of items and every key; fold each once
+  let FC = new Map();
+  const ffold = s => { if (!s) return ''; if (s.length > 300) return fold(s); let f = FC.get(s); if (f === undefined) { if (FC.size > 1e5) FC = new Map(); FC.set(s, f = fold(s)); } return f; };
 
   const words = o => { const m = new Map(); for (const [k, l] of Object.entries(o)) for (const w of l) m.set(fold(w), k); return m; };
   const FIELDS = words({
@@ -220,7 +223,7 @@
     const body = [...fold(v)].map(c => c === '*' ? W + '*' : c === '?' ? W : esc(c)).join('');
     return new RegExp((whole ? '^' : '(?:^|[^\\p{L}\\p{N}_])') + body + (whole ? '$' : ''), 'u');
   };
-  const textOf = (fn, i) => fold(fn(i) || '');
+  const textOf = (fn, i) => ffold(fn(i) || '');
   // node + item accessors → predicate. Accessors (ctx) let the app give its own title/kind/source logic.
   function build(node, ctx, warn, out) {
     if (!node) return () => true;
@@ -259,17 +262,18 @@
     switch (k) {
       case 'title': { const m = matcher(node, warn); if (!out.neg && node.kind !== 'r') out.terms.push(typeof v === 'string' ? v : ''); return i => m(textOf(ctx.title, i)); }
       case 'text': { const m = matcher(node, warn); if (!out.neg && node.kind !== 'r') out.terms.push(typeof v === 'string' ? v : ''); return i => m(ctx.hay(i)); }
-      case 'url': { const m = matcher(node, warn); return i => m(fold(i.url || '')); }
-      case 'site': { const m = matcher(node, warn); return i => m(fold(ctx.site(i))); }
-      case 'file': { const m = matcher(node, warn); return i => m(fold(i.fileName || '')); }
-      case 'ext': { const e = fv.replace(/^\./, ''), m = /[*?]/.test(e) ? wild(e, true) : null; return i => { const x = fold(((i.fileName || '').match(/\.([^./]+)$/) || [])[1] || ''); return m ? m.test(x) : x === e; }; }
+      case 'url': { const m = matcher(node, warn); return i => m(ffold(i.url || '')); }
+      case 'site': { const m = matcher(node, warn); return i => m(ffold(ctx.site(i))); }
+      case 'file': { const m = matcher(node, warn); return i => m(ffold(i.fileName || '')); }
+      case 'ext': { const e = fv.replace(/^\./, ''), m = /[*?]/.test(e) ? wild(e, true) : null; return i => { const x = ffold(((i.fileName || '').match(/\.([^./]+)$/) || [])[1] || ''); return m ? m.test(x) : x === e; }; }
       case 'tag': {
-        const m = node.kind === 'w' && !/[*?]/.test(fv) ? (s => s === fv) : node.kind === 'w' ? (s => wild(fv, true).test(s)) : matcher(node, warn);
+        const re = node.kind === 'w' && /[*?]/.test(fv) ? wild(fv, true) : null;
+        const m = node.kind === 'w' ? (re ? (s => re.test(s)) : (s => s === fv)) : matcher(node, warn);
         return i => ctx.tags(i).some(m);
       }
-      case 'project': { const m = matcher(node, warn); return i => !!i.project && m(fold(i.project)); }
-      case 'chat': { const m = matcher(node, warn); return i => !!i.chat && m(fold(i.chat)); }
-      case 'source': { const s = SOURCES.get(fv); if (!s) { const m = matcher(node, warn); return i => m(fold(i.source || '')); } return i => ctx.src(i, s); }
+      case 'project': { const m = matcher(node, warn); return i => !!i.project && m(ffold(i.project)); }
+      case 'chat': { const m = matcher(node, warn); return i => !!i.chat && m(ffold(i.chat)); }
+      case 'source': { const s = SOURCES.get(fv); if (!s) { const m = matcher(node, warn); return i => m(ffold(i.source || '')); } return i => ctx.src(i, s); }
       case 'type': { const kd = KINDS.get(fv); if (!kd) return bad('Tür'); return i => ctx.has(i, kd, true); }
       case 'has': { const kd = KINDS.get(fv); if (!kd) return bad('has'); return i => ctx.has(i, kd, false); }
       case 'is': {
@@ -299,7 +303,7 @@
     return {
       now: c.now ?? Date.now(), raw, kind,
       hay: c.hay || (i => { let h = cache.get(i); if (h === undefined) cache.set(i, h = fold(raw(i))); return h; }),
-      tags: i => { let t = tcache.get(i); if (!t) tcache.set(i, t = [...(i.tags || []), ...(i.vtags || [])].map(fold)); return t; },
+      tags: i => { let t = tcache.get(i); if (!t) tcache.set(i, t = [...(i.tags || []), ...(i.vtags || [])].map(ffold)); return t; },
       title: c.title || (i => i.title || i.meta?.title || i.fileName || (i.text || '').split('\n')[0]),
       site: c.site || (i => { try { return i.meta?.site || new URL(i.url).hostname.replace(/^www\./, ''); } catch { return ''; } }),
       src: c.src || ((i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : i.source === s || (s !== 'bookmarks' && i.dev === s && i.source !== 'whatsapp' && i.source !== 'bookmarks')),
