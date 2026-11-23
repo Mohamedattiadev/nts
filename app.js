@@ -2344,7 +2344,7 @@ const Board = {
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '') + markCls(i);
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
-      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 99, day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>`;
+      ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { tags: 99, day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
@@ -2390,6 +2390,7 @@ const Board = {
     this.months = []; for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
+    this.deg = this.degrees();
     this.cull();
     if (S.cam) this.apply();
     requestAnimationFrame(() => { if (!S.cam) this.fit(false); }); // 109a: a synced item must not throw the camera back (only a new board/range/view starts from fit)
@@ -2453,29 +2454,63 @@ const Board = {
   },
   layout() { this.wires(); },
   box(el) { return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }; },
-  wires() {
-    const svg = $('#wires'), cards = new Map([...document.querySelectorAll('.bcard')].map(c => [c.dataset.id, c]));
-    const map = new Map(S.items.map(i => [i.id, i])), d = { g: '', rel: '', man: '' };
-    const path = (a, b) => {
-      const A = this.box(a), B = this.box(b);
-      if (Math.abs(A.x - B.x) < 40) { const [p, q] = A.y < B.y ? [A, B] : [B, A]; const x1 = p.x + p.w / 2, y1 = p.y + p.h, x2 = q.x + q.w / 2, y2 = q.y; return `M${x1},${y1} C${x1},${y1 + 18} ${x2},${y2 - 18} ${x2},${y2}`; }
-      const [p, q] = A.x < B.x ? [A, B] : [B, A]; const x1 = p.x + p.w, y1 = p.y + Math.min(40, p.h / 2), x2 = q.x, y2 = q.y + Math.min(40, q.h / 2), m = (x2 - x1) / 2;
-      return `M${x1},${y1} C${x1 + m},${y1} ${x2 - m},${y2} ${x2},${y2}`;
-    };
-    const seen = new Set(); let prev = null;
-    for (const [id, c] of cards) {
-      const i = map.get(id); if (!i) continue;
-      if (prev && i.group && prev.i.group === i.group) d.g += path(prev.c, c);
-      prev = { i, c };
-      for (const r of [...(i.related || []), ...(i.explain?.related || [])]) { const k = [id, r].sort().join(); if (cards.has(r) && !seen.has(k)) { seen.add(k); d.rel += path(c, cards.get(r)); } }
-      for (const r of i.links || []) if (cards.has(r)) d.man += path(c, cards.get(r));
+  // 108: one path per link, out of the facing sides in a soft curve, under the cards (never across a body); faint until its card is hovered / tapped,
+  // then strong + coloured with dots at both ends; zoomed out (<40%) no lines, the card says "🔗 3" instead. Only the mounted (visible) cards.
+  WIREK: .4,
+  edges(ids) { // [a, b, kind] for the given ids: same group (in time order), related (AI), links (drawn by hand)
+    const out = [], seen = new Set(), grp = new Map();
+    for (const id of ids) {
+      const i = byId(id); if (!i) continue;
+      if (i.group) { const g = grp.get(i.group); if (g) g.push(i); else grp.set(i.group, [i]); }
+      for (const [r, kind] of [...(i.related || []), ...(i.explain?.related || [])].map(r => [r, 'rel']).concat((i.links || []).map(r => [r, 'man']))) {
+        const k = [id, r].sort().join(); if (r !== id && ids.has(r) && !seen.has(k)) { seen.add(k); out.push([id, r, kind]); }
+      }
     }
-    svg.innerHTML = `<path d="${d.g}"/><path class="rel" d="${d.rel}"/><path class="man" d="${d.man}"/>`;
+    for (const g of grp.values()) { g.sort((a, b) => a.ts - b.ts); for (let n = 1; n < g.length; n++) { const k = [g[n - 1].id, g[n].id].sort().join(); if (!seen.has(k)) { seen.add(k); out.push([g[n - 1].id, g[n].id, 'g']); } } }
+    return out;
+  },
+  degrees() { const d = new Map(); for (const [a, b] of this.edges(new Set(this.M.keys()))) { d.set(a, (d.get(a) || 0) + 1); d.set(b, (d.get(b) || 0) + 1); } return d; },
+  wires() {
+    const svg = $('#wires');
+    if (!S.cam || S.cam.k < this.WIREK) { if (svg.firstChild) svg.innerHTML = ''; return; }
+    const cards = new Map([...document.querySelectorAll('#plane > .bcard')].map(c => [c.dataset.id, c]));
+    const r1 = v => Math.round(v * 10) / 10;
+    const path = (a, b) => { // the nearest sides face each other; the curve leaves them at a right angle
+      const A = this.box(a), B = this.box(b);
+      const gx = Math.max(B.x - (A.x + A.w), A.x - (B.x + B.w)), gy = Math.max(B.y - (A.y + A.h), A.y - (B.y + B.h));
+      let x1, y1, x2, y2, c1, c2;
+      if (gx > 0 || gx >= gy) { // side by side (other column): right edge → left edge, never down through the cards between: right edge → left edge, at the height where they overlap (else near the top)
+        const [p, q] = A.x < B.x ? [A, B] : [B, A], lo = Math.max(p.y, q.y), hi = Math.min(p.y + p.h, q.y + q.h);
+        const y = hi - lo > 24 ? (lo + Math.min(hi, lo + 80)) / 2 : null;
+        x1 = p.x + p.w; y1 = y ?? p.y + Math.min(40, p.h / 2); x2 = q.x; y2 = y ?? q.y + Math.min(40, q.h / 2);
+        const m = Math.max(24, (x2 - x1) / 2); c1 = [x1 + m, y1]; c2 = [x2 - m, y2];
+      } else { // one under the other: bottom edge → top edge, at the middle of the overlap
+        const [p, q] = A.y < B.y ? [A, B] : [B, A], lo = Math.max(p.x, q.x), hi = Math.min(p.x + p.w, q.x + q.w);
+        x1 = hi - lo > 24 ? (lo + hi) / 2 : p.x + p.w / 2; x2 = hi - lo > 24 ? x1 : q.x + q.w / 2; y1 = p.y + p.h; y2 = q.y;
+        const m = Math.max(16, (y2 - y1) / 2); c1 = [x1, y1 + m]; c2 = [x2, y2 - m];
+      }
+      return { d: `M${r1(x1)},${r1(y1)} C${r1(c1[0])},${r1(c1[1])} ${r1(c2[0])},${r1(c2[1])} ${r1(x2)},${r1(y2)}`, e: `${r1(x1)},${r1(y1)},${r1(x2)},${r1(y2)}` };
+    };
+    let h = '';
+    for (const [a, b, kind] of this.edges(new Set(cards.keys()))) { const p = path(cards.get(a), cards.get(b)); h += `<path class="${kind}" data-a="${a}" data-b="${b}" data-e="${p.e}" d="${p.d}"/>`; }
+    if (svg._h !== h) { svg.innerHTML = h; svg._h = h; }
+    this.hot(this._hot, true);
+  },
+  hot(id, force) { // light up one card's links (hover with a mouse, tap on a phone)
+    const svg = $('#wires'); if (id === this._hot && !force) return; this._hot = id;
+    svg.querySelectorAll('.on').forEach(p => p.classList.remove('on')); svg.querySelectorAll('circle').forEach(c => c.remove());
+    svg.classList.toggle('lit', !!id); if (!id) return;
+    let dots = '';
+    for (const p of svg.querySelectorAll(`path[data-a="${CSS.escape(id)}"],path[data-b="${CSS.escape(id)}"]`)) {
+      p.classList.add('on'); svg.appendChild(p); const [x1, y1, x2, y2] = p.dataset.e.split(',');
+      dots += `<circle class="${p.getAttribute('class')}" cx="${x1}" cy="${y1}" r="3.5"/><circle class="${p.getAttribute('class')}" cx="${x2}" cy="${y2}" r="3.5"/>`;
+    }
+    if (dots) svg.insertAdjacentHTML('beforeend', dots); else svg.classList.remove('lit');
   },
   apply() {
     const c = S.cam, pl = $('#plane'); pl.style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`;
     pl.style.setProperty('--hs', Math.max(1, 1 / c.k)); // day labels keep a readable size at any zoom
-    const b = $('#board'); b.classList.toggle('far', c.k < .7); const g = 24 * c.k * 2 ** Math.max(0, Math.ceil(Math.log2(12 / (24 * c.k)))); b.style.backgroundSize = `${g}px ${g}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
+    const b = $('#board'); b.classList.toggle('far', c.k < .7); b.classList.toggle('nowire', c.k < this.WIREK); const g = 24 * c.k * 2 ** Math.max(0, Math.ceil(Math.log2(12 / (24 * c.k)))); b.style.backgroundSize = `${g}px ${g}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
     const p = $('#zoomPct'); if (p) p.textContent = (c.k < .1 ? (c.k * 100).toFixed(1) : Math.round(c.k * 100)) + '%';
     $('#plane').style.setProperty('--ik', 1 / c.k);
     if (!this._cq) this._cq = requestAnimationFrame(() => { this._cq = 0; this.cull(); });
@@ -2563,7 +2598,12 @@ const Board = {
     const redraw = () => { if (!wr) wr = requestAnimationFrame(() => { wr = 0; this.wires(); }); };
     addEventListener('keydown', e => { if (e.code === 'Space' && S.view === 'board' && !e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]') && !document.querySelector('dialog[open]')) { e.preventDefault(); space = true; b.classList.add('space'); } });
     addEventListener('keyup', e => { if (e.code === 'Space') { space = false; b.classList.remove('space'); } });
+    // 108: a mouse lights a card's links while over it; a finger (or pen) lights them with a tap, until a tap elsewhere
+    let tt = 0; const mouse = e => e.pointerType === 'mouse' && performance.now() - tt > 1500 && matchMedia('(hover: hover)').matches; // a phone also sends a mouse leave when a window opens
+    b.addEventListener('pointerover', e => { if (mouse(e) && !drag) this.hot(e.target.closest?.('.bcard')?.dataset.id || null); });
+    b.addEventListener('pointerleave', e => { if (mouse(e)) this.hot(null); });
     b.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse') { tt = performance.now(); this.hot(e.target.closest?.('.bcard')?.dataset.id || null); }
       if (e.target.closest('.acts') || e.button === 2 || !S.cam) return;
       if (e.target.closest('#months')) { // 109a: the month grid keeps its own taps and scrolling (no capture), but two fingers still zoom
         pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); drag = null;
