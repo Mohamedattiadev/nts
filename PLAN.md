@@ -424,6 +424,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             (sonuç açılınca ya da 2,5 sn sonuçla durunca, 8 tane, Temizle), Kayıtlı aramalar, Sık konular (en çok etiket + proje); hiçbiri yoksa sözdizimi kartı.
             phone-audit (arama, arama-bos, arama-dil) 0 hata; 10k kayıtta Find.list 2–14 ms. 104g'ye not: "etiket:fa" (eşleşmeyen alan değeri) runSearch 48 ms
             masaüstü / 75 ms telefon — query.js alan testi yavaş, tamamlama bunu sık yazdırır.
+        [x] 104f (2026-11-23, B hattı): anlamsal arama cihazda: sem.js (modül Worker, transformers.js 3.5.1 CDN, Xenova/multilingual-e5-small q8;
+            gerçek boyut ~118 MB model + ~22 MB wasm ≈ 140 MB, bir kez iner, tarayıcı önbelleğinde kalır; vektörler IndexedDB nts-sem, kayıt başına
+            384 bayt int8; yalnız metni değişen kayıt yeniden gömülür). Açma: Ayarlar → Yapay zekâ → "Anlamsal arama" ya da az sonuçta Ara penceresindeki
+            "Anlamca da ara". Kelime aramasından ~220 ms sonra gelir, kelime sonuçlarının altına eklenir, kutucukta ✦, alt satırda "N anlamca yakın";
+            cümle çipleri (tarih/tür) bunları da süzer. Eşik: z puanı (sorgunun kendi kalabalığına göre) en iyisi ≥1.9, sonrakiler ≥1.5, en çok 12;
+            14 kayıtlık tr/en/ar ölçüm: fatura→فاتورة ✓, uçak bileti→Flight ✓, dentist→diş ✓, soup recipe→lentil soup ✓, saçma "xqzv" boş ✓;
+            invoice→fatura ✗ ve فاتورة→fatura ✗ (küçük modelin sınırı). Az sonuçta "<YZ> ile ara" düğmesi: seçili yapay zekâ kelime+anlam adaylarına
+            bakıp id döndürür. Sorgu ~50–120 ms, 14 kayıt gömme 1,4 sn. phone-audit (arama*, ayarlar*) 0 hata, konsol hatası yok, 4 yapılandırma görüntüsü.
+            104g'ye not: 10k kayıtta ilk gömme süresini ölç (Worker'da, arayüzü kilitlemez ama dakikalar sürebilir).
 
 - [ ] 105. **Çok akıllı ama çok basit arama** (sahip: "normal cümleyle yaz, sonucu al"; 104'ten sonra):
         (a) doğal cümle → süzgeç: "geçen ay annemin attığı fotoğraflar" → "Anladığım: Annem · fotoğraf · Ekim 2026" çipleri (dokununca kalkar);

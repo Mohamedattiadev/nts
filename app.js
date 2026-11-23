@@ -208,7 +208,7 @@ const qHay = i => { let x = S.idx.get(i.id); if (!x) { indexItem(i); x = S.idx.g
 const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share' ? i.source === 'share' : srcMatch(i, s);
 let qWarnT;
 function runSearch() {
-  const q = S.q.trim(); S.qx = null; S.nl = null; clearTimeout(qWarnT);
+  const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; clearTimeout(qWarnT);
   if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
@@ -230,10 +230,25 @@ function runSearch() {
       if (i.deleted || HIDDEN.has(i.type) || !f.test(i)) continue;
       const s = toks.length ? scoreItem(i, toks) : 1 + (i.starred ? .5 : 0); if (s) S.hits.set(i.id, s);
     }
+    semMerge(nl.rest.trim(), f);
     return;
   }
   const toks = tokens(q); S.hits = new Map();
   for (const i of S.items) { if (i.deleted) continue; const s = scoreItem(i, toks); if (s) S.hits.set(i.id, s); }
+  if (findMode()) semMerge(q);
+}
+// 104f: what the meaning search (Sem) and "Yapay zekâ ile ara" found that the words didn't: added under the word results
+// (score < 1, word hits are >= 1), marked ✦; a sentence's chips (dates, kinds …) still filter them
+// sem.js gives z scores (how far above this query's crowd). Measured with the real model (14 tr/en/ar items): right answers 1.9–3.2
+// (fatura→fatura 2.5, فاتورة→Arabic bill 2.3, bill payment→invoice 1.9), nonsense "xqzv" tops at 1.8 → the best must reach 1.9,
+// the next ones 1.5, at most 12 (a big archive has many items above any line)
+const SEM_TOP = 1.9, SEM_NEXT = 1.5, SEM_MAX = 12;
+function semMerge(q, f) {
+  Sem.ask(q);
+  const add = (id, s) => { if (S.hits.has(id)) return; const i = byId(id); if (!i || i.deleted || HIDDEN.has(i.type) || (f && !f.test(i))) return; S.hits.set(id, s); (S.semIds ||= new Set()).add(id); };
+  const h = Sem.hits;
+  if (h && h.q === q && (h.list[0]?.[1] || 0) >= SEM_TOP) { let k = 0; for (const [id, z] of h.list) { if (z < SEM_NEXT || k++ >= SEM_MAX) break; add(id, .5 + z / 10); } }
+  if (S.aiFind?.ids && S.aiFind.q === S.q) S.aiFind.ids.forEach((id, k) => add(id, .85 - k * .001));
 }
 let _chats, _chatsOf;
 const chatNames = () => { if (_chatsOf !== S.items) { _chats = [...new Set(S.items.filter(i => i.chat && !i.deleted).map(i => i.chat))]; _chatsOf = S.items; } return _chats; };
@@ -717,6 +732,7 @@ function render(force) {
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
     const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
+    if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
     renderHits(); if (same && S.view !== 'todo' && (!live || LiveQ.apply())) return;
     const items = visible(), none = !alive().length;
     const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
@@ -874,7 +890,7 @@ function renderHits() {
   }
   // 103a: hitsOff = the page changed (or "Sayfada gör"); the filter stays, a small chip says so, typing/focus brings the window back
   if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(S.nl ? [S.nl.rest, ...S.nl.chips.map(c => c.label)].filter(Boolean).join(' · ').slice(0, 48) : q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
-  show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-chips"></div><div class="f-grid"></div><div class="h-foot"></div>');
+  show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-chips"></div><div class="f-grid"></div><div class="f-sem"></div><div class="h-foot"></div>');
   Find.draw(el, q);
 }
 // 103b + 130a: the Ara window is a small visual grid: pictures big, notes as little document cards; type counts and the
@@ -911,7 +927,7 @@ const Find = {
     want.forEach((i, k) => {
       let t = old.get(i.id); if (t) old.delete(i.id); else { t = this.tile(i); fresh.push(t); }
       if (g.children[k] !== t) g.insertBefore(t, g.children[k] || null);
-      t.classList.toggle('sel', k === S.hitSel);
+      t.classList.toggle('sel', k === S.hitSel); t.classList.toggle('sem', !!S.semIds?.has(i.id));
       const sn = t.classList.contains('vis') && snip(i, 90, 8), tt = sn?.label ? hl(sn.sub) : hl(titleOf(i)); if (t._t !== tt) { t.querySelector('.f-t').innerHTML = tt; t._t = tt; t.title = sn?.label ? titleOf(i) : ''; }
       const s = t.querySelector('.f-s'); if (s) { const ss = snipHtml(i, 160, 14); t.classList.toggle('has-snip', ss.includes('snip-src')); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
     });
@@ -922,6 +938,7 @@ const Find = {
       for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
       for (const n of fresh) n.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 170, easing: 'ease-out' });
     }
+    const sb = semBar(items.length, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
     fresh.forEach(hookThumbs); updateSend(); // the send button opens the first result: on only when there is one
     const phone = innerWidth < 700;
     this.set(el, '.h-foot', `<span class="d-only">${S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç' : '<kbd>Enter</kbd> ilk sonucu aç · <kbd>↓</kbd> gez'} · <kbd>Tab</kbd> mod · <kbd>Esc</kbd> temizle</span>`
@@ -1021,6 +1038,85 @@ function sugHtml() {
       + projs.map(([p, n]) => `<button class="f-tag" data-qex="proje:${esc(q1(p))}">${ic('folder', 'sm')}<span dir="auto">${esc(p)}</span><small>${n}</small></button>`).join(''));
   return `<div class="f-head"><span class="f-q">${ic('search', 'sm')}<span class="muted">Yazdıkça bulur</span></span><button data-qhelp class="${S.qHelp || !body ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!(S.qHelp || !body)}">?</button></div>`
     + `<div class="s-body">${body}${S.qHelp || !body ? qHelpHtml() : ''}</div>`;
+}
+// 104f: meaning search on this device (sem.js worker, multilingual-e5-small): turned on once in Settings or from the Ara window
+// (the model is downloaded once, ~140 MB, and stays in the browser cache; the items never leave the device). It runs ~220 ms after
+// the word search and what it adds comes in softly under the word results. Only changed items are sent to be embedded again.
+const fnv = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619); return h >>> 0; };
+const Sem = {
+  w: null, st: 'off', p: 0, mb: 0, done: 0, left: 0, sent: new Map(), hits: null, n: 0, _of: null,
+  on() { try { return localStorage.getItem('nts-sem') === '1'; } catch { return false; } },
+  start() {
+    if (this.w || !this.on()) return;
+    try { this.w = new Worker('./sem.js', { type: 'module' }); } catch { this.st = 'err'; return this.ui(); }
+    this.st = 'load'; this.p = 0; this.w.onmessage = e => this.msg(e.data);
+    this.w.onerror = e => { e.preventDefault?.(); console.warn('Sem worker', e.message); this.st = 'err'; this.ui(); };
+    this.w.postMessage({ t: 'init' }); this._of = S.items; this.sync();
+  },
+  enable() { try { localStorage.setItem('nts-sem', '1'); } catch { } if (this.st === 'err') { this.w?.terminate(); this.w = null; } this.start(); this.ui(); },
+  disable() { // the numbers are deleted; the model stays in the browser cache (turning it on again doesn't download it again)
+    try { localStorage.removeItem('nts-sem'); } catch { }
+    const w = this.w; this.w = null; w?.postMessage({ t: 'wipe' }); setTimeout(() => w?.terminate(), 800);
+    this.st = 'off'; this.hits = null; this.sent.clear(); this.done = this.left = 0; runSearch(); render(); this.ui();
+  },
+  text: i => [titleOf(i), subOf(i), (i.tags || []).join(' '), (i.vtags || []).join(' '), i.summary, i.ocr, i.chat].filter(Boolean).join(' · ').replace(/\s+/g, ' ').slice(0, 700),
+  sync() {
+    if (!this.w) return; clearTimeout(this._s);
+    this._s = setTimeout(() => {
+      const put = [], seen = new Set();
+      for (const i of S.items) {
+        if (i.deleted || HIDDEN.has(i.type)) continue; const t = this.text(i); if (t.length < 3) continue;
+        seen.add(i.id); const h = fnv(t); if (this.sent.get(i.id) !== h) { this.sent.set(i.id, h); put.push([i.id, t]); }
+      }
+      const del = [...this.sent.keys()].filter(id => !seen.has(id)); del.forEach(id => this.sent.delete(id));
+      if (put.length || del.length) this.w?.postMessage({ t: 'sync', put, del });
+    }, 1500);
+  },
+  ask(q) { // the newest query wins; a short word is left to the word search
+    clearTimeout(this._q);
+    if (!this.w || q.length < 3 || this.hits?.q === q) return;
+    this._q = setTimeout(() => this.w?.postMessage({ t: 'query', n: ++this.n, q, k: 60 }), 220);
+  },
+  msg(d) {
+    if (d.t === 'progress') { this.p = d.p; this.mb = d.mb; }
+    else if (d.t === 'ready') { this.st = 'ready'; this.done = d.n; if (S.q.trim()) { runSearch(); render(); } }
+    else if (d.t === 'indexed') { this.done = d.done; this.left = d.left; }
+    else if (d.t === 'hits') { if (d.n === this.n) { this.hits = { q: d.q, list: d.list }; if (S.q.trim() && findMode()) { runSearch(); render(); } } return; }
+    else if (d.t === 'error') { console.warn('Sem', d.m); if (this.st === 'load') this.st = 'err'; }
+    this.ui();
+  },
+  ui() { // settings line + the Ara window's line, at most ~3 times a second
+    if (this._u) return; this._u = setTimeout(() => { this._u = 0; const m = $('#semMsg'); if (m) m.textContent = this.say(); if (findMode() && S.q.trim() && !$('#hits').hidden) renderHits(); }, 300);
+  },
+  say() {
+    return this.st === 'load' ? `Model iniyor… %${this.p}${this.mb ? ` / ${this.mb} MB` : ''} (bir kez)`
+      : this.st === 'err' ? 'Model inmedi (bağlantı?). Dokun: tekrar dene.'
+      : this.st === 'ready' ? `${this.done} kayıt anlamca aranıyor${this.left ? `, ${this.left} sırada` : ''}. Kayıtların cihazdan çıkmaz.`
+      : 'fatura ↔ invoice ↔ فاتورة: anlamca yakın kayıtları da bulur. Model bu cihaza bir kez iner (~140 MB), kayıtların cihazdan çıkmaz.';
+  },
+};
+// 104f: few results → ask the chosen AI to look by meaning (it sees the word + meaning candidates and the newest items)
+async function aiFind() {
+  const q = (S.nl ? S.nl.rest : S.q).trim(), key = S.q; if (!q || S.aiFind?.busy) return;
+  if (!S.bridgeOk && !(await AI.health())) return toast(claudeOff(), 3200, 'cpu');
+  S.aiFind = { q: key, busy: true }; renderHits();
+  try {
+    const extra = [...(S.hits?.keys() || []), ...(Sem.hits?.q === q ? Sem.hits.list.slice(0, 40).map(x => x[0]) : [])].map(byId).filter(Boolean);
+    const r = await AI.call('/ask', { question: `Kayıtlarımda şunu arıyorum: "${q}". Anlamca uyan kayıtları bul (eş anlamlı, başka dilde yazılmış ya da ima edilen dahil). sources alanına uyanların id'lerini yaz, en iyisi önce, en çok 20. answer alanına tek kısa Türkçe cümle.`, items: AI.pick(q, extra) });
+    S.aiFind = { q: key, ids: (r.sources || []).filter(id => byId(id)), text: r.answer || '' };
+    if (S.q === key && !S.aiFind.ids.length) toast(`${aiName()} da bulamadı`, 2400, 'spark');
+  } catch (e) { S.aiFind = null; toast('Hata: ' + e.message, 3200); }
+  if (S.q === key) { runSearch(); render(); }
+}
+// the Ara window's line under the results: meaning search state, and with few results the two "look by meaning" buttons
+function semBar(n, q) {
+  const few = n < 5 && q.length >= 3, ai = S.aiFind?.q === S.q ? S.aiFind : null, sem = S.semIds?.size || 0;
+  const st = Sem.st === 'load' ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam modeli iniyor %${Sem.p}</span>`
+    : Sem.st === 'ready' && Sem.left ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam dizini ${Sem.done}/${Sem.done + Sem.left}</span>`
+    : sem ? `<span class="f-sem-st">${ic('spark', 'sm')}${sem} anlamca yakın</span>` : '';
+  const b = few ? (Sem.on() ? '' : `<button class="btn secondary sm" data-semon title="${esc(Sem.say())}">${ic('search', 'sm')}Anlamca da ara</button>`)
+    + `<button class="btn secondary sm" data-aifind${ai?.busy ? ' disabled' : ''}>${ic('spark', 'sm')}${ai?.busy ? `${aiName()} bakıyor…` : `${aiName()} ile ara`}</button>` : '';
+  return st || b ? st + b : '';
 }
 // 103b: live search without redrawing the page: rows/tiles that don't match get a class and leave, the rest slide up (FLIP);
 // scroll, images and everything else stay. Only when a match is not on the page yet is the view drawn once (then narrowing is classes again)
@@ -4314,6 +4410,7 @@ function openSettings(page = 'main') {
     </div>
     <div class="set-sec"><h4>Yapay zekâ</h4>
       <button class="set-row" data-do="aipick">${ic('spark')}<span>Kullanılan: ${aiName()}<small>Claude, Codex ya da Gemini: kayıtları düzenleyen ve soruları cevaplayan</small></span>${ic('chev', 'sm')}</button>
+      <button class="set-row" data-do="sem">${ic('search')}<span>Anlamsal arama: ${Sem.on() ? 'açık' : 'kapalı'}<small id="semMsg">${esc(Sem.say())}</small></span></button>
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
     <div class="set-sec">
@@ -4384,6 +4481,7 @@ function openSettings(page = 'main') {
       if (ok) $('#claudeBox').innerHTML = claudeBlock(); else if ($('#bridgeMsg')) $('#bridgeMsg').textContent = onPhone() ? 'Ulaşılamadı. Bilgisayar açık ve köprü çalışıyor mu? İki cihazda aynı Google hesabı olmalı.' : 'Hâlâ kapalı. Komutu çalıştırdın mı?';
     }
     else if (d === 'sync') { await saveSettings(); Sync.run(); }
+    else if (d === 'sem') { Sem.on() && Sem.st !== 'err' ? Sem.disable() : Sem.enable(); openSettings(); }
     else if (d === 'linkprev') { st.noLinkPreview = !st.noLinkPreview; await DB.put('kv', S.settings, 'settings'); openSettings(); if (!st.noLinkPreview) LinkMeta.run(); }
     else if (d === 'signin') { await saveSettings(); Cloud.signIn(); }
     else if (d === 'signout') { await Cloud.signOut(); toast('Çıkış yapıldı. Kayıtlar bu cihazda duruyor.', 3000); openSettings(); }
@@ -4492,6 +4590,8 @@ function wire() {
   $('#hits').onclick = e => {
     if (e.target.closest('[data-clear]')) { clearBox(); return inp.focus(); }
     const nx = e.target.closest('[data-nlx]'); if (nx) { dropChip(+nx.dataset.nlx); return inp.focus(); }
+    if (e.target.closest('[data-semon]')) { Sem.enable(); renderHits(); return inp.focus(); }
+    if (e.target.closest('[data-aifind]')) { aiFind(); return inp.focus(); }
     if (e.target.closest('[data-all]')) { S.cam = null; return hideHits(); } // the page is already filtered: just put the window away
     if (e.target.closest('[data-lpin]')) return Saved.save();
     const m = e.target.closest('[data-mode]'); if (m) { setMode(m.dataset.mode); return inp.focus(); }
@@ -4633,7 +4733,7 @@ const Boot = {
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
-  setTimeout(() => LinkMeta.run(), 4000); setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
+  setTimeout(() => LinkMeta.run(), 4000); setTimeout(() => Sem.start(), 3000); /* 104f */ setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
   AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());

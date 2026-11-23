@@ -1392,3 +1392,11 @@ body.selecting.gallery-view .dock { opacity: 0; pointer-events: none; visibility
 .rail-tab .rt-dot { position: absolute; top: 5px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 #filterBtn.on { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 @media (prefers-reduced-motion: reduce) { .rail .r-act.new { animation: none; } }
+/* 104f: meaning search line under the Ara results + ✦ on tiles found by meaning (not by the words) */
+.hits.find .f-sem { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--line); }
+.hits.find .f-sem[hidden], .hits.find .f-sem:empty { display: none; }
+.f-sem-st { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); margin-right: auto; }
+.f-sem-st .ic { color: var(--accent); }
+.hits .f-tile.sem::after { content: '✦'; position: absolute; top: 5px; right: 6px; font-size: 11px; line-height: 1; color: var(--accent); pointer-events: none; }
+.hits .f-tile.sem.vis::after { background: var(--surface); border-radius: 999px; padding: 3px 4px; }
+@media (max-width: 699px) { .hits.find .f-sem .btn { min-height: 44px; } }
