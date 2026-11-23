@@ -256,6 +256,16 @@ async function summaries(groups) {
   const prompt = `Groups:\n${JSON.stringify(groups.map(g => ({ key: g.key, items: (g.items || []).slice(0, 40).map(i => ({ type: i.type, title: (i.title || '').slice(0, 120) || undefined, text: (i.text || '').slice(0, 200) || undefined, tags: i.tags?.length ? i.tags : undefined, chat: i.chat || undefined })) })))}`;
   return runClaude({ prompt, system, schema: SUM_SCHEMA, model: conf.organizeModel });
 }
+// 131b: a short name for each group of items the phone/PC put together by meaning ("Ev tadilatı", "Logo fikirleri")
+const FOLD_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'name'],
+  properties: { key: { type: 'string' }, name: { type: 'string', description: '1-3 words, max ~24 characters' } } } } } };
+async function folderNames(groups) {
+  const system = 'You name folders. Each group is a set of things one person saved (notes, links, files, chats) that are close in meaning. ' +
+    'Give each group ONE short folder name, 1-3 words, max ~24 characters, naming what they have in common, like "Ev tadilatı", "Logo fikirleri", "Faturalar". ' +
+    'Use the language most of the items are written in (Turkish when unsure). No emojis, no quotes, no "Klasör", no numbers. Different groups get different names. Output only per schema.';
+  const prompt = `Groups:\n${JSON.stringify(groups.map(g => ({ key: g.key, items: (g.items || []).slice(0, 14).map(i => ({ type: i.type, title: (i.title || '').slice(0, 100) || undefined, tags: i.tags?.length ? i.tags.slice(0, 4) : undefined })) })))}`;
+  return runClaude({ prompt, system, schema: FOLD_SCHEMA, model: conf.organizeModel });
+}
 
 // ---- link metadata ----
 const decode = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
@@ -334,7 +344,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -498,6 +508,7 @@ http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, on: relay.ws?.readyState === 1 }, origin);
     }
     if (req.url === '/summaries') { const r = await summaries((body.groups || []).slice(0, 24)); console.log(`summaries ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+    if (req.url === '/folders') { const r = await folderNames((body.groups || []).slice(0, 30)); console.log(`folders ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));
       console.log(`ask "${String(body.question).slice(0, 60)}" ${Date.now() - t}ms`);

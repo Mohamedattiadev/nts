@@ -643,7 +643,7 @@ Site:
             (düşük doygunluk, AA kontrast korunur), kartta en çok 2 çip + "+N", tür simgesi tek renkli; seçim çerçevesi tek vurgu rengi.
         Alınmaz: Mac'e özel yerel uygulama, iCloud, diskte klasör saklama (Nts PWA + IndexedDB + GitHub; Markdown dışa aktarma zaten 107j).
 
-- [~] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
+- [x] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
         SEÇİM (sahip 2026-11-24, design/folders-choices.json): A Cep, B Yığın (\"animasyon iyi\"), C Albüm, D Dosya (\"güzel ama daha güzel
         olmalı\" → gölge/kağıt dokusu/kapak açılışı iyileştir), E Ayraç (\"bu etiketi beğendim\" → varsayılan). F–J alınmaz. Ayarda stil seçimi.
         gibi klasör kartları: kartın üstünde içindeki 2–3 kaydın küçük önizlemesi klasör sekmesinden taşar, altta ad + "13 resim · 2 not".
@@ -671,6 +671,19 @@ Site:
             klasöre döner. Ayarlar S.settings.folders {style, pin, hide, names}. Test: 4 yapılandırma, aç/geri/Esc/sabitle/adlandır, 44 px,
             yatay taşma yok, konsol hatası yok. KALAN → 131b: 104f gömmeleriyle kümeleme + köprü kümeye ad verir, yeni kayıt en yakın klasöre;
             birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm.
+        [x] 131b (2026-11-24, B hattı) yapay zekâ ile klasörler (anlamsal arama 104f açıkken): sem.js işçisinde küresel k-means (≤3000 örnekle
+            merkezler, sonra her kayıt en yakın merkeze; K = √N/3, 3–24), kümenin kendi kalabalığının (ort − 1,5 sd) altındakiler dışarıda;
+            ≥4 kayıt, ≤ %35. Kümeler nts-sem 'c' deposunda (IndexedDB v2); yeniden gruplama yalnız istenince ya da kayıtlar çok artınca
+            (×1,5 / +2000), eski kümeyle üyelerin çoğu aynıysa (Jaccard > .3) aynı kimlik → ad, sabitleme, gizleme, "ait değil" korunur.
+            Yeni kayıt gömülünce en yakın klasöre kendiliğinden girer (o kümenin eşiğini geçerse). Uygulamada 'ai:<c>' klasörleri öteki
+            klasörlerle aynı şeritte, ✦ işaretiyle. Ad: köprüde yeni /folders ucu (seçili yapay zekâ, 1–3 sözcük, kayıtların dilinde;
+            settings.folders.ai'de saklanır, cihazlar arası); köprü yoksa başlık/etiketlerden ayırt edici iki sözcük (tf·idf, "Banyo · Fayans").
+            Klasör başlığında "Birleştir" (öteki anlam klasörleri listesi → buraya katılır), kayıt menüsünde (sağ tık / uzun bas) "Bu klasöre
+            ait değil" + Geri al; Ayarlar → "Anlam klasörlerini yeniden grupla"; anlamsal arama kapalıysa şeritte "✦ Anlamca grupla".
+            Ölçüm (10k): kümeleme işçide 0,67 sn (node, 24 klasör, saflık .78); klasör listesi kurma masaüstü 16→29 ms, telefon (4× CPU)
+            75→87 ms; yerel adlar ilk sefer telefonda ~300 ms (sözcükler kayıt başına önbellekte, 2000 örneklik idf), köprü ad verince yok.
+            Test: 4 yapılandırma, aç / ait değil / geri al / birleştir / Esc, yatay taşma 0, konsol hatası yok; telefonda başlık 2 satır.
+            Not: köprü değişti → `systemctl --user restart hizli-note-bridge`. Gerçek model + gerçek verilerle kümelerin kalitesini sahip görmeli.
 - [x] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
         arama çiplerinde renk noktaları; "siyah beyaz" otomatik. 104d dilbilgisine `renk:` alanı (tr/en/ar: renk/color/لون).
         [x] 2026-11-23, A hattı: query.js palette() 32×32 pikselden 12 renk kovası (kırmızı…mor + pembe, kahverengi, siyah, beyaz, gri),

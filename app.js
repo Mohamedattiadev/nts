@@ -427,7 +427,7 @@ let _rs; const inRange = ts => { const [a, b] = _rs || (_rs = rangeStart()); ret
 const rangeLabel = () => (RANGES().find(r => r[0] === (S.boardRange || '30')) || [0, 'Son 30 gün'])[1];
 let _vis = {};
 function visible(keepAll = false) { // same list, same filter → same answer (render runs often)
-  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.boardRange, S.board, S.folder].map(String).join('|') + (keepAll ? 'k' : '');
+  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.boardRange, S.board, S.folder, S.folder?.startsWith('ai:') ? AIF.ver : ''].map(String).join('|') + (keepAll ? 'k' : '');
   if (_vis.items === S.items && _vis.hits === S.hits && _vis.key === key) return _vis.out;
   const out = visible0(keepAll); _vis = { items: S.items, hits: S.hits, key, out }; return out;
 }
@@ -1051,12 +1051,13 @@ const Folders = {
     if (t === 'site') return this.host(i) === v;
     if (t === 'kind') return fileKind(i) === v;
     if (t === 'year') return new Date(i.ts).getFullYear() === +v;
+    if (t === 'ai') return AIF.has(v, i.id); // 131b
     return false;
   },
   label(k) {
     const n = this.cfg().names?.[k]; if (n) return n;
     const c = k.indexOf(':'), t = k.slice(0, c), v = k.slice(c + 1);
-    return t === 'tag' ? '#' + v : t === 'src' ? (v.startsWith('wa:') ? (v.slice(3) || 'WhatsApp') + ' · WhatsApp' : srcName(v)) : t === 'kind' ? this.KINDS[v] || v : v;
+    return t === 'ai' ? AIF.label(v) : t === 'tag' ? '#' + v : t === 'src' ? (v.startsWith('wa:') ? (v.slice(3) || 'WhatsApp') + ' · WhatsApp' : srcName(v)) : t === 'kind' ? this.KINDS[v] || v : v;
   },
   color(k) {
     const t = k.slice(0, k.indexOf(':'));
@@ -1068,10 +1069,10 @@ const Folders = {
   shown: () => !S.folder && !filtered() && !(S.searchOn && S.q.trim()) && !S.listFrom,
   _c: null,
   build(items) { // one pass over the items; same list → same folders (render runs often)
-    const cf = this.cfg(), key = JSON.stringify([cf.pin, cf.hide, cf.names]);
+    const cf = this.cfg(), key = JSON.stringify([cf.pin, cf.hide, cf.names, cf.ai]) + (AIF.on() ? AIF.ver : '-');
     if (this._c?.items === items && this._c.key === key) return this._c.out;
     const m = new Map(), add = (k, i) => { let f = m.get(k); if (!f) m.set(k, f = { k, n: 0, top: [], kinds: {} }); f.n++; if (f.top.length < 3) f.top.push(i); const fk = fileKind(i); f.kinds[fk] = (f.kinds[fk] || 0) + 1; };
-    const years = new Set();
+    const years = new Set(), ai = AIF.on();
     for (const i of items) {
       for (const t of i.tags || []) add('tag:' + t, i);
       if (i.project) add('proj:' + i.project, i);
@@ -1079,11 +1080,12 @@ const Folders = {
       const h = this.host(i); if (h) add('site:' + h, i);
       const fk = fileKind(i); if (this.KINDS[fk]) add('kind:' + fk, i);
       const y = new Date(i.ts).getFullYear(); years.add(y); add('year:' + y, i);
+      if (ai) for (const c of AIF.of(i.id)) add('ai:' + c, i);
     }
-    const hide = new Set(cf.hide || []), pin = cf.pin || [], min = { tag: 3, proj: 2, src: 3, site: 4, kind: 5, year: 5 }, rank = k => ({ kind: 1, year: 2 })[k.slice(0, k.indexOf(':'))] || 0;
+    const hide = new Set(cf.hide || []), pin = cf.pin || [], min = { tag: 3, proj: 2, src: 3, site: 4, kind: 5, year: 5, ai: 4 }, rank = k => ({ kind: 1, year: 2 })[k.slice(0, k.indexOf(':'))] || 0;
     const out = [...m.values()].filter(f => { const t = f.k.slice(0, f.k.indexOf(':'));
       return !hide.has(f.k) && f.n >= min[t] && f.n < items.length && (t !== 'year' || years.size > 1); })
-      .sort((a, b) => (pin.includes(b.k) - pin.includes(a.k)) || rank(a.k) - rank(b.k) || b.n - a.n) // what you made (tag, project, chat, site) before kind and year.slice(0, 40);
+      .sort((a, b) => (pin.includes(b.k) - pin.includes(a.k)) || rank(a.k) - rank(b.k) || b.n - a.n).slice(0, 40); // what you made (tag, project, chat, site) before kind and year
     this._c = { items, key, out }; return out;
   },
   meta(f) { // "13 resim · 2 not"
@@ -1097,27 +1099,29 @@ const Folders = {
   },
   card(f, st) {
     const name = esc(this.label(f.k)), meta = this.meta(f), c = this.color(f.k), top = f.top, fill = n => Array.from({ length: n }, (_, k) => top[k % top.length]);
-    const cap = `<div class="f-name" dir="auto">${name}</div><div class="f-cnt">${meta}</div>`, pin = (this.cfg().pin || []).includes(f.k) ? ` <span class="f-pin">${ic('pin', 'sm')}</span>` : '';
+    const aim = f.k.startsWith('ai:') ? `<span class="f-ai" title="Anlamca gruplandı">${ic('spark', 'sm')}</span>` : ''; // 131b
+    const cap = `<div class="f-name" dir="auto">${aim}${name}</div><div class="f-cnt">${meta}</div>`, pin = (this.cfg().pin || []).includes(f.k) ? ` <span class="f-pin">${ic('pin', 'sm')}</span>` : '';
     const a = `class="fold f${st.toLowerCase()}" data-fold="${esc(f.k)}" style="--c:${c}" aria-label="${name}, ${f.n} kayıt"`;
     if (st === 'A') return `<button ${a}><div class="f-back"></div><div class="f-pk">${top.map(i => this.mini(i)).join('')}</div><div class="f-front">${cap}</div></button>`;
     if (st === 'B') return `<button ${a}><div class="f-st">${top.slice().reverse().map(i => this.mini(i)).join('')}</div><div class="f-cap">${cap}</div></button>`;
     if (st === 'C') { const tiles = fill(3).map((i, k) => k === 2 && f.n > 3 ? this.mini(i).replace('class="f-it', 'class="f-it more').replace(/<\/div>$/, `<span>+${f.n - 2}</span></div>`) : this.mini(i));
       return `<button ${a}><div class="f-mos">${tiles.join('')}</div><div class="f-cap"><span class="f-ic"></span><div>${cap}</div></div></button>`; }
     if (st === 'D') return `<button ${a}><div class="f-ico"><div class="f-bk"></div><div class="f-pk">${top.slice(0, 2).map(i => this.mini(i)).join('')}</div><div class="f-fr"><span>${esc([...this.label(f.k).replace(/^#/, '')][0] || '·')}</span></div></div>${cap}</button>`;
-    return `<button ${a}><div class="f-tab" dir="auto">${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div><div class="f-cnt">${f.n} kayıt · ${meta}</div></div></button>`;
+    return `<button ${a}><div class="f-tab" dir="auto">${aim}${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div><div class="f-cnt">${f.n} kayıt · ${meta}</div></div></button>`;
   },
   html(items) {
     if (!this.shown() || items.length < 24) return '';
     const all = this.build(items); if (all.length < 2) return '';
     const st = this.style(), cap = innerWidth < 600 ? 4 : innerWidth < 1100 ? 6 : 8, list = S.foldAll ? all : all.slice(0, cap);
-    return `<section class="folders fs-${st}" aria-label="Klasörler"><div class="f-top"><h2>Klasörler</h2><span class="n">${all.length}</span><span class="sp"></span>${all.length > cap ? `<button class="link-btn" data-foldall>${S.foldAll ? 'Daha az' : `Tümü (${all.length})`}</button>` : ''}</div>`
+    return `<section class="folders fs-${st}" aria-label="Klasörler"><div class="f-top"><h2>Klasörler</h2><span class="n">${all.length}</span><span class="sp"></span>${Sem.on() ? '' : `<button class="link-btn f-aion" data-faion title="${esc(Sem.say())}">${ic('spark', 'sm')}<span>Anlamca grupla</span></button>`}${all.length > cap ? `<button class="link-btn" data-foldall>${S.foldAll ? 'Daha az' : `Tümü (${all.length})`}</button>` : ''}</div>`
       + `<div class="f-grid">${list.map(f => this.card(f, st)).join('')}</div></section>`;
   },
   head() { // inside a folder: back, name, count, pin / rename / hide
     if (!inFolder()) return '';
     const k = S.folder, pinned = (this.cfg().pin || []).includes(k), n = visible().length;
     return `<div class="f-head" style="--c:${this.color(k)}"><button class="icon-btn" data-fback title="Klasörlerden çık (Esc)" aria-label="Klasörlerden çık">${ic('chev')}</button>`
-      + `<span class="f-ic"></span><div class="f-t"><b dir="auto">${esc(this.label(k))}</b><small>${n} kayıt</small></div><span class="sp"></span>`
+      + `<span class="f-ic"></span><div class="f-t"><b dir="auto">${esc(this.label(k))}</b><small>${n} kayıt${k.startsWith('ai:') ? ' · anlamca gruplandı' : ''}</small></div><span class="sp"></span>`
+      + (k.startsWith('ai:') ? `<button class="icon-btn" data-fmerge aria-haspopup="menu" title="Başka bir anlam klasörünü buraya kat" aria-label="Birleştir">${ic('layers', 'sm')}</button>` : '')
       + `<button class="icon-btn${pinned ? ' on' : ''}" data-fpin aria-pressed="${pinned}" title="${pinned ? 'Sabitlemeyi kaldır' : 'Başa sabitle'}" aria-label="Başa sabitle">${ic('pin', 'sm')}</button>`
       + `<button class="icon-btn" data-fname title="Yeniden adlandır" aria-label="Yeniden adlandır">${ic('pen', 'sm')}</button>`
       + `<button class="icon-btn" data-fhide title="Bu klasörü gizle" aria-label="Bu klasörü gizle">${ic('eye', 'sm')}</button></div>`;
@@ -1140,6 +1144,8 @@ const Folders = {
     const t = e.target;
     const f = t.closest('[data-fold]'); if (f) { this.open(f.dataset.fold, f); return true; }
     if (t.closest('[data-foldall]')) { S.foldAll = !S.foldAll; render(); return true; }
+    if (t.closest('[data-faion]')) { Sem.enable(); toast('Anlam modeli iniyor (bir kez). Hazır olunca klasörler burada anlamca da gruplanır.', 5000, 'spark'); render(); return true; }
+    const fm = t.closest('[data-fmerge]'); if (fm) { AIF.mergePop(fm); return true; }
     if (t.closest('[data-fback]')) { this.close(); return true; }
     const k = S.folder; if (!k) return false;
     if (t.closest('[data-fpin]')) { this.set(c => { const p = c.pin ||= []; const at = p.indexOf(k); at < 0 ? p.unshift(k) : p.splice(at, 1); }); return true; }
@@ -1255,7 +1261,7 @@ function render(force) {
     renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + JSON.stringify(S.settings?.folders || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
     renderHits();
@@ -1662,7 +1668,7 @@ const Sem = {
   disable() { // the numbers are deleted; the model stays in the browser cache (turning it on again doesn't download it again)
     try { localStorage.removeItem('nts-sem'); } catch { }
     const w = this.w; this.w = null; w?.postMessage({ t: 'wipe' }); setTimeout(() => w?.terminate(), 800);
-    this.st = 'off'; this.hits = null; this.sent.clear(); this.done = this.left = 0; runSearch(); render(); this.ui();
+    this.st = 'off'; this.hits = null; AIF.list = null; AIF.by = new Map(); AIF.ver++; Folders._c = null; this.sent.clear(); this.done = this.left = 0; runSearch(); render(); this.ui();
   },
   text: i => [titleOf(i), subOf(i), (i.tags || []).join(' '), (i.vtags || []).join(' '), i.summary, i.ocr, i.chat].filter(Boolean).join(' · ').replace(/\s+/g, ' ').slice(0, 700),
   sync() {
@@ -1689,8 +1695,9 @@ const Sem = {
   },
   msg(d) {
     if (d.t === 'progress') { this.p = d.p; this.mb = d.mb; }
-    else if (d.t === 'ready') { this.st = 'ready'; this.done = d.n; if (S.q.trim()) { runSearch(); render(); } }
-    else if (d.t === 'indexed') { this.done = d.done; this.left = d.left; }
+    else if (d.t === 'ready') { this.st = 'ready'; this.done = d.n; if (S.q.trim()) { runSearch(); render(); } AIF.ask(); }
+    else if (d.t === 'indexed') { this.done = d.done; this.left = d.left; if (!d.left) AIF.ask(); }
+    else if (d.t === 'folders') { AIF.got(d.list); return; }
     else if (d.t === 'like') { const f = this._lk?.get(d.n); if (f) { this._lk.delete(d.n); f(d.list); } return; }
     else if (d.t === 'hits') { if (d.n === this.n) { this.hits = { q: d.q, list: d.list }; if (S.q.trim() && findMode()) { runSearch(); render(); } } return; }
     else if (d.t === 'error') { console.warn('Sem', d.m); if (this.st === 'load') this.st = 'err'; }
@@ -1704,6 +1711,81 @@ const Sem = {
       : this.st === 'err' ? 'Model inmedi (bağlantı?). Dokun: tekrar dene.'
       : this.st === 'ready' ? `${this.done} kayıt anlamca aranıyor${this.left ? `, ${this.left} sırada` : ''}. Kayıtların cihazdan çıkmaz.`
       : 'fatura ↔ invoice ↔ فاتورة: anlamca yakın kayıtları da bulur. Model bu cihaza bir kez iner (~140 MB), kayıtların cihazdan çıkmaz.';
+  },
+};
+// 131b: folders by meaning (needs the meaning search on): sem.js groups the stored numbers (k-means, off the page) and keeps the groups;
+// a new item joins the nearest one by itself. Here the groups become folders 'ai:<c>' next to the tag / chat / site ones. Name: the
+// chosen AI's short name through the bridge (/folders, saved in settings.folders.ai) — without it two telling words from the titles.
+// "Birleştir" (folder head) and "Bu klasöre ait değil" (item menu) go back to the worker, so a regroup keeps them.
+const AIF = {
+  list: null, by: new Map(), ver: 0, _asked: 0, _nm: false,
+  STOP: new Set('ve ile için bir bu şu da de ki mi gibi daha çok en ne ya veya ama olan olarak var yok ben sen biz the and for with from this that you are was how what why your our its not new http https www com org net html pdf png jpg jpeg img image resim dosya not link video'.split(' ')),
+  on: () => Sem.on() && Sem.st === 'ready' && !!AIF.list,
+  ask(force) { // the worker answers from what it kept; a regroup only when forced or the items grew a lot
+    if (!Sem.w || Sem.st !== 'ready' || Sem.done < 40) return;
+    if (!force && Date.now() - this._asked < 4000) return; this._asked = Date.now();
+    Sem.w.postMessage({ t: 'folders', force: !!force });
+  },
+  got(list) {
+    this.list = list; this.by = new Map(list.map(f => [f.c, new Set(f.ids)])); this.ver++; Folders._c = null;
+    if (S.view === 'list' || S.view === 'gallery') render();
+    this.name();
+  },
+  has(c, id) { return !!this.by.get(c)?.has(id); },
+  of(id) { // id → its meaning folders (one map per membership version, so 10k items × 24 folders is one lookup each)
+    if (this._ofv !== this.ver) { this._ofv = this.ver; const m = this._of = new Map(); for (const [c, ids] of this.by) for (const x of ids) { const l = m.get(x); l ? l.push(c) : m.set(x, [c]); } }
+    return this._of.get(id) || [];
+  },
+  words(c) { // the words that tell this group apart: often here, rare elsewhere (cached per membership version)
+    const ids = this.by.get(c); if (!ids) return '';
+    const memo = (this._w ||= new Map()), mk = c + '|' + ids.size; if (memo.has(mk)) return memo.get(mk);
+    const live = S.items.length; if (!this._df || Math.abs(live - this._dfl) > live * .05) { // how many items carry each word; again only when the items grew or shrank by 5%
+      this._dfl = live; const df = this._df = new Map(), step = Math.max(1, Math.ceil(live / 2000)); this._dfn = 0; // a sample of ≤2000 is enough for "rare"
+      for (let k = 0; k < live; k += step) { const i = S.items[k]; if (i.deleted) continue; this._dfn++; for (const w of new Map(this.toks(i)).keys()) df.set(w, (df.get(w) || 0) + 1); }
+    }
+    const tf = new Map(), show = new Map();
+    let seen = 0; for (const id of ids) { if (++seen > 150) break; const i = byId(id); if (!i) continue; for (const [w, o] of new Map(this.toks(i))) { tf.set(w, (tf.get(w) || 0) + 1); if (!show.has(w)) show.set(w, o); } }
+    const n = Math.min(ids.size, 150), best = [...tf].filter(([w, k]) => k >= Math.max(2, n * .2)).map(([w, k]) => [w, k / n * Math.log((this._dfn + 1) / ((this._df.get(w) || 0) + 1))]).sort((a, b) => b[1] - a[1]);
+    const pick = best.slice(0, 2).map(([w]) => show.get(w)).map(o => o[0].toLocaleUpperCase('tr') + o.slice(1));
+    const r = pick.join(' · ') || 'Benzer kayıtlar'; memo.set(mk, r); return r;
+  },
+  toks(i) { // [normalized, as written] for the title and tags; kept per item object (a changed item is a new object)
+    const tc = (this._tk ||= new WeakMap()); let out = tc.get(i); if (out) return out; tc.set(i, out = []); for (const raw of `${titleOf(i)} ${(i.tags || []).join(' ')}`.split(/[^\p{L}\p{N}]+/u)) { if (raw.length < 3 || /^\d+$/.test(raw)) continue; const w = norm(raw); if (!this.STOP.has(w)) out.push([w, raw.toLocaleLowerCase('tr')]); }
+    return out;
+  },
+  label(c) { return Folders.cfg().ai?.[c] || this.words(c); },
+  async name() { // the AI names the groups that have no name yet, a few at a time; no bridge → the words stay
+    if (this._nm || !this.list?.length || !S.bridgeOk) return; const named = Folders.cfg().ai || {};
+    const todo = this.list.filter(f => !named[f.c] && f.ids.length >= 4).slice(0, 24); if (!todo.length) return;
+    this._nm = true;
+    try {
+      const groups = todo.map(f => ({ key: f.c, items: f.ids.slice(0, 14).map(byId).filter(Boolean).map(i => ({ type: i.type, title: titleOf(i).slice(0, 100), tags: i.tags })) }));
+      const r = await AI.call('/folders', { groups }, 180000), got = (r.items || []).filter(x => todo.some(f => f.c === x.key) && typeof x.name === 'string' && x.name.trim());
+      if (got.length) await Folders.set(c => { c.ai ||= {}; for (const x of got) c.ai[x.key] = x.name.trim().replace(/^["'#]+|["']+$/g, '').slice(0, 32); });
+    } catch (e) { console.warn('folders', e); }
+    this._nm = false;
+  },
+  out(c, id) { // "Bu klasöre ait değil": out at once here, kept out by the worker even after a regroup; Geri al puts it back
+    this.by.get(c)?.delete(id); this.ver++; Folders._c = null; Sem.w?.postMessage({ t: 'fout', c, id }); render();
+    toast('Klasörden çıkarıldı', 5000, 'folder', { label: 'Geri al', fn: () => { this.by.get(c)?.add(id); this.ver++; Folders._c = null; Sem.w?.postMessage({ t: 'fin', c, id }); render(); } });
+  },
+  merge(a, b) { // b goes into a (a keeps its name); b's name / pin / hide are dropped
+    const A = this.by.get(a), B = this.by.get(b); if (!A || !B) return; B.forEach(id => A.add(id)); this.by.delete(b); this.list = this.list.filter(f => f.c !== b); this.ver++;
+    Sem.w?.postMessage({ t: 'fmerge', a, b });
+    Folders.set(c => { const k = 'ai:' + b; if (c.ai) delete c.ai[b]; if (c.names) delete c.names[k]; c.pin = (c.pin || []).filter(x => x !== k); c.hide = (c.hide || []).filter(x => x !== k); });
+  },
+  mergePop(btn) { // the other meaning folders, biggest first; a tap pulls that one into this one
+    const k = S.folder, c = k.slice(3); let p = $('#fMerge');
+    if (p && !p.hidden) { p.hidden = true; return; }
+    if (!p) { p = document.createElement('div'); p.id = 'fMerge'; p.className = 'pop f-merge'; p.setAttribute('role', 'menu'); document.body.appendChild(p);
+      p.addEventListener('click', e => { const b = e.target.closest('[data-fm]'); if (!b) return; p.hidden = true; const from = b.dataset.fm, n = this.by.get(from)?.size || 0, nm = Folders.label('ai:' + from); this.merge(S.folder.slice(3), from); toast(`“${nm}” bu klasöre katıldı (${n} kayıt)`, 4000, 'folder'); });
+      document.addEventListener('pointerdown', e => { if (!e.target.closest('#fMerge,[data-fmerge]')) p.hidden = true; }, true);
+      addEventListener('keydown', e => { if (e.key === 'Escape' && !p.hidden) { e.stopPropagation(); p.hidden = true; btn.focus(); } }, true); }
+    const others = this.list.filter(f => f.c !== c && this.by.get(f.c)?.size).sort((x, y) => this.by.get(y.c).size - this.by.get(x.c).size);
+    p.innerHTML = `<div class="side-label">Hangisi buraya katılsın?</div>` + (others.length ? others.map(f => `<button class="side-row" data-fm="${esc(f.c)}" role="menuitem"><span class="f-dot" style="--c:${Folders.color('ai:' + f.c)}"></span><span class="lbl" dir="auto">${esc(Folders.label('ai:' + f.c))}</span><span class="n">${this.by.get(f.c).size}</span></button>`).join('') : '<p class="muted f-none">Başka anlam klasörü yok</p>');
+    p.hidden = false; const r = btn.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+    p.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px'; p.style.top = (r.bottom + 6 + h < innerHeight ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+    p.querySelector('button')?.focus({ preventScroll: true });
   },
 };
 // 104f: few results → ask the chosen AI to look by meaning (it sees the word + meaning candidates and the newest items)
@@ -2772,6 +2854,7 @@ const Busy = {
     if (k === '/ask') return /^Kayıt id=/.test(body?.question || '') ? 'kaydı inceliyor' : 'soruna bakıyor';
     if (k === '/article') return 'okunur kopya alıyor';
     if (k === '/tags') return 'konuları topluyor';
+    if (k === '/folders') return 'klasörlere ad veriyor'; // 131b
     if (k === '/ocr') return 'resimlerdeki yazıyı okuyor';
     return null; // health, inbox, snapshot, meta: not Claude
   },
@@ -3647,6 +3730,7 @@ const Ctx = {
       else if (b.dataset.a === 'del') { if (many) { this.hide(); return Link.del(); } await removeItem(i); }
       else if (b.dataset.a === 'seltag' || b.dataset.a === 'selalign') { this.hide(); const t = Link.bar?.querySelector(`[data-la="${b.dataset.a === 'seltag' ? 'tag' : 'align'}"]`); if (t) b.dataset.a === 'seltag' ? Sel.showPop('tag', t) : Link.alignPop(t); return; }
       else if (b.dataset.a === 'link') { this.hide(); return Link.start(i.id); }
+      else if (b.dataset.a === 'fout') { this.hide(); return AIF.out(S.folder.slice(3), i.id); }
       else if (b.dataset.a === 'linksel') { this.hide(); return Link.many(Link.linkable().map(x => x.id)); }
       else if (b.dataset.a === 'pick') { this.hide(); return Link.toggle(i.id); }
       else if (b.dataset.unlink) await Link.set(i.id, b.dataset.unlink, false, true);
@@ -3660,6 +3744,7 @@ const Ctx = {
       <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">Aç</span></button>
       <button class="side-row" data-a="star">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}<span class="lbl">${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}</span></button>
       <button class="side-row" data-a="todo">${ic('todo', 'sm')}<span class="lbl">${i.todo ? 'Görevden çıkar' : 'Görev yap'}</span></button>
+      ${S.folder?.startsWith('ai:') && inFolder() && AIF.has(S.folder.slice(3), i.id) ? `<button class="side-row" data-a="fout">${ic('folder', 'sm')}<span class="lbl">Bu klasöre ait değil</span></button>` : ''}
       ${Link.menu(i)}<button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">${S.view === 'board' && Link.sel.size > 1 && Link.sel.has(i.id) ? `Seçilenleri sil (${Link.sel.size})` : 'Sil'}</span></button>`;
     el.hidden = false;
     const w = el.offsetWidth, h = el.offsetHeight;
@@ -4639,7 +4724,7 @@ const AI = {
     else if (S.settings.aiChosen && h.ai !== aiKey()) setTimeout(() => this.pushAi(), 0);
   },
   async pushAi() { if (!S.bridgeOk && !S.via) return; try { const r = await this.call('/ai-conf', { ai: aiKey() }, 8000); if (r && r.installed === false) toast(`${aiName()} bu bilgisayarda kurulu değil`, 4000, 'cpu'); } catch { } },
-  setOk(ok) { const ch = ok !== S.bridgeOk; S.bridgeOk = ok; this.dot(); if (ch) render(); if (ok) { this.kick(); this.pullInbox(); setTimeout(() => Reader.background(), 8000); setTimeout(() => this.ocrBackfill(), 20000); setTimeout(() => Summ.run(), 45000); this.pullImports(); if (ch) { Snapshot.schedule(); BridgeLink.publish(); RelayConf.publish(); } } },
+  setOk(ok) { const ch = ok !== S.bridgeOk; S.bridgeOk = ok; this.dot(); if (ch) render(); if (ok) { this.kick(); this.pullInbox(); setTimeout(() => Reader.background(), 8000); setTimeout(() => this.ocrBackfill(), 20000); setTimeout(() => Summ.run(), 45000); setTimeout(() => AIF.name(), 25000); this.pullImports(); if (ch) { Snapshot.schedule(); BridgeLink.publish(); RelayConf.publish(); } } },
   dot() {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
@@ -5751,6 +5836,7 @@ function openSettings(page = 'main') {
       <div class="set-line"><span>Ana renk</span><div class="swatches">${ACCENTS.map(([k, n, l, d]) => `<button class="sw${k === cur ? ' on' : ''}" data-accent="${k}" title="${n}" style="--c:${dark ? d : l}"></button>`).join('')}
         <label class="sw custom${cur === 'custom' ? ' on' : ''}" title="Özel renk" style="--c:${cur === 'custom' ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)'}"><input type="color" id="accentPick" value="${(() => { try { const v = localStorage.getItem('hn-accent'); return v?.startsWith('#') ? v : '#e8590c'; } catch { return '#e8590c'; } })()}"></label></div></div>
       <div class="set-line f-set"><span>Klasör stili</span><div class="seg sm">${Folders.STYLES.map(([k, l]) => `<button data-fstyle="${k}" class="${Folders.style() === k ? 'on' : ''}" aria-pressed="${Folders.style() === k}">${l}</button>`).join('')}</div></div>
+      ${AIF.on() ? `<button class="set-row" data-fregroup>${ic('spark')}<span>Anlam klasörlerini yeniden grupla<small>${AIF.list.length} klasör, kayıtlarına bakarak cihazında gruplanır; adları ${aiName()} verir</small></span></button>` : ''}
       ${(Folders.cfg().hide || []).length ? `<button class="set-row" data-fshow>${ic('eye')}<span>Gizli klasörleri geri getir (${Folders.cfg().hide.length})<small>${esc(Folders.cfg().hide.map(k => Folders.label(k)).slice(0, 4).join(', '))}</small></span></button>` : ''}
       ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle<small>Ana ekrana ekle, Paylaş menüsünde çıksın</small></span></button>` : ''}
     </div>
@@ -5804,6 +5890,7 @@ function openSettings(page = 'main') {
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
     const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
+    if (e.target.closest('[data-fregroup]')) { AIF.ask(true); toast('Klasörler yeniden gruplanıyor…', 2500, 'spark'); return; }
     if (e.target.closest('[data-fshow]')) { Folders.set(c => c.hide = []).then(openSettings); return; }
     if (!d) return;
     if (d === 'wa') $('#waInput').click();

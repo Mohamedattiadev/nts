@@ -1900,3 +1900,20 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .f-rename { font: inherit; font-size: 15px; font-weight: 650; min-width: 0; width: 100%; max-width: 360px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); }
 .f-set .seg { flex-wrap: wrap; justify-content: flex-end; }
 @media (prefers-reduced-motion: reduce) { .fold, .fold * { transition: none !important; } .fold:active { transform: none; } }
+/* 131b: folders grouped by meaning: a small spark before the name, "Birleştir" list, "Anlamca grupla" */
+.f-ai { display: inline-flex; vertical-align: -1px; margin-right: 4px; opacity: .85; }
+.f-ai svg { width: 11px; height: 11px; }
+.f-name .f-ai { color: var(--c); }
+.f-top .f-aion { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12.5px; }
+.f-top .f-aion:hover { color: var(--text); }
+.f-merge { position: fixed; z-index: 60; min-width: 220px; max-width: min(320px, calc(100vw - 16px)); max-height: min(60vh, 420px); overflow: auto; padding: 6px; }
+.f-merge .side-row { min-height: 44px; }
+.f-merge .f-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+.f-merge .f-none { padding: 8px 10px; margin: 0; font-size: 13px; }
+@media (max-width: 600px) { /* 131b: a meaning folder has 4 actions: the name keeps the first line, the actions go under it on the right */
+  .f-head:has([data-fmerge]) { flex-wrap: wrap; row-gap: 0; }
+  .f-head:has([data-fmerge]) .f-t { flex: 1 1 calc(100% - 110px); }
+  .f-head:has([data-fmerge]) .sp { display: none; }
+  .f-head:has([data-fmerge]) [data-fmerge] { margin-left: auto; }
+  .f-head .f-t small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
