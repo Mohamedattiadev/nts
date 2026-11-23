@@ -591,7 +591,13 @@ Site:
             Küçük resim yapılırken / ekranda yüklenirken hesaplanır; görünmeyenler boşta 6'şar (buluttan tam resim indirmez, yalnız yerel dosya
             ya da bulut önizlemesi). Renk adları tr/en/ar dizine girer: düz "mavi" / "أزرق" de bulur; arama çipinde renk noktası.
             23 yeni test (179 geçiyor). Eksik: "mavi resimler" doğal cümlesi → çip 104a/105'te; mevcut resimler ilk açılışta yavaş yavaş dolar.
-- [ ] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
+- [x] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
+        [x] 2026-11-23, B hattı: kayıt penceresinin en altında "Benzerleri · N" şeridi (yana kayan 112 px kartlar, resimde küçük resim,
+            yoksa tür simgesi + 2 satır başlık; telefonda 120 px). app.js simOf(): ortak konu +3, ortak "resimde" etiketi +1, aynı site +2,5,
+            aynı proje +1,5 / sohbet +1, ortak renk +0,7; zaman ve tür yalnız destekler (tek başına benzer yapmaz), eşik 2,5, en çok 12;
+            "Bağlantılı" olanlar tekrar çıkmaz. Anlamsal arama açıksa sem.js 'like' (kaydın kendi saklı vektörü, model çalışmaz, z ≥ 2,2)
+            en çok 8 anlam komşusu ✦ ile başa gelir; şerit yüksekliği değişmez (ölçüldü, 0 px). Testte Sem.like taklit edildi (model
+            headless'ta inmez); gerçek modelle sahip denesin. phone-audit kayıt pencereleri 0 hata.
 - [x] 134. **Galeride çoklu seçim**: sürükleyerek kutu çiz / uzun bas + dokun; seçilenlere tek seferde etiket, sil, klasöre/panoya taşı;
         altta küçük eylem çubuğu "12 seçili". Telefon önce.
         [x] 2026-11-23, A hattı: app.js `Sel` (Ctx'in üstünde). Telefon: kutucuğa uzun bas → seçer (bağlam menüsü galeride açılmaz),

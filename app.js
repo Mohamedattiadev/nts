@@ -1077,10 +1077,16 @@ const Sem = {
     if (!this.w || q.length < 3 || this.hits?.q === q) return;
     this._q = setTimeout(() => this.w?.postMessage({ t: 'query', n: ++this.n, q, k: 60 }), 220);
   },
+  like(id) { // 133: the stored numbers of one item → the closest others (z over the crowd); null when there are none to compare
+    if (!this.w || this.st !== 'ready' || !this.sent.has(id)) return Promise.resolve(null);
+    const n = ++this.n; (this._lk ||= new Map());
+    return new Promise(ok => { this._lk.set(n, ok); this.w.postMessage({ t: 'like', n, id, k: 12 }); setTimeout(() => { if (this._lk.delete(n)) ok(null); }, 2500); });
+  },
   msg(d) {
     if (d.t === 'progress') { this.p = d.p; this.mb = d.mb; }
     else if (d.t === 'ready') { this.st = 'ready'; this.done = d.n; if (S.q.trim()) { runSearch(); render(); } }
     else if (d.t === 'indexed') { this.done = d.done; this.left = d.left; }
+    else if (d.t === 'like') { const f = this._lk?.get(d.n); if (f) { this._lk.delete(d.n); f(d.list); } return; }
     else if (d.t === 'hits') { if (d.n === this.n) { this.hits = { q: d.q, list: d.list }; if (S.q.trim() && findMode()) { runSearch(); render(); } } return; }
     else if (d.t === 'error') { console.warn('Sem', d.m); if (this.st === 'load') this.st = 'err'; }
     this.ui();
@@ -1329,6 +1335,41 @@ function convHtml(i) {
     ${files.length ? `<div class="rel-chips">${files.map(k => `<button class="rel-chip" data-kid="${k.id}">${ic(fileKind(k) === 'text' ? 'note' : fileKind(k), 'sm')}<span class="t">${esc(k.fileName)}</span></button>`).join('')}</div>` : ''}
     <div class="conv-log">${i.conv.log.map(l => `<div class="cl"><span class="cl-t">${fmtTime(l.ts)}</span>${many ? `<b>${esc(l.who)}</b>` : ''}<span>${l.att ? `<span class="cl-att">${ic('clip', 'sm')}${esc(byId(l.att)?.fileName || 'dosya')}</span> ` : ''}${esc(l.text).replace(URL_RE, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</span></div>`).join('')}</div>`;
 }
+// 133: "Benzerleri" under the item window. Without the meaning model: shared topics, same site / chat / colour, close in time.
+// With it (104f), the meaning neighbours come first and these fill in; the strip keeps its height when they arrive (no jump).
+function simOf(i, n = 12) {
+  const tags = new Set(i.tags || []), vt = new Set(i.vtags || []), host = i.url && domain(i.url), hs = new Set(i.hues || []),
+    k = fileKind(i), skip = new Set([i.id, ...relatedOf(i).map(r => r.id)]), out = [];
+  for (const j of S.items) {
+    if (j.deleted || skip.has(j.id) || HIDDEN.has(j.type)) continue;
+    let s = 0;
+    for (const t of j.tags || []) if (tags.has(t)) s += 3;
+    for (const t of j.vtags || []) if (vt.has(t)) s += 1;
+    if (host && j.url?.includes(host) && domain(j.url) === host) s += 2.5;
+    if (i.chat && j.chat === i.chat) s += 1;
+    if (i.project && j.project === i.project) s += 1.5;
+    if (s < 1 && !hs.size) continue; // time alone doesn't make two items alike
+    for (const h of j.hues || []) if (hs.has(h) && h !== 'bw') s += .7;
+    const dt = Math.abs((j.ts || 0) - (i.ts || 0));
+    if (dt < 36e5) s += 1.5; else if (dt < 864e5) s += .8; else if (dt < 7 * 864e5) s += .3;
+    if (fileKind(j) === k) s += .4;
+    if (s >= 2.5) out.push([j, s]);
+  }
+  return out.sort((a, b) => b[1] - a[1] || (b[0].ts || 0) - (a[0].ts || 0)).slice(0, n).map(x => x[0]);
+}
+const simCard = (j, sem) => `<button class="sim-card" data-rel="${j.id}" title="${esc(titleOf(j))}">${hasVisual(j) ? thumbBox(j, 'thumb sim-th') : `<div class="sim-th ico ${j.type}">${ic(fileKind(j) === 'text' ? 'note' : fileKind(j))}</div>`}<span class="t" dir="auto">${sem ? `<b class="sim-sem" aria-label="anlamca">${ic('spark', 'sm')}</b>` : ''}${esc(titleOf(j))}</span></button>`;
+function simHtml(list, sem = new Set()) {
+  return list.length ? `<div class="field-label">Benzerleri · ${list.length}</div><div class="sim-row">${list.map(j => simCard(j, sem.has(j.id))).join('')}</div>` : '';
+}
+async function simFill(i, box) {
+  const base = simOf(i); box.innerHTML = simHtml(base); hookThumbs(box);
+  const near = await Sem.like(i.id); if (!near || !box.isConnected || $('#sheet').dataset.id !== i.id) return;
+  const skip = new Set(relatedOf(i).map(r => r.id)), sem = near.filter(([id, z]) => z >= 2.2 && !skip.has(id)).map(([id]) => byId(id)).filter(j => j && !j.deleted).slice(0, 8);
+  if (!sem.length) return;
+  const ids = new Set(sem.map(j => j.id)), list = [...sem, ...base.filter(j => !ids.has(j.id))].slice(0, 12);
+  const row = box.querySelector('.sim-row'), x = row?.scrollLeft || 0;
+  box.innerHTML = simHtml(list, ids); hookThumbs(box); if (box.querySelector('.sim-row')) box.querySelector('.sim-row').scrollLeft = x;
+}
 function openItem(id) {
   const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
@@ -1372,6 +1413,7 @@ function openItem(id) {
     ${Read.readable(i) ? `<button class="btn secondary wide" data-act="read">${ic('book', 'sm')}${i.type !== 'link' ? 'Okuma sayfasında aç' : i.read ? `Oku · ${Reader.minutes(i)} dk` : 'Okunur kopyasını al ve oku'}</button>` : ''}
     ${(i.highlights || []).length ? `<div class="field-label">İşaretlediklerin · ${i.highlights.length}</div><div class="hl-list">${i.highlights.map(h => `<blockquote>${esc(h.text)}</blockquote>`).join('')}</div>` : ''}
     <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? '' + aiName() + ': yeniden anlat' : '' + aiName() + ' anlatsın: bu ne, neyle bağlantılı?'}</button>
+    <div id="simBox" class="sim"></div>
     </div>${media ? '</div>' : ''}
     <div class="d-foot m-only-b">
       <button class="fbtn" data-act="share">${ic('share')}<span>Paylaş</span></button>
@@ -1380,6 +1422,7 @@ function openItem(id) {
       ${i.type === 'file' ? `<button class="fbtn" data-act="download">${ic('down')}<span>İndir</span></button>` : ''}
       <button class="fbtn danger" data-act="del">${ic('trash')}<span>Sil</span></button></div>
   </div>`;
+  simFill(i, dlg.querySelector('#simBox'));
   hookThumbs(dlg);
   const ta = dlg.querySelector('.d-title'); const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
   ta.addEventListener('input', fit);

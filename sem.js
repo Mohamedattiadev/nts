@@ -79,6 +79,15 @@ async function query(q, k) {
   return list.map(([id, s]) => [id, (s - mean) / sd]).sort((a, b) => b[1] - a[1]).slice(0, k);
 }
 
+// 133: items close in meaning to one item (its own stored numbers, no model run): the same crowd rule as query()
+function like(id, k) {
+  const v = vecs.get(id)?.v; if (!v) return [];
+  const list = [];
+  for (const [j, x] of vecs) { if (j === id) continue; let s = 0; const w = x.v; for (let d = 0; d < DIM; d++) s += v[d] * w[d]; list.push([j, s / 16129]); }
+  const n = list.length || 1, mean = list.reduce((a, x) => a + x[1], 0) / n, sd = Math.sqrt(list.reduce((a, x) => a + (x[1] - mean) ** 2, 0) / n) || 1;
+  return list.map(([j, s]) => [j, (s - mean) / sd]).sort((a, b) => b[1] - a[1]).slice(0, k);
+}
+
 onmessage = async e => {
   const m = e.data;
   try {
@@ -91,6 +100,7 @@ onmessage = async e => {
       post({ t: 'indexed', done: vecs.size, left: queue.size });
       if (ext) work();
     } else if (m.t === 'query') post({ t: 'hits', n: m.n, q: m.q, list: await query(m.q, m.k || 60) });
+    else if (m.t === 'like') post({ t: 'like', n: m.n, id: m.id, list: like(m.id, m.k || 12) });
     else if (m.t === 'wipe') { queue.clear(); vecs.clear(); await tx('readwrite', s => s.clear()); post({ t: 'indexed', done: 0, left: 0 }); }
   } catch (err) { post({ t: 'error', m: String(err?.message || err), n: m.n }); }
 };
