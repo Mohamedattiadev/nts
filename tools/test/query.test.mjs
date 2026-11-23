@@ -307,6 +307,29 @@ for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:'
   eq('qsim none', Q.qsim('wifi', 'fatura'), 0);
   eq('qsim filler', Q.qsim('bana faturaları göster', 'fatura'), 1);
   eq('qsim ar', Q.qsim('الفاتورة', 'فاتورة'), 1);
+  // 105h: Arabic-Indic digits are a number too
+  eq('answer ar digits', Q.answer('كم فاتورة الكهرباء؟', [{ id: 'c3', texts: ['فاتورة الكهرباء ٢٠٠ ريال لهذا الشهر'] }])?.id, 'c3');
+}
+// 105f: picture fingerprints and the words read in a picture
+{
+  const px = f => { const a = new Uint8ClampedArray(72 * 4); for (let k = 0; k < 72; k++) { const v = f(k % 9, k / 9 | 0); a[k * 4] = a[k * 4 + 1] = a[k * 4 + 2] = v; a[k * 4 + 3] = 255; } return a; };
+  const grad = Q.dhash(px(x => 255 - x * 28)), grad2 = Q.dhash(px(x => 250 - x * 27)), flip = Q.dhash(px(x => x * 28)), checker = Q.dhash(px((x, y) => ((x + y) % 2) * 200));
+  eq('dhash 16 hex', /^[0-9a-f]{16}$/.test(grad), true);
+  eq('dhash gradient', grad, 'ffffffffffffffff');
+  eq('dhash flipped', flip, '0000000000000000');
+  eq('dhash same picture darker', Q.hamming(grad, grad2), 0);
+  eq('hamming opposite', Q.hamming(grad, flip), 64);
+  eq('hamming missing', Q.hamming(grad, undefined), 64);
+  eq('hamming one bit', Q.hamming('ffff0000ffff0000', 'ffff0000ffff0001'), 1);
+  eq('imgSim same', Q.imgSim({ ph: grad, hues: ['blue'] }, { ph: grad2, hues: ['blue'] }) > .9, true);
+  eq('imgSim close', Q.imgSim({ ph: 'ffff0000ffff0000' }, { ph: 'ffff0000ffff00ff' }) >= .75, true); // 8 bits off = the same screenshot
+  eq('imgSim other', Q.imgSim({ ph: grad, hues: ['blue'] }, { ph: flip, hues: ['red'] }), 0);
+  eq('imgSim colour only', Q.imgSim({ ph: grad, hues: ['blue', 'white'] }, { ph: checker, hues: ['blue', 'white'] }) < .42, true); // colours alone never make a hit
+  eq('imgSim no hash', Q.imgSim({ ph: grad }, { hues: [] }), 0);
+  eq('ocrWords', Q.ocrWords('Fatura No: 12345 — Türk Telekom fatura tutarı 249,90 TL'), 'Fatura Türk Telekom tutarı');
+  eq('ocrWords ar', Q.ocrWords('فاتورة الكهرباء ٢٠٠ ريال'), 'فاتورة الكهرباء ريال');
+  eq('ocrWords en max', Q.ocrWords('one two three four five six seven eight nine', 3).split(' ').length, 3);
+  eq('ocrWords empty', Q.ocrWords(''), '');
 }
 // speed: 10k items, a busy query, < 50 ms
 {

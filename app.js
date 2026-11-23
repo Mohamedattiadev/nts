@@ -21,6 +21,7 @@ const S = {
 const I = {
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   note: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
   video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',
   audio: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
@@ -244,9 +245,11 @@ const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share
 let qWarnT;
 function runSearch() {
   const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; S.loose = null; S.dym = null; clearTimeout(qWarnT);
-  if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
+  if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; if (!q) ImgFind.drop(); return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   // 105b: in Ara the "?" closing a question is not a wildcard ("kaç sensör var?" searched "var" + one more letter and found nothing)
   if (window.NtsQuery && /[?؟]$/.test(q) && NtsQuery.intent(q) === 'ask') return runSearch0(q.replace(/\s*[?؟]+$/, ''));
+  if (S.imgFind && !ImgFind.on()) ImgFind.drop(); // 105f: the words were changed → a normal search again
+  if (S.imgFind) { if (S.imgFind.ocr) runSearch0(q); else S.hits = new Map(); ImgFind.merge(); return; }
   runSearch0(q);
 }
 function runSearch0(q) {
@@ -508,7 +511,7 @@ const Prev = {
         c = new OffscreenCanvas(Math.round(bmp.width * r), Math.round(bmp.height * r)); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); }
       if (!c) return null;
       const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/webp', quality: .72 }) : await new Promise(r => c.toBlob(r, 'image/webp', .72));
-      await DB.put('files', { id: i.id + ':t', blob }); Hues.from(i, blob); return blob;
+      await DB.put('files', { id: i.id + ':t', blob }); Hues.from(i, blob); PH.from(i, blob); return blob;
     } catch (e) { console.warn('thumb', e); return null; }
   },
   async remoteThumb(i) {
@@ -604,6 +607,96 @@ const Hues = {
       }
     } finally { this._run = false; }
   },
+};
+// 105f: picture fingerprints for "resimle ara": a 64-bit dHash of each image's small preview, made on this device and kept only
+// here (IndexedDB kv 'ph', never synced; it is cheap to make again)
+const PH = {
+  m: null, t: 0,
+  async load() { if (!this.m) { const v = await DB.get('kv', 'ph').catch(() => null); this.m = new Map(Object.entries(v || {})); } return this.m; },
+  async of(blob) { // the fingerprint + the main colours of any picture
+    // 72x64 first, then the mean of each 8x8 block: a straight 9x8 resize picks single pixels and flat areas (a white page) flip bits
+    const bm = await createImageBitmap(blob, { resizeWidth: 72, resizeHeight: 64, resizeQuality: 'high' }), c = new OffscreenCanvas(72, 64), g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(bm, 0, 0); bm.close?.(); const d = g.getImageData(0, 0, 72, 64).data, px = new Float32Array(72 * 4);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 72; x++) { const o = (y * 72 + x) * 4, k = ((y >> 3) * 9 + (x >> 3)) * 4; px[k] += d[o] / 64; px[k + 1] += d[o + 1] / 64; px[k + 2] += d[o + 2] / 64; }
+    return NtsQuery.dhash(px);
+  },
+  async from(i, blob) {
+    if (!window.NtsQuery || typeof OffscreenCanvas === 'undefined') return; await this.load(); if (this.m.has(i.id)) return;
+    try { this.m.set(i.id, await this.of(blob)); clearTimeout(this.t); this.t = setTimeout(() => DB.put('kv', Object.fromEntries(this.m), 'ph'), 1500); } catch (e) { console.warn('ph', e.message); }
+  },
+};
+// 105f: search with a picture: in Ara, paste / drop a screenshot or photo (or "+" → pick one). On the device: the same or a close
+// picture by its fingerprint, then pictures with the same colours; the text in it (read on the device with TextDetector, else by the
+// bridge's /ocr when it is on) becomes the search words, so a screenshot of a bill finds the note about that bill too.
+const IMG_KEY = 'Bu resme benzeyenler';
+const ImgFind = {
+  ok: () => !!window.NtsQuery && typeof OffscreenCanvas !== 'undefined',
+  isImg: f => /^image\//.test(f?.type || ''),
+  async run(file) {
+    if (!this.ok()) return toast('Bu tarayıcı resimle aramayı desteklemiyor', 2600);
+    this.drop(); const url = URL.createObjectURL(file), me = S.imgFind = { key: IMG_KEY, url, hits: new Map(), busy: true, ocr: '' };
+    if (!findMode()) setMode('find');
+    this.show();
+    let q;
+    try { const sm = await createImageBitmap(file, { resizeWidth: 32, resizeHeight: 32, resizeQuality: 'low' }), c = new OffscreenCanvas(32, 32), g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(sm, 0, 0); sm.close?.(); q = { ph: await PH.of(file), hues: NtsQuery.palette(g.getImageData(0, 0, 32, 32).data) }; }
+    catch (e) { console.warn('imgfind', e); if (S.imgFind === me) { this.drop(); clearBox(); } return toast('Resim okunamadı', 2400, 'x'); }
+    this.read(file, me); // the text in it, in parallel
+    await PH.load();
+    const imgs = S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && fileKind(i) === 'image').sort((a, b) => b.ts - a.ts);
+    const todo = imgs.filter(i => !PH.m.has(i.id));
+    for (let k = 0; k < todo.length && S.imgFind === me; k += 8) { // previews not seen here yet: made once (a cloud preview only when online)
+      await Promise.all(todo.slice(k, k + 8).map(async i => { const b = await Prev.thumbBlob(i).catch(() => null); if (b) await PH.from(i, b); }));
+      if (todo.length > 24 && k % 48 === 0) toast(`Resimler taranıyor… ${Math.min(k + 8, todo.length)}/${todo.length}`, 1200, 'image');
+    }
+    if (S.imgFind !== me) return;
+    for (const i of imgs) { const s = NtsQuery.imgSim(q, { ph: PH.m.get(i.id), hues: i.hues }); if (s >= .42) me.hits.set(i.id, s); }
+    me.busy = false; this.show();
+  },
+  async read(file, me) {
+    let text = '';
+    try {
+      if ('TextDetector' in window) { const bmp = await createImageBitmap(file); text = (await new TextDetector().detect(bmp)).map(x => x.rawValue).join(' '); bmp.close?.(); }
+      else if (S.bridgeOk || (navigator.onLine && await AI.health().catch(() => false))) {
+        me.reading = true; this.show();
+        const bmp = await createImageBitmap(file), r = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), c = new OffscreenCanvas(Math.round(bmp.width * r), Math.round(bmp.height * r));
+        c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+        const res = await AI.call('/ocr', { items: [{ id: 'q', image: b64(new Uint8Array(await (await c.convertToBlob({ type: 'image/jpeg', quality: .82 })).arrayBuffer())) }] }, 90000);
+        text = res.items?.[0]?.text || '';
+      }
+    } catch (e) { console.warn('imgfind ocr', e.message); }
+    me.reading = false; if (S.imgFind !== me) return;
+    const w = NtsQuery.ocrWords(text); if (w) { me.ocr = w; me.key = w; }
+    this.show();
+  },
+  show() { const me = S.imgFind; if (!me) return; const inp = $('#input'); inp.value = me.key; S.q = me.key; S.searchOn = true; S.hitsOff = false; S.hitSel = -1; runSearch(); autoGrow(); render(); renderHits(); },
+  on: () => !!S.imgFind && findMode() && S.q.trim() === S.imgFind.key,
+  drop() { if (S.imgFind) { URL.revokeObjectURL(S.imgFind.url); S.imgFind = null; } },
+  merge() { // visual matches into the hits: the same picture on top, alike ones under the word results
+    for (const [id, s] of S.imgFind.hits) { const i = byId(id); if (!i) continue; S.hits.set(id, s >= .75 ? 20 + s : (S.hits.get(id) || 0) + 1 + s); }
+  },
+};
+// 105e: search by voice: the mic (Web Speech) next to the box in Ara, only where the browser has it; tr / en / ar (a tap on the
+// language chip under the box while listening changes it, remembered). The words appear as they are heard and search live.
+const MIC_L = [['tr-TR', 'TR'], ['en-US', 'EN'], ['ar-SA', 'AR']];
+const Mic = {
+  SR: window.SpeechRecognition || window.webkitSpeechRecognition, on: false, r: null,
+  lang() { let l = null; try { l = localStorage.getItem('nts-mic'); } catch { } if (MIC_L.some(x => x[0] === l)) return l; const n = (navigator.language || 'tr').slice(0, 2); return n === 'en' ? 'en-US' : n === 'ar' ? 'ar-SA' : 'tr-TR'; },
+  setLang(l) { try { localStorage.setItem('nts-mic', l); } catch { } if (this.on) { this.stop(); setTimeout(() => this.start(), 250); } else updateSend(); },
+  toggle() { this.on ? this.stop() : this.start(); },
+  start() {
+    if (!this.SR) return;
+    if (!navigator.onLine) return toast('Çevrimdışı: sesle arama internet ister (sesi tarayıcı yazıya çevirir). Yazarak arama çalışır.', 3600, 'mic');
+    const inp = $('#input'), base = inp.value.trim(), r = this.r = new this.SR();
+    r.lang = this.lang(); r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    r.onresult = e => { let t = ''; for (const x of e.results) t += x[0].transcript; inp.value = (base ? base + ' ' : '') + t.trim(); inp.dispatchEvent(new Event('input')); };
+    r.onerror = e => { const m = { 'not-allowed': 'Mikrofon izni yok (adres çubuğundan izin ver)', 'service-not-allowed': 'Mikrofon izni yok', network: 'Sesle arama internet ister', 'no-speech': 'Ses duyulmadı, tekrar dene', 'audio-capture': 'Mikrofon bulunamadı', 'language-not-supported': 'Bu dil sesle desteklenmiyor' }[e.error];
+      if (m) toast(m, 2800, 'mic'); };
+    r.onend = () => { if (this.r === r) { this.on = false; this.r = null; updateSend(); } };
+    try { r.start(); this.on = true; haptic(8); } catch (e) { console.warn('mic', e); this.on = false; }
+    if (!findMode()) setMode('find'); else updateSend();
+  },
+  stop() { const r = this.r; this.on = false; this.r = null; try { r?.stop(); } catch { } updateSend(); },
 };
 // 132: colour words in the search (renk:mavi, color:blue, لون:أزرق, or just "mavi") get a small dot in the search chip
 const HUE_DOT = { red: 'var(--c-red)', orange: 'var(--c-orange)', yellow: 'var(--c-yellow)', green: 'var(--c-green)', blue: 'var(--c-blue)', purple: 'var(--c-purple)',
@@ -1065,7 +1158,8 @@ const Find = {
     if (f.tag && !tags.has(f.tag)) tags.set(f.tag, nItems);
     const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, narrow() ? 4 : 6);
     const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
-    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${S.nl?.chips.length ? '<span class="f-und">Anladığım:</span>' : ''}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    const im = ImgFind.on() ? S.imgFind : null; // 105f
+    this.set(el, '.f-head', `<span class="f-q">${im ? `<img class="f-qimg" src="${im.url}" alt="Aranan resim">${im.ocr ? '' : `<b>${IMG_KEY}</b>`}${im.busy ? '<span class="f-n">· karşılaştırılıyor…</span>' : im.reading ? '<span class="f-n">· yazısı okunuyor…</span>' : ''}` : ic('search', 'sm')}${S.nl?.chips.length ? '<span class="f-und">Anladığım:</span>' : ''}${hueDots(rest)}${rest && !(im && !im.ocr) ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
     this.set(el, '.f-hlp', S.qHelp ? qHelpHtml() : '');
     const ah = ansHtml(items), ae = el.querySelector('.f-ans'); ae.hidden = !ah; this.ans = !!ah; this.set(el, '.f-ans', ah); // 105b
@@ -1097,7 +1191,7 @@ const Find = {
       for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
       for (const n of fresh) n.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 170, easing: 'ease-out' });
     }
-    const sb = semBar(nItems, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
+    const sb = im && !im.ocr ? '' : semBar(nItems, (S.nl ? S.nl.rest : q).trim()), se = el.querySelector('.f-sem'); se.hidden = !sb; this.set(el, '.f-sem', sb);
     fresh.forEach(hookThumbs); updateSend(); // the send button opens the first result: on only when there is one
     const phone = narrow();
     this.set(el, '.h-foot', `<span class="d-only">${S.hitSel >= 0 ? '<kbd>↑</kbd><kbd>↓</kbd> seç · <kbd>Enter</kbd> aç' : '<kbd>Enter</kbd> ilk sonucu aç · <kbd>↓</kbd> gez'} · <kbd>Tab</kbd> mod · <kbd>Esc</kbd> temizle</span>`
@@ -1111,7 +1205,7 @@ const Find = {
       : `<span class="f-ic ${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
     return b;
   },
-  open(n = 0) { const id = this.top[n]; if (id) { Recent.add(S.q); Learn.add(S.q, id); openItem(id); } },
+  open(n = 0) { const id = this.top[n]; if (id) { if (!ImgFind.on()) { Recent.add(S.q); Learn.add(S.q, id); } openItem(id); } },
 };
 let _nt = new Map(), _ntOf;
 const ntMap = () => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } return _nt; }; // folded titles, filled as asked
@@ -1211,7 +1305,7 @@ function sugHtml() {
     + sec('Kayıtlı aramalar', saved.map(s => `<button class="f-tag" data-saved="${s.id}">${ic('pin', 'sm')}<span dir="auto">${esc(s.name)}</span></button>`).join(''))
     + sec('Sık konular', tags.map(([t, n]) => `<button class="f-tag" data-qex="#${esc(q1(t))}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${n}</small></button>`).join('')
       + projs.map(([p, n]) => `<button class="f-tag" data-qex="proje:${esc(q1(p))}">${ic('folder', 'sm')}<span dir="auto">${esc(p)}</span><small>${n}</small></button>`).join(''));
-  return `<div class="f-head"><span class="f-q">${ic('search', 'sm')}<span class="muted">Yazdıkça bulur</span></span><button data-qhelp class="${S.qHelp || !body ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!(S.qHelp || !body)}">?</button></div>`
+  return `<div class="f-head"><span class="f-q">${ic('search', 'sm')}<span class="muted">Yazdıkça bulur${Mic.SR ? ' · sesle' : ''} · resim yapıştır</span></span><button data-qhelp class="${S.qHelp || !body ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!(S.qHelp || !body)}">?</button></div>`
     + `<div class="s-body">${body}${S.qHelp || !body ? qHelpHtml() : ''}</div>`;
 }
 // 104f: meaning search on this device (sem.js worker, multilingual-e5-small): turned on once in Settings or from the Ara window
@@ -1418,6 +1512,11 @@ function setMode(m) {
 const nextMode = (d = 1) => MODES[(MODES.findIndex(x => x[0] === S.mode) + d + MODES.length) % MODES.length][0];
 const updateSend = () => {
   const v = $('#input').value.trim(), ask = askMode(), find = findMode(), b = $('#saveBtn'), phone = narrow();
+  // 105e: in Ara with an empty box (or while listening) the mic takes the send button's place; 105f: "+" in Ara picks a picture to search with
+  const mic = $('#micBtn'), useMic = !!Mic.SR && find && (!v || Mic.on), lg = Mic.lang();
+  if (mic.hidden === useMic) { mic.hidden = !useMic; b.hidden = useMic; }
+  mic.classList.toggle('on', Mic.on); const mt = Mic.on ? 'Dinlemeyi durdur' : `Sesle ara (${MIC_L.find(x => x[0] === lg)[1]})`; if (mic.title !== mt) { mic.title = mt; mic.setAttribute('aria-label', mt); mic.setAttribute('aria-pressed', Mic.on); }
+  const fi = $('#fileInput'), cl = fi.closest('label'), ct = find ? 'Resimle ara' : 'Dosya ekle'; if (cl.title !== ct) { cl.title = ct; cl.setAttribute('aria-label', ct); fi.accept = find ? 'image/*' : ''; fi.multiple = !find; }
   b.disabled = find ? !Find.top.length : !ask && !v && !S.attach.length;
   const icn = ask ? 'spark' : find ? 'search' : !S.attach.length && TODO_LINE.test(v) ? 'todo' : 'up'; // 118: the button says what Enter will do
   const key = icn + phone;
@@ -1432,10 +1531,10 @@ const updateSend = () => {
   // Not mode: a chip "4 benzer kayıt" (so the same thing isn't saved twice) → Ara; on a phone (no Tab key) also the way to Sor
   // 136: the mode button already says the mode, so no "soruyorsun" line and no Tab/Esc key hints here
   const h = $('#cHint'), n = S.mode === 'note' && v && !S.attach.length ? S.hits?.size || 0 : 0;
-  const tip = S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', isQuestion(v) ? 'ask' : ''].filter(Boolean).join(' ');
+  const tip = Mic.on ? 'mic' + lg : S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', isQuestion(v) ? 'ask' : ''].filter(Boolean).join(' ');
   if (h.dataset.k !== tip) {
     h.dataset.k = tip; h.hidden = !tip;
-    h.innerHTML = (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
+    h.innerHTML = Mic.on ? `<span class="mic-live" role="status"><i></i>Dinliyorum…</span>${MIC_L.map(([l, t]) => `<button data-mic="${l}" class="${l === lg ? 'on' : ''}" aria-pressed="${l === lg}" title="Konuşma dili">${t}</button>`).join('')}` : (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
   }
 };
 const submitBox = () => { const v = $('#input').value; if (findMode()) return Find.open(Math.max(0, S.hitSel)); if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
@@ -5204,7 +5303,7 @@ function openSettings(page = 'main') {
 
 // ---------- wiring ----------
 function wire() {
-  for (const [id, icn] of [['#clipIco', 'plus'], ['#setIco', 'settings']]) $(id).innerHTML = ic(icn, 'sm');
+  for (const [id, icn] of [['#clipIco', 'plus'], ['#micIco', 'mic'], ['#setIco', 'settings']]) $(id).innerHTML = ic(icn, 'sm');
   try { S.mode = localStorage.getItem('hn-mode') || 'note'; } catch { S.mode = 'note'; } // 103b: the last mode is remembered
   if (!MODES.some(x => x[0] === S.mode)) S.mode = 'note';
   renderModes(); updateSend(); addEventListener('resize', updateSend);
@@ -5213,7 +5312,8 @@ function wire() {
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
   { const dk = $('#composer').closest('.dock'); if (dk) new ResizeObserver(() => document.documentElement.style.setProperty('--dock-full', dk.offsetHeight + 'px')).observe(dk); } // 101: the toast sits above the open search list / answer
   new ResizeObserver(() => { const w = $('#boardTools').offsetWidth; if (w) document.documentElement.style.setProperty('--bt-w', w + 'px'); }).observe($('#boardTools'));
-  $('#cHint').onclick = e => { const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
+  $('#micBtn').onclick = () => Mic.toggle();
+  $('#cHint').onclick = e => { const m = e.target.closest('[data-mic]'); if (m) return Mic.setLang(m.dataset.mic); const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
   let st, rt;
@@ -5235,7 +5335,7 @@ function wire() {
       S.hitSel = Math.max(-1, Math.min(rows.length - 1, (S.hitSel ?? -1) + (e.key === 'ArrowDown' ? 1 : -1)));
       renderHits(); $('#hits .h-row.sel')?.scrollIntoView({ block: 'nearest' }); return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; Recent.add(S.q); Learn.add(S.q, id); openItem(id); return; }
+    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; if (!ImgFind.on()) { Recent.add(S.q); Learn.add(S.q, id); } openItem(id); return; }
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && findMode() && Suggest.cur && Suggest.of(inp.value)) { e.preventDefault(); Suggest.cur = Suggest.of(inp.value); Suggest.pick(0); return; } // 104e
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitBox(); }
     if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // 136: Tab / Shift+Tab always change the mode here; Esc leaves the box
@@ -5243,13 +5343,15 @@ function wire() {
   });
   const clip = $('#fileInput').closest('label'); clip.tabIndex = 0; clip.setAttribute('role', 'button'); clip.setAttribute('aria-label', 'Dosya ekle'); // 109c: reachable by keyboard
   clip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileInput').click(); } });
-  $('#fileInput').onchange = e => { if (findMode()) setMode('note'); S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
+  $('#fileInput').onchange = e => { const fs = [...e.target.files]; if (findMode() && fs.length === 1 && ImgFind.isImg(fs[0])) { e.target.value = ''; return ImgFind.run(fs[0]); } // 105f
+    if (findMode()) setMode('note'); S.attach.push(...e.target.files); e.target.value = ''; renderAttach(); };
   $('#attachList').onclick = e => { const b = e.target.closest('[data-rm]'); if (b) { S.attach.splice(+b.dataset.rm, 1); renderAttach(); } };
   // paste anywhere: files become attachments, text goes into the composer
   const ownField = el => el?.closest?.('dialog,[contenteditable="true"],[contenteditable="plaintext-only"]') || (el?.closest?.('input,textarea') && el !== inp); // 109c: a sticky note, an item window or another field keeps its own paste/drop
   document.addEventListener('paste', e => {
     if (ownField(e.target)) return;
     const fs = [...(e.clipboardData?.files || [])];
+    if (fs.length === 1 && findMode() && ImgFind.isImg(fs[0])) { e.preventDefault(); ImgFind.run(fs[0]); return; } // 105f: a screenshot pasted in Ara searches with it
     if (fs.length) { e.preventDefault(); S.attach.push(...fs); renderAttach(); inp.focus(); return; }
     if (e.target.closest('input,textarea')) return;
     const t = e.clipboardData?.getData('text'); if (!t) return;
@@ -5283,6 +5385,7 @@ function wire() {
     e.preventDefault();
     const fs = [...e.dataTransfer.files];
     if (fs.length === 1 && /\.zip$/i.test(fs[0].name)) { importWhatsApp(fs[0]).catch(err => toast('Hata: ' + err.message)); return; }
+    if (fs.length === 1 && findMode() && ImgFind.isImg(fs[0])) return ImgFind.run(fs[0]); // 105f
     if (fs.length) { S.attach.push(...fs); renderAttach(); }
     else { const t = e.dataTransfer.getData('text'); if (t) { inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); } }
   });
@@ -5316,7 +5419,7 @@ function wire() {
     if (e.target.closest('[data-qclr]')) { Recent.clear(); renderHits(); return inp.focus(); }
     if (e.target.closest('[data-aians]')) return aiAnswer(); // 105b
     const sv = e.target.closest('[data-saved]'); if (sv) return Saved.apply(sv.dataset.saved);
-    const o = e.target.closest('[data-open]'); if (o) { Recent.add(S.q); Learn.add(S.q, o.dataset.open); openItem(o.dataset.open); }
+    const o = e.target.closest('[data-open]'); if (o) { if (!ImgFind.on()) { Recent.add(S.q); Learn.add(S.q, o.dataset.open); } openItem(o.dataset.open); }
   };
   $('#hits').addEventListener('pointerdown', e => { if (e.target.closest('button') && e.pointerType === 'mouse') e.preventDefault(); }); // the box keeps the focus
 

@@ -478,12 +478,12 @@
           s = s.trim(); if (s.length < 3) continue;
           const sw = s.split(/[^\p{L}\p{N}]+/u).filter(Boolean).map(w => stripAl(fold(w)));
           const hit = cw.filter(c => sw.some(w => same(w, c))).length; if (hit < need) continue;
-          const dig = /\d/.test(s), sc = hit / cw.length + (num ? (dig ? .6 : -.4) : 0) + .25 * (1 - r / 8) - Math.min(.3, s.length / 1200);
+          const dig = /[\d٠-٩۰-۹]/.test(s), sc = hit / cw.length + (num ? (dig ? .6 : -.4) : 0) + .25 * (1 - r / 8) - Math.min(.3, s.length / 1200);
           if (!best || sc > best.sc) best = { id: d.id, text: s.length > 240 ? s.slice(0, 237).replace(/\s+\S*$/, '') + '…' : s, sc };
         }
       }
     });
-    return best && (!num || /\d/.test(best.text)) ? { id: best.id, text: best.text } : null;
+    return best && (!num || /[\d٠-٩۰-۹]/.test(best.text)) ? { id: best.id, text: best.text } : null;
   }
   // 105g: how alike two searches are (0..1): the share of their words that are the same word ("faturalar" ~ "fatura")
   function qsim(a, b) {
@@ -492,6 +492,29 @@
     return m / Math.max(x.length, y.length);
   }
 
-  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, content, wantsNum, answer, qsim, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
+  // 105f: search with a picture. dhash: RGBA pixels of a 9x8 copy → 64-bit "difference hash" as 16 hex letters (each bit: is this
+  // pixel brighter than its right neighbour). The same screenshot / photo, resized or recompressed, stays within a few bits.
+  function dhash(px) {
+    const g = []; for (let p = 0; p < 72; p++) g.push(px[p * 4] * .299 + px[p * 4 + 1] * .587 + px[p * 4 + 2] * .114);
+    let hex = '';
+    for (let n = 0; n < 16; n++) { let v = 0; for (let b = 0; b < 4; b++) { const k = n * 4 + b, y = k >> 3, x = k & 7; v = v * 2 + (g[y * 9 + x] > g[y * 9 + x + 1] ? 1 : 0); } hex += v.toString(16); }
+    return hex;
+  }
+  const POP = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4];
+  const hamming = (a, b) => { if (!a || !b || a.length !== b.length) return 64; let d = 0; for (let k = 0; k < a.length; k++) d += POP[parseInt(a[k], 16) ^ parseInt(b[k], 16)]; return d; };
+  // how alike a picture is to the searched one (0..1): the fingerprint first (≤ 10 bits off = the same picture), shared colours a little
+  function imgSim(q, c) {
+    const d = hamming(q.ph, c.ph), hs = new Set(q.hues || []), sh = (c.hues || []).filter(h => hs.has(h)).length;
+    const col = hs.size && (c.hues || []).length ? sh / Math.max(hs.size, c.hues.length) : 0;
+    return d <= 10 ? 1 - d / 40 : d <= 20 ? .55 - (d - 10) / 40 + col * .2 : col * .35;
+  }
+  // the text read in a picture → a short search: up to n distinct words (3+ letters, not a pure number), the longer ones first, kept in order
+  function ocrWords(text, n = 6) {
+    const seen = new Set(), ws = [];
+    for (const raw of String(text || '').split(/[^\p{L}\p{N}]+/u)) { const w = fold(raw); if (w.length < 3 || /^\d+$/.test(w) || seen.has(w) || FILL.has(w) || QW.has(w)) continue; seen.add(w); ws.push([raw, ws.length]); }
+    return ws.sort((a, b) => b[0].length - a[0].length).slice(0, n).sort((a, b) => a[1] - b[1]).map(x => x[0]).join(' ');
+  }
+
+  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, content, wantsNum, answer, qsim, dhash, hamming, imgSim, ocrWords, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);
