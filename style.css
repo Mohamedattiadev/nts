@@ -716,7 +716,7 @@ dialog.reader .d-body { gap: 10px; }
   .send.round { width: 40px; padding: 0; }
   .c-hint button { padding: 7px 12px; font-size: 13px; }
   .composer { border-radius: 26px; }
-  .composer textarea { padding: 9px 6px; font-size: 16px; line-height: 22px; }
+  .composer textarea { padding: 11px 6px; font-size: 16px; line-height: 22px; /* 44 px like the + and send buttons → the text sits on their centre line */ }
   .board-tools { bottom: calc(var(--dock-h, 60px) + 20px + env(safe-area-inset-bottom)); right: 8px; transition: opacity .15s; }
   body.typing .board-tools { opacity: 0; pointer-events: none; }
   .board-tools .pct, #zoomIn, #zoomOut { display: none; }

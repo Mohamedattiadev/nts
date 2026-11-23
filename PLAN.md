@@ -495,5 +495,36 @@ Site:
         yapay zekâ imleçleri (120); şimdilik uygulama yalnız web olduğu için "Uygulamayı aç" bağlantısı; GitHub README'ye düğmeyle eklenir
         (github-readme skill). Ayrı klasör `site/`, Pages'te `/nts/site/` ya da kök.
 
+## U. Sahibin 9. geri bildirimi + Locus incelemesi (2026-11-23, ekran görüntüleri sohbette)
+- [x] 125. (2026-11-23: telefonda kutunun yazısı 4 px aşağıdaydı → textarea 44 px, +/gönder ile aynı orta çizgi; masaüstü zaten tam ortada, ölçüldü) Kutu tam ortada mı?
+- [ ] 126. **Taşırken kart başka yere kaçıyor (HATA, önce bu)**: sahip panoda kartı tutup taşırken kart birden en sola gitti ve sayfa
+        "hızlı bir yenilendi". Şüphe: sürükleme sırasında senkron/Live/merge ya da render() pano DOM'unu baştan kuruyor, sürüklenen kartın
+        yerine eski/uzak konum geliyor. Kural: sürükleme (ve kalem) sürerken gelen güncellemeler beklesin (S.dragging → kuyruk, bırakınca uygula),
+        sürüklenen kartın konumunu hiçbir uzak güncelleme ezmesin; render "baştan çizme" değil yerinde fark. Twodevice ile kanıtla: A sürüklerken
+        B bir kayıt eklesin/taşısın → A'daki kart elde kalmalı, titreme/yenilenme yok.
+- [ ] 127. **Liste görünümünde sağdaki önizleme kartı kutunun üstüne biniyor** (1366×768, sahibin ekranı): .peek kutunun (dock) üst kenarında
+        bitsin (max-height / bottom = dock yüksekliği + boşluk) ya da kutu peek'in solunda kalsın; 1280–1920 genişlikte ve telefonda ölç, 0 çakışma.
+- [ ] 128. **Pano kartında etiketler kesiliyor ("# y…")**: kart genişliği yetmiyorsa etiket çipleri alt satıra insin (flex-wrap), hiçbiri yarım
+        görünmesin; çok etiket varsa son çip "+2". 114'teki maske/fade etiket satırına uygulanmasın.
+- [ ] 129. **"Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgileri görünmüyor**: bağlantısı olan kartlar arasında en az ~48 px boşluk
+        (çizginin kıvrımı görünür), bağlı kartlar yan yana/üst üste ama çizgi kartın altında kalmasın. 108 ile birlikte.
+- [ ] 130. **Locus'tan alınacaklar** (Pavel Macek, LinkedIn video 2026-11, macOS "görsel defter"; video indirildi, kare kare + konuşma
+        yazıya döküldü: "every notes app … is made mostly for text and half of what I keep is pictures … gallery, easy to browse visually …
+        when I need more room to think I can use a canvas view … pictures get tagged automatically … plain files in a folder, Markdown and
+        pictures … nothing's locked away in a database"). Kareler: design/ref-locus/ (commit'lenmez, başkasının görüntüsü).
+        (a) **Görsel arama penceresi**: yazdıkça sonuç bir ızgara (resimler büyük, notlar küçük belge kartı); üstte eşleşen etiket çipleri sayılarıyla
+            ("# logo 14"), sağda tür sayıları (Hepsi 50 · Resim 39 · Not 10 · Klasör 0); **Tab = etikete daralt**: etiket kutuya çip olur, altta
+            "Daha da daralt:" birlikte geçen etiketler; sonuçlar yeni yerlerine FLIP ile kayar (titreme yok). Altta tuş ipuçları (↵ Aç · ⇥ Etikete
+            daralt · Ctrl+K Eylemler); ilk satır "Koleksiyon olarak kaydet…" (= kayıtlı arama). 103b/104e/95e ile birlikte yap.
+        (b) **Resimlere otomatik içerik etiketi**: köprü yapay zekâsı resme bakıp 3–6 etiket (nesne, renk, stil, "siyah beyaz", "logo"), OCR'nin yanında;
+            sol çubukta "Bulunan etiketler 1445" sayacı; aramada bu etiketler de bulunur. Köprü yoksa sessizce atla.
+        (c) **Galeri ↔ pano geçişi aynı kartlarla**: görünüm değişince her kart galeri yerinden panodaki yerine uçar (çapraz FLIP), çapraz solma değil.
+            99a masonry galeri ile birlikte.
+        (d) **Koleksiyon/proje kartı**: üstünde 2–3 içeriğin küçük önizlemesi üst üste (klasör sekmesi gibi), altında "3 not · 38 resim".
+        (e) **Notlar ana ızgarada gerçek mini belge**: onay listesi kutucuklarıyla, notun içindeki resim kartta görünür, tıklamadan işaretlenebilir (106a/106d).
+        (f) **Sade görünüm dersi**: bol beyaz, tek vurgu rengi (seçimde 2 px mavi çerçeve), yumuşak gölge, küçük gri yan çubuk yazısı; renkli
+            çipler azken daha temiz. Ayarlara "Sade" görünüm seçeneği düşün (etiket çipleri gri, simgeler tek renk) — sahibe sor.
+        Alınmaz: Mac'e özel yerel uygulama, iCloud, diskte klasör saklama (Nts PWA + IndexedDB + GitHub; Markdown dışa aktarma zaten 107j).
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

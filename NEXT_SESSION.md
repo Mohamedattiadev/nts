@@ -15,9 +15,15 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 111 açık tema telefonda çalışmıyor (d426e46)
 - [x] 109 pano hataları: zoom bazen çalışmıyor, kartlar cihazlar arasında kötü yere kayıyor, içerik ekleme düğmeleri, gün arası çizgi hiç görünmüyor (94bf03e)
 - [x] 113 ">" sekmesi çubuğun dikey ortasında + logo/sol çubuk hizası (b5479b7)
-- [ ] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101
+- [x] 101 TELEFON ÖNCE: phone-audit.mjs (4 boyut × 2 tema, tüm ekranlar/pencereler: üst üste binme, taşma, boş alan, 44 px, güvenli alan, aç/kapa + geri tuşu) → hepsini 0'a indir; PLAN 101 (1d5137f)
+- [x] 125 kutunun yazısı telefonda ortada (bu oturum)
+- [ ] 126 HATA: panoda taşırken kart en sola kaçıyor + sayfa "yenileniyor" → sürüklerken gelen güncelleme beklesin (PLAN 126, twodevice ile kanıtla)
+- [ ] 127 liste görünümünde sağdaki önizleme (.peek) kutunun üstüne biniyor (1366×768) → çakışma 0
+- [ ] 128 pano kartında etiketler kesik ("# y…") → alt satıra insin, gerekirse "+2"
+- [ ] 129 "Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgisi görünmüyor → ≥48 px (108 ile)
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
+- [ ] 130 Locus'tan alınacaklar (PLAN 130 a–f; kareler design/ref-locus/): 130a görsel arama penceresini 103b/104e ile birlikte yap, 130c'yi 99a ile
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
@@ -44,7 +50,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 94c+94d pürüzsüz kalem + resim/iskelet yumuşak yükleme (9164705)
 - [ ] 112 derin kullanıcı testi: her düğme tek tek (masaüstü + telefon)
 - [ ] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi
-- [ ] 114 liste/galeri kartlarında etiket + simge
+- [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
 - [ ] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner
 - [ ] 116 logo = pano seçici (sağ alttan taşı)
 - [ ] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
@@ -80,11 +86,13 @@ TOKEN KURALI (sahip): tutumlu ol. Bir oturumda 2–3 madde yap; sonra PLAN.md ve
 adım), commit + push, `tools/handoff.sh` çalıştır (yeni kitty penceresinde taze oturum açar) ve dur. Hiç [ ] kalmadıysa handoff yapma,
 sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyaları (app.js ~3700 satır) baştan sona okuma, grep ile ilgili yere git.
 
-TAM SIRADAKİ ADIM: 101 (phone-audit.mjs). Önce betiği onar: ilk 4 ekrandan (pano/liste/galeri/yapılacak) sonra bir şey sayfayı uygulamanın
-dışına çıkarıyor (sonraki ekranlarda "Pop is not defined" / "$ is not defined") → büyük olasılıkla kapanış testindeki geri tuşu (page.goBack /
-history.back) geçmiş kısa olunca uygulamadan çıkıyor; her ekrandan önce `location.href` kontrol et, gerekirse p.goto ile geri dön. Sonra bulguları
-0'a indir (s9 koşusu: pano overlap 5 small 10 tight 5, liste/galeri/yapılacak small 7 tight 2-3; toplam small 248 tight 90 overlap 50 = 8 yapılandırma).
-Sonra 102. Sonra handoff.
+TAM SIRADAKİ ADIM: 126 (taşırken kaçan kart — gerçek hata, önce bu), sonra 127 + 128. Sonra handoff. 102'ye başlanmış, commit'lenmemiş
+iş ağaçta duruyor (app.js: AR haritası + growTo(), resim önizlemesi yer tutar ve yumuşakça büyür; style.css'te 114 bloğu 101 bloğunun altına
+taşınmış + yabancı LaTeX bloğu): dokunmadan önce `git diff` ile bak, 102'yi yaparken bunun üstüne devam et.
+
+BİLGİ (2026-11-23, 10. oturum): sahip Locus videosunu (LinkedIn, Pavel Macek) istedi: yt-dlp LinkedIn videosunu doğrudan indiriyor;
+konuşma için scratchpad'de venv + faster-whisper (small, int8), ses ffmpeg ile f32le 16 kHz'e çevrilip numpy dizisi olarak verildi (av sürümü
+metadata_errors hatası veriyor). Bulgular PLAN U/130. 125: telefonda .composer textarea padding 11px (44 px). sw v44.
 
 BİLGİ (2026-11-22, 9. oturum): 109 bitti (94bf03e, v36). Zoom: Board.zoomAt S.cam null'da çıkar; tekerlek ctrl ile, fare tıkı (deltaMode
 ya da |deltaY|≥50) 1,2×, dokunmatik yüzey exp(-d*.01) ±30 sınırlı; düz tekerlek hâlâ kaydırır (sahibe sorulacak: fare tekerleği yakınlaştırsın mı?).
