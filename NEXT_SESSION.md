@@ -73,7 +73,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla — ÖRNEK HAZIR: design/rich-ui.html (35 örnek, ✓/✗ + not, "Seçimlerimi indir"), sahibin seçimi bekleniyor (0a99e99) → SAHİP SEÇTİ (2026-11-23, design/rich-ui-choices.json): ✓ a-link-A/B, a-media-A/B/C, a-pdf-A, a-code-B, a-wa-A/B, a-note-A, b-menu-A/B/C, c-cover-A, c-empty-A, d-count-A/B/C, d-prog-B, d-check-A, d-chart-A/B, e-ans-A/B/C; seçilmeyen: a-link-C, a-pdf-B, a-code-A, a-note-B, c-cover-B, c-empty-B, c-glass-A/B, d-prog-A, d-check-B
 - [x] 106s ÖNCE "AI slop" temizliği (sahip 2026-11-24: "ai slopleri düzelt, hallet" — yeniden SORMA, düzeltip doğrudan 106a'ya geç): rich-ui.html'de
   e-ans-B, e-ans-C, a-quote-A, n-book-A, n-film-A, n-price-A, n-parcel-A, n-gh-A, n-med-A + a-event-B'nin boşlukları. PLAN 106s'deki ölçütlerle;
-  aynı kurallar 106a–e'nin TÜM kartlarına uygulanır (bkz. PLAN 106s)
+  aynı kurallar 106a–e'nin TÜM kartlarına uygulanır (bkz. PLAN 106s) (47b9b79)
 - [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
 - [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
