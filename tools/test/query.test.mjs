@@ -233,7 +233,33 @@ for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:'
   c('videolar', ['Video'], '');
   c('linkedin profili', [], 'linkedin profili');  // "link" inside a word is not a chip
   c('süt al', [], 'süt al');
-  c('pdf ve resim', ['PDF', 'Resim'], 've');
+  c('pdf ve resim', ['PDF', 'Resim'], ''); // 105a: "ve" is a filler word
+  // 105a: chats anywhere, a month without a year, filler words; 105d: questions
+  const nn = q => Q.natural(q, { chats: ['Annem', 'Ali Veli'], now: NOW }), c2 = (q, labels, rest) => { const n = nn(q); eq('nl ' + q, [n.chips.map(x => x.label), n.rest], [labels, rest]); };
+  c2('geçen ay annemin attığı fotoğraflar', ['Geçen ay', 'Annem', 'Resim'], '');
+  c2("Ali'den gelen pdf", ['Ali Veli', 'PDF'], 'gelen');
+  c2('annemden tarif', ['Annem'], 'tarif');
+  c2('ekimde fatura', ['Ekim 2026'], 'fatura');
+  c2('geçen ekim fatura', ['Ekim 2026'], 'fatura'); // in November: the October just gone
+  c2('geçen kasım', ['Kasım 2025'], '');
+  c2('martta fatura', ['Mart 2026'], 'fatura');
+  c2('aralık', [], 'aralık'); // "gap": a bare ambiguous month is a word
+  c2('ocak tamiri', [], 'ocak tamiri');
+  c2('in march invoice', ['Mart 2026'], 'invoice');
+  c2('show me the invoices from last week', ['Geçen hafta'], 'invoices');
+  c2('kümeste kaç sensör var', [], 'kümeste sensör');
+  c2('ne var', [], 'ne var'); // never every word
+  c2('dünkü notlar', ['Dün', 'Not'], '');
+  c2('الصور التي ارسلتها امي', ['Resim'], 'ارسلتها امي');
+  c2('صور في مارس', ['Resim', 'Mart 2026'], '');
+  c2('annem', ['Annem'], '');
+  c2('ann', [], 'ann');
+  eq('nl chat filter', nn('annemin fotoğrafları').filter, 'tür:image sohbet:"Annem"');
+  eq('nl chat ids', items.filter(Q.compile(nn('annemden').filter, { now: NOW }).test).map(i => i.id).join(''), 'e');
+  const it = (q, want) => eq('intent ' + q, Q.intent(q), want);
+  it('kümeste kaç sensör var', 'ask'); it('fatura ödendi mi', 'ask'); it('faturayı ödedim mü', 'ask'); it('fatura?', 'ask'); it('what is my wifi password', 'ask');
+  it('كم عدد الحساسات', 'ask'); it('هل دفعت الفاتورة؟', 'ask'); it('fatura', null); it('iş toplantısı', null); it('mi', null); it('ne', null); it('etiket:x?', null);
+  it('nasıl', null); it('sensör sayısı kaç', 'ask'); it('fatura ne zaman', 'ask'); it('poultry care notes', null); it('kim', null);
   eq('nl span', (({ chips }) => chips.map(x => [x.a, x.b]))(nl('fatura geçen hafta pdf')), [[7, 18], [19, 22]]);
   eq('nl kinds OR', nl('pdf resim').filter, '(tür:pdf | tür:image)');
   eq('nl ids pdf', ids('pdf'), 'c');

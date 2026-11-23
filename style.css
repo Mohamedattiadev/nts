@@ -1335,6 +1335,13 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 .f-tile.doc.has-snip .f-t { -webkit-line-clamp: 1; } /* 104c: the found piece gets the room */
 .f-tile .f-d { margin-top: auto; font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .f-tile mark { background: var(--hit-soft); color: inherit; border-radius: 3px; }
+/* 105a/c: "Anladığım:" before a sentence's chips; a line above the closest results; "Bunu mu demek istedin" */
+.hits.find .f-q .f-und { flex: none; font-size: 12px; color: var(--muted); }
+.hits.find .f-loose { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 12px 0; color: var(--muted); font-size: 12.5px; }
+.hits.find .f-q:has(.f-nl) { overflow-x: auto; scrollbar-width: none; } /* many chips on a phone: they scroll, none is cut */
+.hits.find .f-q:has(.f-nl)::-webkit-scrollbar { display: none; }
+.hits.find .f-sem .f-askq { color: var(--accent); }
+.f-dym b { color: var(--accent); font-weight: 600; }
 .f-none { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 18px 8px; color: var(--muted); font-size: 13px; }
 .hits.find .h-foot { flex: none; margin: 0; padding: 6px 10px; flex-wrap: nowrap; }
 .hits.find .h-foot .link-btn { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -1346,6 +1353,8 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
   .hits.find .f-head .f-nl { height: 44px; padding: 0 8px 0 10px; background: none; position: relative; isolation: isolate; }
   .hits.find .f-head .f-nl::before { content: ''; position: absolute; inset: 6px 0; border-radius: 999px; background: var(--accent-soft); z-index: -1; }
   .hits.find .f-q { overflow-x: auto; scrollbar-width: none; }
+  .hits.find .f-q:has(.f-nl) { flex-wrap: wrap; white-space: normal; row-gap: 0; column-gap: 4px; overflow: visible; } /* 105a: every chip seen, none cut */
+  .hits.find .f-q:has(.f-nl) .f-n { display: none; } /* the count is on "Hepsi" too */
   .f-ty, .f-tag { height: 44px; padding: 0 14px; }
   .hits.find .f-chips { gap: 8px; }
 }

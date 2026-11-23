@@ -355,8 +355,8 @@
 
   // ---------- 104a: plain sentence → filter chips ("geçen hafta pdf", "mart 2024 fatura", "whatsapp annem", "telefondan foto") ----------
   // Only for a query without syntax. Each chip knows the words it came from (a..b in the typed text), so × removes exactly them.
-  const SUF = ['', 'lar', 'ler', 'dan', 'den', 'tan', 'ten', 'da', 'de', 'ta', 'te', 'daki', 'deki', 'taki', 'teki', 'lari', 'leri', 'lardan', 'lerden', 'larda', 'lerde', 'ndan', 'nden', 's', 'es'];
-  const NL_KIND = [['pdf', 'PDF', ['pdf']], ['image', 'Resim', ['foto', 'fotograf', 'resim', 'gorsel', 'photo', 'image', 'picture', 'pic', 'صوره', 'صور']],
+  const SUF = ['', 'lar', 'ler', 'dan', 'den', 'tan', 'ten', 'da', 'de', 'ta', 'te', 'daki', 'deki', 'taki', 'teki', 'lari', 'leri', 'lardan', 'lerden', 'larda', 'lerde', 'ndan', 'nden', 's', 'es', 'ki', 'ku', 'in', 'un', 'nin', 'nun'];
+  const NL_KIND = [['pdf', 'PDF', ['pdf']], ['image', 'Resim', ['foto', 'fotograf', 'resim', 'gorsel', 'photo', 'image', 'picture', 'pic', 'صوره', 'صور', 'الصور', 'الصوره']],
     ['link', 'Link', ['link', 'baglanti', 'رابط', 'روابط']], ['video', 'Video', ['video', 'فيديو', 'فيديوهات']],
     ['audio', 'Ses', ['ses kaydi', 'sesli not', 'audio', 'voice', 'تسجيل']], ['note', 'Not', ['notlar', 'notes', 'ملاحظات', 'ملاحظه']]];
   const NL_SRC = [['whatsapp', 'WhatsApp', ['whatsapp', 'wp', 'واتساب', 'واتس']], ['phone', 'Telefon', ['telefon', 'phone', 'mobile', 'هاتف', 'الهاتف', 'موبايل']],
@@ -372,6 +372,24 @@
   const monthOf = w => { for (const l of MONTHS) { const k = l.findIndex(m => w === m || (w.startsWith(m) && SUF.includes(w.slice(m.length)))); if (k >= 0) return k; } return -1; };
   const LAST = new Set(['son', 'last', 'past', 'اخر']), UNITS = [['d', 'gün', ['gun', 'day', 'days', 'يوم', 'ايام']], ['w', 'hafta', ['hafta', 'week', 'weeks', 'اسبوع', 'اسابيع']],
     ['m', 'ay', ['ay', 'month', 'months', 'شهر', 'اشهر', 'شهور']], ['y', 'yıl', ['yil', 'sene', 'year', 'years', 'سنه', 'سنوات']]];
+  // 105a: words that only make the sentence a sentence ("annemin ATTIĞI fotoğraflar", "SHOW ME the invoices") are dropped, never all of them;
+  // question words too (105d says "ask?" separately). A chat's name counts anywhere with Turkish endings ("annemin", "Ali'den")
+  const FILL = new Set(('ve ile icin bana beni benim bunu sunu tum butun hepsi olan olanlar goster gosterir bul getir attigi attigim attiklari gonderdigi gonderdigim '
+    + 'yolladigi yolladigim paylastigi kaydettigim ekledigim aldigim cektigim ne neler nasil kac neden niye nerede nerde kim kimin hangi hangisi var mi mu '
+    + 'the an my me show find all from of that which sent by with for what how where when who whose is are was did do does any some about '
+    + 'في من الى التي الذي اللي كل عن لي اعرض ابحث ارسل ارسلها ارسلته ما ماذا كيف اين متى هل كم').split(' '));
+  const CHAT_SUF = ['in', 'nin', 'un', 'nun', 'e', 'a', 'ye', 'ya', 'i', 'u', 'yi', 'yu', 'le', 'la', 'yle', 'yla', 'im', 'um', 'ler', 'lar', 's'];
+  // a bare month is a month only when it can't be a common word ("ocak" ocak/stove, "ekim" sowing, "aralık" gap, "may", "Kasım" a name)
+  const BARE_NO = new Set(['ocak', 'ekim', 'aralik', 'kasim', 'may']);
+  const monthChip = (mo, y) => ({ k: 'date', label: `${AYLAR[mo]} ${y}`, q: `tarih:${y}-${String(mo + 1).padStart(2, '0')}` });
+  // 105d: the sentence is a question (to the AI, not a filter): "?" at the end, or it starts with a question word
+  const QW = new Set('ne neden niye nasil kac kim kimin nerede nerde hangi hangisi what why how when where who which whose does did are can should ماذا لماذا كيف كم متى اين هل ما'.split(' '));
+  function intent(q) {
+    const t = String(q || '').trim(); if (!t || !isPlain(t.replace(/\?+$/, ''))) return null;
+    if (/[?؟]$/.test(t)) return 'ask';
+    const w = t.split(/\s+/).map(x => fold(x).replace(/[.,;!?؟]+$/, ''));
+    return w.length >= 2 && (QW.has(w[0]) || QW.has(w[1]) || QW.has(w[w.length - 1]) || w[w.length - 1] === 'mi' || w[w.length - 1] === 'mu') ? 'ask' : null; // "kaç sensör var", "fatura ödendi mi" (ı/ü fold to i/u)
+  }
   function natural(q, opt = {}) {
     const toks = []; let m; const re = /\S+/g;
     while ((m = re.exec(q))) { const raw = m[0], f = fold(raw.split(/['’]/)[0]).replace(/[.,;!?]+$/, ''); toks.push({ a: m.index, b: m.index + raw.length, f }); }
@@ -392,6 +410,14 @@
       const mo = monthOf(w), yr = /^(19|20)\d\d$/.test(w);
       if (mo >= 0 && toks[k + 1] && /^(19|20)\d\d$/.test(toks[k + 1].f)) { const y = toks[k + 1].f; take(k, 2, { k: 'date', label: `${AYLAR[mo]} ${y}`, q: `tarih:${y}-${String(mo + 1).padStart(2, '0')}` }); continue; }
       if (yr && toks[k + 1] && monthOf(toks[k + 1].f) >= 0) { const x = monthOf(toks[k + 1].f); take(k, 2, { k: 'date', label: `${AYLAR[x]} ${w}`, q: `tarih:${w}-${String(x + 1).padStart(2, '0')}` }); continue; }
+      // 105a: "geçen ekim", "martta", "in march", "في مارس": the last such month (this one if we're in it)
+      if (mo >= 0) {
+        const pre = k > 0 && !used.has(k - 1) ? toks[k - 1].f : '', bare = MONTHS.some(l => l[mo] === w), last = pre === 'gecen' || pre === 'last';
+        if (!bare || last || pre === 'in' || pre === 'bu' || pre === 'this' || pre === 'في' || !BARE_NO.has(w)) {
+          const d = new Date(opt.now || Date.now()); let y = d.getFullYear(); if (mo > d.getMonth() || (last && mo === d.getMonth())) y--;
+          const lead = last || pre === 'in' || pre === 'bu' || pre === 'this' || pre === 'في' ? 1 : 0; take(k - lead, 1 + lead, monthChip(mo, y)); continue;
+        }
+      }
       let hit = false;
       for (const [key, label, list] of NL_REL) { for (const p of list) if ((n = phrase(k, p))) { take(k, n, { k: 'date', label, q: `tarih:${REL_Q[key]}` }); hit = true; break; } if (hit) break; }
       if (hit) continue;
@@ -410,15 +436,27 @@
         }
         if (hit) break;
       }
+      if (hit) continue;
+      // 105a: a chat's name anywhere ("annemin attığı", "Ali'den", "ahmet ile"), at least 3 letters so short words don't turn into chats
+      if (w.length >= 3) {
+        const c = chats.find(([, fc]) => fc.split(/\s+/).some(p2 => p2.length >= 3 && (w === p2 || (w.startsWith(p2) && (SUF.includes(w.slice(p2.length)) || CHAT_SUF.includes(w.slice(p2.length)))))));
+        if (c && !chips.some(x => x.k === 'chat' && x.label === c[0])) { take(k, 1, { k: 'chat', label: c[0], q: `sohbet:"${c[0].replace(/"/g, '')}"` }); continue; }
+      }
     }
-    if (!chips.length) return { chips, rest: q, q };
+    // the filler words go, but never every word: "ne var" stays a search for "ne var"
+    const fill = toks.map((t, k) => !used.has(k) && FILL.has(t.f) ? k : -1).filter(k => k >= 0);
+    if (fill.length && (chips.length || fill.length < toks.length - used.size)) fill.forEach(k => used.add(k));
+    if (!chips.length && !fill.some(k => used.has(k))) return { chips, rest: q, q };
     const rest = toks.filter((_, k) => !used.has(k)).map(t => q.slice(t.a, t.b)).join(' ');
-    // several kinds or sources are "any of them"; different groups are "all of them"
-    const grp = k => { const l = chips.filter(c => c.k === k).map(c => c.q); return l.length > 1 ? `(${l.join(' | ')})` : l[0] || ''; };
-    const filt = ['date', 'kind', 'src', 'chat'].map(grp).filter(Boolean).join(' ');
+    const filt = chipFilter(chips);
     return { chips, rest, filter: filt, q: (filt + ' ' + rest).trim() };
   }
+  // several kinds or sources are "any of them"; different groups are "all of them"
+  function chipFilter(chips) {
+    const grp = k => { const l = chips.filter(c => c.k === k).map(c => c.q); return l.length > 1 ? `(${l.join(' | ')})` : l[0] || ''; };
+    return ['date', 'kind', 'src', 'chat'].map(grp).filter(Boolean).join(' ');
+  }
 
-  const api = { fold, compile, isPlain, natural, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
+  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);

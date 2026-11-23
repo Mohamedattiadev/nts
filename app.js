@@ -243,7 +243,7 @@ const qHay = i => { let x = S.idx.get(i.id); if (!x) { indexItem(i); x = S.idx.g
 const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share' ? i.source === 'share' : srcMatch(i, s);
 let qWarnT;
 function runSearch() {
-  const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; clearTimeout(qWarnT);
+  const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; S.loose = null; S.dym = null; clearTimeout(qWarnT);
   if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
@@ -258,19 +258,62 @@ function runSearch() {
   }
   // 104a: in Ara mode a plain sentence gives filter chips: "geçen hafta pdf fatura" → [Geçen hafta] [PDF] + "fatura"
   const nl = findMode() && window.NtsQuery ? NtsQuery.natural(q, { chats: chatNames() }) : null;
-  if (nl?.chips.length) {
-    S.nl = nl; const f = NtsQuery.compile(nl.filter, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
+  if (nl && (nl.chips.length || nl.rest !== q)) { // 105a: chips, or only filler words dropped ("bana faturaları göster" → "faturaları")
+    S.nl = nl; const f = nl.filter ? NtsQuery.compile(nl.filter, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc }) : null;
     const toks = tokens(nl.rest); S.hits = new Map();
     for (const i of S.items) {
-      if (i.deleted || HIDDEN.has(i.type) || !f.test(i)) continue;
+      if (i.deleted || HIDDEN.has(i.type) || (f && !f.test(i))) continue;
       const s = toks.length ? scoreItem(i, toks) : 1 + (i.starred ? .5 : 0); if (s) S.hits.set(i.id, s);
     }
+    if (!S.hits.size) loose(toks, f, nl.chips);
     semMerge(nl.rest.trim(), f);
     return;
   }
   const toks = tokens(q); S.hits = new Map();
   for (const i of S.items) { if (i.deleted) continue; const s = scoreItem(i, toks); if (s) S.hits.set(i.id, s); }
-  if (findMode()) semMerge(q);
+  if (findMode()) { if (!S.hits.size) loose(toks); semMerge(q); }
+}
+// 105c: never an empty result. No item has every word → the ones with the most of them ("en yakınlar"); a sentence's chips found
+// nothing → the words without the chips; and a word nobody wrote → "Bunu mu demek istedin: fatura" from the words that are in the notes
+function loose(toks, f, chips = []) {
+  const fill = g => { for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type) || (g && !g.test(i))) continue; const s = toks.length ? scoreItem(i, toks, true) : 1; if (s) S.hits.set(i.id, s / 10); } };
+  if (toks.length > 1) { fill(f); if (S.hits.size) S.loose = 'any'; }
+  // only chips ("geçen ay annem resim") and nothing has all of them → without one of them (the kind goes first, the person last)
+  if (!S.hits.size && chips.length > 1) {
+    const order = ['kind', 'src', 'date', 'chat'];
+    for (const c of [...chips].sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k))) {
+      const g = NtsQuery.compile(NtsQuery.chipFilter(chips.filter(x => x !== c)), { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
+      fill(g); if (S.hits.size) { S.loose = 'drop'; S.looseLabel = c.label; break; }
+    }
+  }
+  if (!S.hits.size && f && toks.length) { fill(null); if (S.hits.size) S.loose = 'nofilter'; }
+  if (!S.hits.size || S.loose === 'any') S.dym = didYouMean(toks);
+}
+let _voc, _vocOf, _dymC = new Map(); // a typed word's correction is found once per item list (it runs on every key while nothing matches)
+function didYouMean(toks) { // the closest word that is really in the notes (2 letters off; 3 in long words), the most used one wins
+  if (_vocOf !== S.items) { _voc = new Map(); _vocOf = S.items; _dymC = new Map(); for (const i of S.items) { if (i.deleted) continue; const x = S.idx.get(i.id); if (x) for (const w of x.w) if (w.length > 2 && w.length < 24) _voc.set(w, (_voc.get(w) || 0) + 1); } }
+  let fixed = false;
+  const out = toks.map(t => {
+    if (t.length < 3 || _voc.has(t) || /\d/.test(t)) return t;
+    if (_dymC.has(t)) { const c = _dymC.get(t); if (c !== t) fixed = true; return c; }
+    const max = t.length >= 8 ? 3 : 2; let best = null, bd = 9, bn = 0;
+    for (const [w, n] of _voc) { if (Math.abs(w.length - t.length) > max) continue; const d = editDist(w, t, max); if (d <= max && (d < bd || (d === bd && n > bn))) { best = w; bd = d; bn = n; } }
+    _dymC.set(t, best || t); if (best) { fixed = true; return best; } return t;
+  });
+  return fixed ? out.join(' ') : null;
+}
+function editDist(a, b, max) { // Damerau-Levenshtein, stops once every cell of a row is over max
+  let p2 = null, p = Array.from({ length: b.length + 1 }, (_, k) => k);
+  for (let x = 1; x <= a.length; x++) {
+    const c = [x]; let low = x;
+    for (let y = 1; y <= b.length; y++) {
+      let v = Math.min(p[y] + 1, c[y - 1] + 1, p[y - 1] + (a[x - 1] === b[y - 1] ? 0 : 1));
+      if (p2 && x > 1 && y > 1 && a[x - 1] === b[y - 2] && a[x - 2] === b[y - 1]) v = Math.min(v, p2[y - 2] + 1);
+      c.push(v); if (v < low) low = v;
+    }
+    if (low > max) return max + 1; p2 = p; p = c;
+  }
+  return p[b.length];
 }
 // 104f: what the meaning search (Sem) and "Yapay zekâ ile ara" found that the words didn't: added under the word results
 // (score < 1, word hits are >= 1), marked ✦; a sentence's chips (dates, kinds …) still filter them
@@ -1015,7 +1058,7 @@ const Find = {
     if (f.tag && !tags.has(f.tag)) tags.set(f.tag, nItems);
     const top = [...tags].sort((a, b) => (b[0] === f.tag) - (a[0] === f.tag) || b[1] - a[1]).slice(0, narrow() ? 4 : 6);
     const rest = S.nl ? S.nl.rest : q; // 104a: a plain sentence's dates / kinds / sources are chips (× takes the words out of the box)
-    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
+    this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${S.nl?.chips.length ? '<span class="f-und">Anladığım:</span>' : ''}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
     this.set(el, '.f-hlp', S.qHelp ? qHelpHtml() : '');
     const T = [['all', 'Hepsi', all.it.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
@@ -1036,7 +1079,11 @@ const Find = {
       const s = t.querySelector('.f-s'); if (s) { const ss = snipHtml(i, 160, 14); t.classList.toggle('has-snip', ss.includes('snip-src')); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
     });
     old.forEach(n => n.remove()); g.querySelector('.f-none')?.remove();
-    if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">Bulunamadı.<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button><button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button></div>`);
+    // 105c: what to try when nothing (or only the closest) came back
+    const dym = S.dym ? `<button class="btn secondary sm f-dym" data-dym="${esc(S.dym)}">Bunu mu demek istedin: <b dir="auto">${esc(S.dym)}</b></button>` : '';
+    el.querySelector('.f-loose')?.remove(); const askq = window.NtsQuery && NtsQuery.intent(S.q) === 'ask'; // the "Soru gibi" button is below then
+    if (want.length && (S.loose || dym)) g.insertAdjacentHTML('beforebegin', `<div class="f-loose">${S.loose === 'nofilter' ? 'Süzgeçlerle bir şey yok; süzgeçsiz bulunanlar' : S.loose === 'drop' ? `Hepsine uyan yok; “${esc(S.looseLabel)}” olmadan` : S.loose ? 'Hepsini içeren kayıt yok; en yakınlar' : ''}${dym}</div>`);
+    if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">${dym || 'Bulunamadı.'}<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button>${askq ? '' : `<button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>`}</div>`);
     if (anim) {
       const moves = []; for (const [n, a] of before) { if (!n.isConnected) continue; const b = n.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top; if (dx || dy) moves.push([n, dx, dy]); }
       for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
@@ -1215,13 +1262,15 @@ async function aiFind() {
 }
 // the Ara window's line under the results: meaning search state, and with few results the two "look by meaning" buttons
 function semBar(n, q) {
-  const few = n < 5 && q.length >= 3, ai = S.aiFind?.q === S.q ? S.aiFind : null, sem = S.semIds?.size || 0;
+  const few = (n < 5 || !!S.loose) && q.length >= 3, ai = S.aiFind?.q === S.q ? S.aiFind : null, sem = S.semIds?.size || 0;
+  // 105d: it reads like a question → offer Sor (the search still runs, nothing is forced)
+  const ask = window.NtsQuery && NtsQuery.intent(S.q) === 'ask' ? `<button class="btn secondary sm f-askq" data-mode="ask" title="Sor moduna geç (Tab)">${ic('spark', 'sm')}Soru gibi: ${aiTo()} sor</button>` : '';
   const st = Sem.st === 'load' ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam modeli iniyor %${Sem.p}</span>`
     : Sem.st === 'ready' && Sem.left ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam dizini ${Sem.done}/${Sem.done + Sem.left}</span>`
     : sem ? `<span class="f-sem-st">${ic('spark', 'sm')}${sem} anlamca yakın</span>` : '';
   const b = few ? (Sem.on() ? '' : `<button class="btn secondary sm" data-semon title="${esc(Sem.say())}">${ic('search', 'sm')}Anlamca da ara</button>`)
     + `<button class="btn secondary sm" data-aifind${ai?.busy ? ' disabled' : ''}>${ic('spark', 'sm')}${ai?.busy ? `${aiName()} bakıyor…` : `${aiName()} ile ara`}</button>` : '';
-  return st || b ? st + b : '';
+  return st || b || ask ? st + ask + b : '';
 }
 // 103b: live search without redrawing the page: rows/tiles that don't match get a class and leave, the rest slide up (FLIP);
 // scroll, images and everything else stay. Only when a match is not on the page yet is the view drawn once (then narrowing is classes again)
@@ -5191,6 +5240,10 @@ function wire() {
   $('#hits').onclick = e => {
     if (e.target.closest('[data-clear]')) { clearBox(); return inp.focus(); }
     const nx = e.target.closest('[data-nlx]'); if (nx) { dropChip(+nx.dataset.nlx); return inp.focus(); }
+    const dy = e.target.closest('[data-dym]'); if (dy) { // 105c: the fixed words replace the typed ones, the chips stay
+      const v = S.nl ? (S.nl.chips.map(c => S.q.trim().slice(c.a, c.b)).join(' ') + ' ' + dy.dataset.dym).trim() : dy.dataset.dym;
+      inp.value = v; S.q = v; S.searchOn = true; S.hitSel = -1; runSearch(); autoGrow(); render(); return inp.focus();
+    }
     if (e.target.closest('[data-semon]')) { Sem.enable(); renderHits(); return inp.focus(); }
     if (e.target.closest('[data-aifind]')) { aiFind(); return inp.focus(); }
     if (e.target.closest('[data-all]')) { S.cam = null; return hideHits(); } // the page is already filtered: just put the window away
