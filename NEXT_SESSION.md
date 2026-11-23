@@ -39,7 +39,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 126 HATA: panoda taşırken kart en sola kaçıyor + sayfa "yenileniyor" → sürüklerken gelen güncelleme beklesin (PLAN 126, twodevice ile kanıtla) (9f10873)
 - [x] 127 liste görünümünde sağdaki önizleme (.peek) kutunun üstüne biniyor (1366×768) → çakışma 0 (9f10873)
 - [x] 128 pano kartında etiketler kesik ("# y…") → alt satıra insin, gerekirse "+2" (9f10873)
-- [ ] 129 "Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgisi görünmüyor → ≥48 px (108 ile)
+- [~B] 129 "Düzenle" bağlı kartları çok yakın koyuyor, bağ çizgisi görünmüyor → ≥48 px (108 ile)
 - [ ] 102 (başlangıç işi tools/wip-102.patch: `git apply tools/wip-102.patch`, resim önizlemesi yer tutar + growTo; sonra patch'i sil) hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
 - [ ] 130 Locus'tan alınacaklar (PLAN 130 a–f; kareler design/ref-locus/): 130a görsel arama penceresini 103b/104e ile birlikte yap, 130c'yi 99a ile
