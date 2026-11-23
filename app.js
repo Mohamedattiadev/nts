@@ -4974,7 +4974,7 @@ const GH = { // old way: a private GitHub repo + token (kept under Advanced)
       headers: { authorization: 'Bearer ' + S.settings.ghToken, accept, 'x-github-api-version': '2022-11-28', ...(opt.headers || {}) },
     });
   },
-  status(msg) { S.syncMsg = msg; const el = $('#syncMsg'); if (el) el.textContent = msg; },
+  status(msg) { S.syncMsg = msg; const el = $('#syncMsg'); if (el) el.textContent = msg; }, // 110: only Sync.set calls this now
   schedule() { if (!this.ready()) return; clearTimeout(this._t); this._t = setTimeout(() => this.run(), 2500); },
   async put(path, bytes, sha, message, repo) {
     bytes = await Crypt.seal(bytes);
@@ -5052,7 +5052,7 @@ const GH = { // old way: a private GitHub repo + token (kept under Advanced)
   async run(retry = true) {
     if (!this.ready() || this.busy) { if (this.busy) this.again = true; return; }
     if (!navigator.onLine) return;
-    this.busy = true; this.status('Senkronlanıyor…');
+    this.busy = true; Sync.set({ phase: 'busy' });
     try {
       await this.uploadFiles();
       // pull months that changed remotely
@@ -5080,10 +5080,10 @@ const GH = { // old way: a private GitHub repo + token (kept under Advanced)
         dirty.delete(m); await DB.put('kv', shas, 'shas'); await DB.put('kv', [...dirty], 'dirty');
       }
       await DB.put('kv', shas, 'shas');
-      this.status(`✓ ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt${S.repoKB ? ` · repo ${Math.round(S.repoKB / 1024)} MB` : ''}`);
+      Sync.set({ phase: 'ok', at: now(), err: '' });
       this.checkSize().catch(() => { });
-    } catch (e) { console.warn('sync', e); this.status('Hata: ' + e.message); }
-    this.busy = false;
+    } catch (e) { console.warn('sync', e); Sync.set({ phase: 'err', err: e.message }); }
+    this.busy = false; Sync.count();
     if (this.again) { this.again = false; this.schedule(); }
   },
 };
@@ -5192,7 +5192,7 @@ const Cloud = {
   },
   async signOut() {
     try { await fetch(SB.url + '/auth/v1/logout?scope=local', { method: 'POST', headers: { apikey: SB.key, authorization: 'Bearer ' + this.s?.access_token } }); } catch { }
-    Live.stop(); await this.keep(null); GH.status('');
+    Live.stop(); await this.keep(null); Sync.set({ phase: 'idle', err: '', at: 0, n: 0 });
   },
   async token() {
     if (!this.s) throw new Error('Giriş yapılmadı');
@@ -5327,15 +5327,15 @@ const Cloud = {
   async run() {
     if (!this.on() || !navigator.onLine) return;
     if (this.busy) { this.again = true; return; }
-    this.busy = true; GH.status('Senkronlanıyor…');
+    this.busy = true; Sync.set({ phase: 'busy' });
     try {
       await this.pull();
       if (await this.uploadFiles()) this.again = true;
       if (await this.push()) Live.ping();
-      GH.status(`✓ ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt`);
+      Sync.set({ phase: 'ok', at: now(), err: '' });
       (window.requestIdleCallback || setTimeout)(() => this.pullHeavy(), { timeout: 4000 }); // readable copies, PDF text, OCR: after, in the background
-    } catch (e) { console.warn('cloud', e); GH.status('Hata: ' + e.message); }
-    this.busy = false;
+    } catch (e) { console.warn('cloud', e); Sync.set({ phase: 'err', err: e.message }); }
+    this.busy = false; Sync.count();
     if (this.again) { this.again = false; this.schedule(); }
   },
 };
@@ -5403,7 +5403,45 @@ const Sync = {
   ready() { return Cloud.on() || GH.ready(); },
   schedule() { Cloud.on() ? Cloud.schedule() : Repo.on() ? (clearTimeout(this._r), this._r = setTimeout(() => Repo.uploadFiles(), 2500)) : GH.schedule(); },
   run() { return Cloud.on() ? Cloud.run() : Repo.on() ? Repo.uploadFiles() : GH.run(); },
-  async markDirty(list, base) { await GH.markDirty([...new Set(list.map(i => monthOf(i.ts)))]); await Cloud.markDirty(list.map(i => i.id), base); },
+  async markDirty(list, base) { await GH.markDirty([...new Set(list.map(i => monthOf(i.ts)))]); await Cloud.markDirty(list.map(i => i.id), base); this.count(); },
+  // 110: ONE sync state, one place that shows it (the cloud button top right) and one sentence that explains it.
+  // phase: idle (never ran) · busy · ok · err; n = changes on this device not yet sent; at = last good sync
+  st: { phase: 'idle', err: '', at: 0, n: 0 },
+  set(p) { Object.assign(this.st, p); this.paint(); },
+  async count() { const n = Cloud.on() ? ((await DB.get('kv', 'sb-dirty')) || []).length : GH.ready() ? ((await DB.get('kv', 'dirty')) || []).length : 0; if (n !== this.st.n) this.set({ n }); },
+  view() { // → { k: ok|busy|wait|off|err, t: short label, d: the sentence }
+    const s = this.st, n = s.n, ch = `${n} değişiklik`, when = s.at ? new Date(s.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+    if (!this.ready()) return null;
+    if (!navigator.onLine) return { k: 'off', t: 'Çevrimdışı', d: n ? `İnternet yok. ${ch} bu cihazda güvende, bağlanınca kendiliğinden gider.` : 'İnternet yok. Yazdıkların bu cihazda güvende, bağlanınca gider.' };
+    if (s.phase === 'busy') return { k: 'busy', t: 'Gönderiyor', d: n ? `${ch} gönderiliyor…` : 'Öteki cihazlarla eşitleniyor…' };
+    if (s.phase === 'err') { const e = s.err || '', why = /40[13]|token|oturum|giriş/i.test(e) ? 'Oturumun düşmüş olabilir; Ayarlar\'dan yeniden Google ile gir.' : /GitHub/.test(e) ? e + '.' : /50\d|Failed to fetch|NetworkError|network|zaman/i.test(e) ? 'Sunucuya şu an ulaşılamıyor.' : e + '.';
+      return { k: 'err', t: 'Sorun', d: `${why} Kayıtların bu cihazda güvende${n ? ` (${ch} bekliyor)` : ''}; biraz sonra kendiliğinden yeniden denenecek.` }; }
+    if (n) return { k: 'wait', t: 'Sırada', d: `${ch} birazdan gönderilecek.` };
+    if (s.phase === 'ok') return { k: 'ok', t: 'Eşit', d: `Her şey eşit: telefon ve bilgisayar aynı kayıtları görüyor.${when ? ` Son eşitleme ${when}.` : ''}` };
+    return { k: 'busy', t: 'Bağlanıyor', d: 'İlk eşitleme bekleniyor…' };
+  },
+  paint() {
+    const v = this.view(), b = $('#syncBtn');
+    const msg = v ? (v.k === 'ok' ? `✓ ${new Date(this.st.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt${S.repoKB && !Cloud.on() ? ` · repo ${Math.round(S.repoKB / 1024)} MB` : ''}` : v.d) : '';
+    GH.status(msg);
+    if (b) { b.hidden = !v; if (v) { if (b.dataset.k !== v.k) { b.dataset.k = v.k; b.innerHTML = (v.k === 'busy' || v.k === 'wait' ? `<span class="sy-r">${ic('repeat')}</span>` : ic('cloud') + `<span class="sy-g" aria-hidden="true">${v.k === 'ok' ? ic('check', 'sm') : v.k === 'err' ? '!' : ''}</span>`) + '<span class="sy-n"></span>'; }
+      b.querySelector('.sy-n').textContent = (v.k === 'off' || v.k === 'wait') && this.st.n ? (this.st.n > 99 ? '99+' : this.st.n) : '';
+      b.title = b.ariaLabel = `Senkron: ${v.t}`; } }
+    const p = $('#syncPop'); if (p && !p.hidden) this.pop(true);
+  },
+  pop(redraw) { // tap the cloud: what is happening, in one sentence, + Şimdi eşitle
+    let p = $('#syncPop'); const b = $('#syncBtn'), v = this.view();
+    if (!redraw && p && !p.hidden) { p.hidden = true; return; }
+    if (!v) { if (p) p.hidden = true; return; }
+    if (!p) { p = document.createElement('div'); p.id = 'syncPop'; p.className = 'pop sync-pop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Senkron durumu'); document.body.appendChild(p);
+      document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#syncPop,#syncBtn')) p.hidden = true; });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && !p.hidden) p.hidden = true; });
+      p.addEventListener('click', e => { const d = e.target.closest('[data-sy]')?.dataset.sy; if (d === 'now') { this.set({ err: '' }); this.run(); } else if (d === 'set') { p.hidden = true; openSettings(); } }); }
+    p.dataset.k = v.k;
+    p.innerHTML = `<div class="sy-h"><span class="sy-dot"></span><b>${esc(v.t)}</b>${Cloud.on() ? `<small>${esc(Cloud.email())}</small>` : '<small>GitHub</small>'}</div><p class="sy-d" dir="auto">${esc(v.d)}</p>
+      <div class="sy-a">${v.k === 'busy' || v.k === 'off' ? '' : `<button class="btn secondary sm" data-sy="now">${ic('repeat', 'sm')}Şimdi eşitle</button>`}<button class="btn ghost sm" data-sy="set">Ayarlar</button></div>`;
+    if (!redraw) { const r = b.getBoundingClientRect(); p.hidden = false; p.style.top = r.bottom + 8 + 'px'; p.style.right = Math.max(8, innerWidth - r.right) + 'px'; p.style.left = 'auto'; }
+  },
   downloadFile(i) { return i.sbPath ? Cloud.downloadFile(i) : GH.downloadFile(i); },
 };
 
@@ -5752,7 +5790,7 @@ const Repo = {
         await upsert([{ ...byId(i.id), ghRepo: repo, ghPath: path, ...(ghThumb ? { ghThumb } : {}), fileSynced: true }]); n++;
         S.repoKB = (S.repoKB || 0) + blob.size / 1024; if (S.repoKB > this.LIMIT_KB) this.checked = 0;
       }
-    } catch (e) { console.warn('repo', e); GH.status('GitHub: ' + e.message); } finally { this.busy = false; }
+    } catch (e) { console.warn('repo', e); Sync.set({ phase: 'err', err: 'GitHub: ' + e.message }); } finally { this.busy = false; }
     return n;
   },
 };
@@ -6107,6 +6145,8 @@ function wire() {
   });
 
   $('#settingsBtn').onclick = openSettings;
+  $('#syncBtn').onclick = e => { e.stopPropagation(); Sync.pop(); };
+  addEventListener('offline', () => Sync.paint());
   $('#waInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importWhatsApp(f).catch(err => toast('Hata: ' + err.message)); } };
   $('#bmInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importBookmarks(f).catch(err => toast('Hata: ' + err.message)); } };
   $('#backupInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importBackup(f).catch(err => toast('Hata: ' + err.message)); } };
@@ -6118,7 +6158,7 @@ function wire() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) Cloud.flush(); });
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
-  addEventListener('online', () => { Sync.schedule(); Live.check(); });
+  addEventListener('online', () => { Sync.paint(); Sync.schedule(); Live.check(); });
   Board.init(); Back.init(); Folders.init(); Morph.init(); Native.init();
 }
 function setView(v) {
@@ -6186,7 +6226,7 @@ const Boot = {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setTimeout(() => Sem.start(), 3000); /* 104f */ setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
-  Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
+  Sync.paint(); Sync.count(); Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
   AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();
