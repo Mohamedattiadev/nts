@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nts · Klasör kartı örnekleri (131-0)</title>
+<title>Nts · Klasör kartı örnekleri (131-0b)</title>
 <style>
 /* Same colour tokens as style.css so the chosen style drops straight into the app */
 :root, [data-theme="dark"] {
@@ -31,7 +31,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
 body { font: 14.5px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 60px max(20px, env(safe-area-inset-left)); }
+  -webkit-tap-highlight-color: transparent; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 110px max(20px, env(safe-area-inset-left)); }
 .wrap { max-width: 1100px; margin: 0 auto; }
 header.top { display: flex; align-items: center; gap: 12px; margin: 8px 0 6px; }
 header.top h1 { font-size: 19px; margin: 0; font-weight: 650; letter-spacing: -.01em; flex: 1; }
@@ -80,7 +80,7 @@ section.style > .note { color: var(--text-2); margin: 0 0 16px; font-size: 13.5p
 .a7 { background: linear-gradient(#0f172a, #1e293b); }
 .a7::after { content: "L"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 26px/1 Inter, system-ui, sans-serif; color: #fff; }
 .a8 { background: conic-gradient(from 210deg at 60% 60%, #f6d365, #fda085, #f6d365); }
-.fav-g { background: #24292f; } .fav-y { background: #ff0000; } .fav-w { background: #25d366; } .fav-d { background: #e44d26; }
+.fav-g { background: #24292f; } [data-theme="dark"] .fav-g { background: #d0d7de; } .fav-y { background: #ff0000; } .fav-w { background: #25d366; } .fav-d { background: #e44d26; }
 
 /* ---------- A · Cep (Locus-like folder: back + tab, items peek out, frosted front cover) ---------- */
 .fold { all: unset; position: relative; display: block; cursor: pointer; border-radius: 16px; min-width: 0; -webkit-tap-highlight-color: transparent; }
@@ -133,6 +133,133 @@ section.style > .note { color: var(--text-2); margin: 0 0 16px; font-size: 13.5p
 .fc .more { position: relative; }
 .fc .more span { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / .42); color: #fff; font-weight: 650; font-size: 13px; z-index: 2; }
 
+/* ---------- round 2 (131-0b): seven more directions ---------- */
+.tag.new { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.flow .it, .fe .row .it, .fg .strip .it, .ff .mos .it { position: relative; box-shadow: none; min-width: 0; }
+.fd .name, .fd .count, .fj .name { text-align: inherit; }
+
+/* D · Dosya: native Finder / Files folder in the folder's colour, front flap tilts open */
+.fd { text-align: center; padding: 8px 4px 6px; }
+.fd .ico { position: relative; width: 76%; margin: 0 auto 8px; aspect-ratio: 1.3; perspective: 420px; }
+.fd .bk { position: absolute; inset: 12% 0 0; border-radius: 5px 12px 12px 12px; background: color-mix(in oklab, var(--c) 82%, #000); }
+.fd .bk::before { content: ""; position: absolute; left: 0; bottom: 100%; width: 40%; height: 14%; min-height: 9px; border-radius: 6px 8px 0 0; background: inherit; }
+.fd .peek { position: absolute; inset: 18% 9% 20%; }
+.fd .peek .it { top: 0; height: 100%; width: 58%; }
+.fd .peek .it:nth-child(1) { left: 0; transform: rotate(-5deg); } .fd .peek .it:nth-child(2) { right: 0; transform: rotate(4deg) translateY(4px); }
+.fd .fr { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; border-radius: 9px 9px 12px 12px; transform-origin: 50% 100%;
+  background: linear-gradient(color-mix(in oklab, var(--c) 62%, #fff), color-mix(in oklab, var(--c) 80%, #fff));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), 0 1px 3px rgb(0 0 0 / .15); display: grid; place-items: center;
+  font: 800 clamp(20px, 3.6vw, 30px)/1 Inter, system-ui, sans-serif; color: color-mix(in oklab, var(--c) 70%, #000); opacity: .97;
+  transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fd .fr span { opacity: .45; }
+.fd .peek .it { transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fd:hover .fr, .fd:focus-visible .fr { transform: rotateX(-24deg); }
+.fd:hover .peek .it:nth-child(1), .fd:focus-visible .peek .it:nth-child(1) { transform: rotate(-8deg) translateY(-10px); }
+.fd:hover .peek .it:nth-child(2), .fd:focus-visible .peek .it:nth-child(2) { transform: rotate(7deg) translateY(-7px); }
+.fd .name { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 6px; }
+.fd:focus-visible { outline: none; } .fd:focus-visible .name { background: var(--accent); color: var(--bg); }
+
+/* E · Ayraç: binder divider tab in the folder colour, paper edges behind, 3 square thumbs */
+.fe { padding-top: 24px; }
+.fe .tab { position: absolute; top: 0; left: 12px; max-width: calc(100% - 40px); height: 28px; padding: 0 12px; border-radius: 10px 10px 0 0;
+  background: var(--c); color: #fff; font-size: 12.5px; font-weight: 650; line-height: 27px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: transform .18s cubic-bezier(.2, .8, .2, 1); }
+.fe .pg { position: absolute; left: 6px; right: 0; top: 30px; bottom: -6px; border-radius: 6px 14px 14px 14px; background: var(--surface-2); border: 1px solid var(--line);
+  transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+.fe .pg + .pg { left: 12px; right: -6px; top: 36px; bottom: -12px; background: var(--surface-3); z-index: -1; }
+.fe .body { position: relative; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 4px 14px 14px 14px;
+  padding: 10px; box-shadow: var(--sh-1); }
+.fe .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.fe .row .it { aspect-ratio: 1; border-radius: 8px; padding: 6px; }
+.fe .row .it.note i, .fe .row .it.note u { display: none; }
+.fe .count { margin-top: 8px; }
+.fe { isolation: isolate; }
+.fe:hover .tab, .fe:focus-visible .tab { transform: translateY(-4px); }
+.fe:hover .pg, .fe:focus-visible .pg { transform: translate(3px, 3px) rotate(1deg); }
+
+/* F · Kolaj: edge-to-edge mosaic of 4, name on a dark fade */
+.ff { border-radius: 18px; overflow: hidden; aspect-ratio: 1.1; box-shadow: var(--sh-1); background: var(--surface-2); }
+.ff .mos { position: absolute; inset: 0; display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: 1fr 1fr 1fr; grid-template-areas: "a b" "a c" "d c"; gap: 2px;
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+.ff .mos .it { border-radius: 0; } .ff .mos .it:nth-child(1) { grid-area: a; } .ff .mos .it:nth-child(2) { grid-area: b; }
+.ff .mos .it:nth-child(3) { grid-area: c; } .ff .mos .it:nth-child(4) { grid-area: d; }
+.ff .mos .it.note, .ff .mos .it.link { border: 0; }
+.ff .ov { position: absolute; left: 0; right: 0; bottom: 0; padding: 34px 12px 10px; background: linear-gradient(transparent, rgb(0 0 0 / .78)); }
+.ff .ov .name { color: #fff; } .ff .ov .count { color: rgb(255 255 255 / .82); }
+.ff:hover .mos, .ff:focus-visible .mos { transform: scale(1.05); }
+.ff:active { transform: scale(.985); }
+
+/* G · Şerit: one calm row, name left, a strip of small thumbs that slides on hover */
+.grid.rows { grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 10px 16px; }
+@media (max-width: 600px) { .grid.rows { grid-template-columns: 1fr; gap: 8px; } }
+.fg { display: flex; align-items: center; gap: 12px; padding: 9px 10px 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  min-height: 64px; transition: background .15s, box-shadow .15s; }
+.fg .ic, .fc .cap .ic { width: 22px; height: 17px; flex: none; position: relative; }
+.fg .ic::before { content: ""; position: absolute; inset: 3px 0 0; border-radius: 2px 4px 4px 4px; background: var(--c); }
+.fg .ic::after { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 5px; border-radius: 2px 2px 0 0; background: var(--c); }
+.fg .txt { min-width: 0; flex: 0 1 36%; }
+.fg .strip { flex: 1; display: flex; gap: 4px; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 78%, transparent); mask-image: linear-gradient(90deg, #000 78%, transparent); }
+.fg .strip .it { flex: none; width: 46px; height: 46px; border-radius: 9px; padding: 5px; transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fg .strip .it.note i, .fg .strip .it.note u, .fg .strip .it.link small { display: none; } .fg .strip .it b { font-size: 8px; white-space: normal; }
+.fg .strip .it.link em { width: 11px; height: 11px; margin-bottom: 3px; }
+.fg .chev { flex: none; color: var(--muted); font-size: 20px; line-height: 1; }
+.fg:hover, .fg:focus-visible { background: var(--surface-2); box-shadow: var(--sh-1); }
+.fg:hover .strip .it, .fg:focus-visible .strip .it { transform: translateX(-8px); }
+
+/* H · Çekmece: card-catalogue drawer, records stand in the slot, label plate on the front */
+.fh { aspect-ratio: 1.22; }
+.fh .slot { position: absolute; left: 7%; right: 7%; top: 14%; bottom: 40%; border-radius: 8px 8px 0 0;
+  background: color-mix(in oklab, var(--text) 10%, var(--surface-3)); box-shadow: inset 0 8px 14px rgb(0 0 0 / .22); }
+.fh .slot .it { top: -10%; height: 110%; width: 42%; transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fh .slot .it:nth-child(1) { left: 5%; } .fh .slot .it:nth-child(2) { left: 29%; top: -2%; z-index: 1; } .fh .slot .it:nth-child(3) { right: 5%; top: 4%; z-index: 2; }
+.fh .front { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; z-index: 3; border-radius: 6px 6px 14px 14px;
+  background: linear-gradient(var(--surface), var(--surface-2)); border: 1px solid var(--line-2); box-shadow: var(--sh-1), inset 0 1px 0 var(--f-edge);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fh .plate { max-width: 100%; min-width: 0; border: 1.5px solid var(--line-2); border-left: 4px solid var(--c); border-radius: 5px; padding: 2px 10px; background: var(--paper); text-align: center; }
+.fh .plate .name { font-size: 13px; } .fh .plate .count { font-size: 11px; margin: 0; }
+.fh .pull { width: 30%; height: 6px; border-radius: 0 0 8px 8px; background: var(--line-2); flex: none; }
+.fh:hover .front, .fh:focus-visible .front { transform: translateY(5px); }
+.fh:hover .slot .it, .fh:focus-visible .slot .it { transform: translateY(-12px); }
+.fh:hover .slot .it:nth-child(2), .fh:focus-visible .slot .it:nth-child(2) { transition-delay: .03s; }
+.fh:hover .slot .it:nth-child(3), .fh:focus-visible .slot .it:nth-child(3) { transition-delay: .06s; }
+
+/* I · Zarf: open envelope in a soft tint of the folder colour, records slide up out of it */
+.fi { aspect-ratio: 1.3; }
+.fi .flap { position: absolute; left: 0; right: 0; top: 0; height: 26%; background: color-mix(in oklab, var(--c) 34%, var(--surface)); clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+.fi .back { position: absolute; inset: 26% 0 0; border-radius: 0 0 12px 12px; background: color-mix(in oklab, var(--c) 26%, var(--surface)); box-shadow: var(--sh-1); }
+.fi .peek { position: absolute; left: 12%; right: 12%; top: 14%; height: 60%; z-index: 1; }
+.fi .peek .it { inset: 0; transition: transform .24s cubic-bezier(.2, .8, .2, 1); }
+.fi .peek .it:nth-child(1) { transform: rotate(-4deg) translateX(-6%); } .fi .peek .it:nth-child(2) { transform: rotate(3deg) translateX(6%) translateY(4%); }
+.fi .front { position: absolute; left: 0; right: 0; bottom: 0; top: 40%; z-index: 2; border-radius: 0 0 12px 12px;
+  background: color-mix(in oklab, var(--c) 18%, var(--surface)); clip-path: polygon(0 0, 50% 34%, 100% 0, 100% 100%, 0 100%);
+  display: flex; flex-direction: column; justify-content: flex-end; padding: 0 12px 10px; box-shadow: inset 0 -1px 0 var(--line); }
+.fi:hover .peek .it:nth-child(1), .fi:focus-visible .peek .it:nth-child(1) { transform: rotate(-7deg) translate(-9%, -16%); }
+.fi:hover .peek .it:nth-child(2), .fi:focus-visible .peek .it:nth-child(2) { transform: rotate(5deg) translate(8%, -22%); transition-delay: .04s; }
+
+/* J · Deste: straight album stack (3 layers), round count badge */
+.fj .st { position: relative; aspect-ratio: 1.15; }
+.fj .st .it { border-radius: 12px; transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fj .st .it.l3 { left: 12%; right: 12%; top: 0; bottom: 16%; filter: brightness(.82); }
+.fj .st .it.l2 { left: 6%; right: 6%; top: 7%; bottom: 8%; filter: brightness(.92); }
+.fj .st .it.l1 { left: 0; right: 0; top: 14%; bottom: 0; box-shadow: var(--sh-2); }
+.fj .st .it.note, .fj .st .it.link { padding: 12px 13px; } .fj .st .it b { font-size: 11px; }
+.fj .badge { position: absolute; right: -6px; top: calc(14% - 11px); z-index: 4; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px;
+  background: var(--accent); color: var(--bg); font-weight: 750; font-size: 12.5px; line-height: 28px; text-align: center; box-shadow: 0 0 0 3px var(--bg); }
+.fj .cap { padding: 8px 2px 0; }
+.fj:hover .st .it.l2, .fj:focus-visible .st .it.l2 { transform: translateY(-5px); }
+.fj:hover .st .it.l3, .fj:focus-visible .st .it.l3 { transform: translateY(-10px); }
+.fj:hover .st .it.l1, .fj:focus-visible .st .it.l1 { transform: translateY(2px); }
+
+/* picks: ✓ / ✗ + note, bottom bar with download */
+.pick textarea { flex: 1 1 240px; min-height: 44px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
+  font: inherit; padding: 10px 12px; resize: vertical; }
+.pick textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.send { position: sticky; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 5; display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  margin: 10px auto 0; max-width: 1100px; padding: 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-2); }
+.send span { flex: 1; color: var(--text-2); padding-left: 8px; }
+.send .pri { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .fold *, .fold { transition: none !important; } }
+
 /* ---------- open: card grows into the folder (FLIP) ---------- */
 .sheet { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: none; flex-direction: column;
   padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left)); overflow: auto; }
@@ -153,8 +280,9 @@ section.style > .note { color: var(--text-2); margin: 0 0 16px; font-size: 13.5p
     <h1>Klasör kartı örnekleri</h1>
     <button class="btn" id="theme" aria-label="Açık / koyu tema">◐ Tema</button>
   </header>
-  <p class="lead">Madde 131-0 (+130d). Galerinin ve listenin en üstünde duracak yapay zekâ klasörleri için üç stil. Üstüne gel (telefonda dokun):
-    içindekiler biraz kalkar. Tıkla: kart klasörün içine büyüyerek açılır, geri tuşu / Esc kapatır. Her stile ✓ ya da ✗ ver, istersen not yaz.</p>
+  <p class="lead">Madde 131-0b. Galerinin ve listenin en üstünde duracak yapay zekâ klasörleri. A–C ilk turdakiler (hiçbirini seçmedin, kaldılar);
+    D–J <b>7 yeni, birbirinden farklı yön</b>. Üstüne gel: içindekiler kıpırdar. Tıkla: kart klasörün içine büyüyerek açılır, geri tuşu / Esc kapatır.
+    Her stile ✓ ya da ✗ ver, istersen not yaz (ör. "D'nin rengi + F'nin içi"), en altta <b>Seçimlerimi indir</b> → folders-choices.json.</p>
 
   <section class="style" data-s="A">
     <h2>A · Cep <span class="tag">Locus'a en yakın</span></h2>
@@ -173,7 +301,50 @@ section.style > .note { color: var(--text-2); margin: 0 0 16px; font-size: 13.5p
     <p class="note">Beyaz kart, üstte 1 büyük + 2 küçük önizleme (fazlası "+10"), altta renkli küçük klasör simgesi + ad + sayı. En sakin ve en okunur; 40 klasörde bile düzenli görünür, ama "klasör" hissi en azı bu.</p>
     <div class="grid" data-kind="C"></div>
   </section>
+
+  <section class="style" data-s="D">
+    <h2>D · Dosya <span class="tag new">YENİ</span> <span class="tag">Mac / Dosyalar gibi</span></h2>
+    <p class="note">Bilgisayardaki gerçek klasör simgesi, klasörün renginde; önünde baş harfi kabartma. Üstüne gelince ön kapak öne eğilir, içindeki iki kayıt kalkar. Ad altta ortalı, seçilince ad vurgulanır (Finder gibi). En tanıdık; ama içerik en küçük burada görünür.</p>
+    <div class="grid" data-kind="D"></div>
+  </section>
+
+  <section class="style" data-s="E">
+    <h2>E · Ayraç <span class="tag new">YENİ</span> <span class="tag">renkli sekme</span></h2>
+    <p class="note">Dosya ayracı: üstte klasör renginde sekmede ad, arkada iki kâğıt kenarı, içinde 3 kare küçük resim. Renk hemen ayırt ettirir; 40 klasörde bile hangisi hangisi belli. Üstüne gelince sekme kalkar, kâğıtlar kayar.</p>
+    <div class="grid" data-kind="E"></div>
+  </section>
+
+  <section class="style" data-s="F">
+    <h2>F · Kolaj <span class="tag new">YENİ</span> <span class="tag">kenardan kenara</span></h2>
+    <p class="note">Kutu yok, kenar yok: 4 kayıt bir büyük + üç küçük mozaik hâlinde kartı tamamen doldurur, ad altta koyu geçişin üstünde beyaz. En görsel, galeriyle en uyumlu; notlu klasörlerde daha sade kalır.</p>
+    <div class="grid" data-kind="F"></div>
+  </section>
+
+  <section class="style" data-s="G">
+    <h2>G · Şerit <span class="tag new">YENİ</span> <span class="tag">tek satır</span></h2>
+    <p class="note">Liste satırı: renkli klasör simgesi + ad + sayı, yanında küçük resim şeridi, sonda ›. En az yer kaplar (telefonda tek sütun, 6 klasör bir ekrana sığar); listenin üstü için en uygun. Üstüne gelince şerit kayar.</p>
+    <div class="grid rows" data-kind="G"></div>
+  </section>
+
+  <section class="style" data-s="H">
+    <h2>H · Çekmece <span class="tag new">YENİ</span> <span class="tag">kartoteks</span></h2>
+    <p class="note">Kütüphane kartoteks çekmecesi: kayıtlar yuvada dik durur, önde etiketlik (sol kenarı klasör renginde) ve tutamak. Üstüne gelince çekmece biraz açılır, kayıtlar kalkar. Arşiv / "eski şeyler" hissi güçlü.</p>
+    <div class="grid" data-kind="H"></div>
+  </section>
+
+  <section class="style" data-s="I">
+    <h2>I · Zarf <span class="tag new">YENİ</span> <span class="tag">açık zarf</span></h2>
+    <p class="note">Klasör renginin açık tonunda açık zarf; içinden iki kayıt görünür, ad zarfın önünde. Üstüne gelince kayıtlar zarftan yukarı kayar. Sıcak, oyuncu; WhatsApp / gelen kutusu klasörlerine çok yakışır.</p>
+    <div class="grid" data-kind="I"></div>
+  </section>
+
+  <section class="style" data-s="J">
+    <h2>J · Deste <span class="tag new">YENİ</span> <span class="tag">sayı rozeti</span></h2>
+    <p class="note">Düz albüm destesi (Fotoğraflar uygulaması gibi): üç katman arkaya doğru küçülür, köşede yuvarlak sayı rozeti. B'den sakin (eğik değil), sayı hemen göze çarpar. Üstüne gelince katmanlar aralanır.</p>
+    <div class="grid" data-kind="J"></div>
+  </section>
 </div>
+<div class="send"><span id="cnt">0 karar</span><button class="btn" id="cp">Kopyala</button><button class="btn pri" id="dl">Seçimlerimi indir</button></div>
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t">
   <div class="bar"><button class="btn" id="back" aria-label="Geri">‹ Geri</button><div><h3 id="sh-t"></h3><div class="count" id="sh-c"></div></div></div>
@@ -207,19 +378,39 @@ const R = {
     const tiles = f.items.slice(0, more ? 2 : 3).map(item).join('') + more;
     return `<button class="fold fc" aria-label="${esc(f.n)}, ${f.meta}"><div class="mos">${tiles}</div><div class="cap"><span class="ic" style="--c:${f.c}"></span><div>${cap(f)}</div></div></button>`;
   },
+  D: f => `<button class="fold fd" style="--c:${f.c}" aria-label="${esc(f.n)}, ${f.meta}"><div class="ico"><div class="bk"></div><div class="peek">${f.items.slice(0, 2).map(item).join('')}</div><div class="fr"><span>${esc([...f.n][0])}</span></div></div>${cap(f)}</button>`,
+  E: f => `<button class="fold fe" style="--c:${f.c}" aria-label="${esc(f.n)}, ${f.meta}"><div class="tab" dir="auto">${esc(f.n)}</div><div class="pg"></div><div class="pg"></div><div class="body"><div class="row">${fill(f, 3).map(item).join('')}</div><div class="count">${f.meta}</div></div></button>`,
+  F: f => `<button class="fold ff" aria-label="${esc(f.n)}, ${f.meta}"><div class="mos">${fill(f, 4).map(item).join('')}</div><div class="ov">${cap(f)}</div></button>`,
+  G: f => `<button class="fold fg" style="--c:${f.c}" aria-label="${esc(f.n)}, ${f.meta}"><span class="ic"></span><div class="txt">${cap(f)}</div><div class="strip">${fill(f, 7).map(item).join('')}</div><span class="chev" aria-hidden="true">›</span></button>`,
+  H: f => `<button class="fold fh" style="--c:${f.c}" aria-label="${esc(f.n)}, ${f.meta}"><div class="slot">${fill(f, 3).map(item).join('')}</div><div class="front"><div class="plate">${cap(f)}</div><div class="pull"></div></div></button>`,
+  I: f => `<button class="fold fi" style="--c:${f.c}" aria-label="${esc(f.n)}, ${f.meta}"><div class="flap"></div><div class="back"></div><div class="peek">${f.items.slice(0, 2).map(item).join('')}</div><div class="front">${cap(f)}</div></button>`,
+  J: f => { const [a, b, c] = fill(f, 3); const n = f.meta.match(/\d+/g).reduce((x, y) => x + +y, 0);
+    return `<button class="fold fj" aria-label="${esc(f.n)}, ${f.meta}"><div class="st">${item(c).replace('class="it', 'class="it l3')}${item(b).replace('class="it', 'class="it l2')}${item(a).replace('class="it', 'class="it l1')}<span class="badge">${n}</span></div><div class="cap">${cap(f)}</div></button>`; },
 };
+// repeat a folder's items until there are n (pictures first look best in collages)
+function fill(f, n) { const out = []; for (let i = 0; out.length < n; i++) out.push(f.items[i % f.items.length]); return out; }
 document.querySelectorAll('.grid').forEach(g => { g.innerHTML = F.map(R[g.dataset.kind]).join(''); [...g.children].forEach((b, i) => b.dataset.i = i); });
 
-// ✓ / ✗ per style, remembered on this device
+// ✓ / ✗ + note per style, remembered on this device; bottom bar downloads all of them
+const P = JSON.parse(localStorage['nts-folders-picks'] || '{}');
+['A', 'B', 'C'].forEach(k => { const v = localStorage['nts-folders-' + k]; if (v && !P[k]) P[k] = { pick: v, note: '' }; }); // round-1 ticks
+const save = () => { localStorage['nts-folders-picks'] = JSON.stringify(P); const n = Object.values(P).filter(p => p.pick).length;
+  document.getElementById('cnt').textContent = `${n} karar · ${Object.values(P).filter(p => p.pick === 'y').length} ✓`; };
 document.querySelectorAll('section.style').forEach(sec => {
-  const k = 'nts-folders-' + sec.dataset.s;
-  const box = document.createElement('div'); box.className = 'pick';
-  box.innerHTML = `<button class="btn yes" aria-pressed="false">✓ Beğendim</button><button class="btn no" aria-pressed="false">✗ Olmasın</button>`;
+  const k = sec.dataset.s, box = document.createElement('div'); box.className = 'pick';
+  box.innerHTML = `<button class="btn yes" aria-pressed="false">✓ Beğendim</button><button class="btn no" aria-pressed="false">✗ Olmasın</button><textarea rows="1" placeholder="Not (isteğe bağlı)" aria-label="Not: ${k}"></textarea>`;
   sec.append(box);
-  const paint = () => box.querySelectorAll('.btn').forEach(b => b.setAttribute('aria-pressed', String(localStorage[k] === (b.classList.contains('yes') ? 'y' : 'n'))));
-  box.onclick = e => { const b = e.target.closest('.btn'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; localStorage[k] = localStorage[k] === v ? '' : v; paint(); };
+  const p = () => P[k] || (P[k] = { pick: '', note: '' }), ta = box.querySelector('textarea');
+  const paint = () => box.querySelectorAll('.btn').forEach(b => b.setAttribute('aria-pressed', String((P[k] || {}).pick === (b.classList.contains('yes') ? 'y' : 'n'))));
+  box.onclick = e => { const b = e.target.closest('.btn'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; p().pick = p().pick === v ? '' : v; paint(); save(); };
+  ta.value = (P[k] || {}).note || ''; ta.oninput = () => { p().note = ta.value; save(); };
   paint();
 });
+save();
+const out = () => JSON.stringify({ page: 'design/folders.html', item: '131-0b', date: new Date().toISOString().slice(0, 10),
+  picks: Object.fromEntries(Object.entries(P).filter(([, v]) => v.pick || v.note).sort()) }, null, 2);
+document.getElementById('dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out()], { type: 'application/json' })); a.download = 'folders-choices.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+document.getElementById('cp').onclick = async e => { const b = e.currentTarget; try { await navigator.clipboard.writeText(out()); b.textContent = 'Kopyalandı ✓'; } catch { b.textContent = 'Kopyalanamadı'; } setTimeout(() => b.textContent = 'Kopyala', 1500); };
 
 // theme
 const root = document.documentElement;
