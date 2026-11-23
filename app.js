@@ -812,7 +812,7 @@ function render(force) {
     }
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
-    if (S.view !== 'gallery' && Sel.mode) Sel.clear();
+    if (S.view !== 'gallery' && Sel.mode) Sel.clear(); if (S.view !== 'board') Link.end();
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' ? [] : items);
     $('#splash').classList.add('gone');
@@ -2437,6 +2437,11 @@ function mergeItem(l, r) {
     if (a.highlights || b.highlights) { const h = new Map(); [...(b.highlights || []), ...(a.highlights || [])].forEach(x => h.set(x.id, x)); m.highlights = [...h.values()]; }
     if (a.todo && b.todo && (a.todo.done || b.todo.done)) m.todo = { ...b.todo, ...a.todo, done: true, doneAt: a.todo.doneAt || b.todo.doneAt };
     if (a.starred || b.starred) m.starred = a.starred ?? b.starred;
+    if (a.lk || b.lk || a.links || b.links) { // 138: hand-made links combine; a later "Bağlantıyı kaldır" (-time in lk) beats an older add
+      const lk = { ...(b.lk || {}) }; for (const [k, v] of Object.entries(a.lk || {})) if (!(k in lk) || Math.abs(v) >= Math.abs(lk[k])) lk[k] = v;
+      const u = [...new Set([...(a.links || []), ...(b.links || [])])].filter(r => !(lk[r] < 0));
+      if (Object.keys(lk).length) m.lk = lk; if (u.length) m.links = u; else delete m.links;
+    }
   }
   if (!a.deleted) keepPos(m, l, r);
   m.updatedAt = Math.max(l.updatedAt || 0, r.updatedAt || 0) + 1;
@@ -2714,6 +2719,55 @@ const Sel = {
     });
   },
 };
+// 138: link cards by hand. Board card: right click (phone: long press) → "Bağla…" → click / tap the other card (Esc cancels);
+// or Shift-click 2+ cards → "Bağla" (a chain in time order). Linked: "Bağlantıyı kaldır" in the same menu. Stored as i.links (drawn as
+// 'man' wires, 108) + i.lk {otherId: +time added / -time removed} so two devices merge adds and removals (mergeItem).
+const Link = {
+  sel: new Set(), bar: null,
+  mine: i => [...new Set([...(i.links || []), ...S.items.filter(x => !x.deleted && (x.links || []).includes(i.id)).map(x => x.id)])].map(byId).filter(x => x && !x.deleted),
+  async set(a, b, on, say) {
+    const A = byId(a), B = byId(b); if (!A || !B || a === b) return; const t = now(), out = [];
+    for (const [x, y] of [[A, b], [B, a]]) {
+      const has = (x.links || []).includes(y);
+      if (on ? x === A && !has && !(B.links || []).includes(a) : has) { const l = on ? [...(x.links || []), y] : x.links.filter(r => r !== y); out.push({ ...x, links: l.length ? l : undefined, lk: { ...(x.lk || {}), [y]: on ? t : -t } }); }
+    }
+    if (!out.length) return; await upsert(out); haptic(12);
+    if (say) toast(on ? 'Bağlandı' : 'Bağlantı kaldırıldı', 4000, 'link', { label: 'Geri al', fn: () => this.set(a, b, !on) });
+  },
+  menu(i) {
+    const lk = this.mine(i), board = S.view === 'board' && !i.sticky, n = this.sel.size;
+    return (board ? (n >= 2 && this.sel.has(i.id) ? `<button class="side-row" data-a="linksel">${ic('link', 'sm')}<span class="lbl">Seçilen ${n} kartı bağla</span></button>`
+        : `<button class="side-row" data-a="link">${ic('link', 'sm')}<span class="lbl">Bağla…</span></button>`)
+      + (n && !this.sel.has(i.id) || !n ? `<button class="side-row" data-a="pick">${ic('check', 'sm')}<span class="lbl">${n ? 'Seçime ekle' : 'Seç (çoklu bağla)'}</span></button>` : '') : '')
+      + lk.slice(0, 5).map(r => `<button class="side-row" data-unlink="${esc(r.id)}" title="${esc(titleOf(r))}">${ic('x', 'sm')}<span class="lbl" dir="auto">Bağlantıyı kaldır: ${esc(titleOf(r).slice(0, 28))}</span></button>`).join('');
+  },
+  start(id) { this.sel.clear(); S.linkFrom = id; this.paint(); },
+  async pick(id) { const a = S.linkFrom; this.end(); if (a && id !== a) await this.set(a, id, true, true); },
+  end() { if (!S.linkFrom && !this.sel.size) return; S.linkFrom = null; this.sel.clear(); this.paint(); },
+  toggle(id) { if (byId(id)?.sticky) return; this.sel.has(id) ? this.sel.delete(id) : this.sel.add(id); haptic(8); this.paint(); },
+  async many(ids) {
+    const l = ids.map(byId).filter(Boolean).sort((x, y) => x.ts - y.ts); this.end(); if (l.length < 2) return;
+    const before = new Map(l.map(i => [i.id, { links: i.links, lk: i.lk }])), t = now(), out = [];
+    for (let n = 1; n < l.length; n++) { const x = byId(l[n - 1].id), y = l[n].id; if ((x.links || []).includes(y) || (byId(y).links || []).includes(x.id)) continue; out.push(x.id); const c = { ...x, links: [...(x.links || []), y], lk: { ...(x.lk || {}), [y]: t } }; S.items = S.items.map(i => i.id === c.id ? c : i); }
+    const changed = [...new Set(out)].map(byId); if (changed.length) await upsert(changed); haptic(12);
+    toast(`${l.length} kart bağlandı`, 4000, 'link', { label: 'Geri al', fn: async () => { const t2 = now(); await upsert(changed.map(c => { const b = before.get(c.id), cur = byId(c.id); const lk = { ...(cur.lk || {}) }; for (const r of cur.links || []) if (!(b.links || []).includes(r)) lk[r] = -t2; return { ...cur, links: b.links, lk }; })); } });
+  },
+  paint() {
+    if (S.view !== 'board') { S.linkFrom = null; this.sel.clear(); }
+    for (const c of document.querySelectorAll('#plane > .bcard')) c.classList.toggle('sel', c.dataset.id === S.linkFrom || this.sel.has(c.dataset.id));
+    $('#board')?.classList.toggle('linking', !!S.linkFrom);
+    let b = this.bar; const on = !!S.linkFrom || this.sel.size > 0; document.body.classList.toggle('linking', on); // the bar stands where the box is: the box steps aside
+    if (!on) { if (b) b.hidden = true; return; }
+    if (!b) { b = this.bar = document.createElement('div'); b.id = 'linkBar'; b.className = 'sel-bar'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Bağla'); document.body.appendChild(b);
+      b.addEventListener('click', e => { const a = e.target.closest('[data-la]')?.dataset.la; if (a === 'x') this.end(); else if (a === 'go') this.many([...this.sel]); }); }
+    const n = this.sel.size;
+    b.innerHTML = `<button class="icon-btn sm" data-la="x" title="Vazgeç (Esc)" aria-label="Vazgeç">${ic('x', 'sm')}</button>`
+      + (S.linkFrom ? `<span class="sel-n" aria-live="polite">${ic('link', 'sm')} Bağlanacak kartı seç</span>`
+        : `<span class="sel-n" aria-live="polite"><b>${n}</b> kart seçili</span><button class="sel-b" data-la="go"${n >= 2 ? '' : ' disabled'}>${ic('link', 'sm')}<span>Bağla</span></button>`);
+    b.hidden = false;
+  },
+};
+addEventListener('keydown', e => { if (e.key === 'Escape' && (S.linkFrom || Link.sel.size) && !document.querySelector('dialog[open]')) Link.end(); });
 const Ctx = {
   el: null, id: null,
   init() {
@@ -2737,6 +2791,10 @@ const Ctx = {
       else if (b.dataset.a === 'star') await toggleStar(i.id);
       else if (b.dataset.a === 'todo') await upsert([{ ...i, ...(i.todo ? { todo: null, noTodo: true } : { todo: { text: titleOf(i), done: false, user: true }, noTodo: false }) }]);
       else if (b.dataset.a === 'del') await removeItem(i);
+      else if (b.dataset.a === 'link') { this.hide(); return Link.start(i.id); }
+      else if (b.dataset.a === 'linksel') { this.hide(); return Link.many([...Link.sel]); }
+      else if (b.dataset.a === 'pick') { this.hide(); return Link.toggle(i.id); }
+      else if (b.dataset.unlink) await Link.set(i.id, b.dataset.unlink, false, true);
       this.hide();
     });
   },
@@ -2747,7 +2805,7 @@ const Ctx = {
       <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">Aç</span></button>
       <button class="side-row" data-a="star">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}<span class="lbl">${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}</span></button>
       <button class="side-row" data-a="todo">${ic('todo', 'sm')}<span class="lbl">${i.todo ? 'Görevden çıkar' : 'Görev yap'}</span></button>
-      <button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button>`;
+      ${Link.menu(i)}<button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button>`;
     el.hidden = false;
     const w = el.offsetWidth, h = el.offsetHeight;
     el.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; el.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px';
@@ -3086,7 +3144,7 @@ const Board = {
       return c;
     }
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
-    c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id ? ' sel' : '') + markCls(i);
+    c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id || Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${hasVisual(i) ? thumbBox(i) : ''}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div></div>
       ${sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
@@ -3406,7 +3464,10 @@ const Board = {
       if (d.tile && !d.moved) return this.zoomMonth(d.tile);
       if (d.resize) { const i = byId(d.resize.dataset.id); if (i && d.fs && d.fs !== i.fs) await upsert([{ ...i, fs: d.fs }]); return; }
       if (!d.card || !d.card.isConnected) return;
-      if (!d.moved) { if (e.type !== 'pointerup') return; return byId(d.card.dataset.id)?.sticky ? Ink.edit(d.card) : openItem(d.card.dataset.id); }
+      if (!d.moved) { if (e.type !== 'pointerup' || Ctx.el && !Ctx.el.hidden) return; // 138: a long press opened the card menu, the finger lifting must not open the card too
+        if (S.linkFrom) return Link.pick(d.card.dataset.id); // 138: "Bağla…" is waiting for the other card
+        if (e.shiftKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138: Shift-click picks cards to link (then taps add/remove)
+        return byId(d.card.dataset.id)?.sticky ? Ink.edit(d.card) : openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging');
       const i = byId(d.card.dataset.id); if (!i) return;
       setPos(i, { x: Math.round(d.card.offsetLeft), y: Math.round(d.card.offsetTop) });

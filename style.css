@@ -1423,3 +1423,9 @@ body.selecting.gallery-view .dock { opacity: 0; pointer-events: none; visibility
 .sim-card:active { transform: scale(.96); }
 @media (prefers-reduced-motion: reduce) { .sim-card:active { transform: none; } }
 @media (pointer: coarse) { .sim-card { width: 120px; } .sim-card .sim-th { width: 120px; height: 84px; } }
+/* 138: "Bağla…" waits for the other card */
+#board.linking .bcard:not(.sel) { cursor: crosshair; }
+#board.linking .bcard:not(.sel):hover { outline: 2px dashed var(--hit); outline-offset: 2px; }
+#linkBar .sel-n { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; }
+body.linking .dock { opacity: 0; pointer-events: none; visibility: hidden; }
+@media (max-width: 899px) { #linkBar { justify-content: flex-start; gap: 6px; } #linkBar .sel-b { margin-left: auto; } }
