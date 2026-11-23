@@ -74,7 +74,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 106s ÖNCE "AI slop" temizliği (sahip 2026-11-24: "ai slopleri düzelt, hallet" — yeniden SORMA, düzeltip doğrudan 106a'ya geç): rich-ui.html'de
   e-ans-B, e-ans-C, a-quote-A, n-book-A, n-film-A, n-price-A, n-parcel-A, n-gh-A, n-med-A + a-event-B'nin boşlukları. PLAN 106s'deki ölçütlerle;
   aynı kurallar 106a–e'nin TÜM kartlarına uygulanır (bkz. PLAN 106s) (47b9b79)
-- [ ] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
+- [~B] 106a (+130e notlar gerçek mini belge) zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
 - [ ] 106c daha canlı görünüm (kapak resmi, hafif cam, boş durum çizimleri; AA kontrast)
 - [ ] 106d etkileşimli parçalar (geri sayım, ilerleme, onay listesi ilerlemesi, CSV grafik) — sahip: kalsın; varyantları 106-0'da göster
