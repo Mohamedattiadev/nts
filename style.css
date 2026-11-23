@@ -257,7 +257,8 @@ mark { background: var(--hit-soft); color: inherit; border-radius: 3px; padding:
 /* hover actions */
 .acts { position: absolute; right: 10px; top: 10px; display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface);
   border: 1px solid var(--line); box-shadow: var(--shadow); opacity: 0; transform: translateY(-2px); transition: opacity .15s, transform .15s; pointer-events: none; z-index: 3; }
-.item:hover .acts, .bcard:hover .acts, .tile:hover .acts { opacity: 1; transform: none; pointer-events: auto; }
+.item:hover .acts, .bcard:hover .acts, .tile:hover .acts,
+.item:focus-within .acts, .bcard:focus-within .acts, .tile:focus-within .acts { opacity: 1; transform: none; pointer-events: auto; } /* 112: keyboard too */
 .act { height: 28px; min-width: 28px; padding: 0 7px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; color: var(--text-2); font-size: 12.5px; font-weight: 550; }
 .act:hover { background: var(--surface-2); color: var(--text); }
 .act.ai { color: var(--accent); }
@@ -718,7 +719,7 @@ dialog.reader .d-body { gap: 10px; }
 /* row actions, drawer foot, settings fold */
 /* actions live in the meta row (no overlap with text) */
 .meta .acts { position: static; margin-left: auto; opacity: 0; transform: none; box-shadow: none; border: 0; background: none; padding: 0; pointer-events: none; }
-.item:hover .meta .acts { opacity: 1; pointer-events: auto; }
+.item:hover .meta .acts, .item:focus-within .meta .acts { opacity: 1; pointer-events: auto; }
 .bcard .acts, .tile .acts { display: none; }
 
 /* drawer: big explain button + sticky bottom action bar */

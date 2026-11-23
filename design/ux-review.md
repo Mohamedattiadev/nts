@@ -209,3 +209,32 @@ yapılacaklar başlığında filtre çipi görünüm seçicinin altına giriyord
 düğmeler 30–40 px'ti (hepsi 44, renk noktaları ve görev kutusu görünüşte küçük ama dokunma alanı 44).
 Ölçüm notları: açık menünün sayfayı örtmesi, kaydırılabilir alanın yapışık alt çubuğun altına girmesi, tam ekran sayfada "dışına
 dokunma" ve yıl ısı haritası hücreleri (aynı işi 44 px ay düğmeleri yapıyor) hata sayılmaz.
+
+## (d) Düğme düğme (112, 2026-11-24, B hattı)
+
+Yöntem: `buttons.mjs` (nts-playwright-test skill'i) her ekranda görünen her denetimi bulur, HER BİRİ İÇİN taze sayfa açar
+(5 örnek kayıt), tek basar, 650 ms sonra ne değiştiğini yazar (görünüm, mod, pencere, açılır kutu, toast, tema, dosya seçici,
+sayfadan çıkış, konsol hatası). Ekranlar: pano, liste, galeri, yapılacaklar, kayıt penceresi (not + link), ayarlar, filtre (telefon),
+Ara modu sonuçları, sağ tık / uzun bas menüsü. Masaüstü 1366×768: 126 denetim, telefon 390×844: 104 denetim.
+
+Beklenen sonuç (özet): görünüm düğmeleri görünümü değiştirir, filtre satırları listeyi süzer ve (telefonda) kutuyu kapatır,
+pano araçları aracı seçer, yakınlaştırma/sığdır/aralık/pano seçiciler çalışır, "Düzenle" zaten düzenliyse "Zaten düzenli" der,
+kayıt penceresinde Yıldızla/Etiketle/Kaldır/Sil/Kapat çalışır, Sil "Geri al"lı toast verir, ayarlar tema/renk/yapay zekâ seçimi
+çalışır, Ara'da her sonuç ve çip çalışır, sağ tık menüsünün 14 maddesi çalışır. Konsol hatası yok (Google girişi testte ağ
+engellendiği için hata sayfasına gider, uygulama hatası değil).
+
+Bulunan ve düzeltilen:
+1. **Yanlış ipucu:** köprü durumu her `.ai` öğesinin `title`'ını "Ayarlar · Claude köprüsü kapalı" yapıyordu → "Anlat",
+   "Claude anlatsın", okuyucudaki "Sor" düğmelerinin üstüne gelince "Ayarlar" yazıyordu. Artık yalnız ayarlar düğmesi.
+2. **"Kopyalanamadı":** pano izni yoksa / sayfa odakta değilse / http'de Kopyala ve (paylaşım yoksa) Paylaş başarısızdı.
+   `clip()` önce `navigator.clipboard`, olmazsa gizli metin alanı + `execCommand('copy')`; kayıt, şifre kasası, köprü komutu.
+3. **Okuma listesi köprü kapalıyken işe yaramıyordu:** ilk sıradaki okunmamış linki açmaya çalışıp "Bilgisayar kapalı" diyordu,
+   okunabilecek notlar/PDF'ler hiç açılmıyordu. Artık köprü kapalıyken şu an okunabilenler açılır; yalnız link varsa
+   "Okuma listesinde N link var. Okunur kopya için bilgisayardaki Nts köprüsü açık olmalı."
+4. **Satır düğmeleri klavyeyle görünmüyordu** (Anlat/Kopyala/Yıldızla yalnız `:hover`): `:focus-within` de gösterir.
+
+Kafa karıştırabilir ama bilerek böyle (değiştirmedim):
+- Yapılacaklar'dayken sol çubukta bir süzgece basınca bir önceki görünüme (S.prevView) döner — "geri dön" gibi davranır.
+- Zaten seçili görünüm/tema/süzgece basmak bir şey yapmaz (doğru).
+- Telefonda satırlarda düğme yok; işlemler uzun bas menüsünde (14 madde, hepsi çalışıyor).
+- Köprü kapalıyken masaüstü uzun açıklama, telefon kısa "Bilgisayar kapalı ya da köprü çalışmıyor." der (claudeOff).

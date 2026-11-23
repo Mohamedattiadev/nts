@@ -2204,8 +2204,10 @@ const Read = {
   list() { return visible().filter(this.readable); },
   queue() { // the reading list: unread articles and documents first, newest first
     const q = alive().filter(i => this.readable(i) && (i.type !== 'link' || i.read || Reader.wanted(i)));
+    if (!q.length) return toast('Okunacak bir şey yok. Link, PDF ya da uzun not kaydedince burada çıkar.', 3200, 'book');
+    const now = i => i.type !== 'link' || i.read; // 112: readable without the bridge
+    if (!S.bridgeOk) { const r = q.filter(now); if (!r.length) return toast(`Okuma listesinde ${q.length} link var. Okunur kopya için bilgisayardaki Nts köprüsü açık olmalı.`, 4200, 'book'); q.splice(0, q.length, ...r); }
     const un = q.filter(i => !i.seenAt), first = (un[0] || q[0]);
-    if (!first) return toast('Okunacak bir şey yok. Link, PDF ya da uzun not kaydedince burada çıkar.', 3200, 'book');
     this.open(first.id, [...un, ...q.filter(i => i.seenAt)].map(i => i.id));
   },
   async open(id, ids) {
@@ -2490,7 +2492,7 @@ const Vault = {
     }
   },
   async copy(text, what) {
-    try { await navigator.clipboard.writeText(text); } catch { return toast('Kopyalanamadı'); }
+    try { await clip(text); } catch { return toast('Kopyalanamadı'); }
     toast(`${what} kopyalandı`, 1800, 'check');
     clearTimeout(this.clr); this.clr = setTimeout(() => navigator.clipboard.writeText('').catch(() => { }), 30e3);
   },
@@ -4205,7 +4207,7 @@ const AI = {
   dot() {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
-      d.title = `Ayarlar · ${S.bridgeOk ? `${aiName()} bağlı${n ? `, ${n} kayıt sırada` : ''}` : `${aiName()} köprüsü kapalı`}${Cloud.on() ? ' · senkron açık' : ''}`; }
+      if (d.id === 'settingsBtn') d.title = `Ayarlar · ${S.bridgeOk ? `${aiName()} bağlı${n ? `, ${n} kayıt sırada` : ''}` : `${aiName()} köprüsü kapalı`}${Cloud.on() ? ' · senkron açık' : ''}`; }
   },
   kick() { clearTimeout(this._t); this._t = setTimeout(() => this.process(), 800); },
   async pullInbox() {
@@ -5032,7 +5034,7 @@ async function copyItem(i) {
       }
     }
     const text = i.type === 'link' ? (i.text ? `${i.url}\n${i.text}` : i.url) : i.type === 'note' ? (i.text || titleOf(i)) : (i.text || i.fileName);
-    await navigator.clipboard.writeText(text);
+    await clip(text);
     toast(i.type === 'link' ? 'Link kopyalandı' : 'Kopyalandı', 1800, 'check');
   } catch { toast('Kopyalanamadı'); }
 }
@@ -5044,7 +5046,14 @@ async function shareItem(i) {
     if (navigator.share) await navigator.share(data); else copyItem(i);
   } catch (e) { if (e.name !== 'AbortError') copyItem(i); }
 }
-async function copyText(t) { try { await navigator.clipboard.writeText(t); toast('Kopyalandı', 1800, 'check'); } catch { toast('Kopyalanamadı'); } }
+async function copyText(t) { try { await clip(t); toast('Kopyalandı', 1800, 'check'); } catch { toast('Kopyalanamadı'); } }
+// 112: the async clipboard can be missing or refused (no permission, not focused, http) → the old selection copy still works
+async function clip(t) {
+  try { await navigator.clipboard.writeText(t); return; } catch { }
+  const a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+  (document.querySelector('dialog[open]') || document.body).append(a); a.select();
+  const ok = document.execCommand('copy'); a.remove(); if (!ok) throw new Error('copy');
+}
 
 // ---------- Claude on the phone, no setup: the PC writes the bridge key (+ a Tailscale address if there is one) into a synced (hidden) item,
 // the phone signs in with the same Google account and picks it up. With the app lock on, it travels encrypted like every item.
@@ -5279,7 +5288,7 @@ function openSettings(page = 'main') {
     else if (d === 'install') { S.installEvt.prompt(); S.installEvt = null; }
     else if (d === 'ghconnect') { if (await Repo.connect()) openSettings(); }
     else if (d === 'lockform') { const f = $('#lockForm'); f.hidden = !f.hidden; if (!f.hidden) $('#set-pass').focus(); }
-    else if (d === 'copycmd') { try { await navigator.clipboard.writeText(BRIDGE_CMD); toast('Kopyalandı. Terminale yapıştır.', 2200, 'check'); } catch { toast(BRIDGE_CMD, 5000); } }
+    else if (d === 'copycmd') { try { await clip(BRIDGE_CMD); toast('Kopyalandı. Terminale yapıştır.', 2200, 'check'); } catch { toast(BRIDGE_CMD, 5000); } }
     else if (d === 'test') {
       await saveSettings(); const msg = $('#bridgeMsg'); if (msg) msg.textContent = 'Bağlanıyor…';
       const ok = await AI.health();

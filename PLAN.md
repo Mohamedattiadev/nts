@@ -569,7 +569,7 @@ Hatalar (önce bunlar, telefon önce):
 - [ ] 110. **Senkron sadeleşsin** ("bi tık karışık"): kullanıcı ne olduğunu tek bakışta anlasın (tek durum noktası: ✓ eşit / ↻ gönderiyor /
         ! sorun + dokununca açıklama); iki cihaz testi (twodevice.mjs) konum + düzenleme + silme senaryolarıyla.
 - [x] 111. (2026-11-22: kök neden Android Chrome "sitelerde koyu tema" otomatik karartması; açık temada `color-scheme: only light` + `<meta name="color-scheme" content="light dark">`, v34. Ayarlar düğmesi telefonda doğru çalışıyor. Gerçek telefonda sahip doğrulamalı.) **Açık tema telefonda çalışmıyor** — nedenini bul (prefers-color-scheme, meta theme-color, hn-theme), düzelt, 4 boyutta dene.
-- [ ] 112. **Derin kullanıcı testi** ("teyze de kullanabilsin"): her düğmeye tek tek bas (masaüstü + telefon), beklenen sonucu yaz,
+- [x] 112. (2026-11-24, B: buttons.mjs her denetime tek tek bastı — masaüstü 126 + telefon 104; 4 düzeltme: .ai ipucu yalnız ayarlar düğmesinde, kopyalamada execCommand yedeği (clip), köprü kapalıyken okuma listesi okunabilenleri açar, satır düğmeleri :focus-within ile klavyede görünür; ayrıntı design/ux-review.md (d)) **Derin kullanıcı testi** ("teyze de kullanabilsin"): her düğmeye tek tek bas (masaüstü + telefon), beklenen sonucu yaz,
         çalışmayan/kafa karıştıran her şeyi düzelt; eksik akıcılık (geçiş, geri bildirim) ekle. Sonuç `design/ux-review.md` "(d) düğme düğme".
 - [x] 113. (2026-11-22: logo 44 px = çubuk genişliği, aynı sol kenar/merkez; ">" Rail.place'te çubuğun ya da paletin dikey ortasında, v35) **Hizalar**: (a) sol çubuktan çıkan ">" sekmesi çubuğun DİKEY ORTASINDA olsun (üstte değil); (b) logo ile sol çubuk aynı hizada değil, hizala.
 Arayüz:
