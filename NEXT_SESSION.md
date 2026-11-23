@@ -24,6 +24,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 102 hareket kuralları: geldiği yere geri dön, FLIP, zıplama yok (layout-shift ~0), 150–250 ms, reduced-motion (PLAN 102; 94a/b ile birlikte)
 - [ ] 108 bağlantı çizgileri: kenardan yumuşak eğri, kartı delmez, normalde silik / üstüne gelince belirgin, uzakta gizli (PLAN 108)
 - [ ] 130 Locus'tan alınacaklar (PLAN 130 a–f; kareler design/ref-locus/): 130a görsel arama penceresini 103b/104e ile birlikte yap, 130c'yi 99a ile
+- [ ] 131-0 ÖNCE design/folders.html (klasör kartı stilleri, sahip seçsin; [?]) → 131 yapay zekâ ile otomatik klasörler (PLAN 131)
 - [ ] 103b tek kutu modları: ✎ Not · 🔍 Ara · ✦ Sor seçici, Enter/simge/placeholder moda göre, Not'ta sadece "N benzer kayıt" çipi (PLAN 103b); Ara modu canlı: Enter'sız her harfte süz (sayfa da), "poul · 4 kayıt ×" çipi, Enter = ilk sonucu aç; yazarken TİTREME YOK (baştan çizme yok, sınıfla gizle + FLIP)
 - [ ] 118 kutu placeholder + Tab ipucu + işarete göre düğme simgesi (103b ile birlikte yap)
 - [ ] 104a+104b+104c akıllı arama: doğal dil süzgeç çipleri, yazım hatası toleransı, her yerde ara + vurgulu alıntı (PLAN 104)
@@ -34,6 +35,10 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 105a+105c+105d doğal cümle → "Anladığım" çipleri, asla boş sonuç yok, niyet tahmini (PLAN 105)
 - [ ] 105b+105g doğrudan cevap kartı + kullandıkça öğrenen sıralama
 - [ ] 105e+105f+105h sesle arama, resimle arama, çevrimdışı kontrol + 15 cümlelik persona testi (tr/en/ar)
+- [ ] 132 renkle arama (104d'ye renk: alanı)
+- [ ] 133 benzer kayıtlar şeridi (104f'den sonra)
+- [ ] 134 galeride çoklu seçim
+- [ ] 135 ekran görüntüsüne otomatik başlık
 - [ ] 106-0 ÖNCE örnek sayfası design/rich-ui.html: 106a–e için 2–3'er canlı örnek + ✓/✗ + not; sahibe göster, seçimlerini bekle ([?]); 106a–e sadece ✓ olanlarla
 - [ ] 106a zengin kart önizlemeleri (link görsel+renk, gömülü video/müzik/harita, PDF kapak, renkli kod, WhatsApp balonları)
 - [ ] 106b zengin not düzenleyici ("/" menüsü, Markdown kısayolları, onay listesi, tablo, resim; saklama Markdown) — sahip: TAM hâliyle (tablo + "/" menüsü dahil)
@@ -56,7 +61,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [ ] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
 - [ ] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer)
 - [ ] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi)
-- [ ] 121 cam görünüm ayarı + turun sonunda Düz/Cam seçimi
+- [ ] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi
 - [ ] 122 turda Google ile giriş / Misafir seçimi
 - [ ] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor)
 - [ ] 124 tanıtım sayfası (site/) + README düğmesi
@@ -89,6 +94,8 @@ sahibe tek mesajda Türkçe kısa özet + biriken soruları yaz. Büyük dosyala
 TAM SIRADAKİ ADIM: 126 (taşırken kaçan kart — gerçek hata, önce bu), sonra 127 + 128. Sonra handoff. 102'ye başlanmış, commit'lenmemiş
 iş ağaçta duruyor (app.js: AR haritası + growTo(), resim önizlemesi yer tutar ve yumuşakça büyür; style.css'te 114 bloğu 101 bloğunun altına
 taşınmış + yabancı LaTeX bloğu): dokunmadan önce `git diff` ile bak, 102'yi yaparken bunun üstüne devam et.
+
+KARAR (sahip, 2026-11-23): ayrı "Sade" ayarı yok — renkli etiket çipleri kalır ama sakinleşir (soluk renk, kartta en çok 2 çip + "+N"); 128 ile birlikte yap.
 
 BİLGİ (2026-11-23, 10. oturum): sahip Locus videosunu (LinkedIn, Pavel Macek) istedi: yt-dlp LinkedIn videosunu doğrudan indiriyor;
 konuşma için scratchpad'de venv + faster-whisper (small, int8), ses ffmpeg ile f32le 16 kHz'e çevrilip numpy dizisi olarak verildi (av sürümü

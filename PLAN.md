@@ -523,8 +523,25 @@ Site:
         (d) **Koleksiyon/proje kartı**: üstünde 2–3 içeriğin küçük önizlemesi üst üste (klasör sekmesi gibi), altında "3 not · 38 resim".
         (e) **Notlar ana ızgarada gerçek mini belge**: onay listesi kutucuklarıyla, notun içindeki resim kartta görünür, tıklamadan işaretlenebilir (106a/106d).
         (f) **Sade görünüm dersi**: bol beyaz, tek vurgu rengi (seçimde 2 px mavi çerçeve), yumuşak gölge, küçük gri yan çubuk yazısı; renkli
-            çipler azken daha temiz. Ayarlara "Sade" görünüm seçeneği düşün (etiket çipleri gri, simgeler tek renk) — sahibe sor.
+            çipler azken daha temiz. KARAR (2026-11-23): ayrı "Sade" ayarı YOK; renkli çipler kalır ama sakinleşir: renkler daha soluk
+            (düşük doygunluk, AA kontrast korunur), kartta en çok 2 çip + "+N", tür simgesi tek renkli; seçim çerçevesi tek vurgu rengi.
         Alınmaz: Mac'e özel yerel uygulama, iCloud, diskte klasör saklama (Nts PWA + IndexedDB + GitHub; Markdown dışa aktarma zaten 107j).
+
+- [ ] 131. **Yapay zekâ ile otomatik klasörler (sahip: "5000 şey varsa 5000 kaydırma çok kötü")**: galerinin (ve listenin) en üstünde Locus'taki
+        gibi klasör kartları: kartın üstünde içindeki 2–3 kaydın küçük önizlemesi klasör sekmesinden taşar, altta ad + "13 resim · 2 not".
+        Tıklayınca klasörün içi açılır (geri tuşu döner). Klasörler sanal: kayıt taşınmaz, bir kayıt birkaç klasörde olabilir.
+        Kaynaklar (önce ucuz olanlar, yapay zekâsız hemen çalışır): etiket, proje, kaynak (WhatsApp sohbeti "Annem"), site (github.com),
+        tür (Resimler, PDF'ler), zaman (2025, Kasım). Sonra yapay zekâ: 104f gömmeleriyle kümeleme + köprü kümeye kısa ad verir
+        ("Ev tadilatı", "Logo fikirleri"); yeni kayıt gelince en yakın klasöre kendiliğinden girer. Kullanıcı: adlandır, sabitle, birleştir,
+        gizle, "bu kayıt buraya ait değil". 5000 kayıt → ~20–40 klasör; 10k kayıtta hızlı (sanal liste, önizlemeler tembel).
+        (0) ÖNCE `design/folders.html`: 2–3 klasör kartı stili, açık/koyu + telefon; sahip seçsin. 130d bunun içinde, 99a ile uyumlu.
+- [ ] 132. **Renkle arama**: küçük resim üretilirken baskın 1–3 renk çıkarılır (yapay zekâsız, çevrimdışı); `renk:mavi` / "mavi resimler",
+        arama çiplerinde renk noktaları; "siyah beyaz" otomatik. 104d dilbilgisine `renk:` alanı (tr/en/ar: renk/color/لون).
+- [ ] 133. **Benzer resimler/kayıtlar**: kayıt penceresinin altında "Benzerleri" şeridi (104f gömmeleri; yoksa etiket + site + zaman yakınlığı).
+- [ ] 134. **Galeride çoklu seçim**: sürükleyerek kutu çiz / uzun bas + dokun; seçilenlere tek seferde etiket, sil, klasöre/panoya taşı;
+        altta küçük eylem çubuğu "12 seçili". Telefon önce.
+- [ ] 135. **Ekran görüntüsüne otomatik başlık**: "IMG-20251216-WA0014.jpg" gibi anlamsız adlarda OCR'nin ilk anlamlı satırı (ya da köprü
+        yapay zekâsının kısa açıklaması) başlık olur; dosya adı alt satırda kalır. Kullanıcı başlığı değiştirdiyse dokunulmaz.
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
