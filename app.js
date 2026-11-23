@@ -166,7 +166,7 @@ function subOf(i) {
   if (i.userTitle) return mdPlain(t);
   return t.includes('\n') ? mdPlain(t.slice(t.indexOf('\n') + 1)) : '';
 }
-const mdPlain = t => !/[*=`#>|!\[]|^\s*[-+\d]/m.test(t) ? t : t.split('\n').filter(l => !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim())).map(Ed.plain).join('\n'); // 106b: no Markdown marks in one-line previews
+const mdPlain = t => !/[*=`#>|!\[]|^\s*[-+\d]/m.test(t) ? t : t.split('\n').filter(l => !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim())).filter(l => !Ed.IMG.test(l.trim())).map(Ed.plain).join('\n'); // 106b (106c: picture lines never show as "![](nts:…)"): no Markdown marks in one-line previews
 const HIDDEN = new Set(['draw', 'vault', 'bridge', 'ghlink', 'boards', 'summaries', 'saved']); // drawings live only on the board; the vault is its own place; 'bridge' is the phone's Claude address
 const alive = () => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type));
 // lookups rebuilt only when the item list changes (S.items is always replaced, never mutated in place)
@@ -493,6 +493,7 @@ const Prev = {
   // uploaded next to the file (thumbs/); another device downloads only these until an item is opened (Cache Storage)
   async thumb(i) { // url of a small image for any item, or null
     if (i.cover && byId(i.cover)) return this.thumb(byId(i.cover)); // a conversation shows its first photo
+    const nc = noteCover(i); if (nc) return nc.id ? this.thumb(byId(nc.id)) : nc.url; // 106c
     if (this.thumbs.has(i.id)) return this.thumbs.get(i.id);
     if (i.type === 'link') { const y = ytId(i), u = i.meta?.image || (y ? `https://i.ytimg.com/vi/${y}/mqdefault.jpg` : null); this.thumbs.set(i.id, u); return u; }
     const blob = await this.thumbBlob(i), url = blob ? URL.createObjectURL(blob) : null;
@@ -533,7 +534,16 @@ const _yt = new WeakMap(), ytId = i => { if (i.type !== 'link') return null; let
 const ytId0 = i => { try { const u = new URL(i.url), h = u.hostname.replace(/^www\.|^m\./, '');
   const id = h === 'youtu.be' ? u.pathname.slice(1) : h === 'youtube.com' ? (u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/) || [])[2]) : null;
   return /^[\w-]{6,20}$/.test(id || '') ? id : null; } catch { return null; } };
-const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && (i.meta?.image || ytId(i))) || !!(i.cover && byId(i.cover));
+// 106c: a note's first picture is its cover (board card, list, gallery) — only a picture the note really holds (nts:<id> file or https)
+const NCOV = new WeakMap();
+function noteCover(i) {
+  if (i.type !== 'note' || i.sticky || !i.text || !i.text.includes('![')) return null;
+  if (NCOV.has(i)) return NCOV.get(i);
+  let r = null; const m = i.text.match(/^!\[[^\]]*\]\(((?:https?:|nts:)[^)\s]+)\)\s*$/m);
+  if (m) { const s = m[1]; if (s.startsWith('nts:')) { const f = byId(s.slice(4)); if (f && !f.deleted && fileKind(f) === 'image') r = { id: f.id, src: s }; } else r = { url: s, src: s }; }
+  NCOV.set(i, r); return r;
+}
+const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && (i.meta?.image || ytId(i))) || !!(i.cover && byId(i.cover)) || !!noteCover(i);
 // 102: image shapes (id → w/h) so the item window keeps the image's room from the first frame; growTo animates a box to its new height
 const AR = new Map();
 function growTo(box, change) {
@@ -762,9 +772,9 @@ const Rich = {
       return log.length ? `<div class="r-chat">${log.map(l => `<div class="r-b${l.who === first ? '' : ' me'}" dir="auto">${many && l.who !== first ? `<b>${esc(l.who)}</b>` : ''}${esc(l.text.slice(0, 90))}</div>`).join('')}</div>` : '';
     }
     if (this.isDoc(i)) { // 106b: a note with structure is a small document (same look as the editor), boxes tick right here
-      const lines = i.text.split('\n'), first = !i.userTitle ? lines.findIndex(l => l.trim()) : -1, out = []; let n = 0, done = 0, all = 0, code = false;
+      const lines = i.text.split('\n'), first = !i.userTitle ? lines.findIndex(l => l.trim()) : -1, cv = this.covLn(i), out = []; let n = 0, done = 0, all = 0, code = false;
       lines.forEach((l, k) => { const c = l.match(/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s+(.*)/); if (c) { all++; if (c[1] !== ' ') done++; }
-        if (/^```/.test(l)) { code = !code; return; } if (k === first || !l.trim() || /^\|?\s*:?-{2,}[-|: ]*$/.test(l.trim()) || /^(-{3,}|\*{3,})$/.test(l.trim())) return;
+        if (/^```/.test(l)) { code = !code; return; } if (k === first || k === cv || !l.trim() || /^\|?\s*:?-{2,}[-|: ]*$/.test(l.trim()) || /^(-{3,}|\*{3,})$/.test(l.trim())) return;
         if (n >= 6) { n++; return; } n++;
         if (code) out.push(`<div class="r-cd" dir="ltr">${esc(l)}</div>`);
         else if (c) out.push(`<button class="r-ck${c[1] !== ' ' ? ' on' : ''}" data-rich="tick" data-ln="${k}" role="checkbox" aria-checked="${c[1] !== ' '}"><span class="bx">${ic('check', 'sm')}</span><span dir="auto">${Ed.inl(c[2])}</span></button>`);
@@ -781,14 +791,15 @@ const Rich = {
     return null;
   },
   isDoc: i => i.type === 'note' && !i.sticky && !!i.text && /^\s*(?:[-*+]\s*)?\[( |x|X)\]\s|^#{1,3}\s|^\s*(?:[-*+]|\d+[.)])\s+\S|^>\s|^```|^\|.*\|\s*$|^!\[[^\]]*\]\(/m.test(i.text),
+  covLn(i) { const c = noteCover(i); return c ? i.text.split('\n').findIndex(l => Ed.IMG.test(l) && l.includes(c.src)) : -1; }, // 106c: the cover picture is not listed again
   code: i => i.type === 'file' && /\.(js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|swift|sql|sh|bash|zsh|css|scss|json|ya?ml|toml|html?|xml)$/i.test(i.fileName || ''),
   // heights for Board.est (rough, like the rest): the picture/player box, and the body when it replaces the sub line (null = it does not)
   embH(i) { const e = this.embed(i); return !e ? 0 : this.on.has(i.id) ? e.h - (hasVisual(i) ? 132 : 0) : hasVisual(i) ? 0 : 132; },
   bodyH(i) {
     if (i.conv?.log?.length) return 8 + i.conv.log.filter(l => l.text).slice(-3).reduce((h, l) => h + 4 + (Math.min(90, l.text.length) > 28 ? 44 : 27), 0);
     if (this.isDoc(i)) {
-      const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, L = i.text.split('\n'), first = !i.userTitle ? L.findIndex(l => l.trim()) : -1;
-      const ls = L.filter((l, k) => k !== first && l.trim() && !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim()));
+      const row = matchMedia('(pointer: coarse)').matches ? 32 : 24, L = i.text.split('\n'), first = !i.userTitle ? L.findIndex(l => l.trim()) : -1, cv = this.covLn(i);
+      const ls = L.filter((l, k) => k !== first && k !== cv && l.trim() && !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim()));
       if (!ls.length) return null;
       return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (/^\s*(?:[-*+]\s*)?\[( |x|X)\]\s/.test(l) ? row : /^#{1,3}\s/.test(l) ? 21 : 18), 0) + (ls.length > 6 ? 20 : 0) + (/\[( |x|X)\]/.test(i.text) ? 19 : 0);
     }
@@ -931,7 +942,7 @@ function renderGallery(items) { // month headers stick to the top while scrollin
     ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
   el.innerHTML = media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + html
-    : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
+    : filtered() ? emptyHtml('filter', 'Bu süzgeçte görsel yok', 'Resim, PDF, video ya da görseli olan link bu süzgeçte yok.', unfilterBtn()) : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.');
   hookThumbs(el);
   Peek.dock(); // no tiles → no docked "hover a card" panel Sel.paint();
 }
@@ -1010,9 +1021,21 @@ function activeFilters() {
   if (f.color) out.push({ k: 'color', v: f.color, l: (COLORS.find(c => c[0] === f.color) || [0, f.color])[1] });
   return out;
 }
+// 106c: small line drawings for empty states (the app's own stroke icons grown up: grey lines, one accent stroke, no fill colour)
+const EMPTY_ART = {
+  inbox: '<rect x="20" y="44" width="80" height="34" rx="7"/><path d="M20 58h22l5 8h26l5-8h22"/><rect x="40" y="10" width="40" height="40" rx="5" fill="var(--bg)"/><path d="M48 21h24M48 29h18M48 37h12"/><path d="M60 50v12m-5-5 5 5 5-5" class="a"/>',
+  search: '<rect x="22" y="22" width="56" height="50" rx="6"/><path d="M32 36h36M32 46h28M32 56h18"/><rect x="58" y="12" width="40" height="46" rx="6" fill="var(--bg)"/><path d="M66 26h24M66 35h16"/><circle cx="84" cy="64" r="9" fill="var(--bg)" class="a"/><path d="M91 71l7 7" class="a"/>',
+  filter: '<rect x="18" y="30" width="50" height="44" rx="6"/><path d="M27 43h32M27 52h24M27 61h14"/><path d="M56 12h46l-17 21v17l-12 7V33z" fill="var(--bg)" class="a"/>',
+  grid: '<rect x="18" y="12" width="38" height="30" rx="5"/><rect x="64" y="12" width="38" height="30" rx="5"/><rect x="18" y="50" width="38" height="30" rx="5"/><rect x="64" y="50" width="38" height="30" rx="5" stroke-dasharray="4 4"/><path d="M24 36l9-10 7 7 4-4 7 7"/><circle cx="90" cy="22" r="4" class="a"/><path d="M70 36l9-9 7 6 4-4 7 7"/>',
+  hash: '<path d="M30 14h40l14 14-30 30-24-24z" transform="translate(0 6)"/><circle cx="42" cy="32" r="3"/><path d="M56 40h40l14 14-30 30-24-24z" transform="translate(-14 -8)" fill="var(--bg)"/><path d="M62 50l-3 18M72 50l-3 18M56 56h20M55 63h20" class="a"/>',
+  todo: '<rect x="28" y="10" width="64" height="72" rx="7"/><rect x="38" y="24" width="10" height="10" rx="3"/><path d="M40 29l2 2 4-4" class="a"/><path d="M54 29h28"/><rect x="38" y="42" width="10" height="10" rx="3"/><path d="M54 47h22"/><rect x="38" y="60" width="10" height="10" rx="3" stroke-dasharray="3 3"/><path d="M54 65h16" stroke-dasharray="3 3"/>',
+};
 function emptyHtml(icn, h, p, actions = '') {
-  return `<div class="empty"><div class="e-ico">${ic(icn, 'lg')}</div><h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
+  const art = EMPTY_ART[icn] ? `<svg class="e-art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EMPTY_ART[icn]}</svg>` : `<div class="e-ico">${ic(icn, 'lg')}</div>`;
+  return `<div class="empty">${art}<h3>${h}</h3><p>${p}</p>${actions ? `<div class="row">${actions}</div>` : ''}</div>`;
 }
+const filtered = () => { const f = S.filter; return f.type !== 'all' || f.star || !!(f.list || f.tag || f.color || f.src); };
+const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic('x', 'sm')}Süzgeci kaldır</button>`;
 
 let renderQueued = false;
 function render(force) {
@@ -1051,7 +1074,7 @@ function render(force) {
     if (S.view === 'todo') Todo.render();
     else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Kutunun solunda üç mod var: <b>Not</b> kaydeder, <b>Ara</b> yazdıkça bulur, <b>Sor</b> ' + aiTo() + ' sorar (<b>Tab</b> ile değişir).',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
-    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
+    else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : !S.q && filtered() ? emptyHtml('filter', 'Bu süzgeçte kayıt yok', 'Süzgeci kaldır ya da kutuya yeni bir şey yaz.', unfilterBtn()) : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
     else if (S.view === 'board') { // typing in the box doesn't rebuild the board: only data, filters or a real search do
       const key = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn && S.q, live ? 'L' : S.searchOn && S.hits, S.linkFrom];
       if (!S.cam || !Board._key || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
@@ -5587,7 +5610,7 @@ function wire() {
     const od = e.target.closest('[data-otd]'); if (od) return showFrom(dayEnd(od.dataset.otd));
     if (e.target.closest('[data-otdx]')) { try { localStorage.setItem('hn-otd-hide', dayKey(now())); } catch { } return render(true); }
     if (e.target.closest('[data-lnow]')) { S.listFrom = null; S.limit = 300; render(); return scrollTo(0, 0); }
-    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
+    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'unfilter') { Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); return render(); } if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
     const th = e.target.closest('.topic-head');
     if (th) { const t = th.dataset.tag; S.filter.tag = t === '(etiketsiz)' ? null : t; setView('list'); scrollTo(0, 0); return; }
     const it = e.target.closest('[data-id]'); if (it) openItem(it.dataset.id);

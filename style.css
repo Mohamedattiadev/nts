@@ -415,6 +415,8 @@ body.board-view { overflow: hidden; }
 /* empty */
 .empty { text-align: center; color: var(--text-2); padding: 64px 24px; max-width: 440px; margin: 0 auto; animation: fade .3s var(--ease); }
 .e-ico { width: 56px; height: 56px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: grid; place-items: center; margin: 0 auto 18px; color: var(--accent); box-shadow: var(--shadow-sm); }
+.e-art { display: block; width: 120px; height: 90px; margin: 0 auto 14px; color: var(--muted); } /* 106c */
+.e-art .a { stroke: var(--accent); }
 .empty h3 { margin: 0 0 6px; color: var(--text); font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
 .empty p { margin: 0 0 20px; line-height: 1.6; }
 .empty .row { justify-content: center; }
