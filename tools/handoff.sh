@@ -27,4 +27,15 @@ lane() {
   echo "lane $L launched in $dir"
 }
 
-if [ -n "$1" ]; then ONE=1 lane "$1"; else lane A; lane B; fi
+# The finished session closes itself (owner: "biten session auto kapansın, RAM'den çok kullanmasın"): find the claude
+# process that ran this script and end it 60 s later, after it has written its last message; its kitty window closes with it.
+close_me() {
+  local p=$$ c
+  while [ "$p" -gt 1 ]; do
+    c=$(ps -o comm= -p "$p" 2>/dev/null)
+    if [ "$c" = claude ]; then setsid sh -c "sleep 60; kill -TERM $p 2>/dev/null" >/dev/null 2>&1 < /dev/null & echo "this session closes in 60 s"; return; fi
+    p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' '); [ -n "$p" ] || return
+  done
+}
+
+if [ -n "$1" ]; then ONE=1 lane "$1"; close_me; else lane A; lane B; fi
