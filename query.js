@@ -457,6 +457,41 @@
     return ['date', 'kind', 'src', 'chat'].map(grp).filter(Boolean).join(' ');
   }
 
-  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
+  // 105b + 105g: the words that carry the meaning of a plain question or search (filler and question words out, "?" off)
+  const stripAl = w => w.length > 4 && /^(ال|وال|بال|لل)/.test(w) ? w.replace(/^(و?ال|بال|لل)/, '') : w; // Arabic "the" (الفاتورة ~ فاتورة)
+  const QX = new Set(['kadar', 'tane', 'adet', 'many', 'much', 'mi', 'mu', 'mı', 'mü']);
+  const content = q => String(q || '').split(/\s+/).map(x => stripAl(fold(x.split(/['’]/)[0]).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))).filter(w => w && !FILL.has(w) && !QW.has(w) && !QX.has(w) && (w.length > 1 || /\d/.test(w)));
+  const NUMQ = /(^|\s)(kac|kaca|ne kadar|nekadar|how (many|much)|كم)(\s|$|\?)/;
+  const wantsNum = q => NUMQ.test(fold(q).replace(/[?؟]/g, ' '));
+  // the same word with another ending: "kümeste" ~ "kümes", "sensörler" ~ "sensör", "sensors" ~ "sensor"; short words must be equal
+  const stemOf = w => w.length <= 3 ? w : w.slice(0, Math.max(4, Math.min(w.length - 1, 5)));
+  const same = (a, b) => a === b || (a.length > 3 && b.length > 3 && (a.startsWith(stemOf(b)) || b.startsWith(stemOf(a))));
+  // 105b: the direct answer of a question from the best results, on the device: the one sentence that holds most of the question's
+  // words (a number when it asks "kaç / how many / كم"). docs are in result order: [{ id, texts: [...] }]. → { id, text } or null
+  function answer(q, docs) {
+    const cw = [...new Set(content(q))]; if (!cw.length) return null;
+    const num = wantsNum(q), need = Math.max(1, Math.ceil(cw.length * .6)); let best = null;
+    docs.slice(0, 8).forEach((d, r) => {
+      for (const t of d.texts || []) {
+        if (!t) continue;
+        for (let s of String(t).split(/(?<=[.!?؟。])\s+|\n+/)) {
+          s = s.trim(); if (s.length < 3) continue;
+          const sw = s.split(/[^\p{L}\p{N}]+/u).filter(Boolean).map(w => stripAl(fold(w)));
+          const hit = cw.filter(c => sw.some(w => same(w, c))).length; if (hit < need) continue;
+          const dig = /\d/.test(s), sc = hit / cw.length + (num ? (dig ? .6 : -.4) : 0) + .25 * (1 - r / 8) - Math.min(.3, s.length / 1200);
+          if (!best || sc > best.sc) best = { id: d.id, text: s.length > 240 ? s.slice(0, 237).replace(/\s+\S*$/, '') + '…' : s, sc };
+        }
+      }
+    });
+    return best && (!num || /\d/.test(best.text)) ? { id: best.id, text: best.text } : null;
+  }
+  // 105g: how alike two searches are (0..1): the share of their words that are the same word ("faturalar" ~ "fatura")
+  function qsim(a, b) {
+    const x = content(a), y = content(b); if (!x.length || !y.length) return 0;
+    const m = x.filter(w => y.some(v => same(w, v))).length;
+    return m / Math.max(x.length, y.length);
+  }
+
+  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, content, wantsNum, answer, qsim, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -245,6 +245,11 @@ let qWarnT;
 function runSearch() {
   const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; S.loose = null; S.dym = null; clearTimeout(qWarnT);
   if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
+  // 105b: in Ara the "?" closing a question is not a wildcard ("kaç sensör var?" searched "var" + one more letter and found nothing)
+  if (window.NtsQuery && /[?؟]$/.test(q) && NtsQuery.intent(q) === 'ask') return runSearch0(q.replace(/\s*[?؟]+$/, ''));
+  runSearch0(q);
+}
+function runSearch0(q) {
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
     const toks = tokens(x.terms.join(' ')); S.hits = new Map();
@@ -327,6 +332,7 @@ function semMerge(q, f) {
   const h = Sem.hits;
   if (h && h.q === q && (h.list[0]?.[1] || 0) >= SEM_TOP) { let k = 0; for (const [id, z] of h.list) { if (z < SEM_NEXT || k++ >= SEM_MAX) break; add(id, .5 + z / 10); } }
   if (S.aiFind?.ids && S.aiFind.q === S.q) S.aiFind.ids.forEach((id, k) => add(id, .85 - k * .001));
+  for (const [id, b] of Learn.boost(S.q)) if (b >= 2 && !S.hits.has(id)) { const i = byId(id); if (i && !i.deleted && !HIDDEN.has(i.type) && (!f || f.test(i))) S.hits.set(id, .9); } // 105g
 }
 let _chats, _chatsOf;
 const chatNames = () => { if (_chatsOf !== S.items) { _chats = [...new Set(S.items.filter(i => i.chat && !i.deleted).map(i => i.chat))]; _chatsOf = S.items; } return _chats; };
@@ -991,7 +997,7 @@ function renderHits() {
   }
   // 103a: hitsOff = the page changed (or "Sayfada gör"); the filter stays, a small chip says so, typing/focus brings the window back
   if (S.hitsOff) return show('qchip', `${ic('search', 'sm')}${hueDots(q)}<span dir="auto">${esc(S.nl ? [S.nl.rest, ...S.nl.chips.map(c => c.label)].filter(Boolean).join(' · ').slice(0, 48) : q.slice(0, 40))} · ${S.hits?.size || 0} kayıt</span><button data-clear title="Aramayı temizle" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
-  show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-chips"></div><div class="f-grid"></div><div class="f-sem"></div><div class="h-foot"></div>');
+  show('hits find', '<div class="f-head"></div><div class="f-ac" hidden></div><div class="f-hlp"></div><div class="f-ans" hidden></div><div class="f-chips"></div><div class="f-grid"></div><div class="f-sem"></div><div class="h-foot"></div>');
   Find.draw(el, q);
 }
 // 104g2: the m-th smallest number of a typed array (quickselect, the array is reordered): ~2 passes instead of a full sort
@@ -1017,12 +1023,13 @@ const Find = {
   list0() { // 104g2: { it: items, sc: their scores }, NOT sorted (8k hits on a phone: sorting them all was most of a key), no per-hit arrays
     const f = S.filter, it = [], sc = [];
     const rel = !S.qx || !S.qx.sort || S.qx.sort === 'rel', ph = rel ? norm((S.nl ? S.nl.rest : S.qx ? S.qx.terms.join(' ') : S.q).trim()) : '';
-    byId(''); Opens.load(); const bm = _bm, nt = ntMap(), om = Opens.mm, idx = S.idx, long = ph.length > 1;
+    byId(''); Opens.load(); const bm = _bm, nt = ntMap(), om = Opens.mm, idx = S.idx, long = ph.length > 1, lm = Learn.boost(S.q);
     S.hits?.forEach((s, id) => {
       const i = bm.get(id); if (!i || i.deleted || HIDDEN.has(i.type) || (f.tag && !(i.tags || []).includes(f.tag))) return;
       if (rel) { // 104e: the whole words in the title > starred (in the score) > often opened here > newer
         if (long) { let t = nt.get(id); if (t === undefined) nt.set(id, t = idx.get(id)?.t ?? norm(titleOf(i))); const at = t.indexOf(ph); if (at >= 0) s += at ? 2 : t.length === ph.length ? 4 : 3; }
         const o = om.get(id); if (o) s += Math.min(1.5, Math.log2(1 + o) * .5);
+        const lb = lm.get(id); if (lb) s += lb; // 105g
       }
       it.push(i); sc.push(s);
     });
@@ -1061,6 +1068,7 @@ const Find = {
     this.set(el, '.f-head', `<span class="f-q">${ic('search', 'sm')}${S.nl?.chips.length ? '<span class="f-und">Anladığım:</span>' : ''}${hueDots(rest)}${rest ? `<b dir="auto">${esc(rest.slice(0, 40))}</b>` : ''}${nlChips()}<span class="f-n">· ${nItems} kayıt</span></span><button data-qhelp class="${S.qHelp ? 'on' : ''}" title="Arama dili" aria-label="Arama dili örnekleri" aria-expanded="${!!S.qHelp}">?</button><button data-clear title="Aramayı temizle (Esc)" aria-label="Aramayı temizle">${ic('x', 'sm')}</button>`);
     Suggest.cur = Suggest.of(S.q); el.querySelector('.f-ac').hidden = !Suggest.cur; this.set(el, '.f-ac', Suggest.html()); // 104e
     this.set(el, '.f-hlp', S.qHelp ? qHelpHtml() : '');
+    const ah = ansHtml(items), ae = el.querySelector('.f-ans'); ae.hidden = !ah; this.ans = !!ah; this.set(el, '.f-ans', ah); // 105b
     const T = [['all', 'Hepsi', all.it.length], ['photo', 'Resim'], ['note', 'Not'], ['link', 'Link'], ['file', 'Dosya']].map(([t, l, n]) => [t, l, n ?? cnt.get(t) ?? 0]);
     this.set(el, '.f-chips', T.filter(([t, , n]) => n || t === f.type).map(([t, l, n]) => `<button class="f-ty${f.type === t ? ' on' : ''}" data-ftype="${t}">${l}<small>${n}</small></button>`).join('')
       + (top.length ? '<span class="f-sep"></span>' + top.map(([t, n]) => `<button class="f-tag${f.tag === t ? ' on' : ''}" data-ftag="${esc(t)}" title="${f.tag === t ? 'Etiketi kaldır' : 'Bu etikete daralt'}"><span class="muted">#</span><span dir="auto">${esc(t)}</span><small>${f.tag === t ? ic('x', 'sm') : n}</small></button>`).join('') : ''));
@@ -1074,7 +1082,7 @@ const Find = {
     want.forEach((i, k) => {
       let t = old.get(i.id); if (t) old.delete(i.id); else { t = this.tile(i); fresh.push(t); }
       if (g.children[k] !== t) g.insertBefore(t, g.children[k] || null);
-      t.classList.toggle('sel', k === S.hitSel); t.classList.toggle('sem', !!S.semIds?.has(i.id));
+      t.classList.toggle('sel', k === S.hitSel); t.classList.toggle('sem', !!S.semIds?.has(i.id)); t.classList.toggle('learn', Learn.boost(S.q).has(i.id));
       const sn = t.classList.contains('vis') && snip(i, 90, 8), tt = sn?.label ? hl(sn.sub) : hl(titleOf(i)); if (t._t !== tt) { t.querySelector('.f-t').innerHTML = tt; t._t = tt; t.title = sn?.label ? titleOf(i) : ''; }
       const s = t.querySelector('.f-s'); if (s) { const ss = snipHtml(i, 160, 14); t.classList.toggle('has-snip', ss.includes('snip-src')); if (t._s !== ss) { s.innerHTML = ss; t._s = ss; } }
     });
@@ -1103,7 +1111,7 @@ const Find = {
       : `<span class="f-ic ${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
     return b;
   },
-  open(n = 0) { const id = this.top[n]; if (id) { Recent.add(S.q); openItem(id); } },
+  open(n = 0) { const id = this.top[n]; if (id) { Recent.add(S.q); Learn.add(S.q, id); openItem(id); } },
 };
 let _nt = new Map(), _ntOf;
 const ntMap = () => { if (_ntOf !== S.items) { _nt = new Map(); _ntOf = S.items; } return _nt; }; // folded titles, filled as asked
@@ -1127,7 +1135,28 @@ const Recent = {
     const l = this.list().filter(x => x !== q && !q.startsWith(x)); l.unshift(q);
     try { localStorage.setItem('nts-recentq', JSON.stringify(l.slice(0, 8))); } catch { }
   },
-  clear() { try { localStorage.removeItem('nts-recentq'); } catch { } },
+  clear() { try { localStorage.removeItem('nts-recentq'); localStorage.removeItem('nts-learn'); } catch { } Learn.l = null; Learn._b = null; },
+};
+// 105g: learns while used (this device only, never synced): the items opened from a search come first in a similar search later
+// ("fatura" → opened "Mart faturası"; "faturalar" or "mart fatura" next week shows it first). [words, {id: times}, last time], ≤ 300
+const Learn = {
+  l: null,
+  list() { if (!this.l) { try { this.l = JSON.parse(localStorage.getItem('nts-learn') || '[]'); } catch { this.l = []; } } return this.l; },
+  add(q, id) {
+    if (!window.NtsQuery || !id) return; const k = NtsQuery.content(q).join(' '); if (!k || k.length > 120) return;
+    const l = this.list(), at = l.findIndex(e => e[0] === k), e = at >= 0 ? l.splice(at, 1)[0] : [k, {}, 0];
+    e[1][id] = (e[1][id] || 0) + 1; e[2] = Date.now(); l.unshift(e); l.length = Math.min(l.length, 300); this._b = null;
+    try { localStorage.setItem('nts-learn', JSON.stringify(l)); } catch { }
+  },
+  boost(q) { // id → extra score (word hits are ~3 per word): the more alike the search and the more often opened, the more
+    if (this._b && this._b.q === q) return this._b.m;
+    const m = new Map();
+    if (window.NtsQuery) for (const [k, ids] of this.list()) {
+      const sim = NtsQuery.qsim(q, k); if (sim < .6) continue;
+      for (const id in ids) { const b = sim * (2.5 + Math.min(2, Math.log2(1 + ids[id]))); if (b > (m.get(id) || 0)) m.set(id, b); }
+    }
+    this._b = { q, m }; return m;
+  },
 };
 // 104e: autocomplete for the search language: the word at the end of the box ("etiket:fa", "#fa", "proje:", "sohbet:an", "is:", "renk:")
 // offers its values (tags / projects / chats with counts, most used first); Tab or a tap completes it
@@ -1260,11 +1289,38 @@ async function aiFind() {
   } catch (e) { S.aiFind = null; toast('Hata: ' + e.message, 3200); }
   if (S.q === key) { runSearch(); render(); }
 }
+// 105b: a question in Ara ("kümeste kaç sensör var?") gets a short answer on top: the sentence of the best results that holds the
+// question's words (a number for "kaç"), on the device and offline, with the item it came from; the AI's answer only on a tap
+const ansTexts = i => [titleOf(i), i.text, i.todo?.text, i.ocr, i.summary, i.meta?.description, i.content, (i.highlights || []).map(h => h.text).join('\n'), readText(i)];
+let _ans = { k: null };
+function ansHtml(items) {
+  if (!window.NtsQuery || NtsQuery.intent(S.q) !== 'ask') return '';
+  const ai = S.aiAns?.q === S.q ? S.aiAns : null, k = S.q + '\u0001' + items.slice(0, 8).map(i => i.id + (i.updatedAt || i.ts)).join(',');
+  if (_ans.k !== k) _ans = { k, a: NtsQuery.answer(S.q, items.slice(0, 8).map(i => ({ id: i.id, texts: ansTexts(i) }))) };
+  const a = _ans.a, src = id => { const i = byId(id); return i ? `<button class="f-ans-src" data-open="${esc(id)}" title="Kayda git">${ic(i.type === 'link' ? 'link' : hasVisual(i) ? 'image' : 'note', 'sm')}<span dir="auto">${esc(titleOf(i).slice(0, 48))}</span>${ic('chev', 'sm')}</button>` : ''; };
+  if (!a && !ai) return '';
+  const aiBtn = ai?.busy ? `<button class="btn secondary sm" disabled>${ic('spark', 'sm')}${aiName()} bakıyor…</button>`
+    : ai ? '' : `<button class="btn secondary sm" data-aians title="Bulunan kayıtlarla ${esc(aiName())} cevaplasın">${ic('spark', 'sm')}${aiName()} cevaplasın</button>`;
+  return `<div class="f-ans-h">${ic('check', 'sm')}<span>Cevap</span><small>${a ? 'kayıtlarından, cihazda' : ''}</small></div>`
+    + (a ? `<p class="f-ans-t" dir="auto">${hl(a.text)}</p><div class="f-ans-f">${src(a.id)}${aiBtn}</div>` : `<div class="f-ans-f">${aiBtn}</div>`)
+    + (ai && !ai.busy ? `<div class="f-ans-ai"><p class="f-ans-t" dir="auto">${ic('spark', 'sm')}${esc(ai.text || 'Kayıtlarında cevap yok.')}</p><div class="f-ans-f">${(ai.ids || []).slice(0, 3).map(src).join('')}</div></div>` : '');
+}
+async function aiAnswer() {
+  const key = S.q, q = key.trim(); if (!q || S.aiAns?.busy) return;
+  if (!S.bridgeOk && !(await AI.health())) return toast(claudeOff(), 3200, 'cpu');
+  S.aiAns = { q: key, busy: true }; renderHits();
+  try {
+    const top = Find.ranked('all').top.slice(0, 12);
+    const r = await AI.call('/ask', { question: `${q}\nKayıtlarıma bakarak sorunun dilinde en çok 2 kısa cümleyle cevap ver; bilmiyorsan söyle. sources alanına cevabın geldiği kayıtların id'leri, en iyisi önce.`, items: AI.pick(q, top) });
+    S.aiAns = { q: key, text: (r.answer || '').trim(), ids: (r.sources || []).filter(id => byId(id)) };
+  } catch (e) { S.aiAns = null; toast('Hata: ' + e.message, 3200); }
+  if (S.q === key) renderHits();
+}
 // the Ara window's line under the results: meaning search state, and with few results the two "look by meaning" buttons
 function semBar(n, q) {
   const few = (n < 5 || !!S.loose) && q.length >= 3, ai = S.aiFind?.q === S.q ? S.aiFind : null, sem = S.semIds?.size || 0;
   // 105d: it reads like a question → offer Sor (the search still runs, nothing is forced)
-  const ask = window.NtsQuery && NtsQuery.intent(S.q) === 'ask' ? `<button class="btn secondary sm f-askq" data-mode="ask" title="Sor moduna geç (Tab)">${ic('spark', 'sm')}Soru gibi: ${aiTo()} sor</button>` : '';
+  const ask = !Find.ans && window.NtsQuery && NtsQuery.intent(S.q) === 'ask' ? `<button class="btn secondary sm f-askq" data-mode="ask" title="Sor moduna geç (Tab)">${ic('spark', 'sm')}Soru gibi: ${aiTo()} sor</button>` : '';
   const st = Sem.st === 'load' ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam modeli iniyor %${Sem.p}</span>`
     : Sem.st === 'ready' && Sem.left ? `<span class="f-sem-st">${ic('spark', 'sm')}Anlam dizini ${Sem.done}/${Sem.done + Sem.left}</span>`
     : sem ? `<span class="f-sem-st">${ic('spark', 'sm')}${sem} anlamca yakın</span>` : '';
@@ -5179,7 +5235,7 @@ function wire() {
       S.hitSel = Math.max(-1, Math.min(rows.length - 1, (S.hitSel ?? -1) + (e.key === 'ArrowDown' ? 1 : -1)));
       renderHits(); $('#hits .h-row.sel')?.scrollIntoView({ block: 'nearest' }); return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; Recent.add(S.q); openItem(id); return; }
+    if (e.key === 'Enter' && !e.shiftKey && S.hitSel >= 0 && rows[S.hitSel]) { e.preventDefault(); const id = rows[S.hitSel].dataset.open; S.hitSel = -1; Recent.add(S.q); Learn.add(S.q, id); openItem(id); return; }
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && findMode() && Suggest.cur && Suggest.of(inp.value)) { e.preventDefault(); Suggest.cur = Suggest.of(inp.value); Suggest.pick(0); return; } // 104e
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitBox(); }
     if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); setMode(nextMode(e.shiftKey ? -1 : 1)); } // 136: Tab / Shift+Tab always change the mode here; Esc leaves the box
@@ -5258,8 +5314,9 @@ function wire() {
       if (!end) S.qHelp = false; runSearch(); autoGrow(); render(); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); return;
     }
     if (e.target.closest('[data-qclr]')) { Recent.clear(); renderHits(); return inp.focus(); }
+    if (e.target.closest('[data-aians]')) return aiAnswer(); // 105b
     const sv = e.target.closest('[data-saved]'); if (sv) return Saved.apply(sv.dataset.saved);
-    const o = e.target.closest('[data-open]'); if (o) { Recent.add(S.q); openItem(o.dataset.open); }
+    const o = e.target.closest('[data-open]'); if (o) { Recent.add(S.q); Learn.add(S.q, o.dataset.open); openItem(o.dataset.open); }
   };
   $('#hits').addEventListener('pointerdown', e => { if (e.target.closest('button') && e.pointerType === 'mouse') e.preventDefault(); }); // the box keeps the focus
 

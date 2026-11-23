@@ -1337,6 +1337,24 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 .f-tile mark { background: var(--hit-soft); color: inherit; border-radius: 3px; }
 /* 105a/c: "Anladığım:" before a sentence's chips; a line above the closest results; "Bunu mu demek istedin" */
 .hits.find .f-q .f-und { flex: none; font-size: 12px; color: var(--muted); }
+/* 105b: the direct answer of a question, on top of the Ara window */
+.hits.find .f-ans { flex: none; margin: 8px 10px 2px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); animation: fAns .18s ease-out; }
+.hits.find .f-ans[hidden] { display: none; }
+@keyframes fAns { from { opacity: 0; transform: translateY(-4px); } }
+.f-ans-h { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.f-ans-h small { font-weight: 400; color: var(--muted); }
+.f-ans-t { margin: 4px 0 6px; font-size: 14.5px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; }
+.f-ans-t .i { color: var(--accent); vertical-align: -2px; margin-right: 4px; }
+.f-ans-f { display: flex; align-items: center; gap: 6px; }
+.f-ans-f .btn { flex: none; }
+.f-ans-src { flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 30px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); font: inherit; font-size: 12.5px; cursor: pointer; }
+.f-ans-src span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.f-ans-src:hover { border-color: var(--accent); }
+.f-ans-ai { margin-top: 8px; padding-top: 8px; border-top: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent); }
+@media (max-width: 699px) { .hits.find .f-ans { margin: 6px 8px 0; padding: 8px 10px; } .f-ans-t { margin: 2px 0 6px; font-size: 14px; } .f-ans-src, .hits.find .f-ans .btn { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .hits.find .f-ans { animation: none; } }
+/* 105g: opened before after a search like this one */
+.f-tile.learn::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: .8; }
 .hits.find .f-loose { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 12px 0; color: var(--muted); font-size: 12.5px; }
 .hits.find .f-q:has(.f-nl) { overflow-x: auto; scrollbar-width: none; } /* many chips on a phone: they scroll, none is cut */
 .hits.find .f-q:has(.f-nl)::-webkit-scrollbar { display: none; }

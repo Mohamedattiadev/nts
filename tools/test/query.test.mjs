@@ -276,6 +276,38 @@ for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:'
   ok('fatura', 'fxtxra', false); ok('toplantı', 'toplnati', true); ok('toplantısı', 'toplanitsi', true); ok('görev', 'gorev', true);
   ok('kahvaltı', 'kahvalt', true); ok('kahvaltı', 'kavhalti', true); ok('ev', 'iş', false);
 }
+// 105b: direct answer from the best results (on the device), 105g: similar searches
+{
+  eq('content tr', Q.content('Kümeste kaç sensör var?'), ['kumeste', 'sensor']);
+  eq('content en', Q.content('How many sensors are in the coop?'), ['sensors', 'in', 'coop']);
+  eq('content ar', Q.content('كم حساس في الحظيرة؟'), ['حساس', 'حظيره']);
+  eq('wantsNum tr', Q.wantsNum('kümeste kaç sensör var'), true);
+  eq('wantsNum ne kadar', Q.wantsNum('fatura ne kadar?'), true);
+  eq('wantsNum en', Q.wantsNum('how much was the invoice'), true);
+  eq('wantsNum ar', Q.wantsNum('كم حساس'), true);
+  eq('wantsNum no', Q.wantsNum('wifi şifresi ne?'), false);
+  const docs = [
+    { id: 'n1', texts: ['Kümes notları', 'Bugün kümese gittim. Kümeste 12 sensör var, ikisi bozuk. Yarın tamir.'] },
+    { id: 'n2', texts: ['Sensör fiyatları', 'Sensör başına 40 TL.'] },
+    { id: 'n3', texts: ['Wifi', 'Ev wifi şifresi: kartal1923'] },
+    { id: 'n4', texts: ['Invoice', 'The March invoice total was 120 USD. Paid on time.'] },
+    { id: 'n5', texts: ['حظيرة', 'في الحظيرة 8 حساسات تعمل.'] },
+  ];
+  const an = (q, id, has) => { const r = Q.answer(q, docs); eq('answer ' + q, r ? [r.id, r.text.includes(has)] : null, id ? [id, true] : null); };
+  an('Kümeste kaç sensör var?', 'n1', '12 sensör');
+  an('wifi şifresi ne?', 'n3', 'kartal1923');
+  an('how much was the invoice?', 'n4', '120');
+  an('كم حساس في الحظيرة؟', 'n5', '8');
+  an('kümeste kaç tavuk var?', null); // a number is asked but no sentence has both words
+  an('ne?', null);
+  eq('answer long cut', Q.answer('uzun cümle', [{ id: 'x', texts: ['uzun cümle ' + 'çok '.repeat(120)] }]).text.length <= 241, true);
+  eq('qsim same', Q.qsim('fatura', 'faturalar'), 1);
+  eq('qsim sentence', Q.qsim('mart faturası', 'fatura mart'), 1);
+  eq('qsim half', Q.qsim('mart faturası', 'nisan faturası'), .5);
+  eq('qsim none', Q.qsim('wifi', 'fatura'), 0);
+  eq('qsim filler', Q.qsim('bana faturaları göster', 'fatura'), 1);
+  eq('qsim ar', Q.qsim('الفاتورة', 'فاتورة'), 1);
+}
 // speed: 10k items, a busy query, < 50 ms
 {
   const many = Array.from({ length: 10000 }, (_, k) => ({ id: 'x' + k, type: k % 3 ? 'note' : 'link', text: `kayıt ${k} süt fatura ${k % 7 ? 'ev' : 'iş'} poultry`, url: k % 3 ? '' : 'https://ex.com/' + k, ts: NOW - k * 36e5, tags: [k % 2 ? 'ev' : 'iş'] }));
