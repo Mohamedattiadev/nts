@@ -594,6 +594,11 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [ ] 107. **Genel öneriler (sahip onayladı 2026-11-21), telefon önce + phone-audit 0:**
         (a) "Gelen kutusunu temizle" kartları (telefon): günde bir, kartlar tek tek; sağ = sakla, sol = sil (geri alınır), yukarı = göreve çevir,
             aşağı = arşiv; masaüstünde ok tuşları; kaç kart kaldı sayacı;
+            [x] (2026-11-24, B hattı) `Clean` (app.js, weeklyUnseen altında), #clean penceresi: son 14 günün ayıklanmamış kayıtları (parent/sorted/archive/todo/
+            yıldızlı/sticky/pending değil), 3 kartlık deste, kaydırma (baskın eksen, %28 ya da hızlı fiske; damga Sakla/Sil/Görev/Arşiv), 4 düğme,
+            ok tuşları, geri al (düğme, ⌫, Ctrl+Z; kaydın tamamı eski hâline), sayaç + ilerleme çubuğu, boş durum. Kayıtlar `quiet` yazılır, pencere
+            kapanınca tek çizim. Giriş: ⋯ menüsü (telefon + masaüstü) "Gelen kutusunu temizle · N"; günde bir toast (≥5 kayıt, hn-clean-day).
+            Sakla/Görev/Arşiv `sorted` damgası koyar. phone-audit 'temizle' ekranı eklendi: 0.
         (b) Android ana ekran widget'ı (96'daki TWA paketiyle): yeni not, sesli not, son kayıtlar;
         (c) her yerden gönderme: e-posta adresine yazılan Nts'e (Supabase Edge Function + gelen e-posta servisi) ve Telegram botu
             (köprüde ya da Edge Function'da; sadece sahibin hesabı, gizli anahtar);

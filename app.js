@@ -1383,7 +1383,7 @@ const VIEWS = [['board', 'board', 'Pano'], ['list', 'list', 'Liste'], ['gallery'
 function chromeCounts(live) {
   const key = [S.items, live.length, Math.floor(now() / 6e4)], c0 = chromeCounts.c;
   if (c0 && key.every((x, k) => x === c0.key[k])) return c0;
-  const c = { key, grp: new Map(), todos: 0, lists: new Map(), unseen: 0, stars: 0, read: 0, projs: new Map(), tags: new Map(), vtags: new Set(), colors: new Set(), trash: 0 };
+  const c = { key, grp: new Map(), todos: 0, lists: new Map(), unseen: 0, stars: 0, read: 0, projs: new Map(), tags: new Map(), vtags: new Set(), colors: new Set(), trash: 0, clean: 0 };
   const inc = (m, k) => m.set(k, (m.get(k) || 0) + 1);
   for (const i of live) {
     inc(c.grp, groupOf(i));
@@ -1396,6 +1396,7 @@ function chromeCounts(live) {
     for (const t of i.tags || []) inc(c.tags, t);
     for (const t of i.vtags || []) c.vtags.add(t);
     if (i.color) c.colors.add(i.color);
+    if (Clean.of(i)) c.clean++;
   }
   for (const i of S.items) if (i.deleted && !i.purged && i.deletedAt) c.trash++;
   return chromeCounts.c = c;
@@ -1427,13 +1428,13 @@ function renderChrome() {
   $('#railTab').innerHTML = `<button data-fold data-tip="${act.length ? 'Süzgeç açık: ' + esc(act.map(a => a.l).join(', ')) + ' · ' : ''}Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}${act.length ? '<span class="rt-dot"></span>' : ''}</button>`; // 88b: only >, where < was; the palette stays
   $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
   const nTrash = C.trash, nRead = C.read;
-  $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
+  $('#popLists').innerHTML = `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button>` + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row${f.star ? ' on' : ''}" data-star>${ic('star')}<span class="lbl">Yıldızlı</span><span class="n">${stars || ''}</span></button>`
     + `<button class="side-row${S.view === 'todo' ? ' on' : ''}" data-todo>${ic('todo')}<span class="lbl">Yapılacaklar</span><span class="n">${todos || ''}</span></button>`
     + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
-    + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
+    + `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   const sv = Saved.rows(); $('#popSaved').innerHTML = sv; $('#savedLabel').hidden = !sv;
   const sr = srcRows(live, f.src); $('#popSrc').innerHTML = sr; $('#srcLabel').hidden = !sr;
   const projs = C.projs;
@@ -4011,6 +4012,98 @@ function weeklyUnseen() {
   toast(`Bakmadığın ${n} kayıt var`, 8000, 'clock', { label: 'Göster', fn: () => { S.filter.list = 'unseen'; S.filter.type = 'all'; S.filter.star = false; if (S.view === 'todo' || S.view === 'board') setView('list'); else render(); } });
 }
 
+// 107a: "Gelen kutusunu temizle" — the last two weeks' unsorted saves as a deck of cards, one at a time:
+// → / swipe right = keep, ← / left = trash (undo), ↑ / up = to-do, ↓ / down = archive (off the board). Once a day a gentle nudge.
+const Clean = {
+  DAYS: 14,
+  of: i => !i.parent && !i.sorted && !i.archive && !i.todo && !i.starred && !i.sticky && !i.pending && now() - i.ts < Clean.DAYS * 864e5,
+  list() { return alive().filter(this.of).sort((a, b) => b.ts - a.ts); },
+  ACTS: { keep: ['Sakla', 'check', 'right'], del: ['Sil', 'trash', 'left'], todo: ['Görev', 'todo', 'up'], arch: ['Arşiv', 'inbox', 'down'] },
+  KEYS: { ArrowRight: 'keep', ArrowLeft: 'del', ArrowUp: 'todo', ArrowDown: 'arch' },
+  open() {
+    let d = $('#clean');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'clean'; d.className = 'drawer modal narrow clean'; document.body.appendChild(d);
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; this.done(); });
+      d.addEventListener('click', e => {
+        if (e.target === d || e.target.closest('[data-x]')) return d.close();
+        const a = e.target.closest('[data-ca]'); if (a) return this.act(a.dataset.ca);
+        if (e.target.closest('[data-cundo]')) return this.undo();
+        const o = e.target.closest('[data-copen]'); if (o) { const i = byId(o.dataset.copen); if (i?.url) window.open(i.url, '_blank', 'noopener'); else if (i) { d.close(); openItem(i.id); } }
+      });
+      d.addEventListener('keydown', e => {
+        if (e.altKey || e.ctrlKey || e.metaKey) { if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); } return; }
+        const k = this.KEYS[e.key]; if (k) { e.preventDefault(); this.act(k); }
+        else if (e.key === 'Backspace' || e.key === 'u') { e.preventDefault(); this.undo(); }
+        else if (e.key === 'Enter' && this.q[0]) { e.preventDefault(); d.querySelector('[data-copen]')?.click(); }
+      });
+      d.addEventListener('pointerdown', e => this.drag(e));
+    }
+    this.q = this.list(); this.total = this.q.length; this.hist = []; this.changed = false; this.busy = false;
+    this.draw(); Back.open(d);
+  },
+  card(i, n) {
+    const sub = subOf(i), when = fmtDay(dayKey(i.ts)), src = i.type === 'link' ? domain(i.url) : i.src ? srcName(i.src) : '';
+    return `<div class="cl-card${n ? ' back b' + n : ''}" data-cid="${i.id}"${n ? ' aria-hidden="true"' : ''}>
+      ${hasVisual(i) ? thumbBox(i, 'thumb cl-th') : `<div class="cl-ico">${leadOf(i)}</div>`}
+      <div class="cl-txt"><b dir="auto">${esc(titleOf(i))}</b>${sub ? `<p dir="auto">${esc(sub.slice(0, 260))}</p>` : ''}</div>
+      <div class="cl-meta">${ic(i.type === 'link' ? 'link' : fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}<span>${esc([when, src].filter(Boolean).join(' · '))}</span>
+        ${n ? '' : `<button class="link-btn cl-open" data-copen="${i.id}">${i.url ? 'Linki aç' : 'Kaydı aç'}</button>`}</div>
+      ${n ? '' : Object.entries(this.ACTS).map(([k, [l, icn, dir]]) => `<span class="cl-stamp s-${dir}" data-st="${k}">${ic(icn, 'sm')}${l}</span>`).join('')}
+    </div>`;
+  },
+  draw() {
+    const d = $('#clean'), q = this.q, left = q.length, did = this.total - left;
+    const deck = left ? q.slice(0, 3).map((i, n) => this.card(i, n)).reverse().join('')
+      : `<div class="cl-empty">${ic('check', 'lg')}<b>Gelen kutusu temiz</b><p>${this.total ? `${this.total} kaydın hepsine baktın.` : `Son ${this.DAYS} günde ayıklanacak kayıt yok.`}</p><button class="btn primary" data-x>Kapat</button></div>`;
+    d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type">${ic('inbox', 'sm')}Gelen kutusunu temizle</span><span class="sp"></span>
+        <span class="cl-n" aria-live="polite">${left ? `${left} kaldı` : ''}</span><button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
+      <div class="cl-bar" aria-hidden="true"><i style="width:${this.total ? (did / this.total * 100).toFixed(1) : 100}%"></i></div>
+      <div class="cl-deck">${deck}</div>
+      ${left ? `<div class="cl-acts">${['del', 'arch', 'todo', 'keep'].map(k => { const [l, icn, dir] = this.ACTS[k]; return `<button class="cl-b cl-${k}" data-ca="${k}" aria-label="${l}"><span class="cl-bi">${ic(icn)}</span><span>${l}</span><kbd class="d-only">${{ left: '←', right: '→', up: '↑', down: '↓' }[dir]}</kbd></button>`; }).join('')}</div>` : ''}
+      <div class="cl-foot"><button class="btn ghost sm" data-cundo${this.hist.length ? '' : ' disabled'}>${ic('repeat', 'sm')}Geri al</button><span class="sp"></span><small class="d-only">Ok tuşları · Geri al: Ctrl+Z</small><small class="m-only">Kartı kaydır</small></div></div>`;
+    hookThumbs(d); if (d.open) d.querySelector(".d-body").focus({ preventScroll: true }); // the keys keep working after each card
+  },
+  async act(k, fly = true) {
+    const i = this.q[0]; if (!i || this.busy) return; this.busy = true;
+    const c = $('#clean .cl-card:not(.back)'), dir = this.ACTS[k][2];
+    if (c && fly && !reduced()) { c.classList.add('go', 'go-' + dir); await new Promise(r => setTimeout(r, 200)); }
+    const nx = k === 'keep' ? { ...i, sorted: now() } : k === 'del' ? { ...i, deleted: true, deletedAt: now() }
+      : k === 'todo' ? { ...i, sorted: now(), noTodo: false, todo: { text: titleOf(i), done: false, user: true } } : { ...i, sorted: now(), archive: true };
+    this.hist.push(i); this.q.shift(); this.changed = true; haptic(k === 'del' ? 14 : 8);
+    await upsert([nx], { quiet: true });
+    this.busy = false; this.draw();
+  },
+  async undo() {
+    const i = this.hist.pop(); if (!i || this.busy) return;
+    await upsert([{ ...i, sorted: i.sorted || 0, deleted: !!i.deleted, deletedAt: i.deletedAt || undefined, todo: i.todo || null, archive: !!i.archive }], { quiet: true }); // the whole item as it was
+    this.q.unshift(byId(i.id)); this.draw();
+  },
+  done() { if (!this.changed) return; this.changed = false; S.items = [...S.items]; runSearch(); render(); renderChrome(); }, // quiet saves → one redraw when the window closes
+  drag(e) { // swipe: the dominant axis past ~28% of the card (or a quick flick) picks the action; otherwise it springs back
+    const c = e.target.closest('.cl-card:not(.back)'); if (!c || e.button || e.target.closest('button, a') || this.busy) return;
+    const x0 = e.clientX, y0 = e.clientY, t0 = performance.now(), W = c.offsetWidth, H = c.offsetHeight; let dx = 0, dy = 0, on = false;
+    const pick = () => { const ax = Math.abs(dx) >= Math.abs(dy); return ax ? (dx > 0 ? 'keep' : 'del') : (dy < 0 ? 'todo' : 'arch'); };
+    const move = ev => { dx = ev.clientX - x0; dy = ev.clientY - y0;
+      if (!on) { if (Math.hypot(dx, dy) < 6) return; on = true; c.setPointerCapture?.(e.pointerId); c.classList.add('drag'); }
+      const p = Math.min(1, Math.max(Math.abs(dx) / (W * .28), Math.abs(dy) / (H * .28)));
+      c.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / W * 10}deg)`;
+      const k = pick(); for (const s of c.querySelectorAll('.cl-stamp')) s.style.opacity = s.dataset.st === k ? p : 0; };
+    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+      if (!on) return; c.classList.remove('drag');
+      const v = Math.hypot(dx, dy) / Math.max(1, performance.now() - t0), far = Math.abs(dx) > W * .28 || Math.abs(dy) > H * .28 || (v > .6 && Math.hypot(dx, dy) > 40);
+      if (far) { const k = pick(), m = 1.6; c.style.transition = 'transform .2s ease-in, opacity .2s'; c.style.transform = `translate(${dx * m + Math.sign(dx) * W * (Math.abs(dx) >= Math.abs(dy) ? .6 : 0)}px, ${dy * m + Math.sign(dy) * H * (Math.abs(dy) > Math.abs(dx) ? .6 : 0)}px) rotate(${dx / W * 16}deg)`; c.style.opacity = 0;
+        setTimeout(() => this.act(k, false), 180); }
+      else { c.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1.2)'; c.style.transform = ''; for (const s of c.querySelectorAll('.cl-stamp')) s.style.opacity = 0; setTimeout(() => { c.style.transition = ''; }, 240); } };
+    addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  },
+  nudge() { // once a day, only when there is something worth a minute
+    const n = this.list().length, day = dayKey(now());
+    try { if (n < 5 || localStorage.getItem('hn-clean-day') === day) return; localStorage.setItem('hn-clean-day', day); } catch { return; }
+    if (document.querySelector('dialog[open]')) return;
+    toast(`Gelen kutunda ${n} kayıt var`, 8000, 'inbox', { label: 'Temizle', fn: () => this.open() });
+  },
+};
 // ---------- finding things in years of data (60-64): year heatmap, time scrubber, day/month summaries, "on this day", sources, saved searches ----------
 const MS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 const showFrom = ts => { S.listFrom = ts; S.limit = 300; if (S.view !== 'list' && S.view !== 'gallery') { S.view = 'list'; S.cam = null; } render(); scrollTo(0, 0); };
@@ -7235,6 +7328,7 @@ function wire() {
     if (b.dataset.view) { setView(b.dataset.view); return; }
     if ('readq' in b.dataset) { Pop.close(); Read.queue(); return; }
     if ('trash' in b.dataset) { Pop.close(); Trash.open(); return; }
+    if ('clean' in b.dataset) { Pop.close(); Clean.open(); return; }
     if ('tags' in b.dataset) { Pop.toggle(b); return; }
     if ('fold' in b.dataset) { Rail.fold(); return; }
     if ('paltab' in b.dataset) { Rail.pal(); return; }
@@ -7387,6 +7481,6 @@ const Boot = {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setTimeout(() => Sem.start(), 3000); /* 104f */ setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.paint(); Sync.count(); Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
-  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
+  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Clean.nudge(), 15000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();
