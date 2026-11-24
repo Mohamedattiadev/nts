@@ -1031,6 +1031,14 @@ Arayüz:
            yakınlık katmanları: Ay (bugünkü) → Yıl (12 küçük ay, günler yoğunluk renginde, kayıt sayısı) → Yıllar (2023–2026 satırları, ay
            kareleri yoğunlukla). Geçiş: başlığa (Kasım 2026) dokun / Ctrl+tekerlek / çimdik ile uzaklaş, bir aya/yıla dokun → yakınlaşarak
            girer (FLIP, 200 ms). Klavye: PgUp/PgDn ay, Shift+PgUp yıl, "−"/"+" katman. Tarih çarkı (123-1) ile de aynı tarihe gidilebilsin. 10k kayıtta akıcı.
+           [x] c YAPILDI (2026-11-24, A hattı): Takvim'de Ay · Yıl · Yıllar seçici (başlığın yanında) + başlığa dokun = uzaklaş. Yıl: 12 küçük ay
+           (4×3, telefonda 3×4), her gün yoğunluk renginde (aynı log ölçek), bugün çerçeveli, ay sayısı; Yıllar: en yeni yıl üstte, satır başı yıl +
+           toplam, 12 ay karesi yoğunlukla (telefonda 6×2). Ay/yıla dokun → yakınlaşarak girer (kare tüm ızgaraya büyür, FLIP 200 ms); uzaklaşınca
+           ızgara eski yerine küçülür + o ay bir kez parlar; reduced-motion anında. Ctrl+tekerlek / trackpad çimdik / telefonda iki parmak çimdik:
+           imlecin altındaki ay/yıla girer. Klavye: PgUp/PgDn ay (Yıl'da yıl), Shift+PgUp/PgDn yıl, "−"/"+" katman, oklar ayları gezer, Enter girer.
+           10k kayıt: sayım gün başlangıçları dizisiyle (her kayda Date yok) ~10 ms, liste aynıyken önbellek; katman çizimi 6–25 ms JS.
+           phone-audit takvim/takvim-yil/takvim-yillar 0 (yalnız eski gizli boardBtn). Görüntüler design/157c/. Tarih çarkı (123) sahibin seçimi
+           beklediği için henüz yok; çark gelince S.calMonth + S.calZoom'u ayarlaması yeterli. sw v126
         d) design/feedback-37.png: "Poultrycare" panosunda "1 yıl" seçili, yine 4 kart. Ölçüldü (snapshot, 2026-11-24): project=poultrycare olan
            yalnız 4 kayıt var, 4'ü de son yılda — süzgeç doğru çalışıyor; sahibin beklediği WhatsApp'taki PoultryCare yazışmaları/linkleri projeye
            bağlı değil (yalnız 1'inde #poultrycare etiketi). Yap: proje panosunda (ve boş/az kartlı panoda) "Bu projeyle ilgili N kayıt daha var"

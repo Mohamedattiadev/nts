@@ -2467,7 +2467,76 @@ dialog.clean .d-body { gap: 12px; }
   .c-th .c-pic:nth-child(n+2) { display: none; }
   .c-th .c-pic svg { width: 12px; height: 12px; }
 }
-@media (prefers-reduced-motion: reduce) { .c-day, .c-btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .c-day, .c-btn, .c-mo, .c-m, .c-yl, .c-z, .c-up { transition: none; } }
+/* 157c: zoom layers — Ay → Yıl (12 small months) → Yıllar (a row per year). Tint = how much a day / month holds (same log scale). */
+.cal { touch-action: pan-y; }
+.c-up { font: inherit; color: inherit; background: none; border: 0; padding: 0 6px; margin: 0 -6px; border-radius: 8px; cursor: zoom-out; text-transform: inherit; letter-spacing: inherit; transition: background .15s; }
+.c-up:hover { background: var(--surface-2); }
+.c-up:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.c-zoom { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); margin-right: 4px; }
+.c-z { height: 28px; padding: 0 10px; border: 0; border-radius: 9px; background: none; color: var(--text-2); font: inherit; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
+.c-z:hover { color: var(--text); background: var(--surface-2); }
+.c-z[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.c-z:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.c-body { will-change: auto; }
+/* Yıl: 4 × 3 (3 × 4 / 2 × 6 on narrow screens) */
+.c-year { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.c-mo { min-width: 0; padding: 10px 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; text-align: left; display: flex; flex-direction: column; gap: 8px; cursor: zoom-in; -webkit-user-select: none; user-select: none; transition: border-color .15s, transform .12s var(--ease); }
+.c-mo:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.c-mo:active { transform: scale(.98); }
+.c-mo:focus-visible, .c-m:focus-visible, .c-yl:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.c-mo.cur { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.c-mo.fut { opacity: .55; }
+.c-mh { display: flex; align-items: baseline; gap: 8px; }
+.c-mh b { font-size: calc(14px * var(--fs, 1)); font-weight: 650; text-transform: capitalize; }
+.c-mo.today .c-mh b { color: var(--accent); }
+.c-mh .c-c { position: static; margin-left: auto; }
+.c-mg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.c-mg i { aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--text) 6%, transparent); }
+.c-mg i.o { background: none; }
+.c-mg i.l1, .c-m.l1 { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+.c-mg i.l2, .c-m.l2 { background: color-mix(in srgb, var(--accent) 42%, var(--surface)); }
+.c-mg i.l3, .c-m.l3 { background: color-mix(in srgb, var(--accent) 64%, var(--surface)); }
+.c-mg i.l4, .c-m.l4 { background: var(--accent); }
+.c-mg i.t { box-shadow: 0 0 0 1.5px var(--text); }
+/* Yıllar: the year on the left, 12 month squares */
+.c-years { display: flex; flex-direction: column; gap: 10px; }
+.c-yrow { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: stretch; }
+.c-yl { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 6px 10px; cursor: zoom-in; transition: border-color .15s; }
+.c-yl:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.c-yl b { font-size: calc(16px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+.c-yl.today b { color: var(--accent); }
+.c-yl small { font-size: calc(11.5px * var(--fs, 1)); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.c-ms { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; }
+.c-m { min-width: 0; min-height: 52px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 2px; cursor: zoom-in; transition: border-color .15s, transform .12s var(--ease); }
+.c-m:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.c-m:active { transform: scale(.96); }
+.c-m span { font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--text-2); text-transform: capitalize; }
+.c-m b { font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+.c-m.l3 span, .c-m.l4 span { color: color-mix(in srgb, var(--accent-text, #fff) 85%, transparent); }
+.c-m.l3 b, .c-m.l4 b { color: var(--accent-text, #fff); }
+.c-m.fut { opacity: .4; }
+.c-m.cur { box-shadow: 0 0 0 2px var(--text); }
+.c-m.today { border-color: var(--accent); }
+@media (max-width: 900px) { .c-year { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px) {
+  .c-zoom { padding: 1px; gap: 8px; border-radius: 13px; } .c-z { height: 44px; min-width: 44px; padding: 0 10px; border-radius: 11px; }
+  .c-up { min-height: 44px; margin-right: 2px; }
+  .c-head { align-items: baseline; row-gap: 8px; column-gap: 10px; }
+  .c-head .c-sum { order: 0; width: auto; }
+  .c-head .c-nav { order: 3; width: 100%; margin-left: 0; gap: 8px; }
+  .c-head .c-zoom { margin-right: auto; }
+  .c-year { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .c-mo { padding: 7px 6px 8px; border-radius: 11px; gap: 5px; }
+  .c-mh b { font-size: calc(12.5px * var(--fs, 1)); }
+  .c-mg { gap: 1.5px; } .c-mg i { border-radius: 2px; }
+  .c-years { gap: 8px; }
+  .c-yrow { grid-template-columns: 1fr; gap: 8px; }
+  .c-yl { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 8px; border: 0; background: none; padding: 4px 2px; min-height: 44px; }
+  .c-ms { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .c-m { min-height: 44px; }
+}
+
 /* 107m: sample items are on → a small strip deletes them all: desktop in the top bar after the board name, phone above the box */
 #sampleBar { display: flex; align-items: center; gap: 10px; padding: 0 2px 0 10px; height: 36px; border-radius: 10px; font-size: calc(13px * var(--fs, 1)); color: var(--text-2); white-space: nowrap;
   background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); animation: fade .3s var(--ease); }

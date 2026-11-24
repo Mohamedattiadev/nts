@@ -1270,17 +1270,63 @@ function renderGallery(items) { // month headers stick to the top while scrollin
 // 99b: calendar view — a month grid (the year heatmap, large): each day shows how many items it holds, its tint follows that count,
 // and up to 3 small pictures (else 2 titles). A day opens the list at that day. ‹ › / swipe / PageUp-PageDown change the month,
 // the arrow keys walk the days (crossing into the next month), Home = today. Follows the filters and the search like the other views.
+// 157c (feedback-35): zoom layers — Ay (the month grid) → Yıl (12 small months, days tinted by how much they hold) → Yıllar (one row per
+// year, 12 month squares). Out: the title, the Ay/Yıl/Yıllar switch, "−", Ctrl+wheel or a pinch; in: a month/year, "+", Enter, the
+// same gestures over it. The new layer grows out of (or back into) the place it came from (FLIP, 200 ms). Shift+PageUp/PageDown = a year.
 const Cal = {
   WD: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+  Z: ['Ay', 'Yıl', 'Yıllar'],
+  MS: Array.from({ length: 12 }, (_, k) => new Date(2000, k, 1).toLocaleDateString('tr-TR', { month: 'short' })),
+  ML: Array.from({ length: 12 }, (_, k) => new Date(2000, k, 1).toLocaleDateString('tr-TR', { month: 'long' })),
   month() { return S.calMonth || (S.calMonth = dayKey(now()).slice(0, 7)); },
+  zoom() { return S.calZoom || 0; },
+  key() { return this.month() + '|' + this.zoom(); }, // render's cache key
   go(m, focusDay) { S.calMonth = m; this._focus = focusDay || null; this._kb = !!document.activeElement?.closest?.('#cal'); render(); renderNow(); },
   step(n) { const [y, mo] = this.month().split('-').map(Number), d = new Date(y, mo - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; },
+  // counts per day and per month, one pass over the items, kept while the list is the same (10k items: a few ms, once)
+  counts(items) {
+    if (this._cn?.items === items) return this._cn;
+    const day = new Map(), mon = new Map(); let lo = Infinity, hi = -Infinity;
+    for (const i of items) if (i.type !== 'draw' && i.ts === +i.ts) { if (i.ts < lo) lo = i.ts; if (i.ts > hi) hi = i.ts; }
+    const add = k => { day.set(k, (day.get(k) || 0) + 1); const m = k.slice(0, 7); mon.set(m, (mon.get(m) || 0) + 1); };
+    if (hi - lo < 80 * 365 * 864e5) { // no Date per item: the local day starts of the whole span once, then each item finds its day by index (DST-safe ±1)
+      const d0 = new Date(lo), st = [], ks = [], cnt = [];
+      for (let k = 0, t; (t = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + k)).getTime() <= hi; k++) { st.push(t.getTime()); ks.push(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`); cnt.push(0); }
+      const base = st[0], L = st.length;
+      for (const i of items) { if (i.type === 'draw' || i.ts !== +i.ts) continue; let k = Math.min(L - 1, Math.max(0, Math.floor((i.ts - base) / 864e5)));
+        while (k + 1 < L && st[k + 1] <= i.ts) k++; while (k > 0 && st[k] > i.ts) k--; cnt[k]++; }
+      for (let k = 0; k < L; k++) if (cnt[k]) { day.set(ks[k], cnt[k]); const m = ks[k].slice(0, 7); mon.set(m, (mon.get(m) || 0) + cnt[k]); }
+    } else for (const i of items) if (i.type !== 'draw' && i.ts === +i.ts) add(dayKey(i.ts));
+    const ys = [...mon.keys()].map(m => +m.slice(0, 4));
+    return this._cn = { items, day, mon, y0: ys.length ? Math.min(...ys) : Infinity, y1: ys.length ? Math.max(...ys) : -Infinity };
+  },
+  lvl: (n, max) => !n ? 0 : Math.min(4, 1 + Math.floor(3 * Math.log(n) / Math.log(max + 1) + .0001)), // log scale: one busy day doesn't wash out the rest
+  head(title, sum, nav, up) {
+    const z = this.zoom();
+    return `<div class="c-head"><h2 class="c-title">${up ? `<button class="c-up" data-cz="${z + 1}" title="Uzaklaş (−)" aria-label="${esc(title)} — uzaklaş">${esc(title)}</button>` : esc(title)}</h2><span class="c-sum">${sum}</span>
+      <span class="c-nav"><span class="c-zoom" role="group" aria-label="Yakınlık">${this.Z.map((n, k) => `<button class="c-z" data-cz="${k}" aria-pressed="${k === z}">${n}</button>`).join('')}</span>${nav}</span></div>`;
+  },
+  navBtns(unit, isNow) {
+    const keys = unit === 'ay' ? ['PageUp', 'PageDown'] : ['Shift+PageUp', 'Shift+PageDown'];
+    return `<button class="c-btn" data-cgo="-1" aria-label="Önceki ${unit}" title="Önceki ${unit} (${keys[0]})">${ic('chev', 'sm')}</button>${isNow ? '' : '<button class="c-btn c-today" data-cgo="0">Bugün</button>'}<button class="c-btn" data-cgo="1" aria-label="Sonraki ${unit}" title="Sonraki ${unit} (${keys[1]})">${ic('chev', 'sm')}</button>`;
+  },
   render(items) {
-    const el = $('#cal'), m = this.month(), [y, mo] = m.split('-').map(Number), first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate();
+    const el = $('#cal'), z = this.zoom();
+    el.dataset.z = z;
+    if (z === 2) this.renderYears(el, items); else if (z === 1) this.renderYear(el, items); else this.renderMonth(el, items);
+    const want = this._focus; this._focus = null;
+    const sel = z ? '[data-cmo]' : '[data-cday]', tgt = (want && el.querySelector(`[data-cday="${want}"],[data-cmo="${want}"]`)) || el.querySelector(sel + '.today,' + sel + '.cur') || el.querySelector(sel);
+    if (tgt) tgt.tabIndex = 0;
+    if (want && this._kb) tgt?.focus({ preventScroll: true }); this._kb = false; // the keys keep walking after a month change
+    if (!this.wired) this.wire(el);
+    if (!z) hookThumbs(el);
+    this.fly();
+  },
+  renderMonth(el, items) {
+    const m = this.month(), [y, mo] = m.split('-').map(Number), first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate();
     const lo = first.getTime(), hi = new Date(y, mo, 1).getTime(), by = new Map(); let total = 0;
     for (const i of items) { if (i.ts < lo || i.ts >= hi || i.type === 'draw') continue; const k = dayKey(i.ts); (by.get(k) || by.set(k, []).get(k)).push(i); total++; }
     const max = Math.max(1, ...[...by.values()].map(a => a.length)), today = dayKey(now()), lead = (first.getDay() + 6) % 7;
-    const lvl = n => !n ? 0 : Math.min(4, 1 + Math.floor(3 * Math.log(n) / Math.log(max + 1) + .0001)); // log scale: one busy day doesn't wash out the rest
     let cells = '';
     for (let k = 0; k < lead; k++) cells += '<span class="c-day out" aria-hidden="true"></span>';
     for (let d = 1; d <= days; d++) {
@@ -1288,30 +1334,121 @@ const Cal = {
       const body = media.length ? `<span class="c-th">${media.map(i => thumbBox(i, 'thumb c-pic')).join('')}</span>`
         : n ? `<span class="c-tt">${its.slice(0, 2).map(i => `<span dir="auto">${esc(titleOf(i))}</span>`).join('')}</span>` : '';
       const lbl = `${F_DLW.format(new Date(y, mo - 1, d))}: ${n ? n + ' kayıt' : 'kayıt yok'}`;
-      cells += `<button class="c-day l${lvl(n)}${key === today ? ' today' : ''}${key > today ? ' fut' : ''}" data-cday="${key}" tabindex="-1" aria-label="${esc(lbl)}"${n ? '' : ' aria-disabled="true"'}>
+      cells += `<button class="c-day l${this.lvl(n, max)}${key === today ? ' today' : ''}${key > today ? ' fut' : ''}" data-cday="${key}" tabindex="-1" aria-label="${esc(lbl)}"${n ? '' : ' aria-disabled="true"'}>
         <span class="c-n">${d}</span>${n ? `<span class="c-c">${n}</span>` : ''}${body}</button>`;
     }
     const tail = (7 - (lead + days) % 7) % 7; for (let k = 0; k < tail; k++) cells += '<span class="c-day out" aria-hidden="true"></span>';
-    const name = first.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }), isNow = m === today.slice(0, 7);
-    el.innerHTML = `<div class="c-head"><h2 class="c-title">${esc(name)}</h2><span class="c-sum">${total ? total + ' kayıt' : 'Bu ayda kayıt yok'}</span>
-      <span class="c-nav"><button class="c-btn" data-cgo="-1" aria-label="Önceki ay" title="Önceki ay (PageUp)">${ic('chev', 'sm')}</button>${isNow ? '' : '<button class="c-btn c-today" data-cgo="0">Bugün</button>'}<button class="c-btn" data-cgo="1" aria-label="Sonraki ay" title="Sonraki ay (PageDown)">${ic('chev', 'sm')}</button></span></div>
+    const name = first.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+    el.innerHTML = this.head(name, total ? total + ' kayıt' : 'Bu ayda kayıt yok', this.navBtns('ay', m === today.slice(0, 7)), true) + `
       <div class="c-wd" aria-hidden="true">${this.WD.map(w => `<span>${w}</span>`).join('')}</div>
-      <div class="c-grid" role="grid" aria-label="${esc(name)}">${cells}</div>`;
-    const want = this._focus || (isNow ? today : null); this._focus = null;
-    const tgt = (want && el.querySelector(`[data-cday="${want}"]`)) || el.querySelector('.c-day[data-cday]'); if (tgt) tgt.tabIndex = 0;
-    if (want && this._kb) tgt?.focus({ preventScroll: true }); this._kb = false; // the keys keep walking after a month change
-    if (!this.wired) this.wire(el);
-    hookThumbs(el);
+      <div class="c-grid c-body" role="grid" aria-label="${esc(name)}">${cells}</div>`;
   },
+  renderYear(el, items) {
+    const { day, mon } = this.counts(items), y = +this.month().slice(0, 4), today = dayKey(now()), tm = today.slice(0, 7), cur = this.month();
+    let dmax = 1, total = 0; for (let k = 1; k <= 12; k++) { const m = `${y}-${String(k).padStart(2, '0')}`; total += mon.get(m) || 0; }
+    for (const [k, n] of day) if (k.startsWith(y + '-') && n > dmax) dmax = n;
+    let out = '';
+    for (let k = 0; k < 12; k++) {
+      const m = `${y}-${String(k + 1).padStart(2, '0')}`, n = mon.get(m) || 0, lead = (new Date(y, k, 1).getDay() + 6) % 7, dn = new Date(y, k + 1, 0).getDate();
+      let g = '<i class="o"></i>'.repeat(lead);
+      for (let d = 1; d <= dn; d++) { const dk = `${m}-${String(d).padStart(2, '0')}`; g += `<i class="l${this.lvl(day.get(dk) || 0, dmax)}${dk === today ? ' t' : ''}"></i>`; }
+      out += `<button class="c-mo${m === tm ? ' today' : ''}${m === cur ? ' cur' : ''}${m > tm ? ' fut' : ''}" data-cmo="${m}" tabindex="-1" aria-label="${esc(`${this.ML[k]} ${y}: ${n ? n + ' kayıt' : 'kayıt yok'}`)}">
+        <span class="c-mh"><b>${this.ML[k]}</b>${n ? `<span class="c-c">${n}</span>` : ''}</span><span class="c-mg" aria-hidden="true">${g}</span></button>`;
+    }
+    el.innerHTML = this.head(String(y), total ? total + ' kayıt' : 'Bu yılda kayıt yok', this.navBtns('yıl', y === +tm.slice(0, 4)), true) + `
+      <div class="c-year c-body" role="grid" aria-label="${y}">${out}</div>`;
+  },
+  renderYears(el, items) {
+    const { mon, y0, y1 } = this.counts(items), tm = dayKey(now()).slice(0, 7), ty = +tm.slice(0, 4), cur = this.month();
+    const hiY = Math.max(ty, y1 > -Infinity ? y1 : ty, +cur.slice(0, 4)), loY = Math.min(y0 < Infinity ? y0 : ty, +cur.slice(0, 4)); // only the years that hold items (and this one)
+    let mmax = 1, total = 0; for (const n of mon.values()) { if (n > mmax) mmax = n; total += n; }
+    let rows = '';
+    for (let y = hiY; y >= loY; y--) { // the newest year on top: going back in time = going down
+      let yn = 0, ms = '';
+      for (let k = 0; k < 12; k++) { const m = `${y}-${String(k + 1).padStart(2, '0')}`, n = mon.get(m) || 0; yn += n;
+        ms += `<button class="c-m l${this.lvl(n, mmax)}${m === tm ? ' today' : ''}${m === cur ? ' cur' : ''}${m > tm ? ' fut' : ''}" data-cmo="${m}" tabindex="-1" aria-label="${esc(`${this.ML[k]} ${y}: ${n ? n + ' kayıt' : 'kayıt yok'}`)}"><span>${this.MS[k]}</span>${n ? `<b>${n}</b>` : ''}</button>`; }
+      rows += `<div class="c-yrow" role="row"><button class="c-yl${y === ty ? ' today' : ''}" data-cyear="${y}" aria-label="${y}: ${yn ? yn + ' kayıt' : 'kayıt yok'} — yıla yakınlaş"><b>${y}</b><small>${yn || '–'}</small></button><div class="c-ms">${ms}</div></div>`;
+    }
+    el.innerHTML = this.head('Yıllar', total ? `${total} kayıt · ${hiY - loY + 1} yıl` : 'Kayıt yok', '', false) + `
+      <div class="c-years c-body" role="grid" aria-label="Yıllar">${rows}</div>`;
+  },
+  // change the layer; from = the element it was asked on (a month square, a year) so the new layer grows out of it / shrinks back into it
+  setZoom(z, m, from) {
+    z = Math.max(0, Math.min(2, z)); if (z === this.zoom() && (!m || m === this.month())) return;
+    const r = from?.getBoundingClientRect?.(), dir = z < this.zoom() ? 'in' : 'out';
+    this._fly = { dir, r, m: m || this.month() };
+    S.calZoom = z; if (m) S.calMonth = m;
+    this._focus = z ? (m || this.month()) : null; this._kb = !!document.activeElement?.closest?.('#cal');
+    render(); renderNow(); scrollTo(0, 0);
+  },
+  fly() {
+    const f = this._fly; this._fly = null; const b = $('#cal .c-body'); if (!f || !b || reduced()) return;
+    const B = b.getBoundingClientRect(); if (!B.width) return;
+    const ease = 'cubic-bezier(.2,.8,.2,1)';
+    if (f.dir === 'in' && f.r?.width) { // the small square becomes the whole grid
+      const sx = f.r.width / B.width, sy = f.r.height / B.height;
+      b.style.transformOrigin = '0 0';
+      b.animate([{ transform: `translate(${f.r.left - B.left}px,${f.r.top - B.top}px) scale(${sx},${sy})`, opacity: .2 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: ease })
+        .finished.then(() => { b.style.transformOrigin = ''; }, () => { });
+      return;
+    }
+    // out: the grid we left shrinks into its place on the new layer (the month/year it was)
+    const t = b.querySelector(`[data-cmo="${f.m}"]`) || b.querySelector(`[data-cyear="${f.m.slice(0, 4)}"]`), T = t?.getBoundingClientRect();
+    const ox = T ? T.left + T.width / 2 - B.left : B.width / 2, oy = T ? T.top + T.height / 2 - B.top : B.height / 2;
+    b.style.transformOrigin = `${ox}px ${oy}px`;
+    b.animate([{ transform: 'scale(1.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: ease })
+      .finished.then(() => { b.style.transformOrigin = ''; }, () => { });
+    t?.animate([{ boxShadow: '0 0 0 3px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 700, delay: 150, easing: 'ease-out' });
+  },
+  // one zoom step at a point: in → the month / year under it (else the current one), out → one layer up
+  zoomAt(dir, x, y) {
+    const z = this.zoom();
+    if (dir < 0) return z < 2 && this.setZoom(z + 1);
+    if (!z) return;
+    const h = document.elementFromPoint(x, y)?.closest?.('#cal [data-cmo], #cal [data-cyear]');
+    if (h?.dataset.cyear) return this.setZoom(1, `${h.dataset.cyear}${this.month().slice(4)}`, h);
+    if (h) return this.setZoom(z === 2 ? 1 : 0, h.dataset.cmo, z === 2 ? h.closest('.c-yrow') : h);
+    this.setZoom(z - 1, null, $(`#cal [data-cmo="${this.month()}"]`));
+  },
+  clampDay: (m, d) => `${m}-${String(Math.min(d, new Date(+m.slice(0, 4), +m.slice(5), 0).getDate())).padStart(2, '0')}`,
   open(key) { const [y, mo, d] = key.split('-').map(Number); S.listFrom = new Date(y, mo - 1, d + 1).getTime() - 1; S.limit = 300; setView('list'); scrollTo(0, 0); },
+  key2(e) { // keys that work anywhere in the calendar (and when nothing has focus): layers and years
+    const z = this.zoom();
+    if (e.shiftKey && (e.key === 'PageUp' || e.key === 'PageDown')) { e.preventDefault(); const nm = this.step(e.key === 'PageUp' ? -12 : 12), c = e.target.closest?.('[data-cday]');
+      return this.go(nm, c ? this.clampDay(nm, +c.dataset.cday.slice(8)) : z ? nm : null); }
+    if (e.key === '-' || e.key === '_') { e.preventDefault(); return this.setZoom(z + 1); }
+    if ((e.key === '+' || e.key === '=') && z) { e.preventDefault(); const t = e.target.closest?.('[data-cmo]') || $(`#cal [data-cmo="${this.month()}"]`);
+      return this.setZoom(z - 1, t?.dataset.cmo, z === 2 ? t?.closest('.c-yrow') : t); }
+    return false;
+  },
   wire(el) {
     this.wired = true;
     el.addEventListener('click', e => {
-      const g = e.target.closest('[data-cgo]'); if (g) { const n = +g.dataset.cgo; this.go(n ? this.step(n) : dayKey(now()).slice(0, 7)); return; }
+      const zb = e.target.closest('[data-cz]'); if (zb) { const k = +zb.dataset.cz; return this.setZoom(k, null, k < this.zoom() ? $(`#cal [data-cmo="${this.month()}"]`) : null); }
+      const g = e.target.closest('[data-cgo]'); if (g) { const n = +g.dataset.cgo, u = this.zoom() ? 12 : 1; this.go(n ? this.step(n * u) : dayKey(now()).slice(0, 7), this.zoom() && !n ? dayKey(now()).slice(0, 7) : null); return; }
+      const yb = e.target.closest('[data-cyear]'); if (yb) return this.setZoom(1, `${yb.dataset.cyear}${this.month().slice(4)}`, yb.closest('.c-yrow'));
+      const mb = e.target.closest('[data-cmo]'); if (mb) return this.setZoom(this.zoom() === 2 ? 1 : 0, mb.dataset.cmo, this.zoom() === 2 ? mb.closest('.c-yrow') : mb);
       const c = e.target.closest('[data-cday]'); if (c && c.getAttribute('aria-disabled') !== 'true') this.open(c.dataset.cday);
     });
+    document.addEventListener('keydown', e => { // nothing focused (body) and the calendar is on: the layer keys still work
+      if (S.view !== 'cal' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || document.activeElement !== document.body || document.querySelector('dialog[open], .modal:not([hidden])')) return;
+      this.key2(e);
+    });
     el.addEventListener('keydown', e => {
-      const c = e.target.closest('[data-cday]'); if (!c || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (this.key2(e) !== false) return;
+      const z = this.zoom();
+      if (z) { // year / years: arrows walk the months, Enter goes in, PageUp/PageDown a year
+        const c = e.target.closest('[data-cmo]'); if (!c) return;
+        if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); const nm = this.step(e.key === 'PageUp' ? -12 : 12); return this.go(nm, nm); }
+        if (e.key === 'Home') { e.preventDefault(); const t = dayKey(now()).slice(0, 7); return this.go(t, t); }
+        const cols = z === 2 ? -12 : getComputedStyle(c.parentElement).gridTemplateColumns.split(' ').length; // years: the newest row on top
+        const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[e.key]; if (!mv) return; e.preventDefault();
+        const [y, mo] = c.dataset.cmo.split('-').map(Number), d = new Date(y, mo - 1 + mv, 1), k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, nx = el.querySelector(`[data-cmo="${k}"]`);
+        if (nx) { c.tabIndex = -1; nx.tabIndex = 0; nx.focus(); S.calMonth = k; } else if (z === 1) this.go(k, k);
+        return;
+      }
+      const c = e.target.closest('[data-cday]'); if (!c) return;
       const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
       if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); const [, , d] = c.dataset.cday.split('-').map(Number), nm = this.step(e.key === 'PageUp' ? -1 : 1), [y, mo] = nm.split('-').map(Number);
         return this.go(nm, `${nm}-${String(Math.min(d, new Date(y, mo, 0).getDate())).padStart(2, '0')}`); }
@@ -1320,13 +1457,24 @@ const Cal = {
       const [y, mo, d] = c.dataset.cday.split('-').map(Number), k = dayKey(new Date(y, mo - 1, d + mv).getTime()), nx = el.querySelector(`[data-cday="${k}"]`);
       if (nx) { c.tabIndex = -1; nx.tabIndex = 0; nx.focus(); } else this.go(k.slice(0, 7), k);
     });
-    let sx = null, sy = 0; // phone: swipe sideways for the next / previous month
-    el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') { sx = e.clientX; sy = e.clientY; } });
-    el.addEventListener('pointerup', e => { if (sx == null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
-      if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) { this._swiped = Date.now(); this.slide(dx < 0 ? 1 : -1); } });
-    el.addEventListener('click', e => { if (Date.now() - (this._swiped || 0) < 400) { e.stopPropagation(); e.preventDefault(); } }, true); // a swipe is not a tap on a day
+    // Ctrl+wheel (a trackpad pinch arrives as this too): one layer per gesture
+    let acc = 0, last = 0;
+    el.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); const t = performance.now(); if (t - last > 250) acc = 0; last = t; acc += e.deltaY;
+      if (Math.abs(acc) > 40 && t - (this._zt || 0) > 350) { this._zt = t; this.zoomAt(acc > 0 ? -1 : 1, e.clientX, e.clientY); acc = 0; } }, { passive: false });
+    // phone: two-finger pinch = a layer, one-finger sideways swipe = the next / previous month (year on the Yıl layer)
+    const pts = new Map(); let pinch = null, sx = null, sy = 0;
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: dist(), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; sx = null; } else if (pts.size === 1) { sx = e.clientX; sy = e.clientY; } });
+    el.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && pts.size === 2) { const r = dist() / pinch.d; if (r < .72 || r > 1.4) { this._swiped = Date.now(); const p = pinch; pinch = null; this.zoomAt(r < 1 ? -1 : 1, p.x, p.y); } } });
+    const up = e => { if (!pts.delete(e.pointerId)) return; if (pts.size < 2 && pinch) { pinch = null; this._swiped = Date.now(); }
+      if (sx == null || e.type !== 'pointerup') { sx = null; return; } const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
+      if (this.zoom() < 2 && Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) { this._swiped = Date.now(); this.slide(dx < 0 ? 1 : -1); } };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('click', e => { if (Date.now() - (this._swiped || 0) < 400) { e.stopPropagation(); e.preventDefault(); } }, true); // a swipe / pinch is not a tap
   },
-  slide(n) { this.go(this.step(n)); const g2 = $('#cal .c-grid'); if (!g2 || reduced()) return;
+  slide(n) { this.go(this.step(n * (this.zoom() ? 12 : 1))); const g2 = $('#cal .c-body'); if (!g2 || reduced()) return;
     g2.animate([{ transform: `translateX(${n * 24}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); },
 };
 // 131: automatic folders at the top of the list and the gallery ("5000 things = 5000 scrolls" → ~20-40 folders). Virtual: an item is
@@ -1638,7 +1786,7 @@ function renderNow() {
     if (!renderQueued) return; renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.view === 'board' ? Range.get() + Range.arch() : '') + (S.board || '') + (S.view === 'cal' ? Cal.month() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.view === 'board' ? Range.get() + Range.arch() : '') + (S.board || '') + (S.view === 'cal' ? Cal.key() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
     const pv = S._vview, viewOnly = !!S._vkey && pv !== S.view && pv !== 'todo' && S.view !== 'todo' && vkey.every((x, k) => k === 6 || x === S._vkey[k]); S._vview = S.view;
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
