@@ -629,7 +629,7 @@ Fikir (yeri belli değil, önce öneri):
         bir halka da etiketler için. Önerilen yer: "Tarihe git" ve görev tarihi seçici (telefonda parmakla çevir), etiket halkası süzgeçte.
         Önce `design/dial.html` örneği, sahibe sor.
 Site:
-- [ ] 124. **Tanıtım sayfası (landing page)**: Igrek (Project_manager_suit) sitesi kalitesinde, animasyonlu, kısa video/GIF'li, uçuşan
+- [x] 124. (2026-11-24, B hattı: site/index.html tek dosya, uygulamanın kendi renkleri (açık/koyu sistemden), kimlik değişmedi. Üstte canlı demo: kutuya link yazılır → kart panoya düşer → Claude imleci (120 tasarımı) gelip başlık + #etiket koyar → Ara modunda "sözleşme" canlı süzer → Sor modunda Claude cevaplar; döngü ekranda değilken durur, hareketi azalt'ta durağan son hal. Sonra özellik kartları, pano + telefon ekran görüntüleri (site/img, Playwright ile güncel uygulamadan, açık/koyu), kurulum komutu + Kopyala, gizlilik, kapanış. Video/GIF yerine canlı demo. README'ye "Tanıtım sayfası" düğmesi. 1366×768 + 390×844 × açık/koyu + 360 hareketi azalt: yatay taşma 0, konsol/404 0, dokunma hedefleri ≥40.) **Tanıtım sayfası (landing page)**: Igrek (Project_manager_suit) sitesi kalitesinde, animasyonlu, kısa video/GIF'li, uçuşan
         yapay zekâ imleçleri (120); şimdilik uygulama yalnız web olduğu için "Uygulamayı aç" bağlantısı; GitHub README'ye düğmeyle eklenir
         (github-readme skill). Ayrı klasör `site/`, Pages'te `/nts/site/` ya da kök.
 

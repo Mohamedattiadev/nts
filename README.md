@@ -7,6 +7,7 @@
 Kendine attığın link, not, foto ve dosyalar tek yerde. Claude düzenler, sen sorarsın.
 
 [![Uygulamayı aç](https://img.shields.io/badge/Uygulamay%C4%B1_a%C3%A7-D9480F?style=for-the-badge)](https://mohamedattiadev.github.io/nts/)
+[![Tanıtım sayfası](https://img.shields.io/badge/Tan%C4%B1t%C4%B1m_sayfas%C4%B1-5B5B66?style=for-the-badge)](https://mohamedattiadev.github.io/nts/site/)
 [![Kurulum](https://img.shields.io/badge/Bilgisayara_kur-161413?style=for-the-badge)](#kurulum)
 
 <img src="docs/board.jpg" width="820" alt="Pano">
