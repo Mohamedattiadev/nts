@@ -2118,3 +2118,45 @@ dialog.cmdk .d-body { padding: 0; gap: 0; display: flex; flex-direction: column;
 .ck-foot { display: flex; gap: 16px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); flex: none; }
 @media (min-width: 900px) { dialog.cmdk { padding: 0; background: var(--surface); color: var(--text); margin: 12vh auto auto; width: min(600px, calc(100vw - 48px)); } }
 @media (prefers-reduced-motion: reduce) { dialog.cmdk[open] { animation: none; } }
+
+/* 145: a board card works right on the board (PDF pages, sound, video, picture zoom) + the corner "Pencerede aç" button */
+.bcard .b-open { position: absolute; right: 6px; top: 6px; z-index: 3; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 9px; cursor: pointer;
+  color: var(--text); background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: 0 0 0 1px var(--line), 0 2px 8px rgb(0 0 0 / .12); backdrop-filter: blur(6px);
+  opacity: 0; transform: scale(.9); transition: opacity .15s, transform .18s var(--ease), background .15s; }
+.bcard .b-open .i { width: 15px; height: 15px; }
+.bcard:hover .b-open, .bcard.sel .b-open, .bcard.live .b-open, .bcard .b-open:focus-visible { opacity: 1; transform: none; }
+.bcard .b-open:hover { background: var(--surface); color: var(--accent); }
+.board.far .bcard .b-open, .bcard.dragging .b-open { display: none; }
+@media (pointer: coarse) { .bcard .b-open { width: 36px; height: 36px; } .bcard .b-open::after { content: ""; position: absolute; inset: -4px; } }
+.bcard.live { z-index: 6; height: auto; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 14px 40px rgb(0 0 0 / .22); }
+.bcard.live .b-lk { display: none; }
+.r-live { position: relative; border-radius: 11px 11px 0 0; overflow: hidden; background: var(--surface-2); animation: lv-in .22s var(--ease); cursor: default; touch-action: pan-y; }
+@keyframes lv-in { from { opacity: .4; } to { opacity: 1; } }
+.r-live.image .lv-img { overflow: hidden; max-height: 360px; cursor: zoom-in; }
+.r-live.image .lv-img img { display: block; width: 100%; max-height: 360px; object-fit: contain; transition: transform .25s var(--ease); user-select: none; -webkit-user-drag: none; }
+.r-live.image .lv-img.z { cursor: zoom-out; }
+.r-live.image .lv-img.z img { transform: scale(2.5); }
+.lv-tip { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 99px; font-size: 11px; color: #fff; background: rgb(0 0 0 / .5); pointer-events: none; }
+.r-live.video { background: #000; }
+.r-live.video video { display: block; width: 100%; max-height: 300px; }
+.r-live.pdf .lv-pg { height: 300px; overflow: auto; overscroll-behavior: contain; background: var(--surface-2); padding: 6px; }
+.r-live.pdf .lv-pg canvas { display: block; width: 100%; height: auto; border-radius: 3px; box-shadow: 0 1px 3px rgb(0 0 0 / .18); background: #fff; }
+.r-live.pdf .lv-pg .skel { height: 100%; margin: 0; }
+.lv-bar { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px; border-top: 1px solid var(--line); background: var(--surface); }
+.lv-bar button { width: 34px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--text); cursor: pointer; }
+.lv-bar button:first-child .i { transform: scaleX(-1); }
+.lv-bar button:hover:not(:disabled) { background: var(--surface-2); }
+.lv-bar button:disabled { opacity: .3; cursor: default; }
+.lv-n { min-width: 64px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.lv-au { display: flex; align-items: center; gap: 10px; padding: 14px 12px; }
+.lv-pp { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--accent); color: var(--accent-text); cursor: pointer; transition: transform .12s; }
+.lv-pp:active { transform: scale(.92); }
+.lv-pp .i { width: 17px; height: 17px; fill: currentColor; stroke: none; }
+.lv-wave { flex: 1; height: 34px; display: flex; align-items: center; gap: 2px; cursor: pointer; }
+.lv-wave i { flex: 1; height: 40%; min-height: 3px; border-radius: 2px; background: var(--line-2); transition: background .12s, height .3s var(--ease); }
+.lv-wave i.on { background: var(--accent); }
+.lv-t { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); min-width: 32px; text-align: right; }
+@media (pointer: coarse) { .lv-bar button { width: 44px; height: 40px; } .lv-pp { width: 44px; height: 44px; } .lv-wave { height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .r-live, .r-live.image .lv-img img, .bcard .b-open, .lv-wave i { animation: none; transition: none; } }
+.bcard:has(> .b-open):not(:has(> .thumb, > .r-emb, > .r-live)) .b-head { padding-right: 28px; }
+.r-live.audio .lv-au { padding-right: 46px; }

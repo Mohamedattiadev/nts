@@ -641,7 +641,7 @@ Arayüz:
         etiketi (Ayarlar'daki ad ya da Google adı, yoksa "Sen"), ana renkte; Ayarlar → Pano imleci "Nts" seçiliyken masaüstünde panoda; gerçek fareyi
         gecikmesiz izler (yalnız etiket yaylı gelir), sürüklerken/çizerken küçük durum ("taşıyor", kalem simgesi); düğme ve yazı alanlarında sistem
         imlecine döner; performans: tek rAF, transform, 60 fps, 10k kartta da. reduced-motion'da hareketsiz. Ekran görüntüsü + kısa GIF/video kareleri.
-- [ ] 145. **Panodaki zengin kartlar panoda çalışsın** (sahip, 2026-11-24: "tahtada pdf, voice vb. zengin şeyler vardı ya, o tahtanın üzerinde direkt
+- [x] 145. **Panodaki zengin kartlar panoda çalışsın** (sahip, 2026-11-24: "tahtada pdf, voice vb. zengin şeyler vardı ya, o tahtanın üzerinde direkt
         çalıştırabiliyor olayım; tıkladığımda açılsın, kullanılabiliyor olsun; bir de üzerinde bir düğme olsun, basınca popup'ta açılıyor, ya da sağ
         tık menüden"). a) Tek tık kartı yerinde etkinleştirir (106a'daki YouTube/Spotify/harita gibi ama hepsi): PDF → kartta sayfa çevrilir (pdf.js,
         ‹ › + sayfa no, tekerlek kartın içinde kaydırır), ses/sesli not (95a) → oynat/duraklat + dalga çizgisi + konum, video dosyası → oynar, resim →
@@ -649,6 +649,14 @@ Arayüz:
         açar; kart dışına tık/Esc kapatır; aynı anda tek oynayan medya. b) Kartın üst köşesinde, üzerine gelince (telefonda seçiliyken) küçük "büyüt"
         düğmesi → kayıt penceresinde/popup'ta açar; sağ tık / uzun bas menüsünde "Pencerede aç". c) Uzakta (küçük ölçekte) kart etkinleşmez, önce
         yakınlaştırır. Telefon önce, 4 yapılandırma ekran görüntüsü, phone-audit 0, 10k kartta akıcı (yalnız etkin kart canlı).
+        YAPILDI (2026-11-24, A): app.js `OnBoard` (sync'in `Live`'ı ile karışmasın diye bu ad). Tek tık (sürüklemeden) → kart canlı: PDF sayfası
+        kartta (‹ › + "2 / 3", tekerlek sayfayı kaydırır, ← → / PageUp-Down), ses → oynat/duraklat + 40 çubuklu GERÇEK ses dalgası (decodeAudioData)
+        + dokunarak konum + süre, video → kartta oynar (yerel kontroller), resim → dokunulan yere 2.5× yakınlaş / geri. Link gömmeleri (YouTube,
+        Spotify, harita) kartın herhangi bir yerine dokununca da oynar. Aynı anda tek canlı kart; dışarı dokun / Esc kapatır; pano yeniden çizilse
+        de canlı kart (ve sesi) kalır. Canlı kart öne çıkar (z-index, accent çerçeve), komşulara yer açtırmaz (zıplama yok). Köşede "büyüt" düğmesi
+        (fareyle üstüne gelince; telefonda seçili/canlıyken; 36 px dokunma) → kayıt penceresi; sağ tık / uzun bas menüsünde panoda "Pencerede aç".
+        Uzakta (%55 altı) tık önce karta yaklaşır. Notlar/linkler eskisi gibi pencereyi açar; onay kutuları 106b'deki gibi kartta. Test:
+        scratchpad t145.mjs (4 yapılandırma, PDF/ses/video/resim, dışarı tık, köşe düğmesi, menü), konsol hatası yok.
 - [ ] 146. **Pano seçici listesi sol çubuğun üstüne binmesin** (sahip, 2026-11-24, design/feedback-24.png: "o kart soldaki menü üzerinde olmamalı sanki").
         Panoda logo + "Genel ⌄" açılınca Panolar listesi sol çubuğun (filtre/simge sütunu) üstünü kapatıyor; ayrıca açıkken düğmenin ipucu
         ("Pano: Genel — değiştir") listenin "PANOLAR" başlığının üstüne düşüyor. Düzelt: liste sol çubuğun SAĞINDAN açılsın (çubuk kapalıyken

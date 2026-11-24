@@ -78,6 +78,8 @@ const I = {
   split: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>',
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
   dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  pause: '<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>', // 145
+  expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>', // 145
   play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/>',
   mappin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
@@ -989,6 +991,89 @@ const Rich = {
   live() { if (this.lt) return; this.lt = setInterval(() => { const els = document.querySelectorAll('.r-cdC'); if (!els.length) { clearInterval(this.lt); this.lt = 0; return; }
     for (const el of els) { const s = Math.max(0, Math.floor((+el.dataset.at - now()) / 1e3)), b = el.querySelectorAll('b'), p = n => String(n).padStart(2, '0'); b[0].textContent = p(Math.floor(s / 3600)); b[1].textContent = p(Math.floor(s / 60) % 60); b[2].textContent = p(s % 60); } }, 1000); },
 
+};
+// 145: a board card that holds a PDF, a sound, a video or a picture works right on the board. A tap (no drag) makes it live: PDF pages
+// turn in the card (‹ ›, the wheel scrolls the page), a sound plays with its wave line and place, a video plays, a picture zooms where
+// tapped. One live card at a time (one playing medium); a tap outside or Esc ends it. Far away a tap first comes close to the card.
+// The corner button (and "Pencerede aç" in the menu) opens the record window instead. Only the live card has a player, so 10k cards stay light.
+const OnBoard = {
+  id: null, el: null, a: null, pdf: null,
+  NEAR: .55, // below this zoom a tap comes closer first
+  can(i) { return !!i && !i.sticky && (!!Rich.embed(i) || i.type === 'file' && ['pdf', 'audio', 'video', 'image'].includes(fileKind(i))); },
+  // a tap on a card: true when it was taken here (the card did not open)
+  tap(card) {
+    const i = byId(card.dataset.id); if (!this.can(i)) return false;
+    if (S.cam && S.cam.k < this.NEAR) { this.near(card); return true; }
+    if (this.id === i.id) return true;
+    if (Rich.embed(i)) { const b = card.querySelector('[data-rich="play"]'); if (b) Rich.tap(card, b); return !!b; }
+    this.open(card, i); return true;
+  },
+  near(card) { // the card comes to the middle at a readable size
+    const b = $('#board'), k = innerWidth < 900 ? 1 : Math.max(1, S.cam.k), x = card.offsetLeft + card.offsetWidth / 2, y = card.offsetTop;
+    Board.animate(() => { S.cam = { k, x: b.clientWidth / 2 - x * k, y: Math.max(72, b.clientHeight * .18) - y * k }; Board.apply(); }); haptic(8);
+  },
+  async open(card, i) {
+    this.close(); const k = fileKind(i), u = await blobFor(i).catch(() => null);
+    if (!card.isConnected) return;
+    if (!u) return toast('Dosya bu cihazda yok' + (i.fileSynced ? ', önce indiriliyor olabilir' : ''), 2600, 'cloud');
+    this.id = i.id; this.el = card; haptic(8);
+    const old = card.querySelector(':scope > .thumb, :scope > .r-emb'), box = document.createElement('div'); box.className = 'r-live ' + k; this.old = old;
+    this.h = card.style.height; card.style.height = ''; card.classList.add('live');
+    old ? old.replaceWith(box) : card.querySelector('.b-in').before(box);
+    if (k === 'image') { box.innerHTML = `<div class="lv-img"><img src="${u}" alt="" draggable="false"></div><div class="lv-tip">Dokun: yakınlaş</div>`; }
+    else if (k === 'video') { box.innerHTML = `<video src="${u}" controls playsinline autoplay preload="metadata"></video>`; this.a = box.querySelector('video'); }
+    else if (k === 'audio') {
+      box.innerHTML = `<div class="lv-au"><button class="lv-pp" data-lv="pp" aria-label="Oynat">${ic('play')}</button><div class="lv-wave" data-lv="seek" role="slider" tabindex="0" aria-label="Konum" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">${'<i></i>'.repeat(40)}</div><span class="lv-t">0:00</span></div>`;
+      const a = this.a = new Audio(u); a.preload = 'auto';
+      const t = box.querySelector('.lv-t'), w = box.querySelector('.lv-wave'), bars = [...w.children], pp = box.querySelector('.lv-pp'), mm = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+      const tick = () => { const d = a.duration || i.voice || 0, f = d ? a.currentTime / d : 0; t.textContent = mm(a.paused && !a.currentTime ? d : a.currentTime);
+        const n = Math.round(f * bars.length); bars.forEach((b, x) => b.classList.toggle('on', x < n)); w.setAttribute('aria-valuenow', Math.round(f * 100)); };
+      a.ontimeupdate = a.onloadedmetadata = tick; a.onplay = a.onpause = a.onended = () => { pp.innerHTML = ic(a.paused ? 'play' : 'pause'); pp.ariaLabel = a.paused ? 'Oynat' : 'Duraklat'; tick(); };
+      this.wave(u, bars); a.play().catch(() => {});
+    } else if (k === 'pdf') {
+      box.innerHTML = `<div class="lv-pg lv-scroll"><div class="skel"></div></div><div class="lv-bar"><button data-lv="prev" aria-label="Önceki sayfa" disabled>${ic('chev', 'sm')}</button><span class="lv-n">1 / …</span><button data-lv="next" aria-label="Sonraki sayfa">${ic('chev', 'sm')}</button></div>`;
+      try { this.pdf = { doc: await Prev.pdfDoc(i), n: 1, id: i.id }; if (this.id !== i.id) return this.pdf?.doc?.destroy(); await this.page(0); }
+      catch { box.querySelector('.lv-pg').innerHTML = `<div class="prev-empty">${ic('pdf', 'lg')}<span>PDF açılamadı</span></div>`; }
+    }
+    Board.wires?.();
+  },
+  async page(d) {
+    const p = this.pdf, box = this.el?.querySelector('.r-live'); if (!p?.doc || !box) return;
+    const n = Math.max(1, Math.min(p.doc.numPages, p.n + d)); if (d && n === p.n) return; p.n = n;
+    const pg = box.querySelector('.lv-pg'), c = await Prev.renderPage(p.doc, n, Math.min(1400, Math.round(236 * (devicePixelRatio || 1) * Math.max(1.5, S.cam?.k || 1))));
+    if (this.pdf !== p) return; pg.replaceChildren(c); pg.scrollTop = d < 0 ? pg.scrollHeight : 0;
+    box.querySelector('.lv-n').textContent = `${n} / ${p.doc.numPages}`; box.querySelector('[data-lv="prev"]').disabled = n < 2; box.querySelector('[data-lv="next"]').disabled = n >= p.doc.numPages;
+  },
+  async wave(u, bars) { // real loudness of the sound in 40 bars (no made-up shape); if it cannot be read the bars stay even
+    try { const ac = new (window.AudioContext || window.webkitAudioContext)(), buf = await ac.decodeAudioData(await (await fetch(u)).arrayBuffer()); ac.close?.();
+      const ch = buf.getChannelData(0), step = Math.floor(ch.length / bars.length), v = bars.map((_, k) => { let m = 0; for (let j = k * step; j < (k + 1) * step; j += 32) m = Math.max(m, Math.abs(ch[j])); return m; }), mx = Math.max(...v, .01);
+      bars.forEach((b, k) => b.style.height = Math.max(12, Math.round(v[k] / mx * 100)) + '%');
+    } catch { }
+  },
+  close() {
+    if (!this.id) return; const c = this.el, box = c?.querySelector('.r-live');
+    if (this.a) { this.a.pause(); this.a.removeAttribute?.('src'); this.a = null; } this.pdf?.doc?.destroy?.(); this.pdf = null;
+    if (box) this.old ? box.replaceWith(this.old) : box.remove();
+    if (c) { c.classList.remove('live'); c.style.height = this.h || ''; }
+    this.id = this.el = this.old = null; Board.wires?.();
+  },
+  click(e) { // controls inside the live card
+    const b = e.target.closest('[data-lv]'), box = e.target.closest('.r-live'); if (!box) return;
+    if (b?.dataset.lv === 'prev') this.page(-1); else if (b?.dataset.lv === 'next') this.page(1);
+    else if (b?.dataset.lv === 'pp' && this.a) this.a.paused ? this.a.play() : this.a.pause();
+    else if (b?.dataset.lv === 'seek' && this.a) { const r = b.getBoundingClientRect(), f = (e.clientX - r.left) / r.width; if (this.a.duration) this.a.currentTime = Math.max(0, Math.min(1, f)) * this.a.duration; if (this.a.paused) this.a.play(); }
+    else if (box.classList.contains('image')) { const w = box.querySelector('.lv-img'), im = w.querySelector('img'), r = w.getBoundingClientRect(), on = !w.classList.contains('z');
+      im.style.transformOrigin = `${(e.clientX - r.left) / r.width * 100}% ${(e.clientY - r.top) / r.height * 100}%`; w.classList.toggle('z', on); box.querySelector('.lv-tip').textContent = on ? 'Dokun: geri' : 'Dokun: yakınlaş'; }
+  },
+  init() {
+    document.addEventListener('click', e => { if (e.target.closest('.bcard.live .r-live')) this.click(e); });
+    document.addEventListener('pointermove', e => { const w = e.target.closest?.('.bcard.live .lv-img.z'); if (!w || e.pointerType !== 'mouse') return; const r = w.getBoundingClientRect(); w.firstChild.style.transformOrigin = `${(e.clientX - r.left) / r.width * 100}% ${(e.clientY - r.top) / r.height * 100}%`; });
+    document.addEventListener('pointerdown', e => { if (this.id && !e.target.closest('.bcard.live, .ctx, dialog')) this.close(); }, true);
+    addEventListener('keydown', e => { if (!this.id) return;
+      if (e.key === 'Escape' && !document.querySelector('dialog[open]')) { this.close(); }
+      else if (this.pdf && (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'ArrowLeft' || e.key === 'PageUp') && !e.target.closest('input,textarea,[contenteditable]')) { e.preventDefault(); this.page(/Right|Down/.test(e.key) ? 1 : -1); }
+      else if (e.key === ' ' && this.a && !(this.a instanceof HTMLVideoElement) && !e.target.closest('input,textarea,[contenteditable],button')) { e.preventDefault(); this.a.paused ? this.a.play() : this.a.pause(); } });
+  },
 };
 // keyboard: Enter / Space on a play button or a check box inside a board card (a pointer tap goes through Board's own handler)
 document.addEventListener('click', e => { if (e.detail) return; const c = e.target.closest?.('.bcard'), b = e.target.closest?.('[data-rich]'); if (c && b && Rich.tap(c, b)) e.preventDefault(); });
@@ -4041,7 +4126,7 @@ const Ctx = {
     const i = byId(id); if (!i) return; this.id = id; this.from = from || null; const el = this.el; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Kayıt menüsü');
     el.innerHTML = `<div class="side-label">Renk</div><div class="mark-dots">${COLORS.map(([c, n]) => `<button class="cdot c-${c}${i.color === c ? ' on' : ''}" data-c="${c}" title="${n}" aria-label="${n}"></button>`).join('')}<button class="cdot none" data-c="" title="Renk yok" aria-label="Renk yok">${ic('x', 'sm')}</button></div>
       <div class="side-label">Öncelik</div><div class="seg sm prio">${PRIOS.map(([v, n]) => `<button class="${(i.prio || '') === v ? 'on' : ''}" data-p="${v}">${n}</button>`).join('')}</div>
-      <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">Aç</span></button>
+      <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">${S.view === 'board' ? 'Pencerede aç' : 'Aç'}</span></button>
       <button class="side-row" data-a="star">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}<span class="lbl">${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}</span></button>
       <button class="side-row" data-a="todo">${ic('todo', 'sm')}<span class="lbl">${i.todo ? 'Görevden çıkar' : 'Görev yap'}</span></button>
       ${S.folder?.startsWith('ai:') && inFolder() && AIF.has(S.folder.slice(3), i.id) ? `<button class="side-row" data-a="fout">${ic('folder', 'sm')}<span class="lbl">Bu klasöre ait değil</span></button>` : ''}
@@ -4536,7 +4621,7 @@ const Board = {
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id || Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
     const rich = Rich.html(i), rb = Rich.body(i); // 106a
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div>${Rich.pill(i)}</div>
-      ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i), due: !Rich.due(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
+      ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i), due: !Rich.due(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${OnBoard.can(i) ? `<button class="b-open" title="Pencerede aç" aria-label="Pencerede aç">${ic('expand', 'sm')}</button>` : ''}${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
@@ -4546,7 +4631,7 @@ const Board = {
     if (this.busy) { this.pending = items; return; }
     this.pending = null;
     const plane = $('#plane');
-    plane.querySelectorAll('.bcard,.col-head,.day-band').forEach(e => e.remove());
+    plane.querySelectorAll('.bcard,.col-head,.day-band').forEach(e => e !== OnBoard.el && e.remove()); // 145: a live card keeps playing through a redraw
     const list = items.slice().sort((a, b) => a.ts - b.ts);
     const placed = list.filter(posOf), free = list.filter(i => !posOf(i) && !i.sticky);
     Ink.render();
@@ -4617,8 +4702,9 @@ const Board = {
     const inside = m => m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + m.h > v.y1;
     for (const [id, m] of this.M) {
       const el = this.mounted.get(id);
-      if (inside(m)) { if (!el) { const c = this.card(m.i); if (m.auto) { c.classList.add('auto'); c.style.height = m.h + 'px'; } if (now() - (m.i.createdAt || 0) < 1500) c.classList.add('born'); c.style.left = m.x + 'px'; c.style.top = m.y + 'px'; frag.appendChild(c); this.mounted.set(id, c); fresh.push(c); } }
-      else if (el && !el.classList.contains('dragging') && !el.querySelector('[contenteditable="true"],[contenteditable="plaintext-only"]')) { el.remove(); this.mounted.delete(id); }
+      if (inside(m)) { if (!el && OnBoard.id === id && OnBoard.el?.isConnected) { Object.assign(OnBoard.el.style, { left: m.x + 'px', top: m.y + 'px' }); this.mounted.set(id, OnBoard.el); }
+        else if (!el) { const c = this.card(m.i); if (m.auto) { c.classList.add('auto'); c.style.height = m.h + 'px'; } if (now() - (m.i.createdAt || 0) < 1500) c.classList.add('born'); c.style.left = m.x + 'px'; c.style.top = m.y + 'px'; frag.appendChild(c); this.mounted.set(id, c); fresh.push(c); } }
+      else if (el && !el.classList.contains('dragging') && !(OnBoard.id === id && OnBoard.el?.isConnected) && !el.querySelector('[contenteditable="true"],[contenteditable="plaintext-only"]')) { el.remove(); this.mounted.delete(id); }
     }
     for (const h of this.heads) {
       const el = this.mountedHeads.get(h.k), inn = h.x < v.x2 && h.x + h.w > v.x1;
@@ -4865,7 +4951,7 @@ const Board = {
     b.addEventListener('pointerleave', e => { if (mouse(e)) this.hot(null); });
     b.addEventListener('pointerdown', e => {
       if (e.pointerType !== 'mouse') { tt = performance.now(); this.hot(e.target.closest?.('.bcard')?.dataset.id || null); }
-      if (e.target.closest('.acts') || e.button === 2 || !S.cam) return;
+      if (e.target.closest('.acts, .r-live, .b-open') || e.button === 2 || !S.cam) return; // 145: the live card's own controls
       if (e.target.closest('#months')) { // 109a: the month grid keeps its own taps and scrolling (no capture), but two fingers still zoom
         pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); drag = null;
         if (pts.size === 2) { const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; }
@@ -4950,6 +5036,7 @@ const Board = {
         if (!(e.shiftKey || e.ctrlKey || e.metaKey) && byId(d.card.dataset.id)?.sticky) return Ink.tap(d.card, e, d.t); // 140: pick, then write
         if (e.shiftKey || e.ctrlKey || e.metaKey || Link.sel.size) return Link.toggle(d.card.dataset.id); // 138/139: Shift / Ctrl-click picks (then taps add/remove)
         if (Rich.tap(d.card, d.t)) return; // 106a: play / tick inside the card
+        if (OnBoard.tap(d.card)) return; // 145: a PDF / sound / video / picture works right on the board
         return openItem(d.card.dataset.id); }
       d.card.classList.remove('dragging'); Motion.drop(d.card); // 142: settle + a calm sheen
       const i = byId(d.card.dataset.id); if (!i) return;
@@ -4961,11 +5048,12 @@ const Board = {
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
     b.addEventListener('dblclick', e => { const c = e.target.closest('.bcard.sticky'); if (c) return Ink.edit(c, e); if (S.tool === 'select' && !e.target.closest('.bcard')) Ink.sticky('note', e); });
     Ink.init();
-    b.addEventListener('click', e => { const a = e.target.closest('.act'); if (a) { e.stopPropagation(); itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); } });
+    b.addEventListener('click', e => { const o = e.target.closest('.b-open'); if (o) { e.stopPropagation(); OnBoard.close(); return openItem(o.closest('[data-id]').dataset.id); } // 145: the corner button opens the record window
+      const a = e.target.closest('.act'); if (a) { e.stopPropagation(); itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); } });
     b.addEventListener('wheel', e => {
       if (!S.cam) return;
       const zoom = e.ctrlKey || e.metaKey;
-      if (!zoom && e.target.closest('#months')) return; // the month grid scrolls by itself
+      if (!zoom && e.target.closest('#months, .bcard.live .lv-scroll')) return; // the month grid (and a live PDF page, 145) scrolls by itself
       e.preventDefault(); const r = b.getBoundingClientRect();
       // 109a: a mouse notch (100-120 px, or lines) was e^1.2 = 3.3x per click and hit the limit at once; now 1.2x a notch, a trackpad pinch stays smooth
       if (zoom) this.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaMode || Math.abs(e.deltaY) >= 50 ? (e.deltaY < 0 ? 1.2 : 1 / 1.2) : Math.exp(-Math.max(-30, Math.min(30, e.deltaY)) * .01));
@@ -6672,7 +6760,7 @@ function wire() {
   ViewHide.init();
   Underlap.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
-  Ctx.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
+  Ctx.init(); OnBoard.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
   Todo.init();
   Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
