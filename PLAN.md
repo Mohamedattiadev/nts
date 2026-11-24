@@ -601,7 +601,15 @@ Arayüz:
         Codex yeşil/siyah) + ad etiketi ("Claude etiketledi") ekrandaki değişen kartlara sırayla uçar (400 ms), dokunduğu kart bir kez parlar; en fazla 8 kart,
         yarı görünen kartta görünen kısmına gider, pano değilse/gizliyse/reduced-motion'da hiç çıkmaz. Ayarlar → Görünüm → "Pano imleci: Sistem / Nts":
         kullanıcının kendi imleci aynı tasarımda, ana renkte (yalnız masaüstü). 93 (pano hazırlat) gelince AICur.tour(ids, 'yerleştirdi') kullanılsın.
-- [ ] 121. **Cam (liquid glass) görünüm ayarı**: Ayarlar → Görünüm'de aç/kapat; tüm yüzen yüzeyler (kutu, çubuklar, pencereler) iPhone gibi
+- [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
+        görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
+        ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
+        ≥ 4.5:1. Cam içinde cam yok (seg). Otomatik kapalı: telefonda ≤ 4 çekirdek ya da ≤ 3 GB bellek, backdrop-filter yok, "saydamlığı azalt" açık
+        → Cam düğmesi pasif + neden yazılı. Seçim: Ayarlar → Görünüm → Yüzeyler (Düz / Cam iki küçük örnek) ve turun son adımı "Hazırsın"da aynı
+        iki örnek. index.html'de erken uygulanır (yanıp sönme yok). Test: 4 yapılandırma aç/kapa/yeniden yükle, yavaş telefon kapalı, konsol hatası 0,
+        phone-audit pano+ayarlar 0 (ayarlar "close:4" ana dalda da var: pano'dan sonra koşunca denetim aracının yan etkisi, tek başına 0);
+        ekran görüntüleri design/121/. sw v85)
+        ESKİ METİN: **Cam (liquid glass) görünüm ayarı**: Ayarlar → Görünüm'de aç/kapat; tüm yüzen yüzeyler (kutu, çubuklar, pencereler) iPhone gibi
         bulanık cam; AA kontrast korunur, yavaş telefonda otomatik kapalı. İlk tanıtımın (tur) sonunda da sorulsun: yan yana 2 küçük örnek
         (Düz / Cam), seçer; sonra Ayarlar'dan değiştirebilir.
 - [ ] 122. **İlk tanıtımda giriş seçimi**: "Google ile giriş yap" (önerilen: telefon ve bilgisayar aynı kayıtları görür) ya da "Misafir olarak

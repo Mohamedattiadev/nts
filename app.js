@@ -3209,7 +3209,7 @@ const Tour = {
       [phone ? '#filterBtn' : '#rail', 'Neye bakmak istersin', 'Linkler, notlar, fotoğraflar ve <b>Yapılacaklar</b>. Listeler, konular ve Şifrelerim <b>⋯</b> altında; çubuğu <b>[</b> ile gizlersin.'],
       ['#viewSwitch', 'Pano, liste, galeri', 'Panoda kartları sürükleyip istediğin yere koy, boş yere çift tıklayıp not yaz, kalemle çiz.'],
       ['#settingsBtn', 'Telefon ve bilgisayar', 'Ayarlar\'dan <b>Google ile gir</b>: iki cihaz da aynı kayıtları görür. ' + aiName() + ' bağlantısı da burada.'],
-      [null, 'Hazırsın', 'Kendine bir not at, gerisini Nts ve ' + aiName() + ' halleder. Bu turu Ayarlar → "Nasıl kullanılır?"dan tekrar açabilirsin.'],
+      [null, 'Hazırsın', 'Kendine bir not at, gerisini Nts ve ' + aiName() + ' halleder. Son olarak görünümü seç; sonra Ayarlar → Görünüm\'den değiştirebilirsin.'],
     ];
   },
   start() {
@@ -3217,7 +3217,7 @@ const Tour = {
     const el = this.el = document.createElement('div'); el.className = 'tour';
     el.innerHTML = '<div class="tour-hole"></div><div class="tour-card" role="dialog" aria-live="polite"></div>';
     document.body.appendChild(el);
-    el.addEventListener('click', e => { const a = e.target.closest('[data-tour]')?.dataset.tour; if (a === 'next') this.go(1); else if (a === 'back') this.go(-1); else if (a === 'skip') this.end(true); });
+    el.addEventListener('click', e => { const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return this.show(); } const a = e.target.closest('[data-tour]')?.dataset.tour; if (a === 'next') this.go(1); else if (a === 'back') this.go(-1); else if (a === 'skip') this.end(true); });
     this.key = e => { if (e.key === 'Escape') this.end(true); else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.go(1); } else if (e.key === 'ArrowLeft') this.go(-1); };
     addEventListener('keydown', this.key, true); this.rs = () => this.show(); addEventListener('resize', this.rs);
     this.show();
@@ -3226,7 +3226,7 @@ const Tour = {
   show() {
     const all = this.steps(), [sel, h, p] = all[this.n], el = this.el, hole = el.querySelector('.tour-hole'), card = el.querySelector('.tour-card');
     const t = sel && document.querySelector(sel), r = t?.getBoundingClientRect(), pad = 8;
-    card.innerHTML = `<div class="tour-n">${this.n + 1} / ${all.length}</div><h3>${h}</h3><p>${p}</p>
+    card.innerHTML = `<div class="tour-n">${this.n + 1} / ${all.length}</div><h3>${h}</h3><p>${p}</p>${this.n === all.length - 1 ? Glass.pick() : ''}
       <div class="tour-acts">${this.n < all.length - 1 ? '<button class="link-btn" data-tour="skip">Atla</button>' : ''}<span class="sp"></span>
         ${this.n ? '<button class="btn secondary" data-tour="back">Geri</button>' : ''}<button class="btn primary" data-tour="next">${this.n < all.length - 1 ? 'İleri' : 'Başla'}</button></div>`;
     if (r && r.width) {
@@ -5946,6 +5946,25 @@ function setTheme(t) {
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.content = bg);
   AICur.mine();
 }
+// 121: glass look. Stored per device (hn-glass = 1/0); off on slow phones, without backdrop-filter, or with "reduce transparency"
+const Glass = {
+  slow() {
+    const n = navigator, mm = q => { try { return matchMedia(q).matches; } catch { return false; } };
+    if (mm('(prefers-reduced-transparency: reduce)')) return 'Sistem saydamlığı azalt açık';
+    if (!(CSS.supports?.('backdrop-filter', 'blur(1px)') || CSS.supports?.('-webkit-backdrop-filter', 'blur(1px)'))) return 'Bu tarayıcı desteklemiyor';
+    if (onPhone() && ((n.deviceMemory || 8) <= 3 || (n.hardwareConcurrency || 8) <= 4)) return 'Bu telefon yavaş, düz görünüm kalır';
+    return '';
+  },
+  want() { try { return localStorage.getItem('hn-glass') === '1'; } catch { return false; } },
+  on() { return document.documentElement.hasAttribute('data-glass'); },
+  apply() { document.documentElement.toggleAttribute('data-glass', this.want() && !this.slow()); },
+  set(v) { try { localStorage.setItem('hn-glass', v ? '1' : '0'); } catch { } this.apply(); },
+  // two tiny previews (Düz / Cam); data-look="0|1"
+  pick() {
+    const no = this.slow(), g = this.want() && !no, b = (v, l, s) => `<button type="button" data-look="${v}" aria-pressed="${g === !!v}"${v && no ? ' disabled' : ''}><span class="lk-art${v ? ' glass' : ''}"><i></i><i></i><i></i><b></b></span><span>${l} <small>${s}</small></span></button>`;
+    return `<div class="look-pick" role="group" aria-label="Görünüm">${b(0, 'Düz', 'sade, hızlı')}${b(1, 'Cam', 'buzlu, saydam')}</div>${no ? `<p class="look-note">Cam kapalı: ${no}.</p>` : ''}`;
+  },
+};
 const ACCENTS = [['orange', 'Turuncu', '#c2410c', '#ff9a4d'], ['indigo', 'Çivit', '#4f5fd6', '#8b9cff'], ['green', 'Yeşil', '#15803d', '#5fd68a'],
   ['blue', 'Mavi', '#0b6bcb', '#6cb6ff'], ['pink', 'Pembe', '#c2255c', '#ff85b0'], ['teal', 'Turkuaz', '#0f766e', '#4fd1c5']];
 function setAccent(a) {
@@ -5998,6 +6017,7 @@ function openSettings(page = 'main') {
       <div class="set-line"><span>Tema</span><div class="seg sm"><button data-do="light" class="${dark ? '' : 'on'}">${ic('sun', 'sm')}Açık</button><button data-do="dark" class="${dark ? 'on' : ''}">${ic('moon', 'sm')}Koyu</button></div></div>
       <div class="set-line"><span>Ana renk</span><div class="swatches">${ACCENTS.map(([k, n, l, d]) => `<button class="sw${k === cur ? ' on' : ''}" data-accent="${k}" title="${n}" style="--c:${dark ? d : l}"></button>`).join('')}
         <label class="sw custom${cur === 'custom' ? ' on' : ''}" title="Özel renk" style="--c:${cur === 'custom' ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)'}"><input type="color" id="accentPick" value="${(() => { try { const v = localStorage.getItem('hn-accent'); return v?.startsWith('#') ? v : '#e8590c'; } catch { return '#e8590c'; } })()}"></label></div></div>
+      <div class="set-line look-line"><span>Yüzeyler</span></div>${Glass.pick()}
       <div class="set-line d-only"><span>Pano imleci</span><div class="seg sm"><button data-mycur="0" class="${S.settings.myCursor ? '' : 'on'}" aria-pressed="${!S.settings.myCursor}">Sistem</button><button data-mycur="1" class="${S.settings.myCursor ? 'on' : ''}" aria-pressed="${!!S.settings.myCursor}">${curSvg('currentColor', 14)}Nts</button></div></div>
       <div class="set-line f-set"><span>Klasör stili</span><div class="seg sm">${Folders.STYLES.map(([k, l]) => `<button data-fstyle="${k}" class="${Folders.style() === k ? 'on' : ''}" aria-pressed="${Folders.style() === k}">${l}</button>`).join('')}</div></div>
       ${AIF.on() ? `<button class="set-row" data-fregroup>${ic('spark')}<span>Anlam klasörlerini yeniden grupla<small>${AIF.list.length} klasör, kayıtlarına bakarak cihazında gruplanır; adları ${aiName()} verir</small></span></button>` : ''}
@@ -6053,6 +6073,7 @@ function openSettings(page = 'main') {
     const d = e.target.closest('[data-do]')?.dataset.do, acc = e.target.closest('[data-accent]')?.dataset.accent;
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
+    const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return openSettings(); }
     const mc = e.target.closest('[data-mycur]'); if (mc) { S.settings.myCursor = mc.dataset.mycur === '1'; DB.put('kv', S.settings, 'settings').then(() => { AICur.mine(); openSettings(); }); return; }
     const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
     if (e.target.closest('[data-fregroup]')) { AIF.ask(true); toast('Klasörler yeniden gruplanıyor…', 2500, 'spark'); return; }
@@ -6321,7 +6342,7 @@ const Boot = {
   },
 };
 (async function main() {
-  setTheme(document.documentElement.dataset.theme);
+  setTheme(document.documentElement.dataset.theme); Glass.apply();
   try { const a = localStorage.getItem('hn-accent'); if (a?.startsWith('#')) setAccent(a); } catch { }
   try { const v = localStorage.getItem('hn-view'); if (['list', 'board', 'gallery', 'todo'].includes(v)) S.view = v; else if (innerWidth < 900) S.view = 'list'; } catch { } // phone: first screen is the readable list
   await loadSettings();
