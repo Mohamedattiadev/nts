@@ -297,7 +297,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (87) tüm kayıtlardan ilgilileri seçer, yeni proje panosu açar (`boards` + `posBy`), kartları başlıklı gruplara dizer (ör. Belgeler /
         Linkler / Görevler / Fikirler / Kişiler), en üste kısa özet yapışkan notu koyar; tek tıkla geri alınır. Köprüde yeni uç (`/board-plan`,
         sadece id + grup döner, metin göndermez fazlası). Kutudaki "Claude'a sor" cevabında "Pano yap" düğmesi de olsun.
-- [ ] 94. **Daha native his + hız** (sahip: "daha native, daha hızlı, daha efektli olsun"):
+- [x] 94. **Daha native his + hız** (sahip: "daha native, daha hızlı, daha efektli olsun"):
         (a) görünüm geçişleri View Transitions API ile (Pano↔Liste↔Galeri, kayıt penceresi tıklanan karttan büyüyerek açılır/kapanır);
         (b) dokunma geri bildirimi: `:active` hafif küçülme, telefonda kısa titreşim (kaydet, görev bitti, sil), yalnız transform/opacity animasyonu;
         ✓ (a)+(b) 2026-11-21: görünüm değişimi View Transition (yalnız #main solar/belirir, üst öğeler kıpırdamaz; destek yoksa eski .vin); kayıt penceresi tıklanan karttan büyür, ×/Esc/dışına tık/Sil ile karta küçülerek döner (kart görünmüyorsa aşağı kayar) — `Morph`; :active küçülme (düğme, çip, satır, galeri kutusu); telefonda titreşim: kaydet 8 ms, görev bitti 12 ms, sil 14 ms (`haptic`); reduced-motion hepsini kapatır.
@@ -307,6 +307,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (e) açılış: ilk ekranda gerekmeyen modülleri (LaTeX, şifreler, içe aktarma, okuma, KaTeX) sonradan yükle, kabuk SW'den anında;
             hedef telefonda ilk ekran < 300 ms, her dokunuşa < 100 ms tepki (Playwright ile ölç, bench.log'a yaz);
         (f) PWA: uygulama ikonunda bekleyen görev sayısı (Badging API), masaüstünde `display_override: window-controls-overlay`.
+        ✓ (e)+(f) 2026-11-24: ölçüm (tools/startbench.mjs, 300 kayıt, tekrar açılış, bench-start.log): ilk ekran masaüstü 2,7 sn → 0,13 sn, telefon (4x yavaş CPU) 2,8 sn → ~0,4 sn. Asıl sebep Google Fonts CSS'inin ekranı bloklamasıydı (her açılışta ağı bekliyordu, SW önbelleğe almıyordu): artık bloklamaz (önce sistem yazısı, Inter gelince geçer) ve sw.js yazı tipini kendi önbelleğinde tutar (çevrimdışı da). JSZip artık açılışta değil, zip/docx/yedek ilk kullanıldığında yüklenir (`needZip`; pdf.js ve KaTeX zaten böyleydi). İlk liste 60 satır çizer, kaydırınca eskisi gibi 300'er eklenir. Dokunma tepkisi en kötü: masaüstü ~110 ms, telefon 4x CPU'da ~170 ms (Event Timing). (f) ikon rozeti: açık görev sayısı (`Badge`, yalnız değişince); manifest `display_override: window-controls-overlay`: kurulu masaüstü uygulamada başlık çubuğu uygulamanın parçası, üstte ince sürükleme şeridi, sağdaki düğmeler pencere düğmelerinin soluna kayar (macOS'ta soldakiler sağa). Gerçek pencere başlığı + rozet sahibin cihazında denenmeli.
 - [ ] 95. **Öneriler (sahip onayladı 2026-11-21, ayrı ayrı yap: 95a–95g):** sesli not (basılı tut → kaydet → yapay zekâ yazıya döker); sabah özeti bildirimi
         (dün kaydettiklerin + bugünkü görevler); okuma listesinde "3 gün sonra tekrar göster"; ekran görüntüsünde tarih görünce "göreve çevireyim mi";
         Ctrl+K komut paleti (her şeye tek yerden); ~~salt okunur paylaşılabilir pano linki~~ (95f KALDIRILDI, sahip); tarayıcı eklentisi (sağ tık → Nts'e gönder);

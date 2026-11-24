@@ -7,6 +7,10 @@
   "id": "./",
   "lang": "tr",
   "dir": "auto",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "display": "standalone",
   "background_color": "#0c0c0e",
   "theme_color": "#0c0c0e",

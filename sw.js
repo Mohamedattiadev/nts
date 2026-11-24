@@ -1,4 +1,4 @@
-const VERSION = 'v87';
+const VERSION = 'v88';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './query.js', './ed.js', './sem.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg', './icons/sc-note.png', './icons/sc-todo.png', './icons/sc-lock.png', './icons/sc-find.png'];
@@ -8,7 +8,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== 'hizli-note-fonts').map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -25,6 +25,16 @@ self.addEventListener('fetch', e => {
         await saveItems(items);
       } catch (err) { console.error(err); }
       return Response.redirect('./?shared=1', 303);
+    })());
+    return;
+  }
+  // 94e: Google Fonts from the cache (the font file never changes; the css is refreshed in the background) → no network wait, works offline
+  if (e.request.method === 'GET' && /^fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
+    e.respondWith((async () => {
+      const c = await caches.open('hizli-note-fonts'), hit = await c.match(e.request);
+      const net = fetch(e.request).then(res => { if (res.ok || res.type === 'opaque') c.put(e.request, res.clone()); return res; });
+      if (hit) { if (url.hostname.startsWith('fonts.googleapis')) e.waitUntil(net.catch(() => { })); return hit; }
+      return net;
     })());
     return;
   }

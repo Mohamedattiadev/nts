@@ -14,7 +14,8 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- 94e: the font never blocks the first screen (system font until Inter arrives; sw.js keeps it for offline) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script>
   try {
     var t = localStorage.getItem('hn-theme');
@@ -37,6 +38,7 @@
 </head>
 <body>
 <div id="splash"></div>
+<div id="titlebar" aria-hidden="true"></div>
 
 <div class="app">
   <!-- floating chrome: the canvas is the whole screen -->
@@ -118,7 +120,6 @@
 <input id="backupInput" type="file" accept=".zip" hidden>
 <input id="bmInput" type="file" accept=".html,.htm,text/html" hidden>
 
-<script src="vendor/jszip.min.js" defer></script>
 <script src="db.js" defer></script>
 <script src="query.js" defer></script>
 <script src="ed.js" defer></script>

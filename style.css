@@ -2045,3 +2045,14 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .tour-auth .g-btn .i { background: #fff; border-radius: 50%; padding: 3px; width: 24px; height: 24px; flex: none; }
 .tour-auth .btn.secondary .i { width: 24px; height: 24px; flex: none; }
 .tour-acts.no-next [data-tour="next"] { display: none; }
+
+/* 94f: installed on desktop with window-controls-overlay: the app fills the title bar. A thin strip under the HUD moves the window
+   (app-region: drag); the HUD buttons stay clickable and the right-hand ones step left of the OS close/min/max buttons. */
+#titlebar { display: none; }
+@media (display-mode: window-controls-overlay) {
+  :root { --wco-r: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)); }
+  #titlebar { display: block; position: fixed; top: 0; left: env(titlebar-area-x, 0); width: env(titlebar-area-width, 100%); height: env(titlebar-area-height, 0px); z-index: 29; app-region: drag; -webkit-app-region: drag; }
+  .hud, .hud *, #busy { app-region: no-drag; -webkit-app-region: no-drag; }
+  .hud-l { left: calc(16px + env(titlebar-area-x, 0px)); } .hud-r { right: calc(16px + var(--wco-r)); } /* macOS: buttons on the left */
+  #busy { right: calc(62px + var(--wco-r)); }
+}

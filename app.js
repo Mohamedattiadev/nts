@@ -467,6 +467,13 @@ async function blobFor(i) {
   const blob = rec.blob.type || !i.mime ? rec.blob : new Blob([rec.blob], { type: i.mime });
   const url = URL.createObjectURL(blob); S.urls.set(i.id, url); return url;
 }
+// 94e: zip library only when a zip/docx/backup is touched (not at start); pdf.js / KaTeX load the same way
+function needZip() {
+  return window.JSZip ? Promise.resolve(window.JSZip) : (needZip.p ||= new Promise((ok, bad) => {
+    const s = document.createElement('script'); s.src = 'vendor/jszip.min.js';
+    s.onload = () => ok(window.JSZip); s.onerror = () => { needZip.p = null; bad(new Error('zip yüklenemedi')); }; document.head.appendChild(s);
+  }));
+}
 const Prev = {
   thumbs: new Map(),
   pdfLib() {
@@ -1302,7 +1309,8 @@ function render(force) {
     if (S.view !== 'gallery' && Sel.mode) Sel.clear(); if (S.view !== 'board') Link.end();
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' ? [] : items);
-    $('#splash').classList.add('gone');
+    if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
+    Badge.set();
   });
 }
 
@@ -2615,10 +2623,10 @@ const Docs = {
   },
   async render(i, blob) {
     const e = this.ext(i);
-    if (e === 'docx') return this.docx(await JSZip.loadAsync(blob));
-    if (e === 'xlsx') return this.xlsx(await JSZip.loadAsync(blob));
-    if (e === 'pptx') return this.pptx(await JSZip.loadAsync(blob));
-    if (/^od[tsp]$/.test(e)) return this.odf(await JSZip.loadAsync(blob));
+    if (e === 'docx') return this.docx(await (await needZip()).loadAsync(blob));
+    if (e === 'xlsx') return this.xlsx(await (await needZip()).loadAsync(blob));
+    if (e === 'pptx') return this.pptx(await (await needZip()).loadAsync(blob));
+    if (/^od[tsp]$/.test(e)) return this.odf(await (await needZip()).loadAsync(blob));
     const t = (await blob.slice(0, 400000).text());
     if (Tex.can(i)) return Tex.render(t, e);
     if (e === 'md' || e === 'markdown') return `<div class="doc md">${this.md(t)}</div>`;
@@ -3853,6 +3861,16 @@ function parseDue(t) {
   return { text: text || t, due: dayKey(day.getTime()) + (time ? 'T' + time : '') };
 }
 const REPEATS = [['', 'Tekrar yok'], ['daily', 'Her gün'], ['weekly', 'Her hafta'], ['monthly', 'Her ay']];
+// 94f: the installed app's icon shows how many to-dos are open (Badging API; nothing where unsupported)
+const Badge = {
+  n: -1,
+  set() {
+    if (!navigator.setAppBadge) return;
+    let n = 0; for (const i of S.items) if (i.todo && !i.todo.done && !i.deleted) n++;
+    if (n === this.n) return; this.n = n;
+    (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { });
+  },
+};
 const Todo = {
   open() {
     const open = S.items.filter(i => i.todo && !i.todo.done && !i.deleted);
@@ -5609,7 +5627,7 @@ async function importWhatsApp(file) {
   toast('Okunuyor…', 60000);
   let txt, zip = null;
   if (/\.zip$/i.test(file.name) || file.type.includes('zip')) {
-    zip = await JSZip.loadAsync(file);
+    zip = await (await needZip()).loadAsync(file);
     const txts = Object.values(zip.files).filter(f => !f.dir && /\.txt$/i.test(f.name));
     const main = txts.find(f => /chat|sohbet/i.test(f.name)) || txts[0];
     if (!main) return toast('Zip içinde sohbet .txt dosyası yok');
@@ -5668,7 +5686,7 @@ function mimeOf(n) {
 // ---------- backup ----------
 async function exportBackup() {
   toast('Yedek hazırlanıyor…', 60000);
-  const zip = new JSZip(); zip.file('items.json', JSON.stringify(S.items));
+  const zip = new (await needZip())(); zip.file('items.json', JSON.stringify(S.items));
   for (const f of await DB.all('files')) zip.file('files/' + f.id, f.blob);
   const blob = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `hizli-not-${dayKey(now())}.zip`; a.click();
@@ -5677,7 +5695,7 @@ async function exportBackup() {
 // Markdown for Obsidian & co.: one .md per item (front matter: date, type, tags, link…), files in attachments/, one zip
 async function exportMarkdown() {
   toast('Markdown hazırlanıyor…', 60000, 'down');
-  const zip = new JSZip(), used = new Set(), items = alive().filter(i => i.type !== 'draw').sort((a, b) => a.ts - b.ts);
+  const zip = new (await needZip())(), used = new Set(), items = alive().filter(i => i.type !== 'draw').sort((a, b) => a.ts - b.ts);
   const slug = t => (t || 'kayit').replace(/[\\/:*?"<>|#^[\]]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'kayit';
   const yq = v => JSON.stringify(String(v)); // YAML-safe quoted string
   for (const i of items) {
@@ -5733,7 +5751,7 @@ async function importBookmarks(file) {
   toast(`${made.length} yer imi içe aktarıldı`, 3500, 'check');
 }
 async function importBackup(file) {
-  const zip = await JSZip.loadAsync(file);
+  const zip = await (await needZip()).loadAsync(file);
   const items = JSON.parse(await zip.file('items.json').async('string'));
   const local = new Map(S.items.map(i => [i.id, i]));
   const take = items.filter(x => !local.has(x.id) || (x.updatedAt || 0) > (local.get(x.id).updatedAt || 0));
@@ -6371,6 +6389,7 @@ const Boot = {
   // open fast with thousands of items: the last 60 days first, the rest right after in big batches (search index in a worker)
   const cutoff = now() - 60 * 864e5;
   S.items = await DB.since(cutoff); S.items.forEach(indexItem);
+  S.limit = 60; // 94e: the first screen draws 60 rows (fast on a phone); scrolling adds 300 at a time as before
   wire(); render();
   await Boot.rest(cutoff);
   // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
