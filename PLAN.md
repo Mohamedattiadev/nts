@@ -751,6 +751,17 @@ Arayüz:
         ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin
         (yoğunluk). Sürükleme/tekerlek/dokunmada nokta yaylı ve akıcı kayar (rAF, transform), sayfa da yumuşak kayar, aya oturur (snap) + hafif
         titreşim; sürüklerken yanında "Mart 2025" balonu. Klavye ↑↓ ay, PgUp/PgDn yıl. reduced-motion'da anında. Telefon önce, açık + koyu.
+- [ ] 150. **"Finential" panosu boş görünüyor** (sahip, 2026-11-24, design/feedback-28.png, masaüstü koyu, yakınlık %54: pano seçicide "Finential",
+        ekranda tek kart yok; sahip: "bütün notları göstermiyor"). Önce sebebi KANITLA (tahminle düzeltme): proje panosu visible0'da onBoard(i)
+        (i.project === S.board || boards || posBy) ile süzülüyor. Adaylar: (a) kartlar var ama kamera (S.cam, hn-cam) başka yerde → pano açılınca
+        hiç kart görünmüyorsa kartlara sığdır (Hepsini gör); (b) sol çubukta bir süzgeç açık kalmış (üstteki gelen kutusu simgesi seçili görünüyor) →
+        süzgeç varsa üstte "Süzgeç: X ×" görünsün; (c) proje adı büyük/küçük harf ya da boşluk farkı ("Finential" vs "finential") → eşleştirmeyi
+        katla; (d) kayıtlar archive/parent olduğu için düşüyor; (e) pano listesinde var ama 0 kayıtlı pano. Sahte veriyle her adayı dene, gerçek
+        sebebi PLAN'a yaz. Ayrıca: bir pano/süzgeç boşsa boş ekran yerine "Bu panoda kart yok · N kayıt süzgeçte gizli · Süzgeci kaldır" + "Genel'e dön".
+- [ ] 151. **Logo / pano seçici kutusu düzgün** (sahip, 2026-11-24, design/feedback-27.png: "fixle, güzel görünmüyor"; sol üstte kutu içinde simge
+        üstte, "Finential" altta, ⌄ en altta, ad kesik). 116'daki niyet: tek satır [logo] [pano adı] [⌄], yükseklik sol çubuk düğmeleriyle aynı,
+        uzun ad en çok ~16 karakter sonra … (tam ad ipucunda), kutu sol çubukla aynı genişlik ritminde/hizada, 146 ile birlikte (liste çubuğun
+        sağından açılır). Telefon önce, açık + koyu, ekran görüntüsü.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
