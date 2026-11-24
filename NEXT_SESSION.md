@@ -97,7 +97,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
 - [x] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner (b15e567)
 - [x] 116 logo = pano seçici (sağ alttan taşı) (fbfa07f)
-- [ ] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
+- [~B] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş)
 - [ ] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer)
 - [ ] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi)
 - [ ] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi
