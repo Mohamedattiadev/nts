@@ -338,6 +338,14 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             (organize ya da ocrBackfill) bir kez bildirim: "Resimde tarih var (5 Ara). Göreve çevireyim mi?" (eski resimlerin geriye dönük okuması sessiz).
             Ek düzeltme: bildirimler (toast) artık açık pencerelerin (okuma sayfası, kayıt penceresi) ÜSTÜNDE (popover, en üst katman) — önceden altında
             kalıp "Geri al" görünmüyordu. Test t95cd 4 yapılandırma, konsol hatası 0; query testleri 306/306.
+        ✓ 95g 2026-11-24 (A hattı): tarayıcı eklentisi `extension/` (Chrome/Brave MV3, paketlenmemiş yükle; README içinde): sağ tık → Sayfayı /
+            Linki / Seçili yazıyı (alıntı + sayfa linki → linkin notu) / Resmi (dosya olarak; okunamazsa ya da 25 MB üstüyse link) Nts'e gönder;
+            araç çubuğu simgesi + Alt+Shift+S = bu sayfa (seçili yazıyla). Köprünün `/inbox` ucuna gider (`hn` ile aynı yol), `source: 'web'` →
+            uygulamada kaynak "Tarayıcı" (sol çubuk Kaynak süzgeci, kayıt penceresinde "· Tarayıcı"). Ayarlar sayfası: port + anahtar (`hn --token`
+            yeni: ikisini yazar), "Kaydet ve dene" (/health ile: bağlandı / anahtar yanlış / köprü kapalı), "Resimleri dosya olarak gönder" (isteğe
+            bağlı <all_urls> izni). Sonuç simgede ✓ ya da ! (üstüne gelince nedeni). Test: gerçek Chromium'a eklenti yüklendi, ayrı test köprüsü
+            (8891, sahte HOME): 6 gönderim türü + köprü kapalı + yanlış anahtar, uygulama gelen kutusunu aldı (6 kayıt, kaynak Tarayıcı, masaüstü +
+            telefon), konsol hatası 0. Köprü değişti: `systemctl --user restart hizli-note-bridge`. CİHAZ TESTİ sahipte: Brave'e yükle, gerçek sağ tık.
         ✓ 95b 2026-11-24 (B hattı): sabah özeti (`Morning`, app.js; ortak `morningBrief` db.js'te, sayfa + SW aynı hesap) — Ayarlar → "Sabah özeti"
             saat (varsayılan 08:00) ya da Kapalı. Seçilen saatten sonraki 6 saat içinde uygulama ilk açıldığında günde bir kez kart: "Günaydın · 24 Kasım
             Salı", köprü varsa yapay zekânın dünü anlatan 1–2 cümlesi (yeni `/brief` ucu, röleye de açık, haiku; gün içinde önbellekte), Bugün: gecikmiş +

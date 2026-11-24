@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Nts'e gönder",
+  "version": "1.0",
+  "description": "Sağ tık → sayfayı, linki, seçili yazıyı ya da resmi bu bilgisayardaki Nts köprüsüne gönder.",
+  "icons": { "128": "icon.png" },
+  "action": { "default_title": "Bu sayfayı Nts'e gönder", "default_icon": "icon.png" },
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "permissions": ["contextMenus", "storage", "activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "optional_host_permissions": ["<all_urls>"],
+  "commands": {
+    "send-page": { "suggested_key": { "default": "Alt+Shift+S" }, "description": "Bu sayfayı (seçili yazıyla) Nts'e gönder" }
+  }
+}

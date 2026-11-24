@@ -56,8 +56,8 @@ mkdirSync(INBOX, { recursive: true });
 const readInbox = () => existsSync(INBOX_IDX) ? JSON.parse(readFileSync(INBOX_IDX, 'utf8')) : [];
 const writeInbox = list => writeFileSync(INBOX_IDX, JSON.stringify(list));
 const rid = () => Date.now().toString(36) + randomBytes(3).toString('hex');
-function addInbox({ text = '', files = [] }) {
-  const e = { id: rid(), ts: Date.now(), text, files: [] };
+function addInbox({ text = '', files = [], source }) {
+  const e = { id: rid(), ts: Date.now(), text, files: [], ...(source === 'web' ? { source } : {}) }; // 95g: 'web' = the browser extension
   for (const f of files) {
     const fid = rid(); writeFileSync(join(INBOX, fid), Buffer.from(f.data, 'base64'));
     e.files.push({ fid, name: f.name, mime: f.mime || '', size: f.size || 0 });

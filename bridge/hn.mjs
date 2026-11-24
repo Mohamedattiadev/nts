@@ -8,6 +8,7 @@ import { join, basename } from 'node:path';
 
 if (process.argv[2] === 'import') { await import('./import.mjs'); process.exit(0); } // nts import whatsapp.zip [--yes]
 const conf = JSON.parse(readFileSync(join(homedir(), '.config/hizli-note/bridge.json'), 'utf8'));
+if (process.argv[2] === '--token') { console.log(`port ${conf.port}\nanahtar ${conf.token}`); process.exit(0); } // 95g: for the browser extension's settings
 const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
   mp3: 'audio/mpeg', ogg: 'audio/ogg', opus: 'audio/ogg', m4a: 'audio/mp4', wav: 'audio/wav', pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', zip: 'application/zip',
   doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };

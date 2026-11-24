@@ -1387,7 +1387,7 @@ function renderChrome() {
 // 137: filters that live under ⋯ (not the rail's own buttons): source, project / list, topic, colour
 function activeFilters() {
   const f = S.filter, out = []; if (S.view === 'todo') return out;
-  if (f.src) out.push({ k: 'src', v: f.src, i: f.src.startsWith('wa:') ? 'chat' : { pc: 'cpu', phone: 'share', bookmarks: 'book' }[f.src] || 'inbox', l: srcName(f.src) });
+  if (f.src) out.push({ k: 'src', v: f.src, i: f.src.startsWith('wa:') ? 'chat' : { pc: 'cpu', web: 'link', phone: 'share', bookmarks: 'book' }[f.src] || 'inbox', l: srcName(f.src) });
   if (f.list) out.push({ k: 'list', v: f.list, i: f.list.startsWith('p:') ? 'folder' : (LISTS.find(l => l[0] === f.list) || [0, f.list === 'unseen' ? 'clock' : 'flag'])[1], l: listName(f.list) });
   if (f.tag) out.push({ k: 'tag', v: f.tag, i: 'hash', l: '#' + f.tag });
   if (f.color) out.push({ k: 'color', v: f.color, l: (COLORS.find(c => c[0] === f.color) || [0, f.color])[1] });
@@ -2552,7 +2552,7 @@ function openItem(id) {
         <div class="lc-u">${ic('ext', 'sm')}${esc(i.url)}</div></div></a>` : '';
   dlg.innerHTML = `<div class="d-body" tabindex="-1">
     <div class="d-head"><span class="type ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}${i.conv ? 'Sohbet' : KIND_LABEL[k]}</span><span>·</span><span>${fmtDay(dayKey(i.ts))}, ${fmtTime(i.ts)}</span>
-      ${i.source === 'whatsapp' ? '<span>· WhatsApp</span>' : i.source === 'pc' ? '<span>· Bilgisayar</span>' : i.source === 'share' ? '<span>· Paylaşım</span>' : ''}
+      ${i.source === 'whatsapp' ? '<span>· WhatsApp</span>' : i.source === 'pc' ? '<span>· Bilgisayar</span>' : i.source === 'web' ? '<span>· Tarayıcı</span>' : i.source === 'share' ? '<span>· Paylaşım</span>' : ''}
       <span class="sp"></span>
       <div class="d-acts d-only">
         <button class="btn ghost sm" data-act="share" title="Başka bir uygulamaya ya da kişiye gönder">${ic('share', 'sm')}Paylaş</button>
@@ -3896,15 +3896,16 @@ const deviceNow = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) 
 function srcMatch(i, s) {
   if (s.startsWith('wa:')) return i.source === 'whatsapp' && (i.chat || '') === s.slice(3);
   if (s === 'bookmarks') return i.source === 'bookmarks';
+  if (s === 'web') return i.source === 'web'; // 95g: sent with the browser extension
   if (s === 'pc') return i.source === 'pc' || (i.dev === 'pc' && i.source !== 'whatsapp' && i.source !== 'bookmarks');
   if (s === 'phone') return i.source === 'share' || (i.dev === 'phone' && i.source !== 'whatsapp' && i.source !== 'bookmarks');
   return true;
 }
-const srcName = s => s.startsWith('wa:') ? s.slice(3) || 'WhatsApp' : { bookmarks: 'Yer imleri', pc: 'Bilgisayar', phone: 'Telefon' }[s] || s;
+const srcName = s => s.startsWith('wa:') ? s.slice(3) || 'WhatsApp' : { bookmarks: 'Yer imleri', pc: 'Bilgisayar', web: 'Tarayıcı', phone: 'Telefon' }[s] || s;
 function srcRows(live, cur) {
   const n = {}, chats = new Map();
-  for (const i of live) { if (i.source === 'whatsapp') chats.set(i.chat || '', (chats.get(i.chat || '') || 0) + 1); for (const s of ['bookmarks', 'pc', 'phone']) if (srcMatch(i, s)) n[s] = (n[s] || 0) + 1; }
-  const rows = [...[...chats].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c, k]) => ['wa:' + c, 'chat', c || 'WhatsApp', k]), ['pc', 'cpu', 'Bilgisayar', n.pc], ['phone', 'share', 'Telefon', n.phone], ['bookmarks', 'book', 'Yer imleri', n.bookmarks]].filter(r => r[3] || r[0] === cur);
+  for (const i of live) { if (i.source === 'whatsapp') chats.set(i.chat || '', (chats.get(i.chat || '') || 0) + 1); for (const s of ['bookmarks', 'pc', 'web', 'phone']) if (srcMatch(i, s)) n[s] = (n[s] || 0) + 1; }
+  const rows = [...[...chats].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c, k]) => ['wa:' + c, 'chat', c || 'WhatsApp', k]), ['pc', 'cpu', 'Bilgisayar', n.pc], ['web', 'link', 'Tarayıcı', n.web], ['phone', 'share', 'Telefon', n.phone], ['bookmarks', 'book', 'Yer imleri', n.bookmarks]].filter(r => r[3] || r[0] === cur);
   return rows.map(([k, icn, l, c]) => `<button class="side-row${cur === k ? ' on' : ''}" data-src="${esc(k)}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${c || ''}</span></button>`).join('');
 }
 // 64: a search or filter pinned to the side bar; one hidden, synced record
@@ -5467,7 +5468,7 @@ const AI = {
         for (const e of list) {
           const files = [];
           for (const f of e.files || []) { const r = await fetch(`${base}/inbox/file/${f.fid}`, { headers: auth }); if (r.ok) files.push(new File([await r.blob()], f.name, { type: f.mime })); }
-          const made = itemsFromInput({ text: e.text || '', files, ts: e.ts, source: 'pc' });
+          const made = itemsFromInput({ text: e.text || '', files, ts: e.ts, source: e.source === 'web' ? 'web' : 'pc' });
           made.forEach((m, k) => { m.id = `in${e.id}${k}`; m.group = 'in' + e.id; m.createdAt = now(); });
           await upsert(await saveItems(made));
         }
