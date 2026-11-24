@@ -235,7 +235,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 153 panoda boş yere sağ tık (telefonda uzun bas) → zaman aralığı: Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + "Arşivi de göster" (WhatsApp vb.); PLAN 153 (5b10942; sw v119)
 - [x] 154 HATA zengin kartlar kesik (design/feedback-31.png: WhatsApp balonlarında yazı satırın ortasından kesiliyor) → "full gözüksün"; PLAN 154 (bb01596; sw v121)
 - [~A] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
-- [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
+- [~B] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
 - [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor
