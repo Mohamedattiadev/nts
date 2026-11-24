@@ -1,0 +1,12 @@
+{
+  "madde": "123-0",
+  "tarih": "2026-11-24T23:22:34.117Z",
+  "secimler": {
+    "d-A": { "v": "y", "note": "daha guzel olsun" },
+    "d-B": { "v": "n", "note": "" },
+    "t-B": { "v": "y", "note": "ama daha guzel olsun" },
+    "p-goto": { "v": "y", "note": "" },
+    "p-filter": { "v": "y", "note": "" },
+    "p-phone": { "v": "", "note": "sennce? " }
+  }
+}
