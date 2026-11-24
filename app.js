@@ -3142,6 +3142,30 @@ const Wipe = {
   },
 };
 
+// 115: the view switch (Pano · Liste · Galeri) slides up out of the way after 10 s without a hover; the mouse near the top edge,
+// scrolling up, a tap on the top strip (phone) or keyboard focus brings it back (reduced-motion: the global rule makes it instant)
+const ViewHide = {
+  ms: 10000,
+  init() {
+    const hc = this.el = $('.hud-c'); if (!hc) return;
+    hc.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse') return; this.over = true; this.show(); }); // a finger leaves no hover behind
+    hc.addEventListener('pointerleave', () => { this.over = false; this.arm(); });
+    hc.addEventListener('focusin', () => { if (hc.querySelector(':focus-visible')) this.show(); }); hc.addEventListener('focusout', () => this.arm());
+    const top = () => 80; // the HUD row plus a little margin (safe area included on phones with a notch)
+    addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && e.clientY < top()) this.show(); }, { passive: true });
+    addEventListener('touchstart', e => { if (e.touches[0]?.clientY < top()) this.show(); }, { passive: true });
+    let y = scrollY; addEventListener('scroll', () => { if (scrollY < y - 6 || scrollY < 40) this.show(); y = scrollY; }, { passive: true });
+    this.arm();
+  },
+  show() { if (!this.el) return; this.el.classList.remove('vs-hid'); this.arm(); },
+  arm() { clearTimeout(this.t); this.t = setTimeout(() => this.hide(), this.ms); },
+  hide() {
+    const hc = this.el; if (!hc || this.over || hc.querySelector(':focus-visible')) return; // a tap leaves focus on the button: only keyboard focus keeps it
+    if (document.querySelector('.tour')) return this.arm(); // the tour points at it
+    hc.classList.add('vs-hid');
+  },
+};
+
 const Tour = {
   steps() {
     const phone = innerWidth < 900;
@@ -6125,6 +6149,7 @@ function wire() {
   for (const id of ['#viewSwitch', '#rail', '#railTab', '#popTypes', '#popLists', '#sideTags', '#sideProjects', '#sideMarks', '#popSaved', '#popSrc']) $(id).onclick = onFilter;
   Scrub.init();
   Rail.init();
+  ViewHide.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
   Ctx.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
   Todo.init();
