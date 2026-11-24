@@ -739,14 +739,13 @@ Arayüz:
         kayıtları, kopyalar, kısa notlar; OCR önce tesseract, yapay zekâ yalnız gerekirse), aynı içeriği tekrar gönderme (hash önbelleği), toplu gönder
         (bir çağrıda çok kayıt, kısa alanlar), ucuz model (organize haiku), claude -p araçsız + kısa sistem istemi; günlük/aylık üst sınır (aşınca
         sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
-- [ ] 131-0c. **Klasör kartı yeni tur** (sahip, 2026-11-24, design/feedback-25.png, koyu tema "#yazılım" kartı: "bu kartın UI'ı hâlâ güzel değil,
-        başkalarını da göster HTML'de"). Görüntüdeki sorunlar: yeşil ayraç sekmesi kartla uyumsuz ve sert, resmi olmayan kayıtta gri boş resim simgesi
-        (çirkin, boş görünüyor), metin küçük kutucuklarda kesik ("Absolute Beast…"), alt satır "122 kayıt · 77 not · 44 bağlantı" sıkıcı, kart
-        yığını gölgesi bulanık. design/folders.html'e (eski stiller altta "önceki" olarak kalsın) 6+ YENİ stil, GERÇEK görünümlü içerikle (resimli,
-        resimsiz, yalnız not, yalnız link, WhatsApp sohbeti klasörleri; uzun Türkçe/Arapça adlar): resimsiz kayıtta boş simge YOK (site favicon'u +
-        başlık, not ilk satırı, tür rengi), sayı satırı sade ("122" büyük + küçük "kayıt"), açık + koyu, telefonda 2 sütun, üzerine gelince ve açılış
-        animasyonu. Bugünkü Nts kimliği (style.css değişkenleri; yeni kimlik yok, 143-0 reddedildi), Locus kalitesi, AI slop yok (106s ölçütleri).
-        ✓/✗ + not + indir → folders-choices-3.json; [?] yap, sahip seçsin; sonra seçilen stil uygulamaya.
+- [ ] 131-1. **Klasör kartı: D Dosya, cam** (sahip, 2026-11-24, design/folders.html'de D seçti, design/folders-choices-3.json: "bu fena değil ama cam
+        olsun, şeffaf yani, ama aynı renkler anladın"). 131-0c yeni tur İPTAL, doğrudan uygula: D Dosya stili (gerçek klasör biçimi) uygulamada
+        varsayılan; zemini buzlu cam (backdrop-filter blur + yarı saydam), klasörün kendi rengi (etiket/tür rengi) aynen kalır, cam altında
+        okunur; kenar ince açık çizgi, sakin gölge. 121'deki cam kurallarını kullan (yavaş telefonda / saydamlığı azalt'ta düz zemine döner, AA
+        kontrast korunur). Aynı işte feedback-25 sorunları: resimsiz kayıtta gri boş resim simgesi YOK (site favicon + başlık, notun ilk satırı,
+        tür rengi), kesik başlıklar 2 satır, sayı satırı sade ("122" + küçük "kayıt"). Açık + koyu, masaüstü + telefon 2 sütun, ekran görüntüsü;
+        Ayarlar'daki stil seçicide D "Dosya (cam)" olarak dursun.
 - [ ] 149. **Zaman çizgisi daha yumuşak + aylar** (sahip, 2026-11-24, design/feedback-26.png: sağdaki dikey yıl şeridi 2023–2026 ve turuncu nokta:
         "bu line da daha smooth; bir de '-' olsun, ayları gösteren"). Her ay için ince yatay çentik (yıl çentiği daha uzun/kalın), noktaya yakın
         ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin

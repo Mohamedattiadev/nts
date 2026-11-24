@@ -213,7 +213,7 @@ BİLGİ (önceki oturum, 2026-11-21): 56–65, 74, 76–85 bitti (son commit 572
 Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supabase CLI yok, sahibin girişi lazım), gerçek "GitHub'ı bağla"
 (uygulamada sahip yapar), gerçek WhatsApp sohbet zip'i (Downloads'taki zip sohbet değil, sadece 3 foto), 3/3a/3b + 74 gerçek cihaz testi (sahip yapacak).
 - [~A] 99a galeri gerçekten görsel (masonry, yazısız) + 130c galeri↔pano aynı kartlarla uçarak geçiş
-- [ ] 131-0c design/folders.html YENİ TUR (sahip, design/feedback-25.png: "bu kartın UI'ı hâlâ güzel değil, başkalarını da göster HTML'de"): klasör kartı için 6+ YENİ, çok daha güzel stil; [?] yap, sahip seçsin; PLAN 131-0c
+- [ ] 131-1 klasör kartı = D Dosya, CAM (şeffaf) ama aynı renkler (sahip seçti, design/folders-choices-3.json) + feedback-25 sorunları; uygulamada varsayılan yap; PLAN 131-1
 - [ ] 149 zaman çizgisi (sağdaki yıl şeridi, design/feedback-26.png): daha yumuşak + ay çentikleri ("-") ve ay adları; PLAN 149
 - [ ] 99b Takvim görünümü
 - [ ] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100)
