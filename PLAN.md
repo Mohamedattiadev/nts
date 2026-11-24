@@ -739,6 +739,14 @@ Arayüz:
         kayıtları, kopyalar, kısa notlar; OCR önce tesseract, yapay zekâ yalnız gerekirse), aynı içeriği tekrar gönderme (hash önbelleği), toplu gönder
         (bir çağrıda çok kayıt, kısa alanlar), ucuz model (organize haiku), claude -p araçsız + kısa sistem istemi; günlük/aylık üst sınır (aşınca
         sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
+- [ ] 131-0c. **Klasör kartı yeni tur** (sahip, 2026-11-24, design/feedback-25.png, koyu tema "#yazılım" kartı: "bu kartın UI'ı hâlâ güzel değil,
+        başkalarını da göster HTML'de"). Görüntüdeki sorunlar: yeşil ayraç sekmesi kartla uyumsuz ve sert, resmi olmayan kayıtta gri boş resim simgesi
+        (çirkin, boş görünüyor), metin küçük kutucuklarda kesik ("Absolute Beast…"), alt satır "122 kayıt · 77 not · 44 bağlantı" sıkıcı, kart
+        yığını gölgesi bulanık. design/folders.html'e (eski stiller altta "önceki" olarak kalsın) 6+ YENİ stil, GERÇEK görünümlü içerikle (resimli,
+        resimsiz, yalnız not, yalnız link, WhatsApp sohbeti klasörleri; uzun Türkçe/Arapça adlar): resimsiz kayıtta boş simge YOK (site favicon'u +
+        başlık, not ilk satırı, tür rengi), sayı satırı sade ("122" büyük + küçük "kayıt"), açık + koyu, telefonda 2 sütun, üzerine gelince ve açılış
+        animasyonu. Bugünkü Nts kimliği (style.css değişkenleri; yeni kimlik yok, 143-0 reddedildi), Locus kalitesi, AI slop yok (106s ölçütleri).
+        ✓/✗ + not + indir → folders-choices-3.json; [?] yap, sahip seçsin; sonra seçilen stil uygulamaya.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
