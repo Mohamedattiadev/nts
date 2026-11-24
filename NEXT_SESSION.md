@@ -101,7 +101,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer) — ÖRNEK HAZIR: design/zoomout.html (A Kalem · B Balon · C Ada + ok nedenleri), sahibin seçimi bekleniyor (767ba37)
 - [x] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi) (5e5578d)
 - [x] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi (d1198ca)
-- [~B] 122 turda Google ile giriş / Misafir seçimi
+- [x] 122 turda Google ile giriş / Misafir seçimi (f73e1f5)
 - [ ] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor)
 - [ ] 124 tanıtım sayfası (site/) + README düğmesi
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
