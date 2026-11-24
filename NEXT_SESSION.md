@@ -119,7 +119,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 123-1 kasa çarkı tarih seçici: sahip B Üç kadran + süzgeçte kullanılsın; "o güzel his yok" → bugünkü Nts arayüzüne uygun, çok yumuşak, ← → (ve ↑ ↓) ile hareket; PLAN 123-1 — YAPILDI: t-B aslında etiket 'Alt yay', süzgeçte konu yayı olarak (8de0da7)
 - [?] 119-0b design/zoomout.html YENİ TUR: sahip A Kalem seçti ama "çok kötü, daha iyi daha görünümlü olsun" → A ailesinden 3 çok daha güzel varyant (bugünkü Nts görünümü, Locus kalitesi); ok nedenleri sahip "en uygun neyse" → sen seç, gerekçesiyle göster; [?] yap, sahip seçsin; PLAN 119-0b — ÖRNEK HAZIR: design/zoomout.html 2. tur (A1 Çerçeve · A2 Fosfor · A3 Mürekkep + ok kuralları önerisi), sahibin seçimi bekleniyor (45cd9b1)
 - [~B] 147 ÇOK ÖNEMLİ akıcılık (sahip 2026-11-24: "neden çok smooth değil, yavaş application?"): ÖNCE ÖLÇ, sonra düzelt; PLAN 147
-- [ ] 148 ÇOK ÖNEMLİ yapay zekâ az token harcasın (çok kayıt olunca): ölç + kes; PLAN 148
+- [~A] 148 ÇOK ÖNEMLİ yapay zekâ az token harcasın (çok kayıt olunca): ölç + kes; PLAN 148
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
