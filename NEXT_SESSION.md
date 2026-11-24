@@ -115,7 +115,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden) (5077000; CİHAZ TESTİ: yüklü uygulamada sabah bildirimi; köprü restart gerek; phone-audit yine 15 dk sınırında bitmedi)
 - [x] 144 imleçler daha canlı (sahip 2026-11-24: "Claude imleci güzel ama daha animasyonlu, daha hareketli olmalı; ona benzer bir tane de benim olsun"): PLAN 144 (19b19d5)
 - [x] 145 panodaki zengin kartlar panoda ÇALIŞSIN: tıkla → yerinde açılır/oynar (PDF sayfa çevir, ses/sesli not oynat, video, harita, onay listesi…) + kartta "büyüt" düğmesi → açılır pencerede (sağ tık menüsünde de "Pencerede aç"); PLAN 145 (c63aafa)
-- [x] 146 HATA (sahip, design/feedback-24.png): logo/pano seçici açılır listesi (116) sol çubuğun ÜSTÜNE biniyor + "Pano: Genel — değiştir" ipucu listenin "PANOLAR" başlığını kapatıyor; PLAN 146 (1fd8033)
+- [x] 146 HATA (sahip, design/feedback-24.png): logo/pano seçici açılır listesi (116) sol çubuğun ÜSTÜNE biniyor + "Pano: Genel — değiştir" ipucu listenin "PANOLAR" başlığını kapatıyor; PLAN 146 (31e60c2; sw v97)
 - [ ] 123-1 kasa çarkı tarih seçici: sahip B Üç kadran + süzgeçte kullanılsın; "o güzel his yok" → bugünkü Nts arayüzüne uygun, çok yumuşak, ← → (ve ↑ ↓) ile hareket; PLAN 123-1
 - [ ] 119-0b design/zoomout.html YENİ TUR: sahip A Kalem seçti ama "çok kötü, daha iyi daha görünümlü olsun" → A ailesinden 3 çok daha güzel varyant (bugünkü Nts görünümü, Locus kalitesi); ok nedenleri sahip "en uygun neyse" → sen seç, gerekçesiyle göster; [?] yap, sahip seçsin; PLAN 119-0b
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
