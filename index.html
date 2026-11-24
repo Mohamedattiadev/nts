@@ -24,6 +24,8 @@
     var a = localStorage.getItem('hn-accent'), r = document.documentElement;
     if (a && a.charAt(0) === '#') { r.dataset.accent = 'custom'; r.style.setProperty('--accent', a); r.style.setProperty('--accent-soft', 'color-mix(in srgb, ' + a + ' 14%, transparent)'); }
     else if (a && a !== 'orange') r.dataset.accent = a;
+    var x = JSON.parse(localStorage.getItem('hn-a11y') || '{}'); // 107k (app.js A11y)
+    if (x.fs > 0) r.dataset.fs = x.fs; if (x.hc) r.setAttribute('data-hc', ''); if (x.big) r.setAttribute('data-big', ''); if (x.rm) r.setAttribute('data-rm', '');
     if (localStorage.getItem('hn-glass') === '1') r.setAttribute('data-glass', ''); // 121 (app.js Glass.apply re-checks slow devices)
   } catch (e) { document.documentElement.dataset.theme = 'dark'; }
   // never leave a blank screen: a script error or a stuck start still uncovers the app

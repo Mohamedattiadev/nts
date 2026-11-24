@@ -627,6 +627,14 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (i) ~~birlikte kullanma~~ KALDIRILDI (sahip, "hızlı at, sonra bul" fikrine uymuyor): not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
         (j) dışa aktarma: panoyu PDF; Obsidian/Markdown klasörüyle eşitleme (köprü üzerinden, PC'de klasör);
         (k) erişilebilirlik ayarları: yazı boyutu (4 adım), yüksek kontrast, büyük dokunma modu, hareketi azalt anahtarı;
+            [x] (2026-11-24, B hattı) Ayarlar → Görünüm → "Erişilebilirlik" alt sayfası (komut paletinde de): yazı boyutu 4 adım (Normal · Büyük %112 ·
+            Daha büyük %125 · En büyük %140; style.css'teki tüm px yazı boyutları `calc(Npx * var(--fs, 1))`, `.plane` içinde --fs 1: pano kartları
+            cihazlar arası aynı boyda kalır), yüksek kontrast (data-hc: koyu/açık temada daha koyu yazı, belirgin çizgiler, 3 px odak halkası, linkler
+            altı çizili), büyük dokunma (data-big: düğme/satır/çip ≥44 px, dokunmatikte 48), hareketi azalt (data-rm: tüm animasyon/geçiş kapalı;
+            JS'teki reduced() artık bu anahtara da bakar; cihazda sistem ayarı açıksa anahtar açık ve kilitli). Cihaz başına `hn-a11y`, index.html ilk
+            boyamadan önce uygular (yanıp sönme yok). Telefonda süzgeç çipi ("Yapılacaklar") artık fitHud() ile görünüm seçicinin önünde biter (360 px'te
+            eskiden de 16 px çakışıyordu). 4 yapılandırmada ekran görüntüsü; phone-audit (yeni 'erisim' ekranı, A11Y env ile büyük ayarlar) normal ve
+            büyük: 0 (gizli #boardBtn eskiden). Kalan: en büyük yazıda 360 px'te gelen kutusu toast'ı "Tarihe git"in üstüne geçici biniyor.
         (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
         (m) ilk açılışta "örnek verilerle dene" (30 sn), sonra tek tıkla örnekleri sil.
             [x] (2026-11-24, A hattı, sw v117) boş ekranda birincil düğme "Örnek verilerle dene" → `Sample` (app.js, Trash'in üstünde) 13 kayıt

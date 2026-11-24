@@ -599,7 +599,7 @@ const GAR = { m: null, T: 0,
 };
 function growTo(box, change) {
   const h0 = box.offsetHeight; change(); const h1 = box.offsetHeight;
-  if (Math.abs(h1 - h0) > 4 && !matchMedia('(prefers-reduced-motion: reduce)').matches) box.animate([{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+  if (Math.abs(h1 - h0) > 4 && !reduced()) box.animate([{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' });
 }
 // 102: FLIP - before a view is rebuilt, note where each card on screen was; after, cards that moved slide from the old place
 // (transform only, 200 ms), new ones fade in where they belong. Off for reduced motion, view changes and big lists.
@@ -1475,6 +1475,7 @@ function renderChrome() {
   const listOn = k => S.view !== 'todo' && f.list === k;
   $('#viewSwitch').innerHTML = VIEWS.map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}" title="${l}">${ic(icn, 'sm')}<span>${l}</span></button>`).join('');
   $('#filterLbl').textContent = S.view === 'todo' ? 'Yapılacaklar' : f.src ? srcName(f.src) : f.list ? listName(f.list) : f.tag ? '#' + f.tag : f.star ? 'Yıldızlı' : types.find(t => t[0] === f.type)[2];
+  fitHud();
   const stars = C.stars;
   // the rail stays short: the 5 kinds, starred, to-dos; lists, vault, colours and topics live under "Daha fazla"
   const board = S.view === 'board' && alive().length;
@@ -2343,7 +2344,7 @@ function renderModes(dir = 0) {
   const w0 = b.offsetWidth;
   b.dataset.m = m; b.title = `${tip[m]} · Tab ya da dokun: ${nx[2]}`; b.setAttribute('aria-label', `Mod: ${l}. Değiştir: ${nx[2]}`);
   b.innerHTML = `<span class="m-in">${ic(icn, 'sm')}<span>${l}</span></span>`;
-  if (!dir || matchMedia('(prefers-reduced-motion: reduce)').matches || !b.animate) return;
+  if (!dir || reduced() || !b.animate) return;
   const w1 = b.offsetWidth, ease = 'cubic-bezier(.2,.8,.2,1)'; // the button grows/shrinks to the new name, the name slides up into place
   if (w0 && w0 !== w1) b.animate([{ width: w0 + 'px' }, { width: w1 + 'px' }], { duration: 180, easing: ease });
   b.firstChild.animate([{ transform: `translateY(${dir > 0 ? 70 : -70}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: ease });
@@ -2409,7 +2410,7 @@ async function save() {
 function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, innerHeight * .4) + 'px'; updateSend(); }
 
 // ---------- 94: native feel - the item window grows out of the tapped card and shrinks back; short haptic ticks ----------
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function reduced() { return document.documentElement.hasAttribute('data-rm') || matchMedia('(prefers-reduced-motion: reduce)').matches; } // 107k: the app's own switch too
 const haptic = (ms = 8) => { try { if (matchMedia('(pointer: coarse)').matches && navigator.userActivation?.hasBeenActive !== false) navigator.vibrate?.(ms); } catch { } }; // 107b: opened from the widget (?do=voice) there is no tap yet → Chrome blocks vibrate with a console error
 // ---------- 142: signature motion (owner's picks, design/motion-choices.json). transform / opacity only; reduced motion → none ----------
 const Motion = {
@@ -2640,6 +2641,7 @@ const Cmd = {
       ['star', 'star', 'Yıldızlılar', 'starred favorites', () => { Object.assign(S.filter, { star: true }); if (S.view === 'todo') setView('list'); else render(); }],
       ['theme', dark ? 'sun' : 'moon', dark ? 'Açık temaya geç' : 'Koyu temaya geç', 'theme dark light tema', () => setTheme(dark ? 'light' : 'dark')],
       ['settings', 'settings', 'Ayarlar', 'settings preferences', later(() => openSettings())],
+      ['a11y', 'eye', 'Erişilebilirlik', 'accessibility yazı boyutu kontrast font size contrast hareket motion إمكانية الوصول', later(() => openSettings('a11y'))],
       ['keys', 'kbd', 'Klavye kısayolları', 'keyboard shortcuts', later(() => Native.keysOpen()), '?'],
       ['sync', 'cloud', 'Şimdi eşitle', 'sync now senkron', () => { Sync.run(); toast('Eşitleniyor…', 1500, 'cloud'); }],
       ['export', 'down', 'Yedeği indir', 'export backup download json', () => exportBackup()],
@@ -3524,7 +3526,7 @@ const Morning = {
   },
   close(now) {
     const el = $('#morn'); if (!el) return; removeEventListener('keydown', this.esc);
-    if (now || matchMedia('(prefers-reduced-motion: reduce)').matches) return el.remove();
+    if (now || reduced()) return el.remove();
     el.classList.remove('in'); setTimeout(() => el.remove(), 200);
   },
   init() { setTimeout(() => this.tick(), 4000); setInterval(() => { if (!document.hidden) this.tick(); }, 60e3); document.addEventListener('visibilitychange', () => { if (!document.hidden) this.tick(); }); this.reg(); },
@@ -3720,7 +3722,7 @@ const Pop = {
   },
   close() { // 90: fade out instead of vanishing
     const p = $('#filterPop'); if (!p || p.hidden || p.classList.contains('closing')) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { p.hidden = true; return; }
+    if (reduced()) { p.hidden = true; return; }
     p.classList.add('closing'); setTimeout(() => { p.classList.remove('closing'); p.hidden = true; }, 120);
   },
 };
@@ -7136,6 +7138,14 @@ async function saveSettings() {
   for (const k of ['bridgeUrl', 'bridgeToken', 'ghRepo', 'ghToken']) { const el = $('#set-' + k); if (el) S.settings[k] = el.value.trim(); }
   await DB.put('kv', S.settings, 'settings');
 }
+// 107k: on the phone the filter chip ends before the view switch, whatever the text size / touch size (label gets "…")
+function fitHud() {
+  const b = $('#filterBtn'), l = $('#filterLbl'), c = document.querySelector('.hud-c'); if (!b || !l || !c) return;
+  l.style.maxWidth = ''; if (!b.offsetWidth) return;
+  const over = b.getBoundingClientRect().right + 8 - c.getBoundingClientRect().left;
+  if (over > 0) l.style.maxWidth = Math.max(24, l.offsetWidth - over) + 'px';
+}
+addEventListener('resize', () => requestAnimationFrame(fitHud));
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem('hn-theme', t); } catch { }
@@ -7160,6 +7170,33 @@ const Glass = {
   pick() {
     const no = this.slow(), g = this.want() && !no, b = (v, l, s) => `<button type="button" data-look="${v}" aria-pressed="${g === !!v}"${v && no ? ' disabled' : ''}><span class="lk-art${v ? ' glass' : ''}"><i></i><i></i><i></i><b></b></span><span>${l} <small>${s}</small></span></button>`;
     return `<div class="look-pick" role="group" aria-label="Görünüm">${b(0, 'Düz', 'sade, hızlı')}${b(1, 'Cam', 'buzlu, saydam')}</div>${no ? `<p class="look-note">Cam kapalı: ${no}.</p>` : ''}`;
+  },
+};
+// 107k: accessibility, per device (hn-a11y = {fs 0-3, hc, big, rm}); index.html applies it before the first paint
+const A11y = {
+  SIZES: [['Normal', '100%'], ['Büyük', '112%'], ['Daha büyük', '125%'], ['En büyük', '140%']],
+  get() { try { return JSON.parse(localStorage.getItem('hn-a11y')) || {}; } catch { return {}; } },
+  apply(c = this.get()) {
+    const r = document.documentElement;
+    if (c.fs > 0) r.dataset.fs = c.fs; else delete r.dataset.fs;
+    r.toggleAttribute('data-hc', !!c.hc); r.toggleAttribute('data-big', !!c.big); r.toggleAttribute('data-rm', !!c.rm);
+  },
+  set(ch) { const c = { ...this.get(), ...ch }; try { localStorage.setItem('hn-a11y', JSON.stringify(c)); } catch { } this.apply(c); },
+  sysRm() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } },
+  sw(k, label, note, on, dis) { return `<button class="set-row" role="switch" data-a11y="${k}" aria-checked="${on}"${dis ? ' disabled' : ''}><span>${label}<small>${note}</small></span><i class="a11y-sw" aria-hidden="true"></i></button>`; },
+  page(head) {
+    const c = this.get(), fs = c.fs || 0, sys = this.sysRm();
+    return `${head('Erişilebilirlik', true)}
+    <div class="set-sec"><h4>Yazı boyutu</h4>
+      <div class="a11y-fs" role="radiogroup" aria-label="Yazı boyutu">${this.SIZES.map(([l, p], k) => `<button type="button" role="radio" data-a11yfs="${k}" aria-checked="${fs === k}" aria-pressed="${fs === k}"><b style="font-size:${[14, 16, 18, 20][k]}px">Aa</b><small>${l}</small></button>`).join('')}</div>
+      <div class="a11y-prev" dir="auto">Yarın 9'da annemi ara<small>Kayıtlar, menüler ve pencereler büyür; pano kartları aynı kalır (panoda yakınlaştır).</small></div>
+    </div>
+    <div class="set-sec">
+      ${this.sw('hc', 'Yüksek kontrast', 'Daha koyu yazı, belirgin çizgiler ve odak halkası', !!c.hc)}
+      ${this.sw('big', 'Büyük dokunma alanları', `Düğmeler ve satırlar en az ${onPhone() ? 48 : 44} px`, !!c.big)}
+      ${this.sw('rm', 'Hareketi azalt', sys ? 'Cihazın ayarında açık, Nts de hareketsiz' : 'Geçişler ve kayan animasyonlar kapanır', sys || !!c.rm, sys)}
+      <p class="hint">Bu ayarlar yalnız bu cihazda.</p>
+    </div>`;
   },
 };
 const ACCENTS = [['orange', 'Turuncu', '#c2410c', '#ff9a4d'], ['indigo', 'Çivit', '#4f5fd6', '#8b9cff'], ['green', 'Yeşil', '#15803d', '#5fd68a'],
@@ -7219,6 +7256,7 @@ function openSettings(page = 'main') {
       <div class="set-line f-set"><span>Klasör stili</span><div class="seg sm">${Folders.STYLES.map(([k, l]) => `<button data-fstyle="${k}" class="${Folders.style() === k ? 'on' : ''}" aria-pressed="${Folders.style() === k}">${l}</button>`).join('')}</div></div>
       ${AIF.on() ? `<button class="set-row" data-fregroup>${ic('spark')}<span>Anlam klasörlerini yeniden grupla<small>${AIF.list.length} klasör, kayıtlarına bakarak cihazında gruplanır; adları ${aiName()} verir</small></span></button>` : ''}
       ${(Folders.cfg().hide || []).length ? `<button class="set-row" data-fshow>${ic('eye')}<span>Gizli klasörleri geri getir (${Folders.cfg().hide.length})<small>${esc(Folders.cfg().hide.map(k => Folders.label(k)).slice(0, 4).join(', '))}</small></span></button>` : ''}
+      <button class="set-row" data-do="a11y">${ic('eye')}<span>Erişilebilirlik<small>Yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt</small></span>${ic('chev', 'sm')}</button>
       ${S.installEvt ? `<button class="set-row" data-do="install">${ic('install')}<span>Uygulamayı yükle<small>Ana ekrana ekle, Paylaş menüsünde çıksın</small></span></button>` : ''}
     </div>
     <div class="set-sec"><h4>Yapay zekâ</h4>
@@ -7267,7 +7305,7 @@ function openSettings(page = 'main') {
       <label class="switch" title="Sol çubukta göster"><input type="checkbox" data-lshow="${k}" ${listHidden(k) ? '' : 'checked'}><span></span></label></div>`).join('')}</div>`;
   const wasOpen = m.open;
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
-  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
+  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'a11y' ? A11y.page(head) : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
   if (page === 'dups') Dups.run();
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
   if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
@@ -7283,6 +7321,8 @@ function openSettings(page = 'main') {
     const d = e.target.closest('[data-do]')?.dataset.do, acc = e.target.closest('[data-accent]')?.dataset.accent;
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
+    const af = e.target.closest('[data-a11yfs]'); if (af) { A11y.set({ fs: +af.dataset.a11yfs }); render(); fitHud(); return openSettings('a11y'); } // 107k
+    const at = e.target.closest('[data-a11y]'); if (at && !at.disabled) { const k = at.dataset.a11y; A11y.set({ [k]: !A11y.get()[k] }); fitHud(); return openSettings('a11y'); }
     const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return openSettings(); }
     if (e.target.closest('[data-morn="off"]')) { Morning.set('').then(openSettings); return; } // 95b
     const mc = e.target.closest('[data-mycur]'); if (mc) { S.settings.myCursor = mc.dataset.mycur === '1'; DB.put('kv', S.settings, 'settings').then(() => { AICur.mine(); openSettings(); }); return; }
@@ -7293,6 +7333,7 @@ function openSettings(page = 'main') {
     if (!d) return;
     if (d === 'wa') $('#waInput').click();
     else if (d === 'move') openSettings('move');
+    else if (d === 'a11y') openSettings('a11y');
     else if (d === 'dups') Dups.open();
     else if (d === 'imphold') { await AI.holdGo(); toast(`${aiName()} içe aktarılanları düzenliyor`, 2500, 'spark'); openSettings(); } // 148
     else if (d === 'lists') openSettings('lists');
