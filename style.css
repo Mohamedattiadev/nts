@@ -2160,3 +2160,44 @@ dialog.cmdk .d-body { padding: 0; gap: 0; display: flex; flex-direction: column;
 @media (prefers-reduced-motion: reduce) { .r-live, .r-live.image .lv-img img, .bcard .b-open, .lv-wave i { animation: none; transition: none; } }
 .bcard:has(> .b-open):not(:has(> .thumb, > .r-emb, > .r-live)) .b-head { padding-right: 28px; }
 .r-live.audio .lv-au { padding-right: 46px; }
+
+/* ---------- 95b: morning brief card ---------- */
+.morn { position: fixed; z-index: 58; top: calc(64px + env(safe-area-inset-top)); right: 16px; width: min(360px, calc(100vw - 24px));
+  background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-pop); padding: 12px 12px 10px;
+  opacity: 0; transform: translateY(-8px) scale(.98); transform-origin: top right; transition: opacity .2s var(--ease), transform .22s var(--ease); }
+.morn.in { opacity: 1; transform: none; }
+.morn header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 2px 2px 6px 6px; }
+.morn header b { display: block; font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.morn header small { color: var(--muted); font-size: 12.5px; }
+.morn .m-x { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--text-2); }
+.morn .m-x:hover { background: var(--surface-2); color: var(--text); }
+.morn .m-ai { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 6px; padding: 8px 10px; border-radius: 11px; background: var(--accent-soft); font-size: 13.5px; line-height: 1.45; }
+.morn .m-ai .b-mk { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.morn .m-ai.loading span { color: var(--text-2); }
+.morn .m-sec { padding: 4px 0; }
+.morn .m-sec + .m-sec { border-top: 1px solid var(--line); }
+.morn h5 { margin: 4px 6px 2px; font-size: 12px; font-weight: 650; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.morn h5 span { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.morn ul { list-style: none; margin: 0; padding: 0; }
+.morn .m-it { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; min-height: 36px; padding: 6px; border-radius: 8px; text-align: left;
+  font-size: 13.5px; color: var(--text); overflow: hidden; }
+.morn .m-it:hover { background: var(--surface-2); }
+.morn .m-it small { flex: none; color: var(--muted); font-size: 12px; }
+.morn .m-it.late small { color: var(--danger); }
+.morn .m-empty { margin: 4px 6px 8px; color: var(--text-2); }
+.morn footer { display: flex; gap: 6px; padding: 6px 2px 0; }
+.morn footer:empty { display: none; }
+.morn footer .btn { flex: 1; justify-content: center; }
+.morn-line > span:first-child small, .set-line > span > small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; white-space: normal; }
+.m-at { display: inline-flex; align-items: center; border-radius: 7px; padding: 0 4px; color: var(--text-2); }
+.m-at.on { background: var(--surface-3); color: var(--text); }
+.m-at input { height: 26px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+@media (max-width: 899px) {
+  .morn { top: auto; right: 12px; bottom: calc(var(--dock-h, 60px) + 16px + env(safe-area-inset-bottom)); transform-origin: bottom center; transform: translateY(10px); }
+  .morn.in { transform: none; }
+  .morn .m-x { width: 44px; height: 44px; margin: -6px -6px 0 0; }
+  .morn .m-it, .morn footer .btn { min-height: 44px; }
+  .morn-line > span:first-child { white-space: normal; }
+  .m-at input { min-height: 36px !important; }
+}
+.morn .m-it span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

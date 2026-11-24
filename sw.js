@@ -1,4 +1,4 @@
-const VERSION = 'v95';
+const VERSION = 'v96';
 const CACHE = 'hizli-note-' + VERSION;
 const ASSETS = ['./', './index.html', './style.css', './app.js', './query.js', './ed.js', './sem.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg', './icons/sc-note.png', './icons/sc-todo.png', './icons/sc-lock.png', './icons/sc-find.png'];
@@ -52,11 +52,24 @@ self.addEventListener('fetch', e => {
     catch { return (await cached()) || Response.error(); }
   })());
 });
-// a reminder tapped on the phone opens the app on the to-dos
+// 95b: morning brief while the app is closed (installed app on the phone: Chrome wakes us about once a day). The page shows it too, once per day (kv 'morning'.last).
+async function morning() {
+  if (self.Notification && Notification.permission !== 'granted') return;
+  const m = (await DB.get('kv', 'morning')) || {}, at = m.at === undefined ? '08:00' : m.at; if (!at) return;
+  const d = new Date(), [h, mi] = at.split(':').map(Number), min = d.getHours() * 60 + d.getMinutes();
+  if (min < h * 60 + mi || min > h * 60 + mi + 360) return; // only in the 6 hours after the chosen time
+  const wins = await self.clients.matchAll({ type: 'window' }); if (wins.some(c => c.visibilityState === 'visible')) return; // the open app shows its own card
+  const b = morningBrief(await DB.all('items'), d.getTime(), !(await DB.get('kv', 'lock')));
+  if (!b || m.last === b.day) return; // nothing to say, or already said today
+  await DB.put('kv', { ...m, last: b.day }, 'morning');
+  await self.registration.showNotification('Günaydın · Nts', { body: b.body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'nts-morning', data: { view: 'morning' } });
+}
+self.addEventListener('periodicsync', e => { if (e.tag === 'nts-morning') e.waitUntil(morning().catch(() => { })); });
+// a reminder tapped on the phone opens the app on the to-dos (the morning brief opens its card)
 self.addEventListener('notificationclick', e => {
-  e.notification.close();
+  e.notification.close(); const view = e.notification.data?.view || 'todo';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
-    const rd = e.notification.data?.read, c = cs.find(x => 'focus' in x); if (c) { c.postMessage(rd ? { read: 1 } : { view: 'todo' }); return c.focus(); }
-    return self.clients.openWindow(rd ? './?do=read' : './?view=todo');
+    const rd = e.notification.data?.read, c = cs.find(x => 'focus' in x); if (c) { c.postMessage(rd ? { read: 1 } : { view }); return c.focus(); }
+    return self.clients.openWindow(rd ? './?do=read' : './?view=' + view);
   }));
 });

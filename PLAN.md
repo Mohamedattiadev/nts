@@ -338,6 +338,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             (organize ya da ocrBackfill) bir kez bildirim: "Resimde tarih var (5 Ara). Göreve çevireyim mi?" (eski resimlerin geriye dönük okuması sessiz).
             Ek düzeltme: bildirimler (toast) artık açık pencerelerin (okuma sayfası, kayıt penceresi) ÜSTÜNDE (popover, en üst katman) — önceden altında
             kalıp "Geri al" görünmüyordu. Test t95cd 4 yapılandırma, konsol hatası 0; query testleri 306/306.
+        ✓ 95b 2026-11-24 (B hattı): sabah özeti (`Morning`, app.js; ortak `morningBrief` db.js'te, sayfa + SW aynı hesap) — Ayarlar → "Sabah özeti"
+            saat (varsayılan 08:00) ya da Kapalı. Seçilen saatten sonraki 6 saat içinde uygulama ilk açıldığında günde bir kez kart: "Günaydın · 24 Kasım
+            Salı", köprü varsa yapay zekânın dünü anlatan 1–2 cümlesi (yeni `/brief` ucu, röleye de açık, haiku; gün içinde önbellekte), Bugün: gecikmiş +
+            bugünkü görevler (saatleriyle), Dün: kaç kayıt (türlere göre) + ilk 3'ü; satıra dokun = kaydı aç; "Görevler" / "Dünküler (N)" (Ara'da "dün").
+            Masaüstünde sağ üstte, telefonda kutunun üstünde (44 px dokunma); Esc / × kapatır; tur, kilit ya da açık pencere varken bekler. Uygulama
+            kapalıyken: telefonda yüklü uygulama periodic sync ile SW'den bildirim (12 saatte bir uyanır, Chrome karar verir; izin yoksa ya da uygulama açıkken
+            susar, uygulama kilidi açıksa yalnız sayılar), bildirime dokununca kart açılır; bilgisayarda köprü snapshot'taki saatle notify-send gönderir
+            (Claude cümlesi + sayılar). Test: 4 yapılandırma kart/ayar/aç/kapat, SW (izin yok/açık/kapalı/aynı gün/kilit), izole ikinci köprüde gerçek
+            Claude /brief (~6,5 sn) + sahte notify-send; konsol hatası 0. Köprü değişti: `systemctl --user restart hizli-note-bridge`. CİHAZ TESTİ sahipte
+            (yüklü uygulamada sabah bildirimi gerçekten geliyor mu — Chrome periodic sync'i site etkileşimine göre seyrek çalıştırabilir).
         ✓ 95e 2026-11-24 (B hattı): Ctrl+K / ⌘K komut paleti (`Cmd`, app.js) — her yerden açılır (kutuda yazarken de; başka pencere açıkken açılmaz),
             telefonda Ayarlar → "Komut paleti" satırı; üstte açılan kart (klavye örtmez), masaüstünde ekranın üst üçte birinde. Boşken son kullanılan
             komutlar önde (hn-cmd-recent); yazınca gruplar en iyi eşleşmeye göre sıralanır: Komutlar (görünümler, Not/Ara/Sor, kenar çubuğu, sığdır/%100,

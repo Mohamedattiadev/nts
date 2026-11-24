@@ -281,6 +281,16 @@ async function boardPlan(request, items, boards) {
   return runClaude({ prompt, system, schema: PLAN_SCHEMA, model: conf.askModel });
 }
 
+// 95b: the morning brief — one or two plain sentences on what was saved yesterday (+ a nudge for today's tasks)
+const BRIEF_SCHEMA = { type: 'object', required: ['line'], properties: { line: { type: 'string', description: '1-2 short sentences, max ~220 characters' } } };
+async function brief(saved, tasks) {
+  const system = 'You write a calm morning note for one person about what they saved yesterday in their notes app (notes, links, photos, files, tasks). ' +
+    'In 1-2 short sentences say what yesterday was mostly about (themes, not a list of every item); if there are tasks for today, end with the most important one. ' +
+    'Write in the language most items are written in (Turkish when unsure). No greeting (the card already says good morning), no emojis, no sales talk, never describe your own process. Output only per schema.';
+  const prompt = `Yesterday saved:\n${JSON.stringify(saved.map(i => ({ type: i.type, title: String(i.title || '').slice(0, 100), tags: i.tags?.length ? i.tags : undefined })))}\n\nToday's tasks:\n${JSON.stringify(tasks.map(t => ({ text: String(t.text || '').slice(0, 100), late: !!t.late })))}`;
+  return runClaude({ prompt, system, schema: BRIEF_SCHEMA, model: conf.organizeModel });
+}
+
 // one line per day / month for the list's day headers and the board's month grid (61)
 const SUM_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'line'],
   properties: { key: { type: 'string' }, line: { type: 'string', description: 'one short line, max ~90 characters, in Turkish' } } } } } };
@@ -379,7 +389,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe', '/brief']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -460,6 +470,30 @@ function remindTick() {
   } catch (e) { console.warn('remind', e.message); }
 }
 setInterval(remindTick, 60e3); setTimeout(remindTick, 5000);
+// 95b: the morning brief on this PC — once a day, in the 6 hours after the time chosen in the app (snapshot.morning, '' = off)
+const MORNING = join(CONF_DIR, 'morning.json');
+async function morningTick() {
+  try {
+    const f = join(CONF_DIR, 'snapshot.json'); if (!existsSync(f)) return;
+    const { items = [], morning } = JSON.parse(readFileSync(f, 'utf8')), at = morning === undefined ? '08:00' : morning; if (!/^\d\d:\d\d$/.test(at || '')) return;
+    const d = new Date(), [h, mi] = at.split(':').map(Number), min = d.getHours() * 60 + d.getMinutes(); if (min < h * 60 + mi || min > h * 60 + mi + 360) return;
+    const p = n => String(n).padStart(2, '0'), day = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    const st = existsSync(MORNING) ? JSON.parse(readFileSync(MORNING, 'utf8')) : {}; if (st.last === day) return;
+    writeFileSync(MORNING, JSON.stringify({ last: day }));
+    const yd = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1), yk = `${yd.getFullYear()}-${p(yd.getMonth() + 1)}-${p(yd.getDate())}`;
+    const dk = i => { const x = new Date(i.date); return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}`; };
+    const saved = items.filter(i => i.date && dk(i) === yk), tasks = items.filter(i => i.todo && !i.todo.done && i.todo.due && i.todo.due.slice(0, 10) <= day)
+      .sort((a, b) => a.todo.due < b.todo.due ? -1 : 1).map(i => ({ text: i.todo.text || i.title, late: i.todo.due.slice(0, 10) < day }));
+    if (!saved.length && !tasks.length) return;
+    const late = tasks.filter(t => t.late).length;
+    let body = `${saved.length ? `Dün ${saved.length} kayıt` : 'Dün kayıt yok'} · ${tasks.length ? `bugün ${tasks.length} görev${late ? ` (${late} gecikmiş)` : ''}` : 'bugün görev yok'}`;
+    if (saved.length) try { const r = await brief(saved.slice(0, 40).map(i => ({ type: i.type, title: i.title, tags: i.tags })), tasks.slice(0, 8)); if (r?.line) body = r.line + '\n' + body; } catch (e) { console.warn('brief', e.message); }
+    else body += '\n' + tasks.slice(0, 3).map(t => '• ' + t.text).join('\n');
+    execFile('notify-send', ['-a', 'Nts', '-i', 'weather-clear', '-u', 'normal', 'Günaydın · Nts', body], () => { });
+    console.log('sabah özeti:', body.split('\n')[0]);
+  } catch (e) { console.warn('morning', e.message); }
+}
+setInterval(morningTick, 5 * 60e3); setTimeout(morningTick, 20000);
 
 http.createServer(async (req, res) => {
   const origin = allowed(req.headers.origin) ? req.headers.origin : null;
@@ -515,7 +549,7 @@ http.createServer(async (req, res) => {
       console.log('new repo ' + name); return send(res, 200, { ok: true, name }, origin);
     }
     if (req.url === '/snapshot' && req.method === 'POST') { // a plain copy for the MCP server (bridge/mcp.mjs); only this computer reads it
-      writeFileSync(join(CONF_DIR, 'snapshot.json'), JSON.stringify({ at: Date.now(), items: (body.items || []).slice(0, 20000) }), { mode: 0o600 });
+      writeFileSync(join(CONF_DIR, 'snapshot.json'), JSON.stringify({ at: Date.now(), morning: typeof body.morning === 'string' ? body.morning : undefined, items: (body.items || []).slice(0, 20000) }), { mode: 0o600 });
       return send(res, 200, { ok: true, n: body.items?.length || 0 }, origin);
     }
     if (req.url === '/article') {
@@ -545,6 +579,7 @@ http.createServer(async (req, res) => {
     if (req.url === '/summaries') { const r = await summaries((body.groups || []).slice(0, 24)); console.log(`summaries ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/folders') { const r = await folderNames((body.groups || []).slice(0, 30)); console.log(`folders ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/transcribe') { const r = await transcribe(String(body.audio || ''), String(body.mime || ''), String(body.lang || '')); console.log(`transcribe ${Math.round((body.audio || '').length / 1365)} KB ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+    if (req.url === '/brief') { const r = await brief((body.saved || []).slice(0, 40), (body.tasks || []).slice(0, 8)); console.log(`brief ${body.saved?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); } // 95b
     if (req.url === '/board-plan') { const r = await boardPlan(String(body.request || '').slice(0, 300), (body.items || []).slice(0, 120), (body.boards || []).slice(0, 60)); console.log(`board-plan ${body.items?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));

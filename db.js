@@ -68,3 +68,29 @@ async function saveItems(items) {
   await DB.putMany('items', clean);
   return clean;
 }
+
+// 95b: the morning brief — what was saved yesterday + today's (and late) tasks. Built the same way by the page and the service worker.
+// names=false (app lock on): only counts, no titles, so a notification on the lock screen shows nothing private.
+function morningBrief(items, t = Date.now(), names = true) {
+  const d = new Date(t), p = n => String(n).padStart(2, '0'), tk = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  const today = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), yest = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1).getTime();
+  const HID = new Set(['draw', 'vault', 'bridge', 'ghlink', 'boards', 'summaries', 'saved']);
+  const live = items.filter(i => i && !i.deleted && !HID.has(i.type));
+  const name = i => String(i.todo?.text || i.title || i.fileName || (i.text || '').trim().split('\n')[0] || i.url || '').trim().slice(0, 80) || 'Kayıt';
+  const kindOf = i => i.todo ? 'todo' : i.type === 'file' ? (/^image\//.test(i.mime || '') ? 'photo' : /^audio\//.test(i.mime || '') || /\.(webm|m4a|mp3|ogg|wav)$/i.test(i.fileName || '') ? 'audio' : 'file') : i.type;
+  const saved = live.filter(i => i.ts >= yest && i.ts < today).sort((a, b) => b.ts - a.ts);
+  const kinds = {}; saved.forEach(i => { const k = kindOf(i); kinds[k] = (kinds[k] || 0) + 1; });
+  const tasks = live.filter(i => i.todo && !i.todo.done && i.todo.due && i.todo.due.slice(0, 10) <= tk).sort((a, b) => a.todo.due < b.todo.due ? -1 : 1);
+  if (!saved.length && !tasks.length) return null;
+  const KN = { note: 'not', link: 'link', photo: 'resim', file: 'dosya', audio: 'ses', todo: 'görev', chat: 'sohbet' };
+  const kindTxt = Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${KN[k] || 'kayıt'}`).join(', ');
+  const late = tasks.filter(i => i.todo.due.slice(0, 10) < tk).length;
+  const head = [saved.length ? `Dün ${saved.length} kayıt${Object.keys(kinds).length > 1 ? ` (${kindTxt})` : ''}` : 'Dün kayıt yok',
+    tasks.length ? `bugün ${tasks.length} görev${late ? ` (${late} gecikmiş)` : ''}` : 'bugün görev yok'].join(' · ');
+  return {
+    day: tk, head, kindTxt, late, n: saved.length,
+    body: names && tasks.length ? head + '\n' + tasks.slice(0, 3).map(i => '• ' + name(i)).join('\n') : head,
+    saved: names ? saved.slice(0, 40).map(i => ({ id: i.id, type: kindOf(i), title: name(i), tags: (i.tags || []).slice(0, 3) })) : [],
+    tasks: names ? tasks.slice(0, 8).map(i => ({ id: i.id, text: name(i), due: i.todo.due, late: i.todo.due.slice(0, 10) < tk })) : [],
+  };
+}

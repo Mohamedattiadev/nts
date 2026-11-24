@@ -3159,6 +3159,78 @@ const DateAsk = {
   },
 };
 
+// ---------- 95b: morning brief — once a day after the chosen time (default 08:00): what you saved yesterday + today's tasks ----------
+// Shown as a card the first time the app is open in the 6 hours after that time; with the app closed the installed phone app
+// gets a notification from the service worker (periodic sync), on the PC the bridge sends it (snapshot carries the time).
+// The AI's one-line summary of yesterday comes from the bridge (/brief) when it is reachable; without it the card is plain counts.
+const Morning = {
+  at() { const v = S.settings.morning; return v === undefined ? '08:00' : v; }, // '' = off
+  async set(v) {
+    S.settings.morning = v; await DB.put('kv', S.settings, 'settings');
+    const m = (await DB.get('kv', 'morning')) || {}; await DB.put('kv', { ...m, at: v }, 'morning'); this.reg(); Snapshot.schedule();
+  },
+  async reg() { // periodic sync: installed app on the phone only (on the PC the bridge notifies)
+    try {
+      const r = await navigator.serviceWorker?.ready; if (!r?.periodicSync) return;
+      if (!this.at() || BridgeLink.local()) return void r.periodicSync.unregister('nts-morning').catch(() => { });
+      const p = await navigator.permissions?.query({ name: 'periodic-background-sync' }).catch(() => null); if (p && p.state !== 'granted') return;
+      await r.periodicSync.register('nts-morning', { minInterval: 12 * 3600e3 });
+    } catch { }
+  },
+  async tick() {
+    const at = this.at(); if (!at) return;
+    const d = new Date(now()), [h, mi] = at.split(':').map(Number), min = d.getHours() * 60 + d.getMinutes();
+    if (min < h * 60 + mi || min > h * 60 + mi + 360) return;
+    if (document.querySelector('dialog[open], .tour, #lock:not([hidden])')) return; // the tour, the lock or an open window first; the card waits
+    const m = (await DB.get('kv', 'morning')) || {}, day = dayKey(now()); if (m.last === day) return;
+    await DB.put('kv', { ...m, at, last: day }, 'morning');
+    const b = morningBrief(S.items, now()); if (!b) return;
+    this.open(b);
+    if (document.hidden && !BridgeLink.local() && 'Notification' in window && Notification.permission === 'granted')
+      navigator.serviceWorker?.ready.then(r => r.showNotification('Günaydın · Nts', { body: b.body, icon: 'icons/icon-192.png', tag: 'nts-morning', data: { view: 'morning' } })).catch(() => { });
+  },
+  open(b = morningBrief(S.items, now())) {
+    this.close(true);
+    const el = document.createElement('section'); el.id = 'morn'; el.className = 'morn'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Sabah özeti');
+    const day = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(now());
+    const row = (id, t, sub, cls = '') => `<li><button class="m-it ${cls}" data-mopen="${esc(id)}"><span dir="auto">${esc(t)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</button></li>`;
+    el.innerHTML = !b ? `<header><span><b>Günaydın</b><small>${esc(day)}</small></span><button class="m-x" aria-label="Kapat">${ic('x', 'sm')}</button></header><p class="m-empty">Dün kayıt yok, bugüne görev yok. Sakin bir gün.</p>`
+      : `<header><span><b>Günaydın</b><small>${esc(day)}</small></span><button class="m-x" aria-label="Kapat">${ic('x', 'sm')}</button></header>
+      ${b.n && S.bridgeOk ? `<p class="m-ai loading" aria-live="polite">${aiMark()}<span>${esc(aiName())} dünü özetliyor…</span></p>` : ''}
+      <div class="m-sec"><h5>Bugün <span>${b.tasks.length ? `${b.tasks.length} görev${b.late ? ` · ${b.late} gecikmiş` : ''}` : 'görev yok'}</span></h5>
+        ${b.tasks.length ? `<ul>${b.tasks.slice(0, 4).map(t => row(t.id, t.text, t.late ? 'gecikmiş · ' + dueInfo(t.due)?.label : t.due.includes('T') ? t.due.slice(11, 16) : '', t.late ? 'late' : '')).join('')}</ul>` : ''}</div>
+      <div class="m-sec"><h5>Dün <span>${b.n ? `${b.n} kayıt${b.kindTxt.includes(',') ? ' · ' + esc(b.kindTxt) : ''}` : 'kayıt yok'}</span></h5>
+        ${b.n ? `<ul>${b.saved.slice(0, 3).map(i => row(i.id, i.title, i.tags.length ? '#' + i.tags[0] : '')).join('')}</ul>` : ''}</div>
+      <footer>${b.tasks.length ? `<button class="btn secondary" data-mgo="todo">${ic('todo', 'sm')}Görevler</button>` : ''}${b.n > 3 ? `<button class="btn secondary" data-mgo="yday">Dünküler (${b.n})</button>` : ''}</footer>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('in'));
+    el.addEventListener('click', e => {
+      if (e.target.closest('.m-x')) return this.close();
+      const o = e.target.closest('[data-mopen]'); if (o) { this.close(); return openItem(o.dataset.mopen); }
+      const g = e.target.closest('[data-mgo]'); if (!g) return; this.close();
+      if (g.dataset.mgo === 'todo') setView('todo');
+      else { setMode('find'); const inp = $('#input'); inp.value = 'dün'; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+    this.esc = e => { if (e.key === 'Escape' && !document.querySelector('dialog[open]')) this.close(); }; addEventListener('keydown', this.esc);
+    if (b?.n && S.bridgeOk) this.ai(b, el);
+  },
+  async ai(b, el) {
+    const p = el.querySelector('.m-ai'), m = (await DB.get('kv', 'morning')) || {};
+    let line = m.aiDay === b.day ? m.ai : '';
+    if (!line) try {
+      const r = await AI.call('/brief', { saved: b.saved, tasks: b.tasks.map(t => ({ text: t.text, late: t.late })) }, 60000); line = String(r?.line || '').trim().slice(0, 400);
+      if (line) await DB.put('kv', { ...((await DB.get('kv', 'morning')) || {}), aiDay: b.day, ai: line }, 'morning');
+    } catch { }
+    if (!p.isConnected) return; if (!line) return p.remove();
+    p.classList.remove('loading'); p.innerHTML = `${aiMark()}<span>${esc(line)}</span>`;
+  },
+  close(now) {
+    const el = $('#morn'); if (!el) return; removeEventListener('keydown', this.esc);
+    if (now || matchMedia('(prefers-reduced-motion: reduce)').matches) return el.remove();
+    el.classList.remove('in'); setTimeout(() => el.remove(), 200);
+  },
+  init() { setTimeout(() => this.tick(), 4000); setInterval(() => { if (!document.hidden) this.tick(); }, 60e3); document.addEventListener('visibilitychange', () => { if (!document.hidden) this.tick(); }); this.reg(); },
+};
+
 // ---------- "Claude çalışıyor": a calm pill while Claude does something in the background ----------
 const Busy = {
   jobs: new Map(), n: 0,
@@ -3172,6 +3244,7 @@ const Busy = {
     if (k === '/board-plan') return 'pano hazırlıyor'; // 93
     if (k === '/ocr') return 'resimlerdeki yazıyı okuyor';
     if (k === '/transcribe') return 'sesli notu yazıya döküyor'; // 95a
+    if (k === '/brief') return 'sabah özetini yazıyor'; // 95b
     return null; // health, inbox, snapshot, meta: not Claude
   },
   start(label) { const id = ++this.n; this.jobs.set(id, label); this.draw(); return id; },
@@ -5699,7 +5772,7 @@ const Snapshot = {
       url: i.url, file: i.fileName, summary: i.summary, tags: i.tags?.length ? i.tags : undefined, project: i.project, lists: i.lists?.length ? i.lists : undefined,
       todo: i.todo ? { text: i.todo.text, due: i.todo.due, done: !!i.todo.done } : undefined, starred: i.starred || undefined,
       highlights: i.highlights?.length ? i.highlights.map(h => h.text) : undefined }));
-    try { await AI.call('/snapshot', { items }, 20000); } catch (e) { console.warn('snapshot', e); }
+    try { await AI.call('/snapshot', { items, morning: Morning.at() }, 20000); } catch (e) { console.warn('snapshot', e); }
   },
 };
 
@@ -6505,6 +6578,8 @@ function openSettings(page = 'main') {
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
     <div class="set-sec">
+      <div class="set-line morn-line"><span>Sabah özeti<small>Dünkü kayıtlar + bugünün görevleri, günde bir kez</small></span><div class="seg sm"><button data-morn="off" class="${Morning.at() ? '' : 'on'}" aria-pressed="${!Morning.at()}">Kapalı</button><label class="m-at${Morning.at() ? ' on' : ''}"><input type="time" id="mornAt" aria-label="Sabah özeti saati" value="${esc(Morning.at() || '08:00')}"></label></div></div>
+      <button class="set-row" data-do="morning">${ic('sun')}<span>Sabah özetini şimdi göster<small>${Morning.at() ? `Her gün ${esc(Morning.at())}'den sonra ilk açılışta${onPhone() ? '; yüklü uygulamada kapalıyken bildirim' : '; bilgisayarda köprü bildirir'}` : 'Kapalı'}</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="cmdk">${ic('search')}<span>Komut paleti<small>Her şey tek yerden: görünüm, pano, etiket, kayıt${onPhone() ? '' : ' · <kbd>Ctrl</kbd> <kbd>K</kbd>'}</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row d-only" data-do="keys">${ic('kbd')}<span>Klavye kısayolları<small>Her yerde <kbd>?</kbd> tuşu da açar</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="tour">${ic('spark')}<span>Nasıl kullanılır?<small>6 adımlık kısa tur</small></span>${ic('chev', 'sm')}</button>
@@ -6542,6 +6617,7 @@ function openSettings(page = 'main') {
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
   m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'lists' ? listsPage : main}</div>`;
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
+  const ma = m.querySelector('#mornAt'); if (ma) ma.onchange = () => { if (/^\d\d:\d\d$/.test(ma.value)) Morning.set(ma.value).then(() => { Remind.ask(); openSettings(); }); }; // 95b
   const pick = m.querySelector('#accentPick'); if (pick) { pick.oninput = () => setAccent(pick.value); pick.onchange = () => openSettings(); }
   m.querySelectorAll('[data-lname]').forEach(el => el.onchange = () => setList(el.dataset.lname, { name: el.value.trim() || undefined }));
   m.querySelectorAll('[data-lshow]').forEach(el => el.onchange = () => setList(el.dataset.lshow, { hidden: !el.checked }));
@@ -6550,6 +6626,7 @@ function openSettings(page = 'main') {
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
     const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return openSettings(); }
+    if (e.target.closest('[data-morn="off"]')) { Morning.set('').then(openSettings); return; } // 95b
     const mc = e.target.closest('[data-mycur]'); if (mc) { S.settings.myCursor = mc.dataset.mycur === '1'; DB.put('kv', S.settings, 'settings').then(() => { AICur.mine(); openSettings(); }); return; }
     const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
     if (e.target.closest('[data-fregroup]')) { AIF.ask(true); toast('Klasörler yeniden gruplanıyor…', 2500, 'spark'); return; }
@@ -6561,6 +6638,7 @@ function openSettings(page = 'main') {
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
     else if (d === 'tour') { m.close(); setTimeout(() => Tour.start(), 250); }
     else if (d === 'cmdk') { m.close(); setTimeout(() => Cmd.open(), 250); }
+    else if (d === 'morning') { m.close(); Remind.ask(); setTimeout(() => Morning.open(), 250); }
     else if (d === 'keys') { m.close(); setTimeout(() => Native.keysOpen(), 250); }
     else if (d === 'back') openSettings();
     else if (d === 'import') $('#backupInput').click();
@@ -6760,7 +6838,7 @@ function wire() {
   ViewHide.init();
   Underlap.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
-  Ctx.init(); OnBoard.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
+  Ctx.init(); OnBoard.init(); Sel.init(); Peek.init(); Read.init(); Remind.init(); Morning.init();
   Todo.init();
   Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
@@ -6848,11 +6926,12 @@ const Boot = {
   // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
   Cloud.finish().then(() => { if (Cloud.on()) { render(); Sync.run(); Live.start(); BridgeLink.publish(); } });
   BridgeLink.adopt();
-  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.read) Read.queue(); else if (e.data?.view) setView(e.data.view); });
+  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.read) Read.queue(); else if (e.data?.view === 'morning') Morning.open(); else if (e.data?.view) setView(e.data.view); });
   { // home-screen shortcuts (long-press the icon): new note, to-dos, vault
     const q = new URLSearchParams(location.search), v = q.get('view'), d = q.get('do');
     if (v === 'todo') setView('todo');
     if (d === 'read') setTimeout(() => Read.queue(), 400); // 95c: tapped the "okuma listesi" notification
+    if (v === 'morning') setTimeout(() => Morning.open(), 400); // 95b: the morning notification tapped with the app closed
     const qt = (q.get('text') || '').trim().slice(0, 20000), qu = (q.get('url') || '').trim(); // 96: Android "Nts'e kaydet" (selected text) and links
     if (d === 'new' && (qt || qu)) addFromInput({ text: qt, url: qu, source: 'share' }).then(r => { if (r && r !== 'dup' && r.length) { toast('Kaydedildi', 3000, 'check', { label: 'Aç', fn: () => openItem(r[0].id) }); } });
     else if (d === 'new') setTimeout(() => $('#input').focus(), 300);
