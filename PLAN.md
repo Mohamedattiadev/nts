@@ -971,6 +971,13 @@ Arayüz:
         `$mod SHIFT, S` ikisi de bu kutuyu açar/kapatır; eski TODOS penceresi silinmez, boşta bir tuşa taşınır (ör. `$mod ALT, S`, önce boş mu
         bak) ve binds.conf'ta yorumla yazılır. Ctrl+Space giriş yöntemi (fcitx vb.) ile çakışıyor mu kontrol et. hyprctl reload sonrası dene.
         (c) köprü kapalıyken: yerel kuyruğa yazar, köprü gelince gönderir. Ekran görüntüsü (grim) açık + koyu, açılış süresi ölçümü PLAN'a.
+- [ ] 149b. **Zaman çizgisi: imleç + akıcılık** (sahip, 2026-11-24, design/feedback-33.png, 149'dan sonra: "bunu kullanırken cursor daha uygun olsun,
+        bir de daha smooth"). İmleç: şeridin üstünde `grab`/ns-resize benzeri dikey sürükleme imleci, sürüklerken `grabbing`, nokta üzerinde
+        büyür (hover ölçeği), şeridin tıklanabilir alanı ≥24 px geniş (ince çizgiyi tutturmak zorunda kalınmasın), basınca sayfada metin seçilmez
+        (user-select none, pointer capture), sürüklerken imleç başka öğelere geçince değişmez. Akıcılık: nokta fareyi gecikmesiz izler (rAF,
+        transform; layout okuma yok), sayfa kaydırması hedefe yaylı yaklaşır (kesik kesik atlamaz), ay etiketleri (Eyl/Tem/May) noktaya yakınken
+        yumuşak belirip kaybolur (opacity, titreşim yok), bırakınca aya oturma ≤180 ms. Ölç: sürüklemede uzun görev 0, 60 fps (telefon 4x ≥45);
+        tools/perf.mjs'e zaman çizgisi sürükleme senaryosu ekle. reduced-motion'da anında. Masaüstü + telefon (dokunma), açık + koyu.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
