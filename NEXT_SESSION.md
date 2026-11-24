@@ -247,5 +247,5 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [~A] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158
 - [ ] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [~D] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
-- [~C] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
+- [x] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme (ec4072d)
 - [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor
