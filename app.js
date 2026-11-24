@@ -1608,9 +1608,25 @@ async function addFromInput(input) {
   const made = itemsFromInput(input);
   if (!made.length) return [];
   made.forEach(m => { m.createdAt = now(); if (!m.source || m.source === 'manual') m.dev = deviceNow(); });
-  if (made.length === 1 && made[0].type === 'link' && input.source !== 'pc') {
-    const dup = S.items.find(i => !i.deleted && i.type === 'link' && i.url.replace(/\/$/, '') === made[0].url.replace(/\/$/, ''));
-    if (dup) { toast(`Bu link zaten kayıtlı (${fmtDay(dayKey(dup.ts))})`, 3500, 'link'); openItem(dup.id); return 'dup'; }
+  // 152: the same link (any spelling: www, m., utm_, youtu.be …) or the same file bytes → no second item; the old one gets one more save
+  if (window.NtsDedup && input.source !== 'pc') {
+    for (const m of made) if (m._blob) m.sha = await sha1Hex(m._blob);
+    const ix = NtsDedup.index(S.items), dups = [], upd = new Map(), same = new Set();
+    for (const m of made) {
+      const old = m.type === 'link' ? ix.url(m.url) : m.type === 'file' ? ix.sha(m.sha) : null; if (!old) continue;
+      dups.push(old); same.add(m);
+      const u = NtsDedup.addSave(upd.get(old.id) || old, NtsDedup.saveOf({ ...m, ts: now() })), t = (m.text || '').trim();
+      if (t && !(u.text || '').includes(t)) u.text = [u.text, t].filter(Boolean).join('\n\n'); // what was typed with it is kept
+      upd.set(old.id, u);
+    }
+    if (dups.length) {
+      await upsert([...upd.values()], { quiet: true });
+      const rest = made.filter(m => !same.has(m));
+      const what = dups[0].type === 'link' ? 'link' : 'dosya';
+      if (!rest.length) { toast(`Bu ${what} zaten kayıtlı (${fmtDay(dayKey(dups[0].ts))})`, 3500, dups[0].type === 'link' ? 'link' : 'file'); openItem(dups[0].id); return 'dup'; }
+      toast(`${dups.length} tanesi zaten kayıtlıydı, kopyası açılmadı`, 3500, 'check');
+      made.splice(0, made.length, ...rest);
+    }
   }
   const saved = await saveItems(made);
   await upsert(saved);
@@ -2675,6 +2691,7 @@ function openItem(id) {
     ${autoTitle(i) ? `<div class="d-fn" title="Başlık resimdeki yazıdan alındı; değiştirebilirsin">${ic('file', 'sm')}<span>${esc(i.fileName)}</span></div>` : ''}
     <div id="explainBox">${explainHtml(i)}</div>
     ${i.conv ? convHtml(i) : ''}
+    ${window.NtsDedup?.savesLine(i) ? `<div class="d-saves" title="${esc(i.saves.map(x => F_DMY.format(x.ts) + (x.src === 'whatsapp' ? ' · WhatsApp' + (x.chat ? ': ' + x.chat : '') : '')).join('\n'))}">${ic('copy', 'sm')}<span>${esc(NtsDedup.savesLine(i))}</span></div>` : ''}
     ${i.archive && !i.onBoard && !i.pos ? `<div class="d-arch">${ic('inbox', 'sm')}<span>Arşivde${i.chat ? ` · WhatsApp: ${esc(i.chat)}` : ''}. Listede, galeride ve aramada var, panoda yok.</span><button class="btn secondary sm" data-act="toboard">${ic('board', 'sm')}Panoya koy</button></div>` : ''}
     ${i.ocr ? `<details class="d-ocr"><summary>${ic('text', 'sm')}${fileKind(i) === 'pdf' ? 'Sayfadaki yazı' : 'Resimdeki yazı'}<button class="link-btn" data-act="copyocr">Kopyala</button></summary><pre>${esc(i.ocr)}</pre></details>` : ''}
     ${DateAsk.html(i)}
@@ -5517,7 +5534,17 @@ const AI = {
     try {
       for (let round = 0; round < 40; round++) {
         const list = await this.call('/import-items', null, 30000); if (!list.length) break;
-        const add = list.filter(i => !byId(i.id)); total += add.filter(i => i.pending).length;
+        // 152: `nts import` sends "seen again" notes for what is already in Nts; a link that came in meanwhile is caught here too
+        const ix = NtsDedup.index(S.items), upd = new Map(), again = (oid, sv) => { const o = upd.get(oid) || byId(oid); if (o && !o.deleted) upd.set(oid, NtsDedup.addSave(o, sv)); };
+        const add = [];
+        for (const i of list) {
+          if (i.saveOf) { again(i.saveOf, i.save); continue; }
+          if (byId(i.id)) continue;
+          const old = i.type === 'link' && !i.parent && ix.url(i.url); if (old) { again(old.id, NtsDedup.saveOf(i)); continue; }
+          ix.add(i); add.push(i);
+        }
+        if (upd.size) await upsert([...upd.values()], { quiet: true });
+        total += add.filter(i => i.pending).length;
         if (add.length) { if (total >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } await upsert(add); }
         await this.call('/import-items/ack', { ids: list.map(i => i.id) });
         toast(`İçe aktarılanlar alınıyor… ${add.length} kayıt`, 2500, 'inbox');
@@ -6026,7 +6053,7 @@ const Snapshot = {
   async send() {
     if (!S.bridgeOk || Lock.conf) return;
     const items = alive().map(i => ({ id: i.id, type: groupOf(i), date: new Date(i.ts).toISOString(), title: titleOf(i), text: (i.text || '').slice(0, 2000) || undefined,
-      url: i.url, file: i.fileName, summary: i.summary, tags: i.tags?.length ? i.tags : undefined, project: i.project, lists: i.lists?.length ? i.lists : undefined,
+      url: i.url, file: i.fileName, sha: i.sha, summary: i.summary, tags: i.tags?.length ? i.tags : undefined, project: i.project, lists: i.lists?.length ? i.lists : undefined,
       todo: i.todo ? { text: i.todo.text, due: i.todo.due, done: !!i.todo.done } : undefined, starred: i.starred || undefined,
       highlights: i.highlights?.length ? i.highlights.map(h => h.text) : undefined }));
     try { await AI.call('/snapshot', { items, morning: Morning.at() }, 20000); } catch (e) { console.warn('snapshot', e); }
@@ -6417,30 +6444,48 @@ async function importWhatsApp(file) {
   for (const m of live) { const g = groups.at(-1); if (g && dayKey(g.at(-1).ts) === dayKey(m.ts) && m.ts - g.at(-1).ts < 30 * 60e3) g.push(m); else groups.push([m]); }
   const hash = t => { let h = 2166136261; for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
   const out = [];
+  // 152: what is already in Nts (a link in any spelling, a file's bytes, a photo's fingerprint) is not made again: the old item
+  // gets one more save ("WhatsApp'ta da var") and the conversation points at it
+  await PH.load().catch(() => null);
+  const ix = NtsDedup.index(S.items, PH.m), upd = new Map(), dupN = { link: 0, photo: 0, file: 0 };
+  const fresh = new Set(), seenAgain = (old, it) => { if (fresh.has(old.id)) return; upd.set(old.id, NtsDedup.addSave(upd.get(old.id) || byId(old.id) || old, NtsDedup.saveOf(it))); };
   for (const g of groups) {
     const id = 'wa' + hash(chat + g[0].ts + g[0].text.slice(0, 60)); if (byId(id)) continue; // already imported
-    const log = [], kids = [];
+    const log = [], kids = [], have = [];
     for (const m of g) {
       let att = null, text = m.text;
       for (const re of WA_ATTACH) { const a = text.match(re); if (a) { att = a[1].trim(); text = text.slice(a[0].length).trim(); break; } }
       if (att) {
         const zf = zfiles.get(att), blob = zf ? await zf.async('blob') : null, kid = 'wf' + hash(id + att);
-        kids.push({ id: kid, type: 'file', fileName: att, mime: blob?.type || mimeOf(att), size: blob?.size || 0, text, ts: m.ts, parent: id, archive: true, source: 'whatsapp', chat, tags: [], ...(blob ? { _blob: blob } : {}) });
+        const k = { id: kid, type: 'file', fileName: att, mime: blob?.type || mimeOf(att), size: blob?.size || 0, text, ts: m.ts, parent: id, archive: true, source: 'whatsapp', chat, tags: [], ...(blob ? { _blob: blob } : {}) };
+        let old = null, dh = null;
+        if (blob) {
+          k.sha = await sha1Hex(blob); old = ix.sha(k.sha);
+          if (!old && fileKind(k) === 'image' && typeof OffscreenCanvas !== 'undefined') { dh = await PH.of(blob).catch(() => null); old = ix.photo(dh); }
+        }
+        if (old) { seenAgain(old, k); have.push(old.id); dupN[fileKind(k) === 'image' ? 'photo' : 'file']++; log.push({ ts: m.ts, who: m.who, text, att: old.id }); continue; }
+        kids.push(k); fresh.add(kid); ix.add(k, dh); if (dh) PH.m?.set(kid, dh);
         log.push({ ts: m.ts, who: m.who, text, att: kid });
       } else log.push({ ts: m.ts, who: m.who, text });
     }
-    const photos = kids.filter(k => fileKind(k) === 'image'), who = [...new Set(g.map(m => m.who))];
+    const all = [...kids, ...[...new Set(have)].map(x => byId(x) || out.find(o => o.id === x)).filter(Boolean)], photos = all.filter(k => fileKind(k) === 'image'), who = [...new Set(g.map(m => m.who))];
     const label = F_DMY.format(g[0].ts);
-    const text = log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${byIdIn(kids, l.att)?.fileName}] ` : '') + l.text).join('\n').trim();
-    if (g.length === 1 && !kids.length) { // a lone message stays a plain note/link
+    const text = log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${byIdIn(all, l.att)?.fileName}] ` : '') + l.text).join('\n').trim();
+    if (g.length === 1 && !kids.length && !have.length) { // a lone message stays a plain note/link
       const [it] = itemsFromInput({ text: g[0].text }); if (!it) continue;
-      out.push({ ...it, id, ts: g[0].ts, group: undefined, source: 'whatsapp', chat, archive: true, tags: [] }); continue;
+      const one = { ...it, id, ts: g[0].ts, group: undefined, source: 'whatsapp', chat, archive: true, tags: [] };
+      const old = one.type === 'link' && ix.url(one.url);
+      if (old) { seenAgain(old, one); dupN.link++; continue; }
+      ix.add(one); fresh.add(one.id); out.push(one); continue;
     }
     out.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, text, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [],
-      conv: { n: g.length, who, end: g.at(-1).ts, log, kids: kids.map(k => k.id) }, ...(photos[0] ? { cover: photos[0].id } : {}) });
+      conv: { n: g.length, who, end: g.at(-1).ts, log, kids: [...new Set([...kids.map(k => k.id), ...have])] }, ...(photos[0] ? { cover: photos[0].id } : {}) });
     out.push(...kids);
   }
-  if (!out.length) return toast('Hepsi zaten içeride ✓');
+  if (upd.size) await upsert([...upd.values()], { sync: true, quiet: true });
+  if (PH.m?.size) DB.put('kv', Object.fromEntries(PH.m), 'ph').catch(() => null);
+  const dupTxt = [dupN.link && dupN.link + ' link', dupN.photo && dupN.photo + ' foto', dupN.file && dupN.file + ' dosya'].filter(Boolean).join(', ');
+  if (!out.length) return toast(dupTxt ? `Hepsi zaten içeride ✓ · Zaten Nts'te: ${dupTxt}` : 'Hepsi zaten içeride ✓', 4000, 'check');
   const all = []; // 147c: files are written 200 at a time (progress shows), the list is merged and redrawn ONCE at the end
   for (let k = 0; k < out.length; k += 200) {
     all.push(...await saveItems(out.slice(k, k + 200)));
@@ -6449,7 +6494,7 @@ async function importWhatsApp(file) {
   await upsert(all.map(i => i.parent ? { ...i, pending: false } : i), { sync: false }); // Claude organizes the conversation, not each photo
   const nConv = out.filter(i => !i.parent).length;
   if (nConv >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } // 148: a big chat waits for a yes
-  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk && !S.settings.importHold ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
+  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${dupTxt ? ` · Zaten Nts'te: ${dupTxt}` : ''}${S.bridgeOk && !S.settings.importHold ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
   Sync.schedule(); if (S.settings.importHold) setTimeout(() => AI.holdAsk(), 5200); else AI.kick();
 }
 const byIdIn = (list, id) => list.find(x => x.id === id);
@@ -6458,6 +6503,50 @@ function mimeOf(n) {
   return ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', mp4: 'video/mp4', '3gp': 'video/3gpp',
     opus: 'audio/ogg', ogg: 'audio/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', pdf: 'application/pdf', txt: 'text/plain' })[e] || '';
 }
+
+// ---------- 152: Ayarlar → Kopyaları birleştir ----------
+// Finds copies (dedup.js: same link in any spelling, same bytes, near-same photo), shows the list and the count first; one tap
+// merges each group into the item that stays (yours over an archive one; tags, note, board place come along) and puts the
+// copies in the trash. "Geri al" brings everything back as it was.
+const Dups = {
+  async scan(say) {
+    const files = S.items.filter(i => !i.deleted && i.type === 'file' && !i.sha && !i.parent);
+    for (let k = 0; k < files.length; k++) { // a fingerprint for files saved before 152 (only those on this device)
+      const rec = await DB.get('files', files[k].id).catch(() => null); if (!rec?.blob) continue;
+      const sha = await sha1Hex(rec.blob); if (sha) { const c = byId(files[k].id); if (c) c.sha = sha; this.shaUpd.set(c.id, c); }
+      if (k % 40 === 0) say?.(`Dosyalar taranıyor… ${k}/${files.length}`);
+    }
+    await PH.load().catch(() => null);
+    return NtsDedup.groups(S.items, PH.m);
+  },
+  shaUpd: new Map(),
+  open() { openSettings('dups'); },
+  page: head => `${head('Kopyaları birleştir', true)}<div class="set-sec"><p class="hint" id="dupMsg" aria-live="polite">Aranıyor…</p><div id="dupList" class="dup-list"></div></div>`,
+  run() { const say = t => { const el = $('#dupMsg'); if (el) el.textContent = t; }; this.scan(say).then(gs => this.show(gs)).catch(e => say('Hata: ' + e.message)); },
+  show(gs) {
+    const msg = $('#dupMsg'), box = $('#dupList'); if (!msg || !box) return;
+    if (this.shaUpd.size) { upsert([...this.shaUpd.values()], { quiet: true }); this.shaUpd.clear(); }
+    const n = gs.reduce((a, g) => a + g.ids.length - 1, 0), by = k => gs.filter(g => g.kind === k).reduce((a, g) => a + g.ids.length - 1, 0);
+    if (!n) { msg.textContent = 'Kopya yok ✓ Her link, dosya ve foto bir kez kayıtlı.'; box.innerHTML = ''; return; }
+    msg.innerHTML = `<b>${n} kopya</b> bulundu (${[by('link') && by('link') + ' link', by('file') && by('file') + ' dosya', by('photo') && by('photo') + ' benzer foto'].filter(Boolean).join(', ')}). Birleşince etiketler, not ve pano yeri kalan kayda geçer; kopyalar çöp kutusuna gider.`;
+    box.innerHTML = gs.slice(0, 60).map(g => { const [k, ...c] = g.ids.map(byId); return `<div class="dup-row">${ic(g.kind === 'link' ? 'link' : g.kind === 'photo' ? 'image' : 'file', 'sm')}<span><b>${esc(titleOf(k))}</b><small>${c.length + 1} kez · ilk ${esc(fmtDay(dayKey(Math.min(k.ts, ...c.map(x => x.ts)))))}${g.kind === 'photo' ? ' · benzer foto' : ''}</small></span></div>`; }).join('')
+      + (gs.length > 60 ? `<p class="hint">…ve ${gs.length - 60} grup daha</p>` : '')
+      + `<button class="btn primary" data-dupgo>${ic('check', 'sm')}${n} kopyayı birleştir</button>`;
+    box.querySelector('[data-dupgo]').onclick = () => this.go(gs);
+  },
+  async go(gs) {
+    const before = [], upd = [];
+    for (const g of gs) {
+      const [k, ...c] = g.ids.map(byId).filter(Boolean); if (!k || !c.length) continue;
+      before.push({ ...k }, ...c.map(x => ({ ...x })));
+      const r = NtsDedup.merge(k, c, now()); upd.push(r.keep, ...r.gone);
+    }
+    for (let k = 0; k < upd.length; k += 500) await upsert(upd.slice(k, k + 500));
+    const n = upd.filter(i => i.dupOf).length;
+    $('#menu').close();
+    toast(`${n} kopya birleştirildi`, 8000, 'check', { label: 'Geri al', fn: async () => { for (let k = 0; k < before.length; k += 500) await upsert(before.slice(k, k + 500).map(i => ({ ...i, deleted: i.deleted || false, deletedAt: i.deletedAt }))); toast('Geri alındı', 1800, 'check'); } });
+  },
+};
 
 // ---------- backup ----------
 async function exportBackup() {
@@ -6509,12 +6598,12 @@ async function exportMarkdown() {
 // browser bookmarks (Chrome / Firefox / Safari "export bookmarks" = Netscape HTML): each link becomes an item, folder → topic
 async function importBookmarks(file) {
   const doc = new DOMParser().parseFromString(await file.text(), 'text/html');
-  const have = new Set(S.items.filter(i => i.type === 'link' && !i.deleted).map(i => i.url.replace(/\/$/, '')));
+  const uk = NtsDedup.urlKey, have = new Set(S.items.filter(i => i.type === 'link' && !i.deleted).map(i => uk(i.url))); // 152: same key as everywhere
   const skipFolder = /^(bookmarks bar|bookmarks toolbar|yer işareti çubuğu|yer imleri çubuğu|other bookmarks|diğer yer işaretleri|diğer yer imleri|mobile bookmarks|menu|bookmarks menu)$/i;
   const made = [];
   for (const a of doc.querySelectorAll('a[href]')) {
-    const url = a.getAttribute('href'); if (!/^https?:\/\//i.test(url) || have.has(url.replace(/\/$/, ''))) continue;
-    have.add(url.replace(/\/$/, ''));
+    const url = a.getAttribute('href'); if (!/^https?:\/\//i.test(url) || have.has(uk(url))) continue;
+    have.add(uk(url));
     // nearest folder name: <DT><H3>Folder</H3><DL> … <DT><A>
     let folder = ''; for (let el = a.closest('dl'); el && !folder; el = el.parentElement?.closest('dl')) { const h = el.previousElementSibling?.tagName === 'H3' ? el.previousElementSibling : el.parentElement?.querySelector(':scope > h3'); const t = h?.textContent.trim() || ''; if (t && !skipFolder.test(t)) folder = t; }
     const added = +a.getAttribute('add_date'), ts = added > 1e9 ? added * 1000 : now() - made.length;
@@ -6868,6 +6957,7 @@ function openSettings(page = 'main') {
       <button class="set-row" data-do="exportmd">${ic('note')}<span>Markdown olarak indir<small>Obsidian ve benzerleri için: her kayıt bir .md, dosyalar attachments/ içinde</small></span></button>
       <button class="set-row" data-do="export">${ic('down')}<span>Yedek indir<small>Her şeyi tek dosya olarak indir${locked ? ' (şifreli)' : ''}</small></span></button>
       <button class="set-row" data-do="import">${ic('upload')}<span>Yedekten geri yükle</span></button>
+      <button class="set-row" data-do="dups">${ic('copy')}<span>Kopyaları birleştir<small>Aynı link, aynı dosya ya da aynı foto birden çok kayıtsa tek kayıt olur; hiçbir şey silinmez</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="bookmarks">${ic('star')}<span>Tarayıcı yer imlerini içe aktar<small>Chrome/Firefox: Yer imleri → Dışa aktar (HTML). Klasörler konu olur, aynı link iki kez eklenmez.</small></span></button>
     </div>`;
   const listsPage = `${head('Listeler', true)}
@@ -6876,7 +6966,8 @@ function openSettings(page = 'main') {
       <label class="switch" title="Sol çubukta göster"><input type="checkbox" data-lshow="${k}" ${listHidden(k) ? '' : 'checked'}><span></span></label></div>`).join('')}</div>`;
   const wasOpen = m.open;
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
-  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'lists' ? listsPage : main}</div>`;
+  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
+  if (page === 'dups') Dups.run();
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
   if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
     const msg = m.querySelector('#tokMsg'); if (!msg || !u) return;
@@ -6901,6 +6992,7 @@ function openSettings(page = 'main') {
     if (!d) return;
     if (d === 'wa') $('#waInput').click();
     else if (d === 'move') openSettings('move');
+    else if (d === 'dups') Dups.open();
     else if (d === 'imphold') { await AI.holdGo(); toast(`${aiName()} içe aktarılanları düzenliyor`, 2500, 'spark'); openSettings(); } // 148
     else if (d === 'lists') openSettings('lists');
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }

@@ -61,7 +61,13 @@ function itemsFromInput({ title = '', text = '', url = '', files = [], ts = Date
   });
   return out;
 }
+// 152: a file's content fingerprint (sha1 hex) so the same photo/file is kept once (dedup.js); big files (> 200 MB) are skipped
+async function sha1Hex(blob) {
+  if (!blob || !blob.size || blob.size > 200e6 || !self.crypto?.subtle) return undefined;
+  try { const d = new Uint8Array(await crypto.subtle.digest('SHA-1', await blob.arrayBuffer())); let h = ''; for (const b of d) h += b.toString(16).padStart(2, '0'); return h; } catch { return undefined; }
+}
 async function saveItems(items) {
+  for (const i of items) if (i._blob && !i.sha) i.sha = await sha1Hex(i._blob);
   const files = items.filter(i => i._blob).map(i => ({ id: i.id, blob: i._blob }));
   if (files.length) await DB.putMany('files', files);
   const clean = items.map(({ _blob, ...i }) => ({ ...i, pending: true }));

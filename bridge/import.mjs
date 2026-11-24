@@ -2,7 +2,8 @@
 // nts import whatsapp.zip [--yes] [--videos=keep|thumb]
 // A big WhatsApp export (1 GB+, videos included) on the PC: first a dry-run report, then with --yes the real import.
 // - messages close together (same day, < 30 min) become one conversation item; photos/files live inside it (same ids as the app)
-// - every file once (sha1); photos shrunk to ~1600 px; videos over 95 MB re-encoded with ffmpeg (H.264) under 95 MB;
+// - every file once (sha1); 152: what is already in Nts (same link in any spelling, same file bytes; from the app's snapshot) is not
+//   made or uploaded again: the old item gets one more save ("WhatsApp'ta da var"); photos shrunk to ~1600 px; videos over 95 MB re-encoded with ffmpeg (H.264) under 95 MB;
 //   originals kept in ~/.local/share/nts/originals/
 // - files + ~320 px webp previews go to the private GitHub repos nts-files-1, -2… (git push, a new repo past ~900 MB)
 // - resumable: what is done is remembered; run the same command again to continue
@@ -11,7 +12,9 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, copyFileSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { join, basename, extname } from 'node:path';
+import { join, basename, extname, dirname } from 'node:path';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 const CONF = join(homedir(), '.config', 'hizli-note'), DATA = join(homedir(), '.local', 'share', 'nts');
 const STATE = join(DATA, 'import-state.json'), QUEUE = join(CONF, 'import-queue.json'), ORIG = join(DATA, 'originals'), REPOS = join(DATA, 'repos');
@@ -70,20 +73,28 @@ const state = existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : { fi
 const plan = [], seen = new Set();
 for (const g of groups) for (const m of g) for (const re of WA_ATTACH) { const a = m.text.match(re); if (a) { const name = a[1].trim(), p = byName.get(name); if (p && !seen.has(p)) { seen.add(p); plan.push({ name, path: p, size: statSync(p).size, kind: kindOf(name), ts: m.ts }); } break; } }
 const hashOf = p => createHash('sha1').update(readFileSync(p)).digest('hex');
-for (const f of plan) { f.hash = hashOf(f.path); f.done = !!state.files[f.hash]; }
+// 152: the same rules as the app (dedup.js, next to the app or in the bridge copy) against the app's snapshot (~/.config/hizli-note/snapshot.json)
+const here = dirname(fileURLToPath(import.meta.url)), req = createRequire(import.meta.url);
+const Dd = [join(here, 'dedup.js'), join(here, '..', 'dedup.js')].filter(existsSync).map(f => req(f))[0] || null;
+const snap = (() => { try { return JSON.parse(readFileSync(join(CONF, 'snapshot.json'), 'utf8')).items || []; } catch { return []; } })();
+const inNts = Dd ? Dd.index(snap.map(i => ({ ...i, type: i.url ? 'link' : i.sha ? 'file' : i.type }))) : null;
+for (const f of plan) { f.hash = hashOf(f.path); f.done = !!state.files[f.hash]; f.inNts = inNts?.sha(f.hash) || null; }
 const hashByPath = new Map(plan.map(f => [f.path, f.hash]));
 const dupHashes = new Set(), unique = plan.filter(f => { if (dupHashes.has(f.hash)) return false; dupHashes.add(f.hash); return true; });
-const todo = unique.filter(f => !f.done), sum = l => l.reduce((n, f) => n + f.size, 0);
+const todo = unique.filter(f => !f.done && !f.inNts), sum = l => l.reduce((n, f) => n + f.size, 0);
 const photos = todo.filter(f => f.kind === 'image'), videos = todo.filter(f => f.kind === 'video'), others = todo.filter(f => f.kind !== 'image' && f.kind !== 'video');
 const big = videos.filter(f => f.size > MAX_FILE);
 const estPhotos = photos.reduce((n, f) => n + Math.min(f.size, 450e3), 0), estVideos = videoMode === 'thumb' ? 0 : videos.reduce((n, f) => n + Math.min(f.size, MAX_FILE), 0);
 const est = estPhotos + estVideos + sum(others) + todo.length * 20e3;
+const loneUrl = g => { if (g.length !== 1 || WA_ATTACH.some(re => re.test(g[0].text))) return null; const u = g[0].text.match(URL_RE) || []; return u.length === 1 ? u[0] : null; };
+const linkInNts = inNts ? groups.filter(g => { const u = loneUrl(g); return u && inNts.url(u); }).length : 0, fileInNts = unique.filter(f => f.inNts);
 console.log(`\nNts · WhatsApp içe aktarma: ${chat}
   Mesaj:        ${msgs.length}  →  ${groups.length} kayıt (aynı gün, aralarında 30 dk'dan az olanlar tek kayıt)
   Fotoğraf:     ${photos.length}  (${MB(sum(photos))} → küçültünce ~${MB(estPhotos)})
   Video:        ${videos.length}  (${MB(sum(videos))})${big.length ? `, ${big.length} tanesi 95 MB'tan büyük → ffmpeg ile 95 MB altına` : ''}${videoMode === 'thumb' ? ' → sadece küçük resim' : ''}
   Diğer dosya:  ${others.length}  (${MB(sum(others))})
-  Zaten içeride: ${unique.length - todo.length} dosya · aynı dosyanın kopyası: ${plan.length - unique.length}
+  Zaten içeride: ${unique.filter(f => f.done).length} dosya · aynı dosyanın kopyası: ${plan.length - unique.length}
+  Zaten Nts'te: ${linkInNts} link, ${fileInNts.filter(f => f.kind === 'image').length} foto, ${fileInNts.filter(f => f.kind !== 'image').length} dosya (yeniden kaydedilmez, eskisine "WhatsApp'ta da var" eklenir)${!Dd ? '  [dedup.js bulunamadı]' : !snap.length ? '  [uygulamanın kopyası yok: Nts açıkken köprü çalışsın]' : ''}
   GitHub'a gidecek: ~${MB(est)}  (repo başına ~900 MB → ${Math.max(1, Math.ceil(est / LIMIT))} repo)
   Orijinaller: ${ORIG}`);
 if (!yes) { console.log('\nBu bir deneme raporu. İçe aktarmak için:  nts import "' + zipPath + '" --yes\n'); process.exit(0); }
@@ -155,34 +166,37 @@ for (const f of todo) {
 push(`nts import ${chat}`); console.log('');
 
 // ---------- items (ids match the app's own WhatsApp import, so nothing doubles) ----------
-const items = [];
+const items = [], saves = [];
 for (const g of groups) {
   const id = 'wa' + fnv(chat + g[0].ts + g[0].text.slice(0, 60)); if (state.items[id]) continue;
-  const log = [], kids = [];
+  const log = [], kids = [], have = [];
   for (const m of g) {
     let att = null, text = m.text;
     for (const re of WA_ATTACH) { const a = text.match(re); if (a) { att = a[1].trim(); text = text.slice(a[0].length).trim(); break; } }
     if (att) {
-      const p = byName.get(att), info = p && state.files[hashByPath.get(p)], kid = 'wf' + fnv(id + att);
+      const p = byName.get(att), h = p && hashByPath.get(p), info = h && state.files[h], kid = 'wf' + fnv(id + att), old = !info && h && inNts?.sha(h);
+      if (old) { have.push(old.id); saves.push({ id: 'sv' + fnv(old.id + kid), saveOf: old.id, save: { ts: m.ts, src: 'whatsapp', chat, id: kid } }); log.push({ ts: m.ts, who: m.who, text, att: old.id }); continue; }
       kids.push({ id: kid, type: 'file', fileName: att, mime: mimeOf(att), size: info?.size || 0, text, ts: m.ts, parent: id, archive: true, source: 'whatsapp', chat, tags: [], pending: false,
         ...(info?.path ? { ghRepo: info.repo, ghPath: info.path, fileSynced: true } : {}), ...(info?.thumb ? { ghRepo: info.repo, ghThumb: info.thumb } : {}), ...(!info?.path ? { fileSkip: true } : {}) });
       log.push({ ts: m.ts, who: m.who, text, att: kid });
     } else log.push({ ts: m.ts, who: m.who, text });
   }
   const who = [...new Set(g.map(m => m.who))], photos = kids.filter(x => kindOf(x.fileName) === 'image');
-  if (g.length === 1 && !kids.length) {
+  const u1 = !kids.length && !have.length && loneUrl(g), old = u1 && inNts?.url(u1);
+  if (old) { saves.push({ id: 'sv' + fnv(old.id + id), saveOf: old.id, save: { ts: g[0].ts, src: 'whatsapp', chat, id } }); state.items[id] = 1; continue; }
+  if (g.length === 1 && !kids.length && !have.length) {
     const urls = g[0].text.match(URL_RE) || [];
     items.push(urls.length === 1 ? { id, type: 'link', url: urls[0], text: g[0].text.replace(urls[0], '').trim(), ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true }
       : { id, type: 'note', text: g[0].text, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true });
   } else {
     const label = new Date(g[0].ts).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     items.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true,
-      text: log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${kids.find(x => x.id === l.att)?.fileName}] ` : '') + l.text).join('\n').trim(),
-      conv: { n: g.length, who, end: g.at(-1).ts, log, kids: kids.map(x => x.id) }, ...(photos[0] ? { cover: photos[0].id } : {}) }, ...kids);
+      text: log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${kids.find(x => x.id === l.att)?.fileName || snap.find(x => x.id === l.att)?.file || 'dosya'}] ` : '') + l.text).join('\n').trim(),
+      conv: { n: g.length, who, end: g.at(-1).ts, log, kids: [...new Set([...kids.map(x => x.id), ...have])] }, ...(photos[0] ? { cover: photos[0].id } : {}) }, ...kids);
   }
   state.items[id] = 1;
 }
 const t = Date.now(); items.forEach(i => { i.createdAt = t; i.updatedAt = t; });
 const q = existsSync(QUEUE) ? JSON.parse(readFileSync(QUEUE, 'utf8')) : [];
-writeFileSync(QUEUE, JSON.stringify([...q, ...items]), { mode: 0o600 }); writeFileSync(STATE, JSON.stringify(state));
-console.log(`Bitti: ${items.length} kayıt sırada. Uygulama açıkken (PC'de ya da telefonda) kendiliğinden içeri alınır; Claude gruplar halinde düzenler.`);
+writeFileSync(QUEUE, JSON.stringify([...q, ...items, ...saves]), { mode: 0o600 }); writeFileSync(STATE, JSON.stringify(state));
+console.log(`Bitti: ${items.length} kayıt sırada${saves.length ? ` (${saves.length} tanesi zaten Nts'teydi: eskisine eklendi)` : ''}. Uygulama açıkken (PC'de ya da telefonda) kendiliğinden içeri alınır; Claude gruplar halinde düzenler.`);
