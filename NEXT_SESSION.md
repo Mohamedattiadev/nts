@@ -105,7 +105,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor) — ÖRNEK HAZIR: design/dial.html (tarih: A Kasa · B Üç kadran · C Bavul kilidi; etiket: A Tam halka · B Alt yay; nerede kullanılsın), sahibin seçimi bekleniyor (ab7efb3)
 - [x] 124 tanıtım sayfası (site/) + README düğmesi (e1eaf25)
 - [x] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay (9b353df)
-- [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
+- [~B] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
 - [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
 - [ ] 95e Ctrl+K komut paleti
 - [ ] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası)
