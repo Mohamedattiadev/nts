@@ -140,7 +140,7 @@ for (const f of todo) {
   try {
     const month = dayKey(f.ts).slice(0, 7), id = 'wf' + f.hash.slice(0, 12);
     copyFileSync(f.path, join(ORIG, f.hash.slice(0, 12) + '-' + f.name)); // the original stays on this PC
-    const base = join(tmp, id), storeAs = videoMode === 'thumb' && f.kind === 'video' ? null : prepare(f, base), t = thumb(f, base);
+    const base = join(tmp, id), storeAs = (videoMode === 'thumb' && f.kind === 'video') || (f.kind !== 'video' && f.size > MAX_FILE) ? null : prepare(f, base), t = thumb(f, base);
     const size = (storeAs ? statSync(storeAs).size : 0) + (t ? statSync(t).size : 0);
     if (repoBytes + size > LIMIT) { push(`nts import ${chat}`); dir = nextRepo(); }
     const rel = storeAs ? `files/${month}/${id}${extname(storeAs).toLowerCase()}` : null, trel = t ? `thumbs/${month}/${id}.webp` : null;
