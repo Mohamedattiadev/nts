@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nts · Uzaklaşınca kümeler (119-0)</title>
+<title>Nts · Uzaklaşınca kümeler (119-0b)</title>
 <style>
-/* 119-0: zoomed-out board layer samples (dashed cluster outlines + titles + arrows between related groups), today's Nts look only.
+/* 119-0b: second round of the A "Kalem" family. 119-0: zoomed-out board layer samples (dashed cluster outlines + titles + arrows between related groups), today's Nts look only.
    The board plane is one transform; only a CSS var (1/zoom) changes per frame, so strokes and titles stay crisp at 60 fps. */
 :root, [data-theme="dark"] {
   --bg: #0c0c0e; --surface: #151519; --surface-2: #1c1c21; --surface-3: #24242a; --line: #24242a; --line-2: #31313a;
@@ -132,50 +132,71 @@ section.grp > p { color: var(--muted); margin: 0 0 12px; font-size: 13.5px; max-
 .zctl output { min-width: 42px; text-align: right; font-size: 12.5px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .zb .hint { position: absolute; left: 10px; bottom: 12px; font-size: 11.5px; color: var(--muted); pointer-events: none; z-index: 4; background: color-mix(in srgb, var(--bg) 80%, transparent); padding: 2px 6px; border-radius: 6px; }
 
-/* ---- A · Kalem (sketch) ---- */
-.sA .hull { stroke-width: 1.7; stroke-dasharray: 9 6; stroke-linecap: round; }
-.sA .hull.b2 { stroke-width: 1.1; stroke-dasharray: 5 9; opacity: .6; }
-.sA .arw { stroke: var(--text-2); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 7 6; }
-.sA .arw.hd { stroke-dasharray: none; }
-.sA .lb { font-size: 19px; font-weight: 750; letter-spacing: -.01em; font-style: italic; }
-.sA .lb small { display: block; font-size: 12px; font-weight: 550; font-style: normal; color: var(--muted); text-align: center; margin-top: -1px; }
-.sA .lb svg { display: block; width: 100%; height: 7px; overflow: visible; }
-.sA .lb svg path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; vector-effect: none; }
+/* ---------- shared: arrows by reason (the rule set I recommend, section 2) ---------- */
+.ov .arw { stroke: var(--text-2); stroke-linecap: round; stroke-linejoin: round; }
+.ov .arw.r-link { stroke-width: 2.1; }
+.ov .arw.r-proj { stroke-width: 1.6; stroke-dasharray: 9 7; }
+.ov .arw.r-tag { stroke-width: 1.4; stroke-dasharray: .1 6.5; }
+.ov .arw.r-ai, .ov .hd.r-ai { stroke-width: 1.3; stroke-dasharray: .1 5; opacity: .55; }
+.ov .hd { stroke: var(--text-2); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transform-box: view-box; }
+.ov .hd.fill { fill: var(--text-2); stroke: none; }
+.ov .r-ai.hide, .ar-l.r-ai.hide { display: none; }
+.ar-l { display: inline-flex; align-items: center; gap: 4px; }
+.ar-l svg.i { width: 12px; height: 12px; }
+.lb { pointer-events: auto; cursor: pointer; }
+.cnt { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* ---- B · Balon (dotted circles + chips) ---- */
-.sB .hull { stroke-width: 2.4; stroke-dasharray: 0.1 7; stroke-linecap: round; }
-.sB .fill { stroke: none !important; }
-.sB .arw { stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; }
-[data-theme="light"] .sB .arw { stroke: #c6c6bf; }
-.sB .lb { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px 0 10px; border-radius: 15px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); font-size: 13.5px; font-weight: 650; color: var(--text); }
-.sB .lb i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
-.sB .lb span { color: var(--muted); font-weight: 550; }
-.sB .ar-l { height: 24px; padding: 0 8px; display: flex; align-items: center; gap: 4px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); font-size: 11.5px; }
-.sB .ar-l svg.i { width: 12px; height: 12px; }
+/* ---- A1 · Çerçeve: calm rounded frame, title sits ON the line like a folder tab ---- */
+.s1 .hull { stroke-width: 1.6; stroke-dasharray: 10 7; stroke-linecap: round; }
+.s1 .lb { font-size: 16.5px; font-weight: 700; letter-spacing: -.012em; color: var(--text); display: inline-flex; align-items: center; gap: 7px;
+  padding: 2px 10px 3px 8px; border-radius: 9px; background: var(--bg); }
+.s1 .lb i { width: 9px; height: 9px; border-radius: 3px; background: currentColor; flex: none; }
+.s1 .lb .cnt { font-size: 13px; }
+.s1 .ar-l { height: 22px; padding: 0 8px; border-radius: 11px; background: var(--bg); color: var(--text-2); font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); }
 
-/* ---- C · Ada (soft islands, big titles, flowing arrows) ---- */
-.sC .hull { stroke-width: 1.5; stroke-dasharray: 12 7; }
-.sC .arw { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; opacity: .75; animation: flow 1.6s linear infinite; }
-.sC .arw.hd { stroke-dasharray: none; animation: none; opacity: .9; }
-@keyframes flow { to { stroke-dashoffset: -18; } }
-.rm .sC .arw { animation: none; }
-@media (prefers-reduced-motion: reduce) { .sC .arw { animation: none; } }
-.sC .lb { text-align: center; font-size: 26px; font-weight: 800; letter-spacing: -.025em; line-height: 1.05; color: var(--text);
-  text-shadow: 0 0 6px var(--bg), 0 0 14px var(--bg), 0 0 2px var(--bg); }
-.sC .lb small { display: block; font-size: 12.5px; font-weight: 600; letter-spacing: 0; margin-top: 3px; }
-.sC .ar-l { font-size: 11.5px; color: var(--accent); text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg); }
-.sC .zc .bl { display: none; }
-.sC .zb .zc, .zb.sC .zc { opacity: calc(1 - var(--far) * .55); }
+/* ---- A2 · Fosfor: soft hand outline, highlighter swash behind the title ---- */
+.s2 .hull { stroke-width: 2; stroke-dasharray: 16 9; stroke-linecap: round; }
+.s2 .lb { font-size: 21px; font-weight: 760; letter-spacing: -.02em; color: var(--text); text-align: center; }
+.s2 .lb .nm { position: relative; z-index: 0; padding: 0 5px; }
+.s2 .lb .nm::before { content: ""; position: absolute; z-index: -1; left: -4px; right: -4px; top: 46%; height: 52%; border-radius: 6px 10px 7px 12px;
+  background: color-mix(in srgb, var(--c) 30%, transparent); transform: rotate(-1.3deg) skewX(-8deg); }
+[data-theme="dark"] .s2 .lb .nm::before { background: color-mix(in srgb, var(--c) 34%, transparent); }
+.s2 .lb .cnt { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0; margin-top: 1px; }
+.s2 .ar-l { font-size: 12.5px; font-weight: 600; font-style: italic; color: var(--text-2); text-shadow: 0 0 3px var(--bg), 0 0 7px var(--bg), 0 0 12px var(--bg); }
 
-/* relation legend cards (section 2) */
-.rel { display: flex; align-items: center; gap: 10px; margin: 4px 2px 8px; }
-.rel .sw { width: 64px; height: 26px; flex: none; }
-.rel .sw path { fill: none; stroke: var(--text-2); stroke-width: 2; stroke-linecap: round; }
+/* ---- A3 · Mürekkep: organic island hugging the cards, arrows draw themselves in ---- */
+.s3 .hull { stroke-width: 1.3; stroke-dasharray: 4 6; stroke-linecap: round; }
+.s3 .lb { text-align: center; color: var(--text); text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg); }
+.s3 .lb b { display: inline-flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 780; letter-spacing: -.022em; line-height: 1.1; }
+.s3 .lb b i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: var(--bg); background: var(--c); flex: none; text-shadow: none; }
+.s3 .lb b i svg.i { width: 13px; height: 13px; stroke-width: 2.2; }
+.s3 .lb .cnt { display: block; font-size: 12px; margin-top: 3px; }
+.s3 .ar-l { height: 24px; padding: 0 9px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); color: var(--text-2); font-size: 11.5px; font-weight: 600; }
+.s3 .arw { stroke-dasharray: 1 !important; stroke-dashoffset: 1; transition: stroke-dashoffset .9s var(--ease); }
+.s3 .arw.r-ai { stroke-dasharray: 1 !important; }
+.s3.on .arw { stroke-dashoffset: 0; }
+.s3 .hd, .s3 .dot { opacity: 0; transition: opacity .25s ease; }
+.s3.on .hd, .s3.on .dot { opacity: 1; transition-delay: .75s; }
+.s3 .dot { fill: var(--text-2); }
+.rm .s3 .arw, .rm .s3 .hd, .rm .s3 .dot { transition: none; }
+@media (prefers-reduced-motion: reduce) { .s3 .arw, .s3 .hd, .s3 .dot { transition: none; } }
+
+/* section 2: arrow rules */
+.rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.rule h4 { margin: 0 0 2px; font-size: 14px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+.rule h4 .st { margin-left: auto; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); }
+.rule h4 .st.on { color: var(--accent); background: var(--accent-soft); }
+.rule svg.sw { display: block; width: 100%; height: 22px; margin: 6px 0 4px; overflow: visible; }
+.rule svg.sw path { fill: none; stroke: var(--text-2); stroke-linecap: round; stroke-linejoin: round; }
+.rule p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.why { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; color: var(--text-2); }
+.why ul { margin: 6px 0 0; padding-left: 18px; } .why li { margin: 3px 0; }
+.why b { color: var(--text); }
 @media (max-width: 520px) {
   .zb { height: 400px; }
   .zctl input { width: 86px; }
   .zb .hint { display: none; }
-  .row4 { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -205,35 +226,44 @@ section.grp > p { color: var(--muted); margin: 0 0 12px; font-size: 13.5px; max-
   <symbol id="fit" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></symbol>
   <symbol id="spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5"/></symbol>
 </svg>
-
 <div class="wrap">
   <header class="top ui" id="top"><div class="in">
     <span class="mark" data-logo aria-hidden="true"></span>
     <nav class="seg" id="toc" aria-label="Bölümler"><span class="thumb"></span>
-      <a href="#s1">1 Stil</a><a href="#s2">2 Oklar neyi göstersin</a></nav>
+      <a href="#s1">1 Kalem · yeni tur</a><a href="#s2">2 Oklar</a></nav>
     <button class="chip icon" id="rm" aria-pressed="false" aria-label="Hareketi azalt (önizleme)" title="Hareketi azalt"><svg class="i"><use href="#slow"/></svg></button>
     <button class="chip icon" id="theme" aria-label="Açık / koyu tema" title="Açık / koyu tema"><svg class="i"><use href="#half"/></svg></button>
   </div></header>
 
-  <h1>Uzaklaşınca kümeler</h1>
-  <p class="lead">Panodan çok uzaklaşınca kartlar okunmuyor. Bu katman o zaman belirir: birbirine yakın duran ve aynı konudaki kartları kesik çizgiyle sarar, kümeye başlık koyar,
-    ilgili kümeler arasına ok çizer. Yaklaştıkça yumuşakça kaybolur. Her kutuda <b>gerçekten yakınlaş / uzaklaş</b>: fare tekerleği, iki parmak, kaydırıcı ya da −/+; sürükleyerek gez,
-    başlığa dokununca o kümeye uçar. Beğendiğine ✓, beğenmediğine ✗ ver, not yaz, en altta <b>Seçimlerimi indir</b>.</p>
+  <h1>Uzaklaşınca kümeler · 2. tur</h1>
+  <p class="lead">A Kalem'i seçtin ama “daha iyi, daha görünümlü olsun” dedin. Ruhu aynı: kesik çizgiyle elle sarılmış kümeler ve aralarında kavisli oklar.
+    Değişenler: titrek iki kat çizgi yerine <b>tek, temiz çizgi</b>; eğik yazı yerine <b>düzgün başlık</b> + kayıt sayısı; kümenin içi <b>kendi renginde çok hafif</b>;
+    okların <b>ucu ve etiketi</b> yeniden çizildi, ok türü nedene göre değişiyor (bölüm 2). Her kutuda gerçekten yakınlaş / uzaklaş (tekerlek, iki parmak, kaydırıcı, −/+),
+    sürükleyerek gez, başlığa dokununca o kümeye uçar. ✓ / ✗ ver, not yaz, en altta <b>Seçimlerimi indir</b>.</p>
 
-  <section class="grp" id="s1"><h2>1 · Stil</h2><p>Üçü de aynı pano, aynı kümeler. Katman %60 yakınlıkta belirmeye başlar, %40'ta tamamen görünür; kartlar o arada sakin renk bloklarına döner.</p>
+  <section class="grp" id="s1"><h2>1 · Kalem ailesinden üç yeni çizim</h2><p>Üçü de aynı pano, aynı kümeler. Katman %60 yakınlıkta belirmeye başlar, %40'ta tamamen görünür; kartlar o arada sakin renk bloklarına döner.</p>
     <div class="row1">
-      <div class="ex" data-id="z-A"><h4><span class="l">A</span>Kalem</h4><p class="how">El çizimi havası: iki kat titrek kesik çizgi, eğik başlık + altında dalgalı çizgi, kavisli kesik oklar, okun üstünde neden yazıyor.</p><div class="zb sA" data-s="A"></div></div>
-      <div class="ex" data-id="z-B"><h4><span class="l">B</span>Balon</h4><p class="how">Noktalı yuvarlak balonlar, içi kümenin renginde çok hafif dolu; başlık balonun üstünde hap (ad + kayıt sayısı), oklar düz ve sessiz, ortada küçük neden hapı.</p><div class="zb sB" data-s="B"></div></div>
-      <div class="ex" data-id="z-C"><h4><span class="l">C</span>Ada</h4><p class="how">Kartları saran yumuşak ada, büyük başlık kümenin ortasında (harita gibi), kartlar noktaya döner; oklar accent renkte, kümeden kümeye akar (hareketi azalt'ta durur).</p><div class="zb sC" data-s="C"></div></div>
+      <div class="ex" data-id="z-A1"><h4><span class="l">A1</span>Çerçeve</h4><p class="how">Yuvarlak köşeli tek kesik çerçeve, içi kümenin renginde çok hafif. Başlık çerçevenin üst çizgisinin üstüne oturur (klasör sekmesi gibi): renkli kare + ad + sayı. Okun ucu açık “›”, neden okun ortasında küçük hap.</p><div class="zb s1" data-s="1"></div></div>
+      <div class="ex" data-id="z-A2"><h4><span class="l">A2</span>Fosfor</h4><p class="how">Kartları saran yumuşak, elle çekilmiş kesik çizgi (iri ve sakin aralıklı). Başlığın arkasında kümenin renginde fosforlu kalem şeridi. Oklar daha kavisli, ucu elle çizilmiş; neden okun yanında eğik el yazısı gibi.</p><div class="zb s2" data-s="2"></div></div>
+      <div class="ex" data-id="z-A3"><h4><span class="l">A3</span>Mürekkep</h4><p class="how">Kartlara sarılan organik ada, ortadan kenara solan renk; ince noktalı kenar. Başlık kümenin içinde, üstte: renkli simge + büyük ad + “5 kayıt · bugün”. Katman belirirken oklar mürekkep gibi kendini çizer (hareketi azalt'ta direkt görünür); başta nokta, sonda dolu uç, neden hapı.</p><div class="zb s3" data-s="3"></div></div>
     </div>
   </section>
 
-  <section class="grp" id="s2"><h2>2 · Oklar neyi göstersin</h2><p>İki küme arasına hangi durumda ok çizilsin? Birden çok ✓ verilebilir. Çok ok kalabalık yapar; her küme çiftine en çok 1 ok, en güçlü nedenle.</p>
+  <section class="grp" id="s2"><h2>2 · Oklar: benim önerim</h2><p>“En uygun neyse” dedin; seçtim. Üç kutuda da bu kurallar çalışıyor.</p>
+    <div class="rules" id="rules"></div>
+    <div class="why"><b>Neden böyle?</b>
+      <ul>
+        <li><b>Elle bağ her zaman ve en kalın:</b> onu sen kurdun, en kesin bilgi. Okta “2 bağ”.</li>
+        <li><b>Proje kesik, etiket noktalı:</b> ikisi de verinin kendisinden gelir ama proje daha güçlü bir bağ; çizgi kalınlığı + desen bunu renksiz anlatır (renkler kümelere ait kalsın).</li>
+        <li><b>Yapay zekâ benzerliği varsayılan kapalı:</b> tahmin; yanlışsa panoyu kalabalıklaştırır ve güveni azaltır. Ayarlardan açılır, açıkken soluk ve “✦” ile işaretli (aşağıdaki düğmeyle dene).</li>
+        <li><b>Her küme çiftine en çok 1 ok</b> (en güçlü neden kazanır), <b>bir kümeye en çok 3 ok</b>: çok ok = hiç ok.</li>
+        <li><b>Okun yönü zamanı gösterir:</b> eski kümeden yeni kümeye. Bağlar aslında yönsüz; ok ucu böylece boş süs olmaz, “bu ondan doğdu” okunur.</li>
+        <li>Okun ucu ve etiketi <b>her yakınlıkta aynı boyda</b>; yaklaştıkça katmanla birlikte solar.</li>
+      </ul>
+      <p style="margin:10px 0 0"><button class="chip" id="ai" aria-pressed="false"><svg class="i"><use href="#spark"/></svg>Yapay zekâ benzerliğini göster (önizleme)</button></p>
+    </div>
     <div class="row4">
-      <div class="ex" data-id="r-tag"><h4>Ortak etiket</h4><p class="how">İki kümede aynı etiket ≥ 2 kayıtta: okta "# doktor".</p></div>
-      <div class="ex" data-id="r-link"><h4>Elle bağlantı</h4><p class="how">Senin bağladığın kartlar (138) farklı kümelerdeyse: okta "2 bağ". En güçlü neden.</p></div>
-      <div class="ex" data-id="r-proj"><h4>Aynı proje</h4><p class="how">Kartlar aynı projeye bağlıysa: okta "proje · Nts".</p></div>
-      <div class="ex" data-id="r-ai"><h4>Yapay zekâ benzerliği</h4><p class="how">Cihazdaki anlamsal model (104f) iki kümeyi çok benzer buluyorsa: okta "✦ benzer". Yalnız model inmişse.</p></div>
+      <div class="ex" data-id="r-rules"><h4>Bu ok kuralları olur mu?</h4><p class="how">✗ verirsen notta neyi değiştireyim yaz (ör. “yapay zekâ açık gelsin”, “yön olmasın”).</p></div>
     </div>
   </section>
 </div>
@@ -265,35 +295,37 @@ addEventListener('scroll', () => { top_.classList.toggle('stuck', scrollY > 20);
 addEventListener('resize', () => { const c = curSec; curSec = ''; setSec(c || 's1'); }); setSec('s1');
 
 // ---------- the board: days, clusters, relations (world units) ----------
+// days run right→left into the past: x 0 is "Bugün", so a larger x = an older cluster
 const W = 2400, H = 1100, DAYS = ['Bugün · 24 Kas', 'Dün · 23 Kas', 'Pazar · 22 Kas', 'Cumartesi · 21 Kas', 'Cuma · 20 Kas', 'Perşembe · 19 Kas'];
 const KI = { link: ['k-link', 'link'], note: ['k-note', 'note'], file: ['k-file', 'pdf'], img: ['k-img', 'image'] };
 const CL = [
-  { id: 'is', name: 'İş', col: '--t-link', x: 70, y: 220, cards: [['link', 'linear.app', 'Sprint 48 panosu'], ['note', 'Not', 'Pazartesi toplantı notları'], ['file', 'PDF', 'Teklif v3'], ['link', 'github.com', 'PR #212 incelemesi'], ['note', 'Not', 'Müşteriye dönülecekler']] },
-  { id: 'nts', name: 'Nts projesi', col: '--accent', x: 620, y: 280, cards: [['note', 'Not', 'Pano yakınlaştırma fikri'], ['link', 'figma.com', 'Freeform incelemesi'], ['img', 'Resim', 'Logo taslağı', 1], ['note', 'Not', 'Arama dili kuralları']] },
-  { id: 'oku', name: 'Okuma', col: '--t-note', x: 1230, y: 190, cards: [['link', 'arxiv.org', 'Semantic zoom üzerine'], ['file', 'PDF', 'Bilgi mimarisi, böl. 4'], ['link', 'medium.com', 'Not alma sistemleri'], ['note', 'Not', 'Altı çizili cümleler']] },
-  { id: 'aile', name: 'Aile', col: '--t-img', x: 300, y: 720, cards: [['img', 'Resim', 'Annemin doğum günü', 1], ['note', 'Not', 'Bayram planı'], ['note', 'Not', 'Hediye fikirleri'], ['link', 'maps.google', 'Teyzemin yeni adresi']] },
-  { id: 'sag', name: 'Sağlık', col: '--t-file', x: 1080, y: 760, cards: [['file', 'PDF', 'Kan tahlili sonuçları'], ['note', 'Not', 'Doktor randevusu 2 Ara'], ['note', 'Not', 'Koşu: 5 km, 28 dk']] },
-  { id: 'tat', name: 'Tatil', col: '--hit', x: 1820, y: 430, cards: [['img', 'Resim', 'Alaçatı sokakları', 1], ['link', 'booking.com', 'Otel seçenekleri'], ['note', 'Not', 'Bavul listesi']] },
+  { id: 'is', name: 'İş', ic: 'folder', col: '--t-link', x: 70, y: 220, cards: [['link', 'linear.app', 'Sprint 48 panosu'], ['note', 'Not', 'Pazartesi toplantı notları'], ['file', 'PDF', 'Teklif v3'], ['link', 'github.com', 'PR #212 incelemesi'], ['note', 'Not', 'Müşteriye dönülecekler']] },
+  { id: 'nts', name: 'Nts projesi', ic: 'board', col: '--accent', x: 620, y: 280, cards: [['note', 'Not', 'Pano yakınlaştırma fikri'], ['link', 'figma.com', 'Freeform incelemesi'], ['img', 'Resim', 'Logo taslağı', 1], ['note', 'Not', 'Arama dili kuralları']] },
+  { id: 'oku', name: 'Okuma', ic: 'pdf', col: '--t-note', x: 1230, y: 190, cards: [['link', 'arxiv.org', 'Semantic zoom üzerine'], ['file', 'PDF', 'Bilgi mimarisi, böl. 4'], ['link', 'medium.com', 'Not alma sistemleri'], ['note', 'Not', 'Altı çizili cümleler']] },
+  { id: 'aile', name: 'Aile', ic: 'image', col: '--t-img', x: 300, y: 720, cards: [['img', 'Resim', 'Annemin doğum günü', 1], ['note', 'Not', 'Bayram planı'], ['note', 'Not', 'Hediye fikirleri'], ['link', 'maps.google', 'Teyzemin yeni adresi']] },
+  { id: 'sag', name: 'Sağlık', ic: 'note', col: '--t-file', x: 1080, y: 760, cards: [['file', 'PDF', 'Kan tahlili sonuçları'], ['note', 'Not', 'Doktor randevusu 2 Ara'], ['note', 'Not', 'Koşu: 5 km, 28 dk']] },
+  { id: 'tat', name: 'Tatil', ic: 'image', col: '--hit', x: 1820, y: 430, cards: [['img', 'Resim', 'Alaçatı sokakları', 1], ['link', 'booking.com', 'Otel seçenekleri'], ['note', 'Not', 'Bavul listesi']] },
 ];
 const LOOSE = [['note', 'Not', 'Ekmek al', 1960, 970], ['link', 'youtube.com', 'Pilav tarifi', 2150, 190], ['note', 'Not', 'Şifre değişti mi?', 760, 1010]];
-const REL = [ // a, b, kind, label
-  ['is', 'nts', 'proj', 'proje · Nts'], ['nts', 'oku', 'ai', 'benzer'], ['is', 'aile', 'link', '2 bağ'], ['aile', 'sag', 'tag', '# doktor'], ['oku', 'tat', 'link', '1 bağ']];
+// one arrow per pair, strongest reason only (link > proj > tag > ai)
+const REL = [['is', 'nts', 'proj', 'proje · Nts'], ['nts', 'oku', 'ai', 'benzer'], ['is', 'aile', 'link', '2 bağ'], ['aile', 'sag', 'tag', '# doktor'], ['oku', 'tat', 'link', '1 bağ'], ['sag', 'oku', 'tag', '# koşu']];
 const RICON = { proj: 'folder', ai: 'spark', link: 'link', tag: 'hash' };
-// card boxes: 2 columns, 196 apart, rows by height
+const AGO = c => c.x < 400 ? 'bugün' : c.x < 800 ? 'dün' : Math.floor(c.x / 400) + ' gün önce';
 for (const c of CL) { let yL = c.y, yR = c.y + 22; c.box = c.cards.map((d, i) => { const h = d[3] ? 108 : 62, left = i % 2 === 0, b = { x: c.x + (left ? 0 : 196), y: left ? yL : yR, w: 176, h, d };
   if (left) yL += h + 20; else yR += h + 20; return b; });
   const xs = c.box.flatMap(b => [b.x, b.x + b.w]), ys = c.box.flatMap(b => [b.y, b.y + b.h]);
   c.bb = { x: Math.min(...xs), y: Math.min(...ys), r: Math.max(...xs), b: Math.max(...ys) }; c.cx = (c.bb.x + c.bb.r) / 2; c.cy = (c.bb.y + c.bb.b) / 2; }
 const byId = Object.fromEntries(CL.map(c => [c.id, c]));
 
-// seeded wobble so every reload draws the same "hand"
+// a calm "hand": low-frequency wobble from two seeded sines along the outline (no jitter)
 const rnd = s => () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
-// closed Catmull-Rom → cubic Béziers
+const wob = (P, seed, amp, wave) => { const R = rnd(seed), p1 = R() * 6.28, p2 = R() * 6.28, p3 = R() * 6.28; let s = 0;
+  return P.map((p, i) => { if (i) s += Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]); const t = s / wave;
+    return [p[0] + amp * (Math.sin(t + p1) + .5 * Math.sin(2.3 * t + p3)), p[1] + amp * (Math.sin(1.3 * t + p2) + .5 * Math.sin(2.9 * t + p1))]; }); };
 const smooth = (P, closed = true) => { const n = P.length, g = i => P[closed ? (i + n) % n : clamp(i, 0, n - 1)]; let d = `M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
   for (let i = 0; i < (closed ? n : n - 1); i++) { const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2);
     d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)},${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)},${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`; }
   return d + (closed ? 'Z' : ''); };
-// points around a rounded rect, every ~step units
 const rrPts = (x, y, w, h, r, step) => { const P = [], seg = (ax, ay, bx, by) => { const n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / step)); for (let i = 0; i < n; i++) P.push([ax + (bx - ax) * i / n, ay + (by - ay) * i / n]); },
   arc = (cx, cy, a0) => { for (let i = 0; i < 3; i++) { const a = a0 + i * Math.PI / 6; P.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } };
   seg(x + r, y, x + w - r, y); arc(x + w - r, y + r, -Math.PI / 2); seg(x + w, y + r, x + w, y + h - r); arc(x + w - r, y + h - r, 0);
@@ -302,54 +334,54 @@ const hull = pts => { pts = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1
   const lo = [], up = []; for (const p of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
   for (const p of pts.reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
   return lo.slice(0, -1).concat(up.slice(0, -1)); };
-// where the line from the cluster centre toward (tx,ty) leaves its ellipse (rx, ry)
-const edge = (c, tx, ty, rx, ry) => { const a = Math.atan2(ty - c.cy, tx - c.cx); return [c.cx + rx * Math.cos(a), c.cy + ry * Math.sin(a)]; };
+// organic outline: hull of circles around card corners, resampled so the wobble has points to bend
+const blob = (c, r) => { const pts = []; for (const bx of c.box) for (const [qx, qy] of [[bx.x, bx.y], [bx.x + bx.w, bx.y], [bx.x, bx.y + bx.h], [bx.x + bx.w, bx.y + bx.h]])
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; pts.push([qx + r * Math.cos(a), qy + r * Math.sin(a)]); }
+  const H_ = hull(pts), P = []; for (let i = 0; i < H_.length; i++) { const a = H_[i], b = H_[(i + 1) % H_.length]; P.push(a); const L = Math.hypot(b[0] - a[0], b[1] - a[1]); for (let s = 70; s < L; s += 70) P.push([a[0] + (b[0] - a[0]) * s / L, a[1] + (b[1] - a[1]) * s / L]); }
+  return P; };
+// where the ray from the cluster centre toward (tx,ty) leaves its padded box
+const edge = (c, tx, ty, pad) => { const dx = tx - c.cx, dy = ty - c.cy, hw = (c.bb.r - c.bb.x) / 2 + pad, hh = (c.bb.b - c.bb.y) / 2 + pad, t = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
+  return [c.cx + dx * t, c.cy + dy * t]; };
+const seedOf = c => [...c.id].reduce((s, ch) => s * 31 + ch.charCodeAt(0), 7) % 99991 + 1;
 
 const STY = {
-  A: { pad: 30, // sketch
-    shape(c, g, col) { const { x, y, r, b } = c.bb, p = this.pad, R = rnd(c.id.length * 7919 + c.cx | 0);
-      for (const [cls, j] of [['hull', 9], ['hull b2', 13]]) { const P = rrPts(x - p, y - p, r - x + 2 * p, b - y + 2 * p, 34, 90).map(([px, py]) => [px + (R() - .5) * j, py + (R() - .5) * j]);
-        g.append(sv('path', { class: cls, d: smooth(P), style: `stroke:var(${col})` })); } },
-    ell: c => [(c.bb.r - c.bb.x) / 2 + 44, (c.bb.b - c.bb.y) / 2 + 44],
-    label(c) { const R = rnd(c.cx | 0); let d = 'M0,4'; for (let i = 1; i <= 8; i++) d += ` Q${i * 12.5 - 6},${i % 2 ? 0 : 8} ${i * 12.5},4`;
-      return { x: c.cx, y: c.bb.y - this.pad - 8, up: true, html: `<span style="color:var(${c.col})">${c.name}<svg viewBox="0 0 100 8" preserveAspectRatio="none"><path d="${d}"/></svg></span><small>${c.box.length} kayıt</small>` }; },
-    curve: .2, mark: 'open' },
-  B: { // balloons
-    shape(c, g, col) { const [rx, ry] = this.ell(c);
-      g.append(sv('ellipse', { class: 'fill', cx: c.cx, cy: c.cy, rx, ry, style: `fill:color-mix(in srgb, var(${col}) 7%, transparent)` }), sv('ellipse', { class: 'hull', cx: c.cx, cy: c.cy, rx, ry, style: `stroke:var(${col})` })); },
-    ell: c => [(c.bb.r - c.bb.x) / 2 * 1.3 + 26, (c.bb.b - c.bb.y) / 2 * 1.32 + 30],
-    label(c) { const [, ry] = this.ell(c); return { x: c.cx, y: c.cy - ry, html: `<i style="color:var(${c.col})"></i>${c.name}<span>${c.box.length}</span>` }; },
-    curve: 0, mark: null },
-  C: { // islands
-    shape(c, g, col) { const pts = []; for (const bx of c.box) for (const [qx, qy] of [[bx.x, bx.y], [bx.x + bx.w, bx.y], [bx.x, bx.y + bx.h], [bx.x + bx.w, bx.y + bx.h]])
-        for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; pts.push([qx + 40 * Math.cos(a), qy + 40 * Math.sin(a)]); }
-      const H_ = hull(pts), P = []; for (let i = 0; i < H_.length; i++) { const a = H_[i], b = H_[(i + 1) % H_.length]; P.push(a); const L = Math.hypot(b[0] - a[0], b[1] - a[1]); for (let s = 120; s < L; s += 120) P.push([a[0] + (b[0] - a[0]) * s / L, a[1] + (b[1] - a[1]) * s / L]); }
-      const d = smooth(P);
-      g.append(sv('path', { d, style: `fill:color-mix(in srgb, var(${col}) 10%, transparent);stroke:none` }), sv('path', { class: 'hull', d, style: `stroke:color-mix(in srgb, var(${col}) 70%, transparent)` })); },
-    ell: c => [(c.bb.r - c.bb.x) / 2 + 60, (c.bb.b - c.bb.y) / 2 + 60],
-    label: c => ({ x: c.cx, y: c.cy, html: `${c.name}<small style="color:var(${c.col})">${c.box.length} kayıt</small>` }),
-    curve: .22, mark: 'fill' },
+  1: { pad: 28, gap: 16, curve: .16, head: 'open', // frame
+    shape(c, g) { const { x, y, r, b } = c.bb, p = this.pad, d = smooth(wob(rrPts(x - p, y - p, r - x + 2 * p, b - y + 2 * p, 30, 60), seedOf(c), 1.6, 70));
+      g.append(sv('path', { d, style: `fill:color-mix(in srgb, var(${c.col}) 6%, transparent);stroke:none` }), sv('path', { class: 'hull', d, style: `stroke:color-mix(in srgb, var(${c.col}) 80%, transparent)` })); },
+    label(c) { return { x: c.bb.x - this.pad + 22, y: c.bb.y - this.pad, ox: '0%', oy: '50%', html: `<i style="color:var(${c.col})"></i>${c.name}<span class="cnt">${c.box.length}</span>` }; } },
+  2: { pad: 34, gap: 18, curve: .26, head: 'hand', // highlighter
+    shape(c, g) { const d = smooth(wob(blob(c, 34), seedOf(c), 3.2, 55));
+      g.append(sv('path', { class: 'hull', d, style: `stroke:color-mix(in srgb, var(${c.col}) 75%, transparent)` })); },
+    label(c) { return { x: c.cx, y: c.bb.y - this.pad - 10, ox: '50%', oy: '100%', html: `<span style="--c:var(${c.col})">${c.name}</span><span class="cnt">${c.box.length} kayıt</span>`, c: c.col }; } },
+  3: { pad: 46, gap: 14, curve: .2, head: 'fill', dot: true, // ink island
+    shape(c, g, defs, uid) { const d = smooth(wob(blob(c, 46), seedOf(c), 2.4, 60)), gid = uid + c.id;
+      const rg = sv('radialGradient', { id: gid, cx: '50%', cy: '45%', r: '62%' });
+      rg.append(sv('stop', { offset: '0%', style: `stop-color:var(${c.col});stop-opacity:.15` }), sv('stop', { offset: '100%', style: `stop-color:var(${c.col});stop-opacity:.03` })); defs.append(rg);
+      g.append(sv('path', { d, style: `fill:url(#${gid});stroke:none` }), sv('path', { class: 'hull', d, style: `stroke:color-mix(in srgb, var(${c.col}) 70%, transparent)` })); },
+    label(c) { return { x: c.cx, y: c.bb.y - 6, ox: '50%', oy: '100%', html: `<b><i style="--c:var(${c.col})">${use(c.ic)}</i>${c.name}</b><span class="cnt">${c.box.length} kayıt · ${AGO(c)}</span>` }; } },
 };
+const HEAD = { open: 'M-9,-5.5 L0,0 L-9,5.5', hand: 'M-11,-6 Q-5,-2 0,0 Q-6,1 -10,7', fill: 'M-11,-6 Q-8,0 -11,6 L0,0 Z' };
 
 function build(zb) {
   const S = STY[zb.dataset.s], plane = document.createElement('div'); plane.className = 'plane'; plane.style.width = W + 'px'; plane.style.height = H + 'px';
   DAYS.forEach((t, i) => { const d = document.createElement('div'); d.className = 'day' + (i === 0 ? ' today' : i % 2 ? ' odd' : ''); d.style.left = i * 400 + 'px'; d.style.width = '400px'; d.innerHTML = `<b>${t}</b>`; plane.append(d); });
-  const ov = sv('svg', { class: 'ov', width: W, height: H, viewBox: `0 0 ${W} ${H}` });
-  const uid = 'm' + zb.dataset.s, defs = sv('defs', {});
-  if (S.mark === 'open') { const m = sv('marker', { id: uid, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }); m.append(sv('path', { d: 'M1,1.5 L8.5,5 L1,8.5', style: 'fill:none;stroke:var(--text-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round' })); defs.append(m); }
-  if (S.mark === 'fill') { const m = sv('marker', { id: uid, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 4.5, markerHeight: 4.5, orient: 'auto-start-reverse' }); m.append(sv('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--accent)' })); defs.append(m); }
-  ov.append(defs); const gH = sv('g', {}), gA = sv('g', {}); ov.append(gH, gA);
+  const ov = sv('svg', { class: 'ov', width: W, height: H, viewBox: `0 0 ${W} ${H}` }), uid = 'g' + zb.dataset.s, defs = sv('defs', {});
+  const gH = sv('g', {}), gA = sv('g', {}); ov.append(defs, gH, gA);
   const lbls = document.createElement('div'); lbls.className = 'lbls';
-  for (const c of CL) S.shape(c, gH, c.col);
-  for (const [a, b, kind, txt] of REL) { const A = byId[a], B = byId[b], [ar, aR] = S.ell(A), [br, bR] = S.ell(B);
-    const p = edge(A, B.cx, B.cy, ar, aR), q = edge(B, A.cx, A.cy, br, bR), mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = q[0] - p[0], dy = q[1] - p[1];
-    const cx = mx - dy * S.curve, cy = my + dx * S.curve, d = `M${p[0]},${p[1]} Q${cx},${cy} ${q[0]},${q[1]}`;
-    gA.append(sv('path', { class: 'arw', d, ...(S.mark ? { 'marker-end': `url(#${uid})` } : {}) }));
-    const l = document.createElement('div'); l.className = 'ar-l'; l.style.left = (mx + (cx - mx) / 2) + 'px'; l.style.top = (my + (cy - my) / 2) + 'px';
-    l.innerHTML = zb.dataset.s === 'B' ? use(RICON[kind]) + txt.replace(/^# /, '') : (kind === 'ai' ? '✦ ' : '') + txt; lbls.append(l); }
+  for (const c of CL) S.shape(c, gH, defs, uid);
+  REL.forEach(([a, b, kind, txt], n) => { let A = byId[a], B = byId[b]; if (A.x < B.x) [A, B] = [B, A]; // older → newer
+    const p = edge(A, B.cx, B.cy, S.pad + S.gap), q = edge(B, A.cx, A.cy, S.pad + S.gap), mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = q[0] - p[0], dy = q[1] - p[1];
+    const cx = mx - dy * S.curve, cy = my + dx * S.curve, cls = 'r-' + kind + (kind === 'ai' ? ' hide' : '');
+    const path = sv('path', { class: 'arw ' + cls, d: `M${p[0]},${p[1]} Q${cx},${cy} ${q[0]},${q[1]}`, ...(S.dot ? { pathLength: 1 } : {}) }); path.style.transitionDelay = n * 90 + 'ms'; gA.append(path);
+    const ang = Math.atan2(q[1] - cy, q[0] - cx) * 180 / Math.PI;
+    const hd = sv('path', { class: 'hd ' + cls + (S.head === 'fill' ? ' fill' : ''), d: HEAD[S.head] }); hd.style.transform = `translate(${q[0]}px,${q[1]}px) rotate(${ang}deg) scale(var(--ls))`; gA.append(hd);
+    if (S.dot) { const dt = sv('circle', { class: 'dot ' + cls, r: 3.2, cx: 0, cy: 0 }); dt.style.transform = `translate(${p[0]}px,${p[1]}px) scale(var(--ls))`; gA.append(dt); }
+    const l = document.createElement('div'); l.className = 'ar-l ' + cls; l.style.left = (mx + cx) / 2 + 'px'; l.style.top = (my + cy) / 2 + 'px';
+    l.innerHTML = zb.dataset.s === '2' ? (kind === 'ai' ? '✦ ' : '') + txt : use(RICON[kind]) + txt.replace(/^# /, ''); lbls.append(l); });
   for (const c of CL) { const L = S.label(c), e = document.createElement('div'); e.className = 'lb'; e.style.left = L.x + 'px'; e.style.top = L.y + 'px'; e.innerHTML = L.html;
-    if (L.up) { e.style.transformOrigin = '50% 100%'; e.style.transform = 'translate(-50%,-100%) scale(var(--ls))'; }
-    e.style.pointerEvents = 'auto'; e.style.cursor = 'pointer'; e.title = c.name + ' kümesine git'; e.onclick = ev => { ev.stopPropagation(); fly(zb, c.bb, 60); }; lbls.append(e); }
+    if (zb.dataset.s === '2') { e.style.setProperty('--c', `var(${c.col})`); e.innerHTML = `<span class="nm">${c.name}</span><span class="cnt">${c.box.length} kayıt</span>`; }
+    e.style.transformOrigin = `${L.ox} ${L.oy}`; e.style.transform = `translate(-${L.ox},-${L.oy}) scale(var(--ls))`;
+    e.title = c.name + ' kümesine git'; e.onclick = ev => { ev.stopPropagation(); fly(zb, c.bb, 60); }; lbls.append(e); }
   const card = (k, l, t, x, y, th) => { const [cls, ic] = KI[k], e = document.createElement('div'); e.className = 'zc ' + cls; e.style.left = x + 'px'; e.style.top = y + 'px';
     e.innerHTML = `<div class="k">${use(ic)}${l}</div><div class="t">${t}</div>${th ? '<div class="th"></div>' : ''}<i class="bl"></i>`; return e; };
   for (const c of CL) for (const b of c.box) plane.append(card(b.d[0], b.d[1], b.d[2], b.x, b.y, b.d[3]));
@@ -358,8 +390,9 @@ function build(zb) {
   zb.insertAdjacentHTML('beforeend', `<div class="hint">Tekerlek / iki parmak: yakınlaş · sürükle: gez</div><div class="zctl ui"><button data-z="out" aria-label="Uzaklaş">${use('minus')}</button><input type="range" min="0" max="1000" aria-label="Yakınlık"><button data-z="in" aria-label="Yakınlaş">${use('plus')}</button><output></output><button data-z="fit" aria-label="Hepsini gör" title="Hepsini gör">${use('fit')}</button></div>`);
   const cam = zb._cam = { x: 0, y: 0, k: 1 }, rng = $('input', zb), out = $('output', zb);
   const KMIN = .1, KMAX = 1.4, toR = k => Math.round(Math.log(k / KMIN) / Math.log(KMAX / KMIN) * 1000), frR = r => KMIN * (KMAX / KMIN) ** (r / 1000);
-  let raf = 0; const paint = () => { raf = 0; const k = cam.k; plane.style.transform = `translate(${cam.x}px,${cam.y}px) scale(${k})`;
-    plane.style.setProperty('--ik', (1 / k).toFixed(4)); plane.style.setProperty('--ls', (clamp(k / .36, .68, 1) / k).toFixed(4)); plane.style.setProperty('--far', clamp((.62 - k) / .22, 0, 1).toFixed(3)); plane.style.setProperty('--o', clamp((.6 - k) / .2, 0, 1).toFixed(3));
+  let raf = 0; const paint = () => { raf = 0; const k = cam.k, o = clamp((.6 - k) / .2, 0, 1); plane.style.transform = `translate(${cam.x}px,${cam.y}px) scale(${k})`;
+    plane.style.setProperty('--ik', (1 / k).toFixed(4)); plane.style.setProperty('--ls', (clamp(k / .36, .68, 1) * (zb.clientWidth < 600 ? .82 : 1) / k).toFixed(4)); plane.style.setProperty('--far', clamp((.62 - k) / .22, 0, 1).toFixed(3)); plane.style.setProperty('--o', o.toFixed(3));
+    zb.classList.toggle('on', o > .35);
     zb.style.backgroundSize = `${24 * k}px ${24 * k}px`; zb.style.backgroundPosition = `${cam.x}px ${cam.y}px`; rng.value = toR(k); out.value = Math.round(k * 100) + '%'; };
   zb._paint = () => { if (!raf) raf = requestAnimationFrame(paint); };
   zb._zoomAt = (k, px, py) => { k = clamp(k, KMIN, KMAX); cam.x = px - (px - cam.x) * k / cam.k; cam.y = py - (py - cam.y) * k / cam.k; cam.k = k; zb._paint(); };
@@ -377,14 +410,12 @@ function build(zb) {
     if (ptr.size === 2 && pinch) { const [a, b] = [...ptr.values()]; zb._zoomAt(pinch.k * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); } });
   const up = e => { ptr.delete(e.pointerId); if (ptr.size < 2) pinch = null; if (!ptr.size) zb.classList.remove('grab'); };
   zb.addEventListener('pointerup', up); zb.addEventListener('pointercancel', up);
-  // start close on "Bugün", where the words are readable
   cam.k = .9; cam.x = 20 - 60 * .9; cam.y = 20 - 110 * .9; paint();
 }
 const zoomed = (zb, f) => { const c = zb._cam, k = clamp(c.k * f, .1, 1.4), px = zb.clientWidth / 2, py = zb.clientHeight / 2; return { k, x: px - (px - c.x) * k / c.k, y: py - (py - c.y) * k / c.k }; };
 const tween = (zb, to, ms = 420) => { zb._stop?.(); const c = zb._cam, from = { ...c }; if (RM()) { Object.assign(c, to); zb._paint(); return; }
   const t0 = performance.now(); let id; const step = now => { const t = clamp((now - t0) / ms, 0, 1), e = t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-    const lk = Math.log(from.k) + (Math.log(to.k) - Math.log(from.k)) * e; c.k = Math.exp(lk);
-    // keep the motion straight on screen: interpolate the world point under the centre
+    c.k = Math.exp(Math.log(from.k) + (Math.log(to.k) - Math.log(from.k)) * e);
     const vw = zb.clientWidth / 2, vh = zb.clientHeight / 2, wx0 = (vw - from.x) / from.k, wy0 = (vh - from.y) / from.k, wx1 = (vw - to.x) / to.k, wy1 = (vh - to.y) / to.k;
     c.x = vw - (wx0 + (wx1 - wx0) * e) * c.k; c.y = vh - (wy0 + (wy1 - wy0) * e) * c.k; zb._paint(); if (t < 1) id = requestAnimationFrame(step); };
   id = requestAnimationFrame(step); zb._stop = () => cancelAnimationFrame(id); };
@@ -393,17 +424,23 @@ const fly = (zb, bb, pad, ms) => { const w = zb.clientWidth, h = zb.clientHeight
   tween(zb, { k, x: w / 2 - (bb.x + bb.r) / 2 * k, y: h / 2 - (bb.y + bb.b) / 2 * k }, ms); };
 
 $$('.zb').forEach(build);
-// once each board scrolls in: glide from "Bugün" out to the whole board, so the layer is seen appearing
 const auto = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { auto.unobserve(e.target); setTimeout(() => fly(e.target, ALL(e.target), 20, 1600), 400); } }), { threshold: .6 });
-if (qp.get('k')) $$('.zb').forEach(zb => { const k = +qp.get('k'); if (k >= .5) zb._zoomAt(k, 0, 0); else fly(zb, ALL(zb), 20); });
+if (qp.get('k')) $$('.zb').forEach(zb => { const k = +qp.get('k'); if (k >= .5) zb._zoomAt(k, 0, 0); else fly(zb, ALL(zb), 20, 1); });
 else $$('.zb').forEach(zb => auto.observe(zb));
 
-// relation swatches for section 2
-const SW = { 'r-tag': 'hash', 'r-link': 'link', 'r-proj': 'folder', 'r-ai': 'spark' };
-$$('#s2 .ex').forEach(ex => ex.querySelector('h4').insertAdjacentHTML('afterbegin', use(SW[ex.dataset.id])));
+// ---------- section 2: rule cards + AI preview toggle ----------
+const RULES = [
+  ['link', 'Elle bağ', 'açık', 'Senin bağladığın kartlar (138) başka kümedeyse. En kalın, düz çizgi.', 'stroke-width:2.4'],
+  ['proj', 'Aynı proje', 'açık', 'Kartlar aynı projedeyse. Orta kalınlık, kesik.', 'stroke-width:1.8;stroke-dasharray:9 7'],
+  ['tag', 'Ortak etiket', 'açık', 'İki kümede aynı etiket ≥ 2 kayıtta. İnce, noktalı.', 'stroke-width:2;stroke-dasharray:.1 6'],
+  ['ai', 'Yapay zekâ benzerliği', 'kapalı', 'Cihazdaki model (104f) iki kümeyi çok benzer bulursa. Varsayılan kapalı; açılınca soluk ve ✦.', 'stroke-width:1.6;stroke-dasharray:.1 5;opacity:.55'],
+];
+$('#rules').innerHTML = RULES.map(([k, t, st, p, s]) => `<div class="rule"><h4>${use(RICON[k])}${t}<span class="st${st === 'açık' ? ' on' : ''}">${st}</span></h4>
+  <svg class="sw" viewBox="0 0 200 22" preserveAspectRatio="none"><path d="M4,16 Q100,0 190,11" style="${s}"/><path d="M181,6 L190,11 L181,17" style="stroke-width:1.9;opacity:${k === 'ai' ? .55 : 1}"/></svg><p>${p}</p></div>`).join('');
+$('#ai').onclick = () => { const on = $('#ai').getAttribute('aria-pressed') !== 'true'; $('#ai').setAttribute('aria-pressed', String(on)); $$('.r-ai').forEach(e => e.classList.toggle('hide', !on)); buzz(); };
 
 // ---------- ✓ / ✗ + note ----------
-const K = 'nts-zoomout-picks'; let picks; try { picks = JSON.parse(store.get(K) || '{}'); } catch { picks = {}; }
+const K = 'nts-zoomout-picks-2'; let picks; try { picks = JSON.parse(store.get(K) || '{}'); } catch { picks = {}; }
 const save = () => { store.set(K, JSON.stringify(picks)); $('#cnt').textContent = Object.values(picks).filter(p => p.v).length + ' / ' + $$('.ex').length + ' seçim'; };
 $$('.ex').forEach(ex => { const id = ex.dataset.id, p = picks[id] || (picks[id] = { v: '', note: '' });
   const box = document.createElement('div'); box.className = 'pick ui';
@@ -413,8 +450,8 @@ $$('.ex').forEach(ex => { const id = ex.dataset.id, p = picks[id] || (picks[id] 
   $('.yn', box).onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; p.v = p.v === v ? '' : v; buzz(); paint(); save(); };
   ta.oninput = () => { p.note = ta.value; save(); }; paint(); });
 save();
-const out = () => JSON.stringify({ madde: '119-0', tarih: new Date().toISOString(), secimler: Object.fromEntries(Object.entries(picks).filter(([k, p]) => (p.v || p.note) && $(`.ex[data-id="${k}"]`))) }, null, 2);
-$('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out()], { type: 'application/json' })); a.download = 'zoomout-choices.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+const out = () => JSON.stringify({ madde: '119-0b', tarih: new Date().toISOString(), secimler: Object.fromEntries(Object.entries(picks).filter(([k, p]) => (p.v || p.note) && $(`.ex[data-id="${k}"]`))) }, null, 2);
+$('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out()], { type: 'application/json' })); a.download = 'zoomout-choices-2.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
 $('#cp').onclick = async () => { const s = $('#cp span'); try { await navigator.clipboard.writeText(out()); s.textContent = 'Kopyalandı ✓'; } catch { s.textContent = 'Kopyalanamadı'; } setTimeout(() => s.textContent = 'Kopyala', 1500); };
 </script>
 </body>

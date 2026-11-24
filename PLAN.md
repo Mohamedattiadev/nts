@@ -680,11 +680,19 @@ Arayüz:
         seçimi). Sahip notu: "halen o güzel his yok; bizim UI'a uygun olması lazım; smooth; ← → ile hareket edebiliyor olması lazım". Yani: bugünkü
         Nts kimliği (style.css değişkenleri, yeni kimlik YOK), savurma + yaylı oturma 60 fps, tık sesi/titreşim isteğe bağlı, ← → kadran içinde değer,
         Tab kadranlar arası, ↑ ↓ de çalışır, tekerlek; reduced-motion; telefon önce.
-- [ ] 119-0b. **zoomout örneği yeni tur** (sahip seçimi 2026-11-24, design/zoomout-choices.json): A Kalem seçildi ama "UI hâlâ istediğim gibi değil,
+- [?] 119-0b. **zoomout örneği yeni tur** (sahip seçimi 2026-11-24, design/zoomout-choices.json): A Kalem seçildi ama "UI hâlâ istediğim gibi değil,
         çok kötü, upgrade et, daha iyi daha görünümlü olsun". A'nın ruhunu (elle çizilmiş kesik küme sınırı + kavisli oklar) koruyup 3 çok daha
         güzel varyant: daha temiz çizgi, daha iyi başlık tipografisi, kümelere sakin renk zemini, okların ucu ve etiketleri; bugünkü Nts görünümü.
         Ok nedenleri (etiket / elle bağ / proje / yapay zekâ): sahip "en uygun neyse" dedi → sen en iyisini seç (öneri: elle bağ hep, proje ve
         etiket kalın-ince ayrımla, yapay zekâ benzerliği varsayılan kapalı) ve sayfada gerekçesini yaz. [?] yap, sahip seçsin, sonra 119.
+        ÖRNEK HAZIR (2026-11-24, B): design/zoomout.html 2. tur — A1 Çerçeve (yuvarlak tek kesik çerçeve, içi küme renginde %6, başlık çizginin
+        üstünde sekme gibi: renkli kare + ad + sayı; açık "›" uç, neden hapı), A2 Fosfor (kartlara sarılan elle çekilmiş iri kesik çizgi, başlık
+        arkasında fosforlu kalem şeridi, kavisli el çizimi uçlar, eğik neden yazısı), A3 Mürekkep (organik ada + ortadan solan renk, ince noktalı
+        kenar, kümenin içinde simge + büyük ad + "5 kayıt · bugün", oklar belirirken kendini çizer, başta nokta sonda dolu uç). Titreme yok:
+        düşük frekanslı tek dalga. Ok kuralları (benim seçimim, bölüm 2'de gerekçeli + "yapay zekâyı göster" önizlemesi): elle bağ düz kalın,
+        proje kesik orta, etiket noktalı ince, yapay zekâ kapalı (açılınca soluk + ✦); çift başına 1 ok, kümeye en çok 3; yön = eski kümeden
+        yeniye; uç/etiket her yakınlıkta aynı boy (telefonda %82). Seçim dosyası zoomout-choices-2.json (z-A1/A2/A3 + r-rules). 4 yapılandırma
+        ekran görüntüsü, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.
 - [ ] 147. **Uygulama akıcı olsun** (sahip, 2026-11-24: "neden çok smooth değil, yavaş application?"). Sahibin gerçek durumu: binlerce kayıt (WhatsApp
         arşivleri dahil, 2026-11-24'te 838 kayıt + 436 foto daha geldi), masaüstü + telefon. ÖNCE ÖLÇ (tahmin etme): Playwright + CDP Performance/trace,
         10k kayıt + resimler, 4x CPU telefon: açılış, görünüm değişimi (liste/galeri/pano), panoda kaydırma/yakınlaştırma fps, kart sürükleme, kutuya
