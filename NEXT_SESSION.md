@@ -98,7 +98,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner (b15e567)
 - [x] 116 logo = pano seçici (sağ alttan taşı) (fbfa07f)
 - [x] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş) (15ef8b5)
-- [?] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer) — ÖRNEK HAZIR: design/zoomout.html (A Kalem · B Balon · C Ada + ok nedenleri), sahibin seçimi bekleniyor
+- [?] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer) — ÖRNEK HAZIR: design/zoomout.html (A Kalem · B Balon · C Ada + ok nedenleri), sahibin seçimi bekleniyor (767ba37)
 - [ ] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi)
 - [ ] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi
 - [ ] 122 turda Google ile giriş / Misafir seçimi
