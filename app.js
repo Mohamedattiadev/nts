@@ -89,6 +89,7 @@ const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidd
 // ---------- utils ----------
 function toast(msg, ms = 2600, icon = '', action = null) {
   const t = $('#toast'); t.innerHTML = (icon === 'mark' ? `<span class="mark t-mark">${$('header .mark svg, .mark svg')?.outerHTML || ''}</span>` : icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + (action ? `<button class="t-act">${esc(action.label)}</button>` : ''); t.hidden = false;
+  if (t.showPopover) try { if (t.matches(':popover-open')) t.hidePopover(); t.showPopover(); } catch { } // top layer: above an open window (reading page, item window), so "Geri al" is seen
   if (action) t.querySelector('.t-act').onclick = () => { t.hidden = true; action.fn(); };
   t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms);
@@ -1271,7 +1272,7 @@ function renderChrome() {
   if (act.length) $('#rail [data-tags]').insertAdjacentHTML('afterend', act.map(a => `<button class="r-act${was.has(a.k + a.v) ? '' : ' new'}" data-unf="${a.k}" data-tip="${esc(a.l)} · kaldır" aria-label="${esc(a.l)} süzgecini kaldır">${a.k === 'color' ? `<span class="cdot c-${a.v}"></span>` : ic(a.i, 'sm')}<span class="r-x">${ic('x', 'sm')}</span></button>`).join(''));
   $('#railTab').innerHTML = `<button data-fold data-tip="${act.length ? 'Süzgeç açık: ' + esc(act.map(a => a.l).join(', ')) + ' · ' : ''}Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}${act.length ? '<span class="rt-dot"></span>' : ''}</button>`; // 88b: only >, where < was; the palette stays
   $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
-  const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && !i.seenAt && (i.type !== 'link' || i.read)).length;
+  const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && (i.again ? i.again <= now() : !i.seenAt) && (i.type !== 'link' || i.read)).length;
   $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n || ''}</span></button>`).join('')
@@ -2485,6 +2486,7 @@ function openItem(id) {
     ${i.conv ? convHtml(i) : ''}
     ${i.archive && !i.onBoard && !i.pos ? `<div class="d-arch">${ic('inbox', 'sm')}<span>Arşivde${i.chat ? ` · WhatsApp: ${esc(i.chat)}` : ''}. Listede, galeride ve aramada var, panoda yok.</span><button class="btn secondary sm" data-act="toboard">${ic('board', 'sm')}Panoya koy</button></div>` : ''}
     ${i.ocr ? `<details class="d-ocr"><summary>${ic('text', 'sm')}${fileKind(i) === 'pdf' ? 'Sayfadaki yazı' : 'Resimdeki yazı'}<button class="link-btn" data-act="copyocr">Kopyala</button></summary><pre>${esc(i.ocr)}</pre></details>` : ''}
+    ${DateAsk.html(i)}
     ${i.vtags?.length ? `<div class="d-vtags" title="${aiName()} resme bakıp buldu; aramada bulunur">${ic('spark', 'sm')}<span>Resimde:</span>${i.vtags.map(t => `<span class="tchip">${esc(t)}</span>`).join('')}</div>` : ''}
     ${media ? '' : lcard}
     <div class="field-label">Not</div>
@@ -2536,6 +2538,8 @@ function openItem(id) {
     else if (act === 'read') { await commit(); Reader.open(i.id); }
     else if (act === 'toboard') { await upsert([{ ...byId(i.id), onBoard: true }]); toast('Panoya kondu', 2000, 'board', { label: 'Panoya git', fn: () => { $('#sheet').close(); setView('board'); } }); openItem(i.id); }
     else if (e.target.closest('[data-kid]')) { await commit(); openItem(e.target.closest('[data-kid]').dataset.kid); }
+    else if (act === 'datetodo') { await commit(); await DateAsk.make(i.id); openItem(i.id); }
+    else if (act === 'datenot') { await commit(); await upsert([{ ...byId(i.id), noDateAsk: true }]); openItem(i.id); }
     else if (act === 'copyocr') { e.preventDefault(); copyText(byId(i.id).ocr || ''); }
     else if (act === 'tagfold') { await commit(); S.tagOpen = !S.tagOpen; openItem(i.id); }
     else if (act === 'mktodo') { await commit(); const c = byId(i.id); await upsert([{ ...c, noTodo: false, todo: { text: titleOf(c), done: false, user: true } }]); openItem(i.id); }
@@ -2910,15 +2914,16 @@ const Read = {
   answers: {},
   list() { return visible().filter(this.readable); },
   queue() { // the reading list: unread articles and documents first, newest first
-    const q = alive().filter(i => this.readable(i) && (i.type !== 'link' || i.read || Reader.wanted(i)));
+    const q = alive().filter(i => this.readable(i) && !(i.again > now()) && (i.type !== 'link' || i.read || Reader.wanted(i))); // 95c: "3 gün sonra" ones wait
     if (!q.length) return toast('Okunacak bir şey yok. Link, PDF ya da uzun not kaydedince burada çıkar.', 3200, 'book');
-    const now = i => i.type !== 'link' || i.read; // 112: readable without the bridge
-    if (!S.bridgeOk) { const r = q.filter(now); if (!r.length) return toast(`Okuma listesinde ${q.length} link var. Okunur kopya için bilgisayardaki Nts köprüsü açık olmalı.`, 4200, 'book'); q.splice(0, q.length, ...r); }
-    const un = q.filter(i => !i.seenAt), first = (un[0] || q[0]);
-    this.open(first.id, [...un, ...q.filter(i => i.seenAt)].map(i => i.id));
+    const ready = i => i.type !== 'link' || i.read; // 112: readable without the bridge
+    if (!S.bridgeOk) { const r = q.filter(ready); if (!r.length) return toast(`Okuma listesinde ${q.length} link var. Okunur kopya için bilgisayardaki Nts köprüsü açık olmalı.`, 4200, 'book'); q.splice(0, q.length, ...r); }
+    const back = q.filter(i => i.again), un = q.filter(i => !i.again && !i.seenAt), first = (back[0] || un[0] || q[0]);
+    this.open(first.id, [...back, ...un, ...q.filter(i => !i.again && i.seenAt)].map(i => i.id));
   },
   async open(id, ids) {
-    let i = byId(id); if (!i) return; markSeen(i);
+    let i = byId(id); if (!i) return;
+    if (i.again && i.again <= now()) { i = { ...i, again: undefined, seenAt: i.seenAt || now() }; upsert([i]); } else markSeen(i); // 95c: came back, read now
     if (i.type === 'link' && !i.read) {
       if (!S.bridgeOk && !(await AI.health())) return toast(claudeOff(), 3200, 'cpu');
       toast('Okunur kopya alınıyor…', 8000, 'spark');
@@ -2947,6 +2952,7 @@ const Read = {
         <button class="icon-btn" data-rp="prev" title="Önceki (←)" aria-label="Önceki" ${n <= 0 ? 'disabled' : ''}>${ic('chev', 'flip')}</button>
         <button class="icon-btn" data-rp="next" title="Sonraki (→)" aria-label="Sonraki" ${n >= this.ids.length - 1 ? 'disabled' : ''}>${ic('chev')}</button>
         ${i.type === 'link' ? `<a class="icon-btn" href="${esc(i.url)}" target="_blank" rel="noopener" title="Sayfayı aç" aria-label="Sayfayı aç">${ic('ext')}</a>` : ''}
+        <button class="btn ghost sm rp-later" data-rp="later" title="Okuma listesinden çıkar, 3 gün sonra yeniden göster" aria-label="3 gün sonra tekrar göster">${ic('clock', 'sm')}<span>3 gün sonra</span></button>
         <button class="btn ${this.side ? 'ai' : 'ghost'} sm" data-rp="side" aria-expanded="${!!this.side}">${ic('spark', 'sm')}${aiTo()} sor${hs.length ? ` · ${hs.length} işaret` : ''}</button></div>
       <div class="rp-wrap${this.side ? ' side' : ''}"><div class="rp-main"><article class="rp-doc r-body"><h1>${esc(i.read?.title || titleOf(i))}</h1>${this.body(i)}</article>
         <p class="hint rp-tip">Bir yeri seç → <b>İşaretle</b>. İşaretlediklerin aramada da çıkar.</p></div>
@@ -2984,6 +2990,16 @@ const Read = {
     el.onclick = async () => { const i = byId(this.id); el.remove(); getSelection().removeAllRanges(); await upsert([{ ...i, highlights: [...(i.highlights || []), { id: newId(), text: t.slice(0, 2000), at: now() }] }]); this.keep(() => this.draw()); };
     $('#reading').appendChild(el); el.style.left = Math.max(8, r.left + r.width / 2 - el.offsetWidth / 2) + 'px'; el.style.top = Math.max(56, r.top - el.offsetHeight - 8) + 'px';
   },
+  // 95c: "3 gün sonra tekrar": out of the reading list for three days, then first in it again with a reminder (Remind.tick)
+  async later() {
+    const id = this.id, i = byId(id); if (!i) return; haptic();
+    await upsert([{ ...i, again: now() + 3 * 864e5 }]);
+    const at = new Date(now() + 3 * 864e5).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+    toast(`${at} okuma listesinde yeniden çıkacak`, 5000, 'clock', { label: 'Geri al', fn: () => { const c = byId(id); if (c) upsert([{ ...c, again: undefined }]); } });
+    const rest = this.ids.filter(x => x !== id && !(byId(x)?.again > now())), n = this.ids.indexOf(id);
+    if (!rest.length) return $('#reading').close();
+    this.ids = rest; this.id = rest[Math.min(n, rest.length - 1)]; markSeen(byId(this.id)); this.draw(); $('#reading .rp-main').scrollTop = 0;
+  },
   keep(fn) { const m = $('#reading .rp-main'), y = m?.scrollTop; fn(); const m2 = $('#reading .rp-main'); if (m2) m2.scrollTop = y; },
   init() {
     const d = document.createElement('dialog'); d.id = 'reading'; d.className = 'readpage'; d.setAttribute('aria-label', 'Okuma'); document.body.appendChild(d);
@@ -2993,6 +3009,7 @@ const Read = {
       if (a === 'close') return d.close();
       if (a === 'prev') return this.go(-1);
       if (a === 'next') return this.go(1);
+      if (a === 'later') return this.later();
       if (a === 'side') { this.side = !this.side; try { localStorage.setItem('hn-rside', this.side ? '1' : ''); } catch { } return this.keep(() => this.draw()); }
       const rq = e.target.closest('[data-rq]'); if (rq) return this.ask(rq.dataset.rq);
       const rm = e.target.closest('[data-hrm]'); if (rm) { const i = byId(this.id); await upsert([{ ...i, highlights: (i.highlights || []).filter(h => h.id !== rm.dataset.hrm) }]); return this.keep(() => this.draw()); }
@@ -3025,9 +3042,36 @@ const Remind = {
       if (!BridgeLink.local() && 'Notification' in window && Notification.permission === 'granted')
         navigator.serviceWorker?.ready.then(r => r.showNotification('Nts · görev zamanı', { body: txt, icon: 'icons/icon-192.png', tag: key, data: { view: 'todo' } })).catch(() => { try { new Notification('Nts · görev zamanı', { body: txt }); } catch { } });
     }
+    for (const i of S.items) { // 95c: a "3 gün sonra" item is back in the reading list
+      if (!i.again || i.deleted || i.again > t || t - i.again > 7 * 864e5) continue;
+      const key = 'again:' + i.id + '@' + i.again; if (seen.has(key)) continue; seen.add(key); ch = true;
+      toast('Okuma listesinde yeniden: ' + titleOf(i), 8000, 'book', { label: 'Oku', fn: () => Read.queue() });
+      if (!BridgeLink.local() && 'Notification' in window && Notification.permission === 'granted')
+        navigator.serviceWorker?.ready.then(r => r.showNotification('Nts · okuma listesi', { body: titleOf(i), icon: 'icons/icon-192.png', tag: key, data: { read: 1 } })).catch(() => { });
+    }
     if (ch) try { localStorage.setItem('hn-reminded', JSON.stringify([...seen].slice(-500))); } catch { }
   },
   init() { setInterval(() => this.tick(), 30e3); setTimeout(() => this.tick(), 3000); },
+};
+
+// 95d: a picture (or scanned page) whose text holds a date still ahead → "göreve çevir?" in its window, and once as a toast
+// when the text of a just-saved picture arrives (older pictures read by the backfill stay quiet)
+const DateAsk = {
+  find(i) { return i && !i.deleted && !i.todo && !i.noTodo && !i.noDateAsk && i.ocr && ['image', 'pdf'].includes(fileKind(i)) ? NtsQuery.dateIn(i.ocr, now()) : null; },
+  html(i) {
+    const f = this.find(i); if (!f) return '';
+    return `<div class="d-date">${ic('clock', 'sm')}<span>Resimde tarih var: <b>${esc(dueInfo(f.due)?.label || f.due)}</b><small dir="auto">${esc(f.line)}</small></span><div class="d-date-b"><button class="link-btn" data-act="datenot">Hayır</button><button class="btn secondary sm" data-act="datetodo">${ic('todo', 'sm')}Göreve çevir</button></div></div>`;
+  },
+  async make(id) {
+    const i = byId(id), f = this.find(i); if (!f) return; haptic(12);
+    await upsert([{ ...i, todo: { text: titleOf(i), done: false, due: f.due, user: true } }]); if (f.due.includes('T')) Remind.ask();
+    toast(`Görev oldu · ${dueInfo(f.due)?.label || f.due}`, 5000, 'todo', { label: 'Geri al', fn: () => { const c = byId(id); if (c) upsert([{ ...c, todo: null }]); } });
+  },
+  after(ids) {
+    const hit = ids.map(byId).filter(i => i && now() - (i.createdAt || i.ts) < 3600e3).map(i => [i, this.find(i)]).find(x => x[1]); if (!hit) return;
+    const [i, f] = hit;
+    toast(`Resimde tarih var (${dueInfo(f.due)?.label || f.due}). Göreve çevireyim mi?`, 10000, 'clock', { label: 'Göreve çevir', fn: () => this.make(i.id) });
+  },
 };
 
 // ---------- "Claude çalışıyor": a calm pill while Claude does something in the background ----------
@@ -5024,6 +5068,7 @@ const AI = {
       if ((r.items || []).length && !(r.items || []).some(x => Array.isArray(x.labels))) this._noLabels = true;
       await upsert(batch.map(b => { const x = got.get(b.id) || {}, i = byId(b.id);
         return { ...i, ocr: i.ocr ?? (x.text || '').slice(0, 3000), ...(Array.isArray(x.labels) && fileKind(i) === 'image' ? { vtags: cleanVtags(x.labels) } : {}) }; }));
+      DateAsk.after(batch.map(b => b.id));
     } catch (e) { console.warn('ocr', e); } finally { this._ocr = false; }
   },
   async call(path, body, ms = 200000) {
@@ -5122,7 +5167,7 @@ const AI = {
           ...(i.todo && !i.todo.user && !i.todo.due && validDue(x.todo?.due) ? { todo: { ...i.todo, due: validDue(x.todo.due) } } : {}),
           ...(i.userLists ? {} : { lists: (x.lists || []).filter(k => LISTS.some(l => l[0] === k)), project: x.project ? x.project.toLowerCase().trim() : undefined }) };
       }));
-      S.aiBusy = false; this.dot(); setTimeout(() => AICur.tour(batch.map(b => b.id), 'düzenledi'), 350); // 120: after the board redrew
+      S.aiBusy = false; this.dot(); setTimeout(() => AICur.tour(batch.map(b => b.id), 'düzenledi'), 350); setTimeout(() => DateAsk.after(batch.filter(b => b.image).map(b => b.id)), 1500); // 120: after the board redrew
       if (S.items.some(i => i.pending && !i.deleted)) this.kick();
     } catch (e) { console.warn('AI', e); S.aiBusy = false; this.dot(); this.health(); }
   },
@@ -6646,10 +6691,11 @@ const Boot = {
   // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
   Cloud.finish().then(() => { if (Cloud.on()) { render(); Sync.run(); Live.start(); BridgeLink.publish(); } });
   BridgeLink.adopt();
-  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.view) setView(e.data.view); });
+  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.read) Read.queue(); else if (e.data?.view) setView(e.data.view); });
   { // home-screen shortcuts (long-press the icon): new note, to-dos, vault
     const q = new URLSearchParams(location.search), v = q.get('view'), d = q.get('do');
     if (v === 'todo') setView('todo');
+    if (d === 'read') setTimeout(() => Read.queue(), 400); // 95c: tapped the "okuma listesi" notification
     const qt = (q.get('text') || '').trim().slice(0, 20000), qu = (q.get('url') || '').trim(); // 96: Android "Nts'e kaydet" (selected text) and links
     if (d === 'new' && (qt || qu)) addFromInput({ text: qt, url: qu, source: 'share' }).then(r => { if (r && r !== 'dup' && r.length) { toast('Kaydedildi', 3000, 'check', { label: 'Aç', fn: () => openItem(r[0].id) }); } });
     else if (d === 'new') setTimeout(() => $('#input').focus(), 300);

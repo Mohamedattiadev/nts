@@ -328,6 +328,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             dökülür (Voice.backfill). whisper yoksa ses kalır, bir kez söylenir. Test: sahte mikrofon (Chromium fake device) 4 yapılandırma: dokun/dokun,
             basılı tut, Esc iptal, kayıt + döküm, Ara'da mikrofon hâlâ sesle arama; konsol hatası 0. Köprü değişti: `systemctl --user restart hizli-note-bridge`.
             Not: CPU'da small modelle 5 sn ses ~12 sn sürüyor. CİHAZ TESTİ sahipte (gerçek telefon mikrofonu, uzun basma). phone-audit bu oturumda bitmedi (makine yüklü, sahip kapattı) → sonraki B oturumu çalıştırsın.
+        ✓ 95c+95d 2026-11-24 (A hattı): (c) okuma sayfasının üst çubuğunda "3 gün sonra" (saat simgesi; telefonda yalnız simge): kayıt okuma
+            listesinden 3 gün çıkar (`i.again`, senkronlanır), sayfa sıradakine geçer, bildirimde "Geri al". Süre dolunca Remind.tick "Okuma listesinde
+            yeniden: …" der (telefonda sistem bildirimi, dokununca okuma listesi açılır: sw `data.read` → `?do=read`), kuyrukta en başta çıkar, açılınca
+            `again` silinir; sol çubuktaki sayı bekleyenleri saymaz. (d) resim/taranmış PDF'in yazısında ileri bir tarih varsa (`NtsQuery.dateIn`:
+            28.11.2026 · 05/12/26 · 2026-12-01 · 3 Aralık 14:30 · Nov 28, 2026 · ٢٨ نوفمبر; aynı satırdaki saat de alınır; yılsız sayılar (12.05) ve
+            geçmiş tarihler atlanır, en yakın ileri tarih seçilir; 12 birim testi) kayıt penceresinde "Resimde tarih var: 28 Ara 20:00 — Hayır / Göreve çevir"
+            şeridi; çevirince görev (başlık + tarih + saat), "Geri al"; "Hayır" bir daha sormaz (`noDateAsk`). Yeni kaydedilen resmin yazısı gelince
+            (organize ya da ocrBackfill) bir kez bildirim: "Resimde tarih var (5 Ara). Göreve çevireyim mi?" (eski resimlerin geriye dönük okuması sessiz).
+            Ek düzeltme: bildirimler (toast) artık açık pencerelerin (okuma sayfası, kayıt penceresi) ÜSTÜNDE (popover, en üst katman) — önceden altında
+            kalıp "Geri al" görünmüyordu. Test t95cd 4 yapılandırma, konsol hatası 0; query testleri 306/306.
         ✓ 95e 2026-11-24 (B hattı): Ctrl+K / ⌘K komut paleti (`Cmd`, app.js) — her yerden açılır (kutuda yazarken de; başka pencere açıkken açılmaz),
             telefonda Ayarlar → "Komut paleti" satırı; üstte açılan kart (klavye örtmez), masaüstünde ekranın üst üçte birinde. Boşken son kullanılan
             komutlar önde (hn-cmd-recent); yazınca gruplar en iyi eşleşmeye göre sıralanır: Komutlar (görünümler, Not/Ara/Sor, kenar çubuğu, sığdır/%100,

@@ -515,6 +515,38 @@
     return ws.sort((a, b) => b[0].length - a[0].length).slice(0, n).sort((a, b) => a[1] - b[1]).map(x => x[0]).join(' ');
   }
 
-  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, content, wantsNum, answer, qsim, dhash, hamming, imgSim, ocrWords, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
+  // 95d: a date written in a picture's text (a ticket, an invitation, a bill's last day) → the first one still ahead, for "göreve çevir?"
+  // 28.11.2026 · 28/11/26 · 2026-11-28 · 28 Kasım (2026) · Nov 28, 2026 · 28 November · ٢٨ نوفمبر; a time on the same line (14:30) comes along.
+  // Numbers without a year (28.11) are skipped: too many prices and versions look like that. → { due: 'YYYY-MM-DD[THH:MM]', line } or null
+  const DMONTHS = [['ocak', 'oca', 'january', 'jan', 'يناير', 'كانون الثاني'], ['şubat', 'şub', 'february', 'feb', 'فبراير', 'شباط'], ['mart', 'mar', 'march', 'مارس', 'آذار'],
+    ['nisan', 'nis', 'april', 'apr', 'أبريل', 'ابريل', 'نيسان'], ['mayıs', 'may', 'مايو', 'أيار'], ['haziran', 'haz', 'june', 'jun', 'يونيو', 'حزيران'],
+    ['temmuz', 'tem', 'july', 'jul', 'يوليو', 'تموز'], ['ağustos', 'ağu', 'august', 'aug', 'أغسطس', 'آب'], ['eylül', 'eyl', 'september', 'sept', 'sep', 'سبتمبر', 'أيلول'],
+    ['ekim', 'eki', 'october', 'oct', 'أكتوبر', 'تشرين الأول'], ['kasım', 'kas', 'november', 'nov', 'نوفمبر', 'تشرين الثاني'], ['aralık', 'ara', 'december', 'dec', 'ديسمبر', 'كانون الأول']];
+  const MON = new Map(); DMONTHS.forEach((l, k) => l.forEach(w => MON.set(fold(w), k)));
+  const MONRE = [...MON.keys()].sort((a, b) => b.length - a.length).map(w => w.replace(/ /g, '\\s+')).join('|');
+  const D_RES = [
+    [/(?<!\d)(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)/g, m => [+m[1], +m[2] - 1, +m[3]]],
+    [/(?<![\d.\/])(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4}|\d{2})(?![\d.\/]*\d)/g, m => [m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2] - 1, +m[1]]],
+    [new RegExp(`(?<![\\p{L}\\d])(\\d{1,2})(?:\\.|'?(?:st|nd|rd|th))?\\s+(${MONRE})\\.?(?:,?\\s+(\\d{4}))?(?![\\p{L}\\d])`, 'gu'), m => [m[3] ? +m[3] : null, MON.get(m[2].replace(/\s+/g, ' ')), +m[1]]],
+    [new RegExp(`(?<![\\p{L}\\d])(${MONRE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?(?![\\p{L}\\d:])`, 'gu'), m => [m[3] ? +m[3] : null, MON.get(m[1].replace(/\s+/g, ' ')), +m[2]]],
+  ];
+  function dateIn(text, now = Date.now()) {
+    const t0 = new Date(now); t0.setHours(0, 0, 0, 0); let best = null;
+    for (const raw of String(text || '').split(/\n/)) {
+      const line = fold(raw); if (!/\d/.test(line)) continue;
+      for (const [re, get] of D_RES) for (const m of line.matchAll(re)) {
+        let [y, mo, d] = get(m); if (mo == null || mo < 0 || mo > 11 || d < 1 || d > 31) continue;
+        let rolled = false; if (y == null) { y = t0.getFullYear(); if (new Date(y, mo, d) < t0) { y++; rolled = true; } } // "5 Ocak" in December: next year
+        const at = new Date(y, mo, d); if (at.getMonth() !== mo || at < t0 || at - t0 > (rolled ? 120 : 2 * 366) * 864e5) continue; // a yearless day long gone (10 Kasım) is the past, not a task
+        if (best && at >= best.at) continue;
+        const tm = line.slice(m.index + m[0].length).match(/(?<![\d.])([01]?\d|2[0-3])[:.]([0-5]\d)(?![\d.])/) || line.slice(0, m.index).match(/(?<![\d.])([01]?\d|2[0-3]):([0-5]\d)(?![\d.])/);
+        const p2 = n => String(n).padStart(2, '0');
+        best = { at, due: `${y}-${p2(mo + 1)}-${p2(d)}${tm ? `T${p2(tm[1])}:${tm[2]}` : ''}`, line: raw.trim().slice(0, 140) };
+      }
+    }
+    return best && { due: best.due, line: best.line };
+  }
+
+  const api = { fold, compile, isPlain, natural, chipFilter, intent, near, content, wantsNum, answer, qsim, dhash, hamming, imgSim, ocrWords, dateIn, lex: q => lex(q, () => {}), parse: q => { const w = []; return { ast: parseTokens(lex(q, m => w.push(m)), m => w.push(m)), warnings: w }; }, dateRange, sizeRange, palette, hueWords, COLOR_OF: w => COLORS.get(fold(w)) || null, field: w => FIELDS.get(fold(w)) || null };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsQuery = api;
 })(typeof self !== 'undefined' ? self : this);

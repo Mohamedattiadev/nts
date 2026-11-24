@@ -342,5 +342,20 @@ for (const junk of ['(((', ')))', '-', '--', '|||', '"', '/', '#', ':', 'tarih:'
   console.log(`10k kayıt: ${ms.toFixed(1)} ms, ${n} sonuç`);
 }
 
+// --- 95d: a date in a picture's text ---
+const di = x => Q.dateIn(x, NOW)?.due ?? null;
+eq('dateIn dd.mm.yyyy + saat', di('Konser 28.11.2026 saat 20:00'), '2026-11-28T20:00');
+eq('dateIn dd/mm/yy', di('Son ödeme tarihi: 05/12/26'), '2026-12-05');
+eq('dateIn iso', di('2026-12-01'), '2026-12-01');
+eq('dateIn tr ay', di('Toplantı 3 Aralık 14:30'), '2026-12-03T14:30');
+eq('dateIn en', di('Nov 28, 2026 at 7:30'), '2026-11-28T07:30');
+eq('dateIn ar', di('موعد ٢٨ نوفمبر ٢٠٢٦'), '2026-11-28');
+eq('dateIn yılsız yakın', di('Ocak 5'), '2027-01-05');
+eq('dateIn yılsız geçmiş', di('10 Kasım'), null);
+eq('dateIn geçmiş', di('geçmiş 01.01.2020'), null);
+eq('dateIn sürüm/fiyat', di('v1.2.3 price 12.50 sürüm 12.05'), null);
+eq('dateIn en yakını', di('Fatura 15.01.2027\nkonser 30.11.2026'), '2026-11-30');
+eq('dateIn satır', Q.dateIn('Bilet\nKonser 28.11.2026', NOW)?.line, 'Konser 28.11.2026');
+
 console.log(`${pass} geçti, ${fail} kaldı`);
 process.exit(fail ? 1 : 0);
