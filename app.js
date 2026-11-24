@@ -2180,7 +2180,7 @@ const Native = {
       d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-x]')) d.close(); });
       d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; }); }
     const k = (...a) => a.map(x => `<kbd>${x}</kbd>`).join(' '), mod = /Mac|iP/.test(navigator.platform) ? '⌘' : 'Ctrl';
-    const G = [['Genel', [[k('/'), 'Ara'], [k('N'), 'Kutuya yaz'], [k('Tab'), 'Kutuda mod: Not · Ara · Sor'], [k('['), 'Kenar çubuğunu aç / kapat'], [k(mod, 'Z'), 'Geri al'], [k('Shift', 'F10'), 'Seçili kaydın menüsü'], [k('Esc'), 'Kapat / vazgeç'], [k('?'), 'Bu liste']]],
+    const G = [['Genel', [[k('/'), 'Ara'], [k('N'), 'Kutuya yaz'], [k(mod, 'K'), 'Komut paleti'], [k('Tab'), 'Kutuda mod: Not · Ara · Sor'], [k('['), 'Kenar çubuğunu aç / kapat'], [k(mod, 'Z'), 'Geri al'], [k('Shift', 'F10'), 'Seçili kaydın menüsü'], [k('Esc'), 'Kapat / vazgeç'], [k('?'), 'Bu liste']]],
       ['Arama sonuçları', [[k('↑') + ' ' + k('↓'), 'Sonuçlarda gez'], [k('Enter'), 'Aç'], [k('Tab'), 'Tamamla']]],
       ['Pano', TOOLS.map(t => [k(t[3].toUpperCase()), t[2].replace(/ \(.\)$/, '')]).concat([[k('Boşluk') + ' + sürükle', 'Kaydır'], [k('Shift', '1'), 'Hepsini sığdır'], [k('Shift', '0'), '%100'], [k(mod, 'A'), 'Hepsini seç'], [k('Delete'), 'Seçilenleri sil'], [k(mod, 'Z') + ' / ' + k(mod, 'Y'), 'Çizimi geri al / yinele']])],
       ['Pencereler', [[k('←') + ' ' + k('→'), 'Önceki / sonraki sayfa'], [k('Esc'), 'Pencereyi kapat']]]];
@@ -2190,6 +2190,117 @@ const Native = {
   },
 };
 
+
+// ---------- 95e: Ctrl+K command palette — every action, board, tag and item from one box ----------
+const Cmd = {
+  sel: 0, rows: [], RK: 'hn-cmd-recent',
+  // [id, icon, label, extra words to match (en/tr), run, shortcut hint, shown only when]
+  base() {
+    const mod = /Mac|iP/.test(navigator.platform) ? '⌘' : 'Ctrl', dark = document.documentElement.dataset.theme !== 'light', bd = S.view === 'board';
+    const later = f => () => setTimeout(f, 260); // another window opens: let this one's history entry go first
+    return [
+      ['v-board', 'board', 'Pano görünümü', 'board canvas view', () => setView('board'), '', S.view !== 'board'],
+      ['v-list', 'list', 'Liste görünümü', 'list view', () => setView('list'), '', S.view !== 'list'],
+      ['v-gallery', 'grid', 'Galeri görünümü', 'gallery images resimler view', () => setView('gallery'), '', S.view !== 'gallery'],
+      ['v-todo', 'todo', 'Yapılacaklar', 'todo tasks görevler', () => setView('todo'), '', S.view !== 'todo'],
+      ['m-note', 'pen', 'Yeni not yaz', 'new note ekle kaydet', () => { setMode('note'); $('#input').focus(); }, 'N'],
+      ['m-find', 'search', 'Ara', 'search find bul', () => { setMode('find'); $('#input').focus(); }, '/'],
+      ['m-ask', 'spark', 'Yapay zekâya sor', 'ask ai claude soru', () => { setMode('ask'); $('#input').focus(); }],
+      ['rail', 'layers', 'Kenar çubuğunu aç / kapat', 'sidebar rail', () => Rail.fold(), '['],
+      ['fit', 'fit', 'Panoda hepsini sığdır', 'fit all zoom', () => Board.fit(), 'Shift 1', bd],
+      ['z100', 'search', 'Panoda %100 yakınlık', 'zoom reset 100', () => Board.zoomTo(1), 'Shift 0', bd],
+      ['newboard', 'plus', 'Yeni pano…', 'new board', later(() => { if (S.view !== 'board') setView('board'); const b = $('#boardBtn'); Board.boardMenu(b); setTimeout(() => $('#boardPop .new-board input')?.focus(), 50); })],
+      ['unfilter', 'x', 'Süzgeçleri temizle', 'clear filters reset', () => { if (S.folder) return Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); render(); }, '', !!(S.folder || S.filter.tag || S.filter.star || S.filter.list || S.filter.color || S.filter.src || S.filter.type !== 'all')],
+      ['star', 'star', 'Yıldızlılar', 'starred favorites', () => { Object.assign(S.filter, { star: true }); if (S.view === 'todo') setView('list'); else render(); }],
+      ['theme', dark ? 'sun' : 'moon', dark ? 'Açık temaya geç' : 'Koyu temaya geç', 'theme dark light tema', () => setTheme(dark ? 'light' : 'dark')],
+      ['settings', 'settings', 'Ayarlar', 'settings preferences', later(() => openSettings())],
+      ['keys', 'kbd', 'Klavye kısayolları', 'keyboard shortcuts', later(() => Native.keysOpen()), '?'],
+      ['sync', 'cloud', 'Şimdi eşitle', 'sync now senkron', () => { Sync.run(); toast('Eşitleniyor…', 1500, 'cloud'); }],
+      ['export', 'down', 'Yedeği indir', 'export backup download json', () => exportBackup()],
+      ['exportmd', 'down', 'Markdown olarak dışa aktar', 'export markdown obsidian', () => exportMarkdown()],
+      ['import', 'upload', 'Yedekten geri yükle…', 'import restore backup', () => $('#backupInput').click()],
+      ['wa', 'chat', 'WhatsApp sohbeti içe aktar…', 'import whatsapp zip', () => $('#waInput').click()],
+      ['bm', 'book', 'Yer imlerini içe aktar…', 'import bookmarks html', () => $('#bmInput').click()],
+      ['organize', 'spark', 'Yapay zekâ ile düzenle', 'organize ai tidy', async () => { if (await AI.health()) { AI.process(); toast(aiName() + ' düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }],
+      ['tags', 'hash', 'Etiketleri toparla', 'clean tags merge', () => AI.cleanTags()],
+      ['tour', 'eye', 'Tanıtımı yeniden göster', 'tour onboarding help yardım', later(() => Tour.start())],
+    ].filter(c => c[6] === undefined || c[6]).map(([id, icn, label, kw, run, key]) => ({ id, icn, label, kw, run, key: key ? key.split(' ').map(k => `<kbd>${k}</kbd>`).join('') : '', grp: 'Komutlar' }));
+  },
+  // 0 = no match; higher is better: start of the label > start of a word > inside > letters in order
+  score(f, q) {
+    if (!q) return 1; const i = f.indexOf(q);
+    if (i === 0) return 100 - f.length / 100; if (i > 0) return (/[\s#/·-]/.test(f[i - 1]) ? 80 : 50) - f.length / 100;
+    let j = 0, gaps = 0, last = -1; for (let k = 0; k < f.length && j < q.length; k++) if (f[k] === q[j]) { if (last >= 0 && k - last > 1) gaps++; last = k; j++; }
+    return j === q.length && q.length >= 3 && gaps <= 1 ? 20 - gaps * 8 : 0; // a typo-ish jump at most once
+  },
+  fold: s => NtsQuery.fold(s),
+  _tf: new WeakMap(),
+  build(q) {
+    const fq = this.fold(q.trim()), rec = this.recent(), out = [];
+    const cmds = this.base().map(c => ({ ...c, s: Math.max(this.score(this.fold(c.label), fq), fq && this.fold(c.kw).includes(fq) ? this.score(this.fold(c.kw), fq) * .8 : 0) })).map(c => (c.s && rec.includes(c.id) && (c.s += fq ? 3 : 40 - rec.indexOf(c.id)), c)).filter(c => c.s > 0);
+    cmds.sort((a, b) => b.s - a.s); if (!fq) return cmds.slice(0, 9);
+    out.push(...cmds.slice(0, 8));
+    const boards = [['main', 'Genel'], ...boardNames().map(n => [n, n])].map(([n, l]) => ({ id: 'b:' + n, icn: n === 'main' ? 'board' : 'folder', label: 'Pano: ' + l, grp: 'Panolar', s: Math.max(this.score(this.fold(l), fq), this.score(this.fold('pano board ' + l), fq) * .7), run: () => { Board.go(n); if (S.view !== 'board') setView('board'); } })).filter(c => c.s > 0);
+    out.push(...boards.sort((a, b) => b.s - a.s).slice(0, 4));
+    const tags = [...facets().tag].map(([t, n]) => ({ id: 't:' + t, icn: 'hash', label: '#' + t, note: n, grp: 'Etiketler', s: this.score(this.fold(t), fq.replace(/^#/, '')), run: () => { S.filter.tag = t; if (S.view === 'todo') setView('list'); else render(); } })).filter(c => c.s > 0);
+    out.push(...tags.sort((a, b) => b.s - a.s || b.note - a.note).slice(0, 4));
+    if (fq.length >= 2) { // items by title: kept to the best 6, titles folded once per item object
+      const best = [];
+      for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type)) continue;
+        let f = this._tf.get(i); if (f === undefined) { f = this.fold(titleOf(i)).slice(0, 200); this._tf.set(i, f); }
+        const s = f && f.includes(fq) ? this.score(f, fq) + (i.ts || 0) / 1e15 : 0; if (!s) continue;
+        if (best.length < 6 || s > best[5].s) { best.push({ i, s }); best.sort((a, b) => b.s - a.s); if (best.length > 6) best.pop(); } }
+      out.push(...best.map(({ i, s }) => ({ s, id: 'i:' + i.id, icn: I[i.type] ? i.type : 'note', label: titleOf(i), grp: 'Kayıtlar', note: i.ts ? shortDay(dayKey(i.ts)) : undefined, run: () => openItem(i.id), noRec: true })));
+      out.push({ id: 'q', icn: 'search', label: `“${q.trim()}” için her yerde ara`, grp: 'Ara', noRec: true, run: () => { setMode('find'); const inp = $('#input'); inp.value = q.trim(); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.focus(); } });
+    }
+    const top = new Map(); for (const r of out) if (r.grp !== 'Ara') top.set(r.grp, Math.max(top.get(r.grp) || 0, r.s || 0)); // groups follow their best match
+    return out.map((r, k) => [r, k]).sort(([a, x], [b, y]) => (a.grp === 'Ara') - (b.grp === 'Ara') || (top.get(b.grp) || 0) - (top.get(a.grp) || 0) || x - y).map(([r]) => r);
+  },
+  recent() { try { return JSON.parse(localStorage.getItem(this.RK) || '[]'); } catch { return []; } },
+  remember(id) { try { localStorage.setItem(this.RK, JSON.stringify([id, ...this.recent().filter(x => x !== id)].slice(0, 6))); } catch { } },
+  paint() {
+    const d = $('#cmdk'), q = d.querySelector('input').value; this.rows = this.build(q); this.sel = Math.min(this.sel, Math.max(0, this.rows.length - 1));
+    let g = ''; const L = d.querySelector('.ck-list');
+    L.innerHTML = this.rows.length ? this.rows.map((r, k) => { const h = r.grp !== g ? `<li class="ck-h" role="presentation">${r.grp}</li>` : ''; g = r.grp;
+      return h + `<li role="option" id="ck${k}" data-k="${k}" aria-selected="${k === this.sel}" class="${k === this.sel ? 'on' : ''}">${ic(r.icn, 'sm')}<span class="lbl">${esc(r.label)}</span>${r.note !== undefined ? `<span class="n">${esc(r.note)}</span>` : ''}${r.key ? `<span class="k">${r.key}</span>` : ''}</li>`; }).join('')
+      : `<li class="ck-empty" role="presentation">Bir şey bulunamadı</li>`;
+    d.querySelector('input').setAttribute('aria-activedescendant', this.rows.length ? 'ck' + this.sel : '');
+  },
+  move(n) { if (!this.rows.length) return; this.sel = (this.sel + n + this.rows.length) % this.rows.length; const L = $('#cmdk .ck-list');
+    L.querySelectorAll('[aria-selected]').forEach(e => { const on = +e.dataset.k === this.sel; e.classList.toggle('on', on); e.setAttribute('aria-selected', on); });
+    $('#cmdk input').setAttribute('aria-activedescendant', 'ck' + this.sel); L.querySelector('.on')?.scrollIntoView({ block: 'nearest' }); },
+  run(k) {
+    const r = this.rows[k], d = $('#cmdk'); if (!r) return; if (!r.noRec) this.remember(r.id);
+    d.close(); const go = () => Back._skip ? setTimeout(go, 16) : r.run(); go(); // wait until the palette's history entry is gone
+  },
+  open() {
+    let d = $('#cmdk');
+    if (!d) { d = document.createElement('dialog'); d.id = 'cmdk'; d.className = 'cmdk'; d.setAttribute('aria-label', 'Komut paleti'); document.body.appendChild(d);
+      d.innerHTML = `<div class="d-body" tabindex="-1"><div class="ck-in">${ic('search', 'sm')}<input type="text" role="combobox" aria-expanded="true" aria-controls="ckList" aria-autocomplete="list" aria-label="Komut, pano, etiket ya da kayıt ara" placeholder="Ne yapmak istersin?" autocomplete="off" spellcheck="false" enterkeyhint="go"><kbd class="d-only">Esc</kbd></div><ul class="ck-list" id="ckList" role="listbox" aria-label="Sonuçlar"></ul><div class="ck-foot d-only"><span><kbd>↑</kbd><kbd>↓</kbd> gez</span><span><kbd>↵</kbd> çalıştır</span><span><kbd>Esc</kbd> kapat</span></div></div>`;
+      const inp = d.querySelector('input');
+      inp.addEventListener('input', () => { this.sel = 0; this.paint(); });
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown' || (e.key === 'n' && e.ctrlKey)) { e.preventDefault(); this.move(1); }
+        else if (e.key === 'ArrowUp' || (e.key === 'p' && e.ctrlKey)) { e.preventDefault(); this.move(-1); }
+        else if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); this.run(this.sel); }
+      });
+      const L = d.querySelector('.ck-list');
+      L.addEventListener('pointermove', e => { const li = e.target.closest('[data-k]'); if (li && +li.dataset.k !== this.sel && e.pointerType === 'mouse') this.move(+li.dataset.k - this.sel); });
+      L.addEventListener('click', e => { const li = e.target.closest('[data-k]'); if (li) this.run(+li.dataset.k); });
+      d.addEventListener('click', e => { if (e.target === d) d.close(); });
+      d.addEventListener('close', () => { if (!d._fromBack && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; }); }
+    if (d.open) return d.close();
+    const inp = d.querySelector('input'); inp.value = ''; this.sel = 0; this.paint(); Back.open(d); inp.focus();
+    (window.requestIdleCallback || setTimeout)(() => { for (const i of S.items) if (!this._tf.has(i)) this._tf.set(i, this.fold(titleOf(i)).slice(0, 200)); }); // titles folded before the first letter, not on it
+  },
+  init() {
+    addEventListener('keydown', e => { // Ctrl+K / ⌘K anywhere, also while typing (the browser's own Ctrl+K is the address bar)
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'k') return;
+      e.preventDefault(); if (document.querySelector('dialog[open]:not(#cmdk)')) return; // another window is up: it keeps the keyboard (and the browser's address bar stays shut)
+      this.open();
+    }, true);
+  },
+};
 // ---------- Android back button closes panels instead of leaving the app ----------
 const Back = {
   open(dlg) { hideHits(); if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
@@ -6127,6 +6238,7 @@ function openSettings(page = 'main') {
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
     <div class="set-sec">
+      <button class="set-row" data-do="cmdk">${ic('search')}<span>Komut paleti<small>Her şey tek yerden: görünüm, pano, etiket, kayıt${onPhone() ? '' : ' · <kbd>Ctrl</kbd> <kbd>K</kbd>'}</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row d-only" data-do="keys">${ic('kbd')}<span>Klavye kısayolları<small>Her yerde <kbd>?</kbd> tuşu da açar</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="tour">${ic('spark')}<span>Nasıl kullanılır?<small>6 adımlık kısa tur</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="lists">${ic('flag')}<span>Listeler<small>${aiOf()} doldurduğu listelerin adı ve görünürlüğü</small></span>${ic('chev', 'sm')}</button>
@@ -6181,6 +6293,7 @@ function openSettings(page = 'main') {
     else if (d === 'lists') openSettings('lists');
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
     else if (d === 'tour') { m.close(); setTimeout(() => Tour.start(), 250); }
+    else if (d === 'cmdk') { m.close(); setTimeout(() => Cmd.open(), 250); }
     else if (d === 'keys') { m.close(); setTimeout(() => Native.keysOpen(), 250); }
     else if (d === 'back') openSettings();
     else if (d === 'import') $('#backupInput').click();
@@ -6406,7 +6519,7 @@ function wire() {
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
   addEventListener('online', () => { Sync.paint(); Sync.schedule(); Live.check(); });
-  Board.init(); AICur.mine(); Back.init(); Folders.init(); Morph.init(); Native.init();
+  Board.init(); AICur.mine(); Back.init(); Folders.init(); Morph.init(); Native.init(); Cmd.init();
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;

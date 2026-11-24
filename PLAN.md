@@ -319,6 +319,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         gerçek native gerekirse aynı kodla Tauri (masaüstü) / Capacitor (telefon) sarmalayıcı.
         95a sesli not · 95b sabah özeti bildirimi · 95c okuma listesinde "3 gün sonra tekrar" · 95d resimde tarih → "göreve çevir?"
         · 95e Ctrl+K komut paleti · 95f salt okunur paylaşılan pano linki · 95g tarayıcı eklentisi (sağ tık → Nts'e gönder).
+        ✓ 95e 2026-11-24 (B hattı): Ctrl+K / ⌘K komut paleti (`Cmd`, app.js) — her yerden açılır (kutuda yazarken de; başka pencere açıkken açılmaz),
+            telefonda Ayarlar → "Komut paleti" satırı; üstte açılan kart (klavye örtmez), masaüstünde ekranın üst üçte birinde. Boşken son kullanılan
+            komutlar önde (hn-cmd-recent); yazınca gruplar en iyi eşleşmeye göre sıralanır: Komutlar (görünümler, Not/Ara/Sor, kenar çubuğu, sığdır/%100,
+            yeni pano, süzgeç temizle, yıldızlılar, tema, ayarlar, kısayollar, eşitle, yedek/Markdown/içe aktarmalar, yapay zekâ düzenle, etiket toparla,
+            tanıtım) · Panolar · Etiketler (sayıyla) · Kayıtlar (başlıkta, en iyi 6, tarihle) · "… için her yerde ara" (Ara moduna taşır). Türkçe/Arapça
+            katlama NtsQuery.fold, en fazla bir harf atlamalı bulanık eşleşme, İngilizce eş anlamlılar. ↑↓/Ctrl+N/P, Enter, Esc, geri tuşu kapatır;
+            başka pencere açan komut, paletin geçmiş kaydı gidince çalışır. 10k kayıtta tuş ~4 ms (ilk katlama açılışta boşta yapılır). "?" listesine eklendi.
 - [x] 96. (2026-11-24: TWA yerine bağımlılıksız ~25 KB yardımcı APK `android/` — simgesi yok, yalnız seçim menüsünde "Nts'e kaydet" (PROCESS_TEXT); metni `?do=new&text=` linkiyle açar, kurulu Nts PWA'sı yakalar, aynı veriye kaydeder → "Kaydedildi · Aç" (tekrar yüklemede çift kayıt yok, link metni link kaydı olur, 4 yapılandırmada test). Gradle/TWA bu makinenin yavaş ağıyla inmedi, gerek de yok: veriler PWA'da kalır, assetlinks gerekmez. Derleme `android/build.sh` (aapt2+d8+apksigner), anahtar repoda değil `~/.nts-android/`. Paylaş→Nts zaten share_target ile PWA'da. CİHAZ TESTİ sahipte.) **Telefonda metni seçince ⋮ menüsünde "Nts'e kaydet"** (sahip): PWA o menüye giremez (Android'de sadece ACTION_PROCESS_TEXT
         alan native uygulama). Çözüm: Bubblewrap ile TWA Android paketi (aynı site, tam ekran) + içinde PROCESS_TEXT alan küçük bir
         aktivite → seçili metni `https://mohamedattiadev.github.io/nts/?do=new&text=…` ile açar, uygulama kaydeder ve "Kaydedildi" der.
