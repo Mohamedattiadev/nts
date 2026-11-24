@@ -237,7 +237,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi) (be15688)
 - [x] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram) (7c1d29b; sw v123)
 - [~A] 156 masaüstü hızlı kutu: Ctrl+Space (ve Super+Shift+S yerine) → farenin olduğu yerde küçük yüzen yazı kutusu (Claude/ChatGPT masaüstü gibi), Enter → Nts'e not; Hyprland; PLAN 156
-- [ ] 157a HATA "Tarihe git" düğmesi "En yeniye dön" şeridinin üstüne biniyor (design/feedback-34.png); PLAN 157
+- [~B] 157a HATA "Tarihe git" düğmesi "En yeniye dön" şeridinin üstüne biniyor (design/feedback-34.png); PLAN 157
 - [ ] 157b + ve mikrofon düğmeleri yuvarlak (daire) olsun (design/feedback-36.png); PLAN 157
 - [ ] 157c Takvim: önceki yıllara hızlı gitmek için uzaklaş — ay → yıl → yıllar görünümü (design/feedback-35.png); PLAN 157
 - [ ] 157d proje panosu "1 yıl" seçiliyken bile 4 kart (design/feedback-37.png): gerçek sebep ilgili kayıtların projeye bağlı olmaması → "N ilgili kayıt" öner + tek dokunuşla ekle; PLAN 157
