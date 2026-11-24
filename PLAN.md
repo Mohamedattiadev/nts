@@ -1062,6 +1062,24 @@ Arayüz:
         kanıt: sahte köprüyle (gerçek veriye yazmadan) F7 → yaz → Enter → kayıt köprüye ulaştı → uygulamada görünür; köprü kapalı → kuyrukta
         bekler → açılınca gider; Esc taslak saklar; ekran kenarında taşmaz; çoklu monitörde fare olan ekranda açılır; açılış süresi ölçümü.
         grim ekran görüntüleri açık + koyu, PLAN'a sonuç.
+- [ ] 158. **Sahibin 2026-11-24 akşam ekran görüntüleri (2)**:
+        a) design/feedback-39.png (Galeri, 1366×768, "Ekim 2024 ve öncesi"): sağdaki önizleme kutusu ("Bir kartın üzerine gel…") zaman çizgisinin
+           üstüne biniyor — sürükleme balonu "2026" kutunun arkasında yarım görünüyor (149'daki düzeltme yetmemiş ya da balon/sürükleme hâli
+           hesaba katılmamış); ayrıca "En yeniye dön" şeridinin üst kenarının arkasında iki yarım hap düğme duruyor (157a'nın "Tarihe git"i?).
+           Sahip: "tarih ile kartı düzelt, üst üste sorun var, çözelim". Kural: önizleme kutusu, zaman çizgisi + balonu + ay etiketleri için
+           ayrılmış sütunun SOLUNDA biter; balon hiçbir zaman başka yüzeyin arkasında kalmaz (z-index + yer); şerit ve düğmeler ayrı satır ya da
+           şeridin içinde. Ölç: liste/galeri/takvim × 1366, 1920, 1024, 390 × sürüklerken/değilken, bütün yüzen öğeler arasında kesişme = 0
+           (tools/overlap.mjs kalsın, her arayüz işinde koşulsun).
+        b) design/feedback-40.png (Takvim, Kasım 2026): "UI geliştir takvimin, pls, uygulamada" — bugünkü: koyu kutucuklar, kahverengi zemin
+           yoğunluk, küçük resimler kesik, yazılı günlerde iki satır gri metin, 30. gün kutunun altında kalıyor (alt kutu biniyor), boş
+           günler büyük gri kutu. Yap: daha sakin ızgara (ince çizgiler, kutu değil), bugün accent halka, hafta sonu hafif ton, gün başına en
+           çok 3 öğe: küçük resim şeridi (kesiksiz, yuvarlak, tam kare) ya da tür simgesi + başlık, "+N"; yoğunluk zemin yerine gün numarasının
+           altında ince nokta/çubuk; ay başlığı büyük + ‹ › + "Bugün"; son satır kutunun altında kalmasın (alt boşluk = kutu yüksekliği);
+           günün üstüne gelince hafif kalkma, tıkla → o günün listesi yan panelde. Telefonda hafta görünümü + aşağı kaydırınca ay. Açık + koyu.
+        c) design/feedback-41.png: sol çubukta "BAĞLANTI…" bölümündeki satırlarda (Mac…, Hom…, Nix…) simge emoji 🔗. Sahip: "gerçek ikon SVG olsun,
+           emoji olmasın". Bütün uygulamayı tara: arayüzde simge olarak kullanılan her emoji (veriden gelen liste/klasör/kaynak simgeleri dahil,
+           ör. smart list/folder/source ikon alanı) → ic('…') SVG; kullanıcının kendi yazdığı metindeki emojiye dokunma. Tarayıcı emoji fontuna
+           bağlı hiçbir simge kalmasın (grep \p{Extended_Pictographic} in app.js, index.html, ed.js, query.js…; kalan her biri gerekçeli).
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da

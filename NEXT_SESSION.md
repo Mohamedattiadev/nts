@@ -242,6 +242,9 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 157c Takvim: önceki yıllara hızlı gitmek için uzaklaş — ay → yıl → yıllar görünümü (design/feedback-35.png); PLAN 157 (8009500)
 - [~A] 156b hızlı kutu (şimdilik F7) daha güzel + açılınca eski notlarım görünsün + uçtan uca çalıştığı kanıtlansın; PLAN 156b
 - [~B] 157d proje panosu "1 yıl" seçiliyken bile 4 kart (design/feedback-37.png): gerçek sebep ilgili kayıtların projeye bağlı olmaması → "N ilgili kayıt" öner + tek dokunuşla ekle; PLAN 157
+- [ ] 158a HATA galeri: önizleme kutusu hâlâ zaman çizgisinin üstünde (2026 balonu arkada kalıyor) + "Ekim 2024 ve öncesi" şeridinin arkasında yarım düğmeler (design/feedback-39.png); PLAN 158
+- [ ] 158b Takvim arayüzünü geliştir (uygulamada; design/feedback-40.png); PLAN 158
+- [ ] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158
 - [ ] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
