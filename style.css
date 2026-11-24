@@ -2800,3 +2800,6 @@ body.lcal .list { padding-top: 16px; }
   .cal .c-wd span { padding: 0; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .c-grow svg { transition: none; } }
+/* 159: board photos at their own shape */
+.bcard .thumb.pic { background: var(--surface-2); }
+.bcard .thumb.pic img { object-fit: cover; object-position: center top; }

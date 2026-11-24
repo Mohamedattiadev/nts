@@ -862,8 +862,8 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   img.onerror = () => img.remove(); img.src = u;
   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
     .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight);
-      if (img.naturalWidth) { GAR.set(i.id, img.naturalWidth / img.naturalHeight); const t = e.target.closest('#gallery .tile'), a = GAR.fit(GAR.get(i.id)).toFixed(3); if (t && t.style.getPropertyValue('--ar') !== a) t.style.setProperty('--ar', a); } // 99a: changes only the first time
-      e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
+      if (img.naturalWidth) { GAR.set(i.id, img.naturalWidth / img.naturalHeight); if (e.target.classList.contains('pic') && parseInt(e.target.style.height) !== BoardPic.h(i)) BoardPic.learned(e.target); const t = e.target.closest('#gallery .tile'), a = GAR.fit(GAR.get(i.id)).toFixed(3); if (t && t.style.getPropertyValue('--ar') !== a) t.style.setProperty('--ar', a); } // 99a: changes only the first time
+      e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); BoardPic.sharp(e.target, i); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
 }), { rootMargin: '400px' });
 function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
   const k = fileKind(i);
@@ -2175,7 +2175,7 @@ const Trash = {
   list: () => S.items.filter(i => i.deleted && !i.purged && i.deletedAt && i.type !== 'vault' && i.type !== 'bridge').sort((a, b) => b.deletedAt - a.deletedAt),
   async purge(items) { // tombstone only: other devices learn it is gone; the file goes too
     items = [...items, ...items.flatMap(i => (i.conv?.kids || []).map(byId).filter(Boolean))];
-    for (const i of items) { DB.del('files', i.id); DB.del('files', i.id + ':t'); }
+    for (const i of items) { DB.del('files', i.id); DB.del('files', i.id + ':t'); DB.del('files', i.id + ':m'); }
     await upsert(items.map(i => ({ id: i.id, deleted: true, purged: true, ts: i.ts, type: i.type })));
   },
   async sweep() { const old = this.list().filter(i => now() - i.deletedAt > this.DAYS * 864e5); if (old.length) await this.purge(old); },
@@ -5714,7 +5714,7 @@ const Board = {
     if (i.sticky) return i.sticky === 'text' ? 40 : Math.max(140, i.h || 0);
     const t = titleOf(i).length, sub = subOf(i), tl = Math.min(2, Math.max(1, Math.ceil(t / (Rich.checks(i) ? 19 : 24)))), sl = sub ? Math.min(3, Math.ceil(Math.min(sub.length, 200) / 31)) : 0;
     const rh = Rich.bodyH(i); // 106a
-    return 2 + (hasVisual(i) ? 132 : 0) + Rich.embH(i) + 21 + tl * 19 + (rh != null ? rh : sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
+    return 2 + (hasVisual(i) ? BoardPic.h(i) : 0) + Rich.embH(i) + 21 + tl * 19 + (rh != null ? rh : sl ? 2 + sl * 18 : 0) + 6 + 18 + (this.metaLines(i) > 1 ? 23 : 0);
   },
   // 128: a rough width of the card's meta row (time, site, flags, tag chips); over one line → the card keeps room for a second
   metaLines(i) {
@@ -5758,6 +5758,7 @@ const Board = {
     const rich = Rich.html(i), rb = Rich.body(i); // 106a
     c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${linkFav(i)}${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div>${Rich.pill(i)}</div>
       ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i), due: !Rich.due(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${OnBoard.can(i) ? `<button class="b-open" title="Pencerede aç" aria-label="Pencerede aç">${ic('expand', 'sm')}</button>` : ''}${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
+    if (!rich) BoardPic.card(c, i); // 159: a photo as big as its shape
     return c;
   },
   // Free canvas, like Figma: cards you moved keep their place (i.pos, synced); the rest stand in day columns
