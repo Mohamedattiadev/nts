@@ -234,7 +234,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 155 kayıt penceresi: sahip "en uygun seçeneği yap" (örnek turu beklemeden) → design/item.html'deki A "Belge" yönünü (yoksa PLAN 155'teki A tarifini) uygula; 155-0'ı [x] yap; PLAN 155 — örnekteki A + "Ortak" bölümündeki kurallar referans (ea5c173; sw v120)
 - [x] 153 panoda boş yere sağ tık (telefonda uzun bas) → zaman aralığı: Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + "Arşivi de göster" (WhatsApp vb.); PLAN 153 (5b10942; sw v119)
 - [~B] 154 HATA zengin kartlar kesik (design/feedback-31.png: WhatsApp balonlarında yazı satırın ortasından kesiliyor) → "full gözüksün"; PLAN 154
-- [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
+- [~A] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
