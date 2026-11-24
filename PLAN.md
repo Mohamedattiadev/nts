@@ -619,7 +619,13 @@ Arayüz:
         ESKİ METİN: **İlk tanıtımda giriş seçimi**: "Google ile giriş yap" (önerilen: telefon ve bilgisayar aynı kayıtları görür) ya da "Misafir olarak
         devam et" (bu cihazda kalır, senkron yok, sonra Ayarlar'dan girebilir). Atla/İleri akışı içinde, sahte Supabase ile test.
 Fikir (yeri belli değil, önce öneri):
-- [ ] 123. **Kasa kilidi gibi yuvarlak çarklar**: kasa şifresi kadranları gibi döner sayılı halkalar → tarih seçici (yıl · ay · gün halkaları) ve
+- [?] 123. (123-0 ÖRNEK HAZIR, 2026-11-24: design/dial.html — 1 Tarih çarkı: A Kasa (iç içe gün/ay/yıl halkaları, üstte pencere, ortada
+        haftanın günü) · B Üç kadran (tırtıklı kenar, üstte ok, ortada büyük değer) · C Bavul kilidi (dikey 3B silindirler); 2 Etiket halkası:
+        A Tam halka (ortada Ekle/Çıkar) · B Alt yay (başparmak için üst yay, sağa-sola); 3 Nerede: Tarihe git / görev tarihi / etiket süzgeci /
+        yalnız telefonda. Hepsi gerçekten döner: savurunca kendi döner, en yakın değere oturur, çentikte titreşim + isteğe bağlı tık sesi,
+        dokununca oraya döner, klavye ← →, hareketi azalt; ayda olmayan gün soluk, 31 → Şubat 28 → Mart yine 31 (seçilen gün hatırlanır).
+        1366×768 + 390×844 × açık/koyu, taşma 0, konsol hatası 0; ekran görüntüleri design/123/. Sahibin seçimi bekleniyor.)
+        **Kasa kilidi gibi yuvarlak çarklar**: kasa şifresi kadranları gibi döner sayılı halkalar → tarih seçici (yıl · ay · gün halkaları) ve
         bir halka da etiketler için. Önerilen yer: "Tarihe git" ve görev tarihi seçici (telefonda parmakla çevir), etiket halkası süzgeçte.
         Önce `design/dial.html` örneği, sahibe sor.
 Site:
