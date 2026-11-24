@@ -739,6 +739,8 @@ Arayüz:
         kayıtları, kopyalar, kısa notlar; OCR önce tesseract, yapay zekâ yalnız gerekirse), aynı içeriği tekrar gönderme (hash önbelleği), toplu gönder
         (bir çağrıda çok kayıt, kısa alanlar), ucuz model (organize haiku), claude -p araçsız + kısa sistem istemi; günlük/aylık üst sınır (aşınca
         sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
+        EK (sahip, 2026-11-24: "çok hızlı olsun abi bütün app"): yalnız 5 nokta değil, BÜTÜN uygulama — her ekran ve her etkileşim ölçülsün;
+        biten noktalardan sonra kalanlar yeni maddeler olarak sıraya (147b, 147c…) eklensin.
 - [ ] 131-1. **Klasör kartı: D Dosya, cam** (sahip, 2026-11-24, design/folders.html'de D seçti, design/folders-choices-3.json: "bu fena değil ama cam
         olsun, şeffaf yani, ama aynı renkler anladın"). 131-0c yeni tur İPTAL, doğrudan uygula: D Dosya stili (gerçek klasör biçimi) uygulamada
         varsayılan; zemini buzlu cam (backdrop-filter blur + yarı saydam), klasörün kendi rengi (etiket/tür rengi) aynen kalır, cam altında
@@ -765,6 +767,15 @@ Arayüz:
         üstte, "Finential" altta, ⌄ en altta, ad kesik). 116'daki niyet: tek satır [logo] [pano adı] [⌄], yükseklik sol çubuk düğmeleriyle aynı,
         uzun ad en çok ~16 karakter sonra … (tam ad ipucunda), kutu sol çubukla aynı genişlik ritminde/hizada, 146 ile birlikte (liste çubuğun
         sağından açılır). Telefon önce, açık + koyu, ekran görüntüsü.
+- [ ] 152. **Kopya kayıt olmasın** (sahip, 2026-11-24: "bütün linkler veya fotolar zipten tekrarlanmasın"). Bugün: nts import dosyaları sha1 ile bir
+        kez alıyor (bu arşivde dosya kopyası 0), kayıt id'leri uygulamanın kendi WhatsApp içe aktarmasıyla aynı. Ama snapshot'ta aynı YouTube linki
+        2 ayrı kayıt (youtu.be/vqXLGX0szIQ, youtu.be/cGx8eoX88IU — sohbette iki kez gönderilmiş), ve elle kaydedilenle arşivden gelen aynı şey
+        ayrı kalıyor. Yap: (a) link anahtarı: http/https, www, sondaki /, utm_*/si=/igsh=/fbclid izleme parametreleri, youtu.be↔youtube.com/watch?v=,
+        m./mobile. katlanmış URL; aynı anahtar → tek kayıt, diğer gönderim tarihleri "3 kez kaydedildi · ilk 2024-03" olarak içinde; (b) foto/dosya:
+        içerik hash'i (sha1; foto için dHash ≤4 fark = aynı foto, farklı boyut/sıkıştırma) — WhatsApp'tan gelen foto daha önce elle eklendiyse ikinci
+        kayıt açma, var olana "WhatsApp'ta da var" bağı ekle; (c) nts import ve uygulamadaki içe aktarma ikisi de bu kuralı kullansın (ortak işlev),
+        deneme raporunda "Zaten Nts'te: N link, M foto"; (d) var olan kopyalar için Ayarlar → "Kopyaları birleştir" (önce liste + sayı, tek dokunuş,
+        Geri al), etiket/not/pano yerleri birleşir, hiçbir şey silinmez (çöpe). Birim testleri (URL katlama tr/en/ar karakterli linkler dahil).
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
