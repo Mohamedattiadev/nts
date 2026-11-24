@@ -227,7 +227,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce) (48fa45e; sw v111)
 - [x] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri (1a99172; sw v113)
 - [~B] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
-- [ ] 107b Android ana ekran widget'ı (96'dan sonra)
+- [~A] 107b Android ana ekran widget'ı (96'dan sonra)
 - [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
