@@ -230,6 +230,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 107b Android ana ekran widget'ı (96'dan sonra) (6ff00db; sw v115)
 - [x] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2 (7b66a20; sw v116)
 - [x] 107m ilk açılışta örnek verilerle dene + tek tıkla sil (ced3eaa)
+- [ ] 154 HATA zengin kartlar kesik (design/feedback-31.png: WhatsApp balonlarında yazı satırın ortasından kesiliyor) → "full gözüksün"; PLAN 154
 - [ ] 153 panoda boş yere sağ tık (telefonda uzun bas) → zaman aralığı: Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + "Arşivi de göster" (WhatsApp vb.); PLAN 153
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)

@@ -900,6 +900,14 @@ Arayüz:
         kartlar FLIP ile gelir, yeni gelenler görünür alana sığdırılır (Hepsini gör). Seçili aralık zoom kutusunun yanında küçük çip ("6 ay ×")
         olarak durur. Çok kart (1000+) gelince 147 ölçütleri: uzakta hafif kart, 60 fps. Panoda gizli kayıt varsa boş ekranda "N kayıt bu aralığın
         dışında · Tümünü göster". Klavye: menü ↑↓ Enter Esc. Masaüstü + telefon, açık + koyu, ekran görüntüsü.
+- [ ] 154. **Zengin kartlar tam görünsün** (sahip, 2026-11-24, design/feedback-31.png: pano kartı "Kanatlı projesi: bütçe ve yapılacaklar", WhatsApp
+        balonları; 1. balonun 3. satırı yarım piksel kesik ("Salmonella, Newcastle" yarısı görünüyor), 3. balon da öyle: "UI'lar, rich'ler tam
+        değil, full gözüksün"). Kural: pano kartında hiçbir zengin parça (WhatsApp balonu, not mini belgesi, onay listesi, kod, tablo, link
+        önizlemesi, PDF, ses) yazıyı satırın ortasından kesmesin. Balonlar mesajın TAMAMINI göstersin (kısa mesajlar zaten tam; çok uzun
+        mesaj ~8 satırdan sonra tam satır sınırında "… devamı" ile biter, dokununca kartta açılır). Kesik yükseklik (max-height + overflow) yerine
+        line-clamp ya da ölçülmüş yükseklik; Board.est tahmini gerçekle ≤4 px (106a kuralı) — kart büyüyünce komşular itilmesin (tidy/FLIP).
+        Bütün zengin tipleri tek tek tara (Playwright: her parçada scrollHeight > clientHeight olan ve yarım satır kesen öğe sayısı = 0), açık +
+        koyu, %28–%200 yakınlık, telefon; önce/sonra ekran görüntüsü.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
