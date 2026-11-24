@@ -239,7 +239,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 156 masaüstü hızlı kutu: Ctrl+Space (ve Super+Shift+S yerine) → farenin olduğu yerde küçük yüzen yazı kutusu (Claude/ChatGPT masaüstü gibi), Enter → Nts'e not; Hyprland; PLAN 156 (9b61eee+2c6be50)
 - [x] 157a HATA "Tarihe git" düğmesi "En yeniye dön" şeridinin üstüne biniyor (design/feedback-34.png); PLAN 157 (8f5ddb1)
 - [~B] 157b + ve mikrofon düğmeleri yuvarlak (daire) olsun (design/feedback-36.png); PLAN 157
-- [~A] 157c Takvim: önceki yıllara hızlı gitmek için uzaklaş — ay → yıl → yıllar görünümü (design/feedback-35.png); PLAN 157
+- [x] 157c Takvim: önceki yıllara hızlı gitmek için uzaklaş — ay → yıl → yıllar görünümü (design/feedback-35.png); PLAN 157 (8009500)
 - [ ] 157d proje panosu "1 yıl" seçiliyken bile 4 kart (design/feedback-37.png): gerçek sebep ilgili kayıtların projeye bağlı olmaması → "N ilgili kayıt" öner + tek dokunuşla ekle; PLAN 157
 - [ ] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
