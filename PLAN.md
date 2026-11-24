@@ -908,6 +908,17 @@ Arayüz:
         line-clamp ya da ölçülmüş yükseklik; Board.est tahmini gerçekle ≤4 px (106a kuralı) — kart büyüyünce komşular itilmesin (tidy/FLIP).
         Bütün zengin tipleri tek tek tara (Playwright: her parçada scrollHeight > clientHeight olan ve yarım satır kesen öğe sayısı = 0), açık +
         koyu, %28–%200 yakınlık, telefon; önce/sonra ekran görüntüsü.
+- [ ] 155. **Kayıt penceresi sade** (sahip, 2026-11-24, design/feedback-32.png: "çok karışık, kalabalık, daha iyi bir şey yap pls"; link kaydı
+        "PoultryCare Google Play test linki"). Görüntüdeki kalabalık: üst satırda tür + 2 satıra kırılan tarih + "· WhatsApp" dağınık, 6 düğme yan
+        yana (Paylaş, kopyala, dışarı aç, sil kırmızı, yıldız, kapat), turuncu zeminli "Özet" kutusu bağırıyor, "Arşivde · WhatsApp: 20261120-WA0008…"
+        kutusu (dosya adı anlamsız), ayrı URL kutusu, "NOT" başlığı + boş büyük düzenleyici kutusu, etiket çipleri + "+ konu" + ayrı "Etiketle"
+        düğmesi = 7 ayrı kutu üst üste. 155-0: design/item.html'de 3 yön (bugünkü Nts kimliği, style.css değişkenleri; yeni kimlik YOK — 143-0
+        reddedildi), aynı 4 gerçekçi kayıtla (bu link, WhatsApp sohbeti, foto, uzun not) açık + koyu, telefonda alt sayfa: ör. A "Belge" (başlık,
+        altında tek gri satır: Link · 23 Tem 2025 · WhatsApp; özet düz metin, kutusuz; URL başlığın altında tıklanır alan adı; not alanı boşken tek
+        satır "Not ekle…"; etiketler satır içinde, "+"; düğmeler: yıldız + ⋯ menü (Paylaş/Kopyala/Aç/Panoya koy/Sil), kapat), B "Kart + kenar
+        çubuğu" (solda içerik, sağda ince bilgi sütunu), C "Önizleme önce" (link/görsel büyük üstte, bilgiler altta). Arşiv bilgisi kutu değil,
+        tek satır "WhatsApp'tan · Panoya koy" bağlantısı; sohbet dosya adı yerine sohbet adı/kişi. ✓/✗ + not + indir → item-choices.json; [?] yap,
+        sahip seçsin, sonra 155 seçilen yönü uygular (masaüstü + telefon, bütün kayıt türleri, phone-audit 0).
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
