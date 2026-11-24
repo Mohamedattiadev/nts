@@ -777,6 +777,15 @@ Arayüz:
         KALAN (147d): her pencere (showModal) arkadaki 10k satırlık liste yüzünden telefonda 300–1300 ms (Çöp, okuma, Ayarlar, kayıt) —
         açılınca arka plan inert/top-layer stil yeniden hesabı; Ara'da yazma + Enter telefonda ~5 sn toplam (147b ile ortak, FLIP getBoundingClientRect);
         pano seçici, Sor, Şifrelerim, senkron gelişi < 350 ms, sorun yok.
+- [x] 147d. (2026-11-24, A hattı) **Pencere açılışı neden yavaş: kanıtlandı.** Telefon 4x, 10k kayıt, PROF + TRACE ile: kayıt penceresi 3 aç/kapa
+        uzun görev toplamı 5356 ms / en uzun 2184 ms idi; profilin başı renderList + Flip.play (getBoundingClientRect) + renderChrome.
+        Kök: hiçbir şey değişmese de kapanışta commit() kaydediyordu (sonu boşluklu başlık trim'lenip kırpılmamışla karşılaştırılıyordu →
+        "değişti") → upsert → bütün liste + FLIP. A da aynı düzeltmeyi buldu ama B 147b'de (9a3ce0f) aynı anda push'ladı; onunki kaldı.
+        Düzeltmeden sonra 1530 / 348 ms, renderList/FLIP profilden çıktı. KALAN ve pencerenin KENDİ maliyeti: showModal/close tarayıcının
+        inert (top-layer) stil hesabı, açılışta ~60–90 ms, kapanışta ~70–80 ms (4x) — 10k liste değil, ekranda çizili ~800–2000 öğe
+        (content-visibility:auto ekran dışını zaten atlıyor). Denendi: 17 :has() kuralını kaldırmak yalnız ~%20; .app tamamen gizliyken taban
+        35/13 ms. Arka planı gizlemek (content-visibility:hidden) yarı saydam perdenin arkasını boşaltır → yapılmadı. Daha fazlası ancak
+        showModal yerine kendi pencere katmanı ile (büyük iş, gerekirse 147b2 ile birlikte bakılır). Kod değişikliği yok.
 - [x] 131-1. (2026-11-24, B hattı) **Klasör kartı: D Dosya, cam** (sahip D'yi seçti: "cam olsun, şeffaf, ama aynı renkler"). D artık
         varsayılan (Ayarlar → Klasör stili ilk seçenek "Dosya (cam)"; E/A/B/C seçilebilir, önceden seçen kalır). Ön kapak buzlu cam: klasörün
         kendi rengi yarı saydam + blur(7px) saturate, içindeki kâğıtlar bulanık görünür, üstte ince açık kenar, sakin gölge; arka kapak da hafif
