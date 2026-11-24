@@ -319,7 +319,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         gerçek native gerekirse aynı kodla Tauri (masaüstü) / Capacitor (telefon) sarmalayıcı.
         95a sesli not · 95b sabah özeti bildirimi · 95c okuma listesinde "3 gün sonra tekrar" · 95d resimde tarih → "göreve çevir?"
         · 95e Ctrl+K komut paleti · 95f salt okunur paylaşılan pano linki · 95g tarayıcı eklentisi (sağ tık → Nts'e gönder).
-- [ ] 96. **Telefonda metni seçince ⋮ menüsünde "Nts'e kaydet"** (sahip): PWA o menüye giremez (Android'de sadece ACTION_PROCESS_TEXT
+- [x] 96. (2026-11-24: TWA yerine bağımlılıksız ~25 KB yardımcı APK `android/` — simgesi yok, yalnız seçim menüsünde "Nts'e kaydet" (PROCESS_TEXT); metni `?do=new&text=` linkiyle açar, kurulu Nts PWA'sı yakalar, aynı veriye kaydeder → "Kaydedildi · Aç" (tekrar yüklemede çift kayıt yok, link metni link kaydı olur, 4 yapılandırmada test). Gradle/TWA bu makinenin yavaş ağıyla inmedi, gerek de yok: veriler PWA'da kalır, assetlinks gerekmez. Derleme `android/build.sh` (aapt2+d8+apksigner), anahtar repoda değil `~/.nts-android/`. Paylaş→Nts zaten share_target ile PWA'da. CİHAZ TESTİ sahipte.) **Telefonda metni seçince ⋮ menüsünde "Nts'e kaydet"** (sahip): PWA o menüye giremez (Android'de sadece ACTION_PROCESS_TEXT
         alan native uygulama). Çözüm: Bubblewrap ile TWA Android paketi (aynı site, tam ekran) + içinde PROCESS_TEXT alan küçük bir
         aktivite → seçili metni `https://mohamedattiadev.github.io/nts/?do=new&text=…` ile açar, uygulama kaydeder ve "Kaydedildi" der.
         `assetlinks.json` (`.well-known`, Pages'te), imzalı APK `docs/` değil Releases'e; sahibe kurulum: APK'yı telefona at, kur.

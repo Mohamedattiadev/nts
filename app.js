@@ -6465,7 +6465,9 @@ const Boot = {
   { // home-screen shortcuts (long-press the icon): new note, to-dos, vault
     const q = new URLSearchParams(location.search), v = q.get('view'), d = q.get('do');
     if (v === 'todo') setView('todo');
-    if (d === 'new') setTimeout(() => $('#input').focus(), 300);
+    const qt = (q.get('text') || '').trim().slice(0, 20000), qu = (q.get('url') || '').trim(); // 96: Android "Nts'e kaydet" (selected text) and links
+    if (d === 'new' && (qt || qu)) addFromInput({ text: qt, url: qu, source: 'share' }).then(r => { if (r && r !== 'dup' && r.length) { toast('Kaydedildi', 3000, 'check', { label: 'Aç', fn: () => openItem(r[0].id) }); } });
+    else if (d === 'new') setTimeout(() => $('#input').focus(), 300);
     if (d === 'vault') setTimeout(() => Vault.open(), 300);
     if (d === 'find') setTimeout(() => { setMode('find'); $('#input').focus(); }, 300); // 141: "Ara" home-screen shortcut
     if (v || d) history.replaceState(null, '', location.pathname);
