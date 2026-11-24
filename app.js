@@ -1146,7 +1146,7 @@ function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
     ${i.prio === 'high' ? `<span class="m-prio">${ic('flag', 'sm')}Yüksek</span>` : ''}
-    ${i.todo && due ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : d ? d.label : 'Görev'}</span>`; })() : ''}
+    ${i.todo && due ? (() => { const d = dueInfo(i.todo.due); return `<span class="m-todo ${i.todo.done ? 'done' : i.todo.doing ? 'doing' : d?.cls || ''}">${ic('todo', 'sm')}${i.todo.done ? 'Bitti' : i.todo.doing ? 'Yapılıyor' : d ? d.label : 'Görev'}</span>`; })() : ''}
     ${rel ? `<span class="rel">${ic('rel', 'sm')}${rel}</span>` : ''}
     ${(i.tags || []).slice(0, tags).map(tagChip).join('')}
     ${(i.tags || []).length > tags ? `<span class="tg more" title="${i.tags.length - tags} etiket daha">+${i.tags.length - tags}</span>` : ''}
@@ -2611,7 +2611,7 @@ function tagRowHtml(i) {
   const col = COLORS.find(([c]) => c === i.color), pr = PRIOS.find(([v]) => v && v === i.prio), d = i.todo?.due && dueInfo(i.todo.due);
   const chips = [col && `<span class="tchip"><span class="cdot sm c-${col[0]}"></span>${col[1]}</span>`,
     pr && `<span class="tchip">${ic('flag', 'sm')}${pr[1]} öncelik</span>`,
-    i.todo && `<span class="tchip${i.todo.done ? ' done' : ''}">${ic('todo', 'sm')}Görev${i.todo.done ? ' · bitti' : d ? ' · ' + esc(d.label) : ''}</span>`,
+    i.todo && `<span class="tchip${i.todo.done ? ' done' : ''}">${ic('todo', 'sm')}Görev${i.todo.done ? ' · bitti' : i.todo.doing ? ' · yapılıyor' : d ? ' · ' + esc(d.label) : ''}</span>`,
     ...(i.lists || []).filter(k => LISTS.some(l => l[0] === k)).map(k => `<span class="tchip">${ic(LISTS.find(l => l[0] === k)[1], 'sm')}${esc(listName(k))}</span>`)].filter(Boolean);
   const open = S.tagOpen;
   return `<div class="d-tagrow"><button class="lchip${open ? ' on' : ''}" data-act="tagfold" aria-expanded="${!!open}">${ic('layers', 'sm')}Etiketle${ic('chev', 'sm fold')}</button>${chips.join('')}</div>
@@ -3983,7 +3983,11 @@ function mergeItem(l, r) {
     for (const k of ['tags', 'boards', 'lists']) { const u = [...new Set([...(a[k] || []), ...(b[k] || [])])]; if (u.length) m[k] = u; }
     if (a.posBy || b.posBy) m.posBy = { ...(b.posBy || {}), ...(a.posBy || {}) };
     if (a.highlights || b.highlights) { const h = new Map(); [...(b.highlights || []), ...(a.highlights || [])].forEach(x => h.set(x.id, x)); m.highlights = [...h.values()]; }
-    if (a.todo && b.todo && (a.todo.done || b.todo.done)) m.todo = { ...b.todo, ...a.todo, done: true, doneAt: a.todo.doneAt || b.todo.doneAt };
+    if (a.todo && b.todo && (a.todo.done || b.todo.done)) { m.todo = { ...b.todo, ...a.todo, done: true, doneAt: a.todo.doneAt || b.todo.doneAt }; delete m.todo.doing; }
+    else if (a.todo && b.todo && (a.todo.doing || b.todo.doing)) { // 100: done > doing > open; an explicit un-mark only wins when it is newer
+      const [x, y] = (a.todo.doingAt || 0) >= (b.todo.doingAt || 0) ? [a.todo, b.todo] : [b.todo, a.todo];
+      m.todo = { ...m.todo, doing: x.doingAt && x.doingAt > (y.doingAt || 0) ? x.doing : true, doingAt: x.doingAt || y.doingAt }; if (!m.todo.doing) delete m.todo.doing;
+    }
     if (a.starred || b.starred) m.starred = a.starred ?? b.starred;
     if (a.lk || b.lk || a.links || b.links) { // 138: hand-made links combine; a later "Bağlantıyı kaldır" (-time in lk) beats an older add
       const lk = { ...(b.lk || {}) }; for (const [k, v] of Object.entries(a.lk || {})) if (!(k in lk) || Math.abs(v) >= Math.abs(lk[k])) lk[k] = v;
@@ -4466,6 +4470,7 @@ const Ctx = {
       else if (b.dataset.p !== undefined) await upsert(all.map(x => ({ ...x, prio: b.dataset.p || undefined })));
       else if (b.dataset.a === 'open') openItem(i.id);
       else if (b.dataset.a === 'star') await toggleStar(i.id);
+      else if (b.dataset.a === 'doing') await Todo.doing(i.id);
       else if (b.dataset.a === 'todo') await upsert([{ ...i, ...(i.todo ? { todo: null, noTodo: true } : { todo: { text: titleOf(i), done: false, user: true }, noTodo: false }) }]);
       else if (b.dataset.a === 'del') { if (many) { this.hide(); return Link.del(); } await removeItem(i); }
       else if (b.dataset.a === 'seltag' || b.dataset.a === 'selalign') { this.hide(); const t = Link.bar?.querySelector(`[data-la="${b.dataset.a === 'seltag' ? 'tag' : 'align'}"]`); if (t) b.dataset.a === 'seltag' ? Sel.showPop('tag', t) : Link.alignPop(t); return; }
@@ -4483,6 +4488,7 @@ const Ctx = {
       <div class="side-label">Öncelik</div><div class="seg sm prio">${PRIOS.map(([v, n]) => `<button class="${(i.prio || '') === v ? 'on' : ''}" data-p="${v}">${n}</button>`).join('')}</div>
       <hr><button class="side-row" data-a="open">${ic('ext', 'sm')}<span class="lbl">${S.view === 'board' ? 'Pencerede aç' : 'Aç'}</span></button>
       <button class="side-row" data-a="star">${ic('star', 'sm' + (i.starred ? ' fill star-on' : ''))}<span class="lbl">${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}</span></button>
+      ${i.todo && !i.todo.done ? `<button class="side-row" data-a="doing">${ic('clock', 'sm')}<span class="lbl">${i.todo.doing ? 'Yapılıyor işaretini kaldır' : 'Yapılıyor olarak işaretle'}</span></button>` : ''}
       <button class="side-row" data-a="todo">${ic('todo', 'sm')}<span class="lbl">${i.todo ? 'Görevden çıkar' : 'Görev yap'}</span></button>
       ${S.folder?.startsWith('ai:') && inFolder() && AIF.has(S.folder.slice(3), i.id) ? `<button class="side-row" data-a="fout">${ic('folder', 'sm')}<span class="lbl">Bu klasöre ait değil</span></button>` : ''}
       ${Link.menu(i)}<button class="side-row danger" data-a="del">${ic('trash', 'sm')}<span class="lbl">${S.view === 'board' && Link.sel.size > 1 && Link.sel.has(i.id) ? `Seçilenleri sil (${Link.sel.size})` : 'Sil'}</span></button>`;
@@ -4539,16 +4545,17 @@ const Todo = {
     return open.sort((a, b) => { const x = k(a), y = k(b); return x[0] - y[0] || (a.prio === 'high' ? 0 : 1) - (b.prio === 'high' ? 0 : 1) || x[1] - y[1] || x[2] - y[2]; });
   },
   group(i) {
+    if (i.todo.doing) return 'doing'; // 100: "Yapılıyor" sits on top, dates and groups below stay as they were
     const d = dueInfo(i.todo.due); if (!d) return 'none';
     if (d.cls === 'late') return 'late';
     const key = i.todo.due.slice(0, 10), t = now();
     if (key === dayKey(t)) return 'today'; if (key === dayKey(t + 864e5)) return 'tomorrow';
     return d.at - t < 7 * 864e5 ? 'week' : 'later';
   },
-  GROUPS: [['late', 'Gecikmiş'], ['today', 'Bugün'], ['tomorrow', 'Yarın'], ['week', 'Bu hafta'], ['later', 'Sonra'], ['none', 'Tarihsiz']],
+  GROUPS: [['doing', 'Yapılıyor'], ['late', 'Gecikmiş'], ['today', 'Bugün'], ['tomorrow', 'Yarın'], ['week', 'Bu hafta'], ['later', 'Sonra'], ['none', 'Tarihsiz']],
   row(i, n) {
     const t = i.todo, d = dueInfo(t.due), done = !!t.done, subs = t.subs || [], sd = subs.filter(x => x.done).length, open = this.exp === i.id;
-    return `<div class="todo-item${open ? ' open' : ''}" data-tid="${i.id}"><div class="todo-row${done ? ' done' : ''}${d ? ' ' + d.cls : ''}${this.fresh?.has(i.id) ? ' fresh' : ''}">
+    return `<div class="todo-item${open ? ' open' : ''}" data-tid="${i.id}"><div class="todo-row${done ? ' done' : ''}${t.doing && !done ? ' doing' : ''}${d ? ' ' + d.cls : ''}${this.fresh?.has(i.id) ? ' fresh' : ''}">
       <span class="t-num">${n}.</span>
       <button class="t-check" data-check aria-label="${done ? 'Geri al' : 'Bitti'}" title="${done ? 'Geri al' : 'Bitti'}">${ic('check', 'sm')}</button>
       <button class="t-text" data-texp aria-expanded="${open}">${i.prio === 'high' ? `<span class="t-flag" title="Yüksek öncelik">${ic('flag', 'sm')}</span>` : ''}${hl(t.text || titleOf(i))}
@@ -4560,6 +4567,7 @@ const Todo = {
   detail(i) {
     const t = i.todo, subs = t.subs || [];
     return `<div class="t-detail">
+      <div class="tp-row"><span class="tp-l">Durum</span><div class="seg sm">${[['', 'Yapılacak'], ['1', 'Yapılıyor']].map(([v, l]) => `<button class="${(t.doing ? '1' : '') === v ? 'on' : ''}" data-tdoing="${v}">${l}</button>`).join('')}</div></div>
       <div class="tp-row"><span class="tp-l">Tarih</span><input type="datetime-local" class="t-due-in" data-tdue value="${t.due ? (t.due.includes('T') ? t.due : t.due + 'T09:00') : ''}" aria-label="Tarih">
         ${t.due ? '<button class="link-btn" data-tnodue>Tarihi kaldır</button>' : `<span class="t-quick">${[['Bugün', 0], ['Yarın', 1], ['Haftaya', 7]].map(([l, n]) => `<button class="lchip" data-tq="${n}">${l}</button>`).join('')}</span>`}</div>
       <div class="tp-row"><span class="tp-l">Tekrar</span><div class="seg sm">${REPEATS.map(([v, l]) => `<button class="${(t.repeat || '') === v ? 'on' : ''}" data-trep="${v}">${l}</button>`).join('')}</div></div>
@@ -4599,7 +4607,7 @@ const Todo = {
   },
   async toggle(id) {
     const i = byId(id); if (!i?.todo) return;
-    const done = !i.todo.done, list = [{ ...i, todo: { ...i.todo, done, doneAt: done ? now() : undefined } }];
+    const done = !i.todo.done, list = [{ ...i, todo: { ...i.todo, done, doneAt: done ? now() : undefined, doing: undefined } }];
     if (done) haptic(12);
     if (done && i.todo.repeat && !i.todo.next) { // a repeating task: the next one appears right away
       const base = new Date(i.todo.due ? (i.todo.due.includes('T') ? i.todo.due : i.todo.due + 'T09:00') : now()), r = i.todo.repeat;
@@ -4612,6 +4620,10 @@ const Todo = {
     await upsert(list);
     if (done) haptic(12); // 141
     if (done) toast(i.todo.repeat ? 'Bitti · sıradaki eklendi' : 'Bitti', 4000, 'check', { label: 'Geri al', fn: () => this.undo(id) });
+  },
+  async doing(id, on) { // 100: a small "Yapılıyor" mark; doingAt lets a later un-mark on another device win the merge
+    const i = byId(id); if (!i?.todo || i.todo.done) return; on ??= !i.todo.doing; if (!!i.todo.doing === on) return;
+    await this.patch(id, c => { c.todo.doing = on || undefined; c.todo.doingAt = now(); }); haptic(8);
   },
   async undo(id) { const i = byId(id); if (!i) return; const nx = i.todo.next && byId(i.todo.next); await upsert([{ ...i, todo: { ...i.todo, done: false, doneAt: undefined, next: undefined } }, ...(nx ? [{ id: nx.id, deleted: true, ts: nx.ts, updatedAt: now() }] : [])]); },
   init() {
@@ -4627,6 +4639,7 @@ const Todo = {
       else if (g('data-topen')) openItem(id);
       else if (g('data-tq')) { const n = +g('data-tq').dataset.tq; await this.patch(id, c => { c.todo.due = dayKey(now() + n * 864e5); c.todo.user = true; }); }
       else if (g('data-tnodue')) await this.patch(id, c => { c.todo.due = undefined; c.todo.user = true; });
+      else if (g('data-tdoing')) await this.doing(id, !!g('data-tdoing').dataset.tdoing);
       else if (g('data-trep')) await this.patch(id, c => { c.todo.repeat = g('data-trep').dataset.trep || undefined; });
       else if (g('data-tprio')) { const i = byId(id); await upsert([{ ...i, prio: g('data-tprio').dataset.tprio || undefined }]); }
       else if (g('data-tsubrm')) { e.preventDefault(); const k = +g('data-tsubrm').dataset.tsubrm; await this.patch(id, c => { c.todo.subs = (c.todo.subs || []).filter((_, n) => n !== k); }); }

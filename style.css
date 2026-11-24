@@ -1056,6 +1056,14 @@ dialog.readpage::backdrop { background: var(--bg); }
 .t-gh { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; padding: 0 6px 6px; }
 .t-gh span { color: var(--muted); font-weight: 600; }
 .t-group.late .t-gh { color: var(--danger); } .t-group.today .t-gh { color: var(--accent); }
+/* 100: "Yapılıyor" — a thin accent mark on the row's edge, its own group on top; no columns */
+.t-group.doing .t-gh { color: var(--accent); }
+.t-group.doing .t-gh::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); animation: doingPulse 2.4s ease-in-out infinite; }
+@keyframes doingPulse { 50% { box-shadow: 0 0 0 5px transparent; } }
+@media (prefers-reduced-motion: reduce) { .t-group.doing .t-gh::before { animation: none; } }
+.todo-row.doing { box-shadow: inset 3px 0 0 var(--accent); }
+.todo-item:first-child .todo-row.doing { border-top-left-radius: inherit; }
+.m-todo.doing { color: var(--accent); }
 .t-flag { color: var(--danger); display: inline-grid; vertical-align: -2px; margin-right: 4px; }
 .t-sub { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 12px; color: var(--muted); vertical-align: 1px; }
 .t-detail { padding: 4px 14px 12px 52px; display: flex; flex-direction: column; gap: 6px; animation: fade .18s var(--ease); }
