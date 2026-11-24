@@ -112,7 +112,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 95e Ctrl+K komut paleti (f657ed1)
 - [x] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası) (f198621; phone-audit bitmedi, köprü restart gerek)
 - [x] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?" (7955949)
-- [~B] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
+- [x] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden) (5077000; CİHAZ TESTİ: yüklü uygulamada sabah bildirimi; köprü restart gerek; phone-audit yine 15 dk sınırında bitmedi)
 - [x] 144 imleçler daha canlı (sahip 2026-11-24: "Claude imleci güzel ama daha animasyonlu, daha hareketli olmalı; ona benzer bir tane de benim olsun"): PLAN 144 (19b19d5)
 - [x] 145 panodaki zengin kartlar panoda ÇALIŞSIN: tıkla → yerinde açılır/oynar (PDF sayfa çevir, ses/sesli not oynat, video, harita, onay listesi…) + kartta "büyüt" düğmesi → açılır pencerede (sağ tık menüsünde de "Pencerede aç"); PLAN 145 (c63aafa)
 - [x] 146 HATA (sahip, design/feedback-24.png): logo/pano seçici açılır listesi (116) sol çubuğun ÜSTÜNE biniyor + "Pano: Genel — değiştir" ipucu listenin "PANOLAR" başlığını kapatıyor; PLAN 146 (1fd8033)
