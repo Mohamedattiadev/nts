@@ -113,7 +113,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası) (f198621; phone-audit bitmedi, köprü restart gerek)
 - [x] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?" (7955949)
 - [~B] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
-- [ ] 144 imleçler daha canlı (sahip 2026-11-24: "Claude imleci güzel ama daha animasyonlu, daha hareketli olmalı; ona benzer bir tane de benim olsun"): PLAN 144
+- [~A] 144 imleçler daha canlı (sahip 2026-11-24: "Claude imleci güzel ama daha animasyonlu, daha hareketli olmalı; ona benzer bir tane de benim olsun"): PLAN 144
 - [ ] 145 panodaki zengin kartlar panoda ÇALIŞSIN: tıkla → yerinde açılır/oynar (PDF sayfa çevir, ses/sesli not oynat, video, harita, onay listesi…) + kartta "büyüt" düğmesi → açılır pencerede (sağ tık menüsünde de "Pencerede aç"); PLAN 145
 - [ ] 123-1 kasa çarkı tarih seçici: sahip B Üç kadran + süzgeçte kullanılsın; "o güzel his yok" → bugünkü Nts arayüzüne uygun, çok yumuşak, ← → (ve ↑ ↓) ile hareket; PLAN 123-1
 - [ ] 119-0b design/zoomout.html YENİ TUR: sahip A Kalem seçti ama "çok kötü, daha iyi daha görünümlü olsun" → A ailesinden 3 çok daha güzel varyant (bugünkü Nts görünümü, Locus kalitesi); ok nedenleri sahip "en uygun neyse" → sen seç, gerekçesiyle göster; [?] yap, sahip seçsin; PLAN 119-0b
