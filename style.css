@@ -1998,9 +1998,32 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 
 /* 120: the AI's cursor (Figma-like): its logo colour, a name pill beside it; glides card to card, touched cards glow once */
 #aicur { position: absolute; left: 0; top: 0; z-index: 30; pointer-events: none; opacity: 0; display: flex; align-items: flex-start; gap: 2px;
-  transition: transform 400ms cubic-bezier(.3, .7, .2, 1), opacity 220ms ease; will-change: transform; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .25)); }
+  transition: opacity 260ms ease; will-change: transform; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .25)); }
 #aicur.on { opacity: 1; }
-#aicur svg { flex: none; }
+#aicur svg { flex: none; display: block; }
+/* 144: JS moves #aicur on a spring; the arrow leans (--tilt) and dips on a tap, the pill lags (--lx/--ly), idle = a slow float */
+#aicur .ac-p { position: relative; transform: rotate(var(--tilt, 0deg)); transform-origin: 3px 2px; }
+#aicur.idle .ac-p svg { animation: acFloat 2.6s ease-in-out infinite; }
+#aicur.tap .ac-p svg { animation: acTap 260ms cubic-bezier(.3, .7, .3, 1.4); }
+#aicur.tap .ac-p::after { content: ""; position: absolute; left: 3px; top: 2px; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
+  border: 2px solid var(--ai); opacity: 0; animation: acRing 520ms ease-out; }
+@keyframes acFloat { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(1px, -2.5px) rotate(-3deg); } }
+@keyframes acTap { 40% { transform: scale(.8) translate(1px, 1px); } }
+@keyframes acRing { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1.4); opacity: 0; } }
+#aicur:not(.on) { transform-origin: 0 0; }
+#aicur .ai-tag { translate: var(--lx, 0) var(--ly, 0); transition: max-width .3s; }
+#aicur .ac-dots { display: inline-flex; gap: 2.5px; align-self: center; }
+#aicur .ac-dots b { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .5; animation: acDot 1s ease-in-out infinite; }
+#aicur .ac-dots b:nth-child(2) { animation-delay: .15s; } #aicur .ac-dots b:nth-child(3) { animation-delay: .3s; }
+@keyframes acDot { 30% { opacity: 1; transform: translateY(-2px); } }
+/* 144b: the user's own name pill (the OS draws the accent arrow via --my-cur) */
+#mycur { position: absolute; left: 0; top: 0; z-index: 31; pointer-events: none; opacity: 0; transition: opacity 160ms ease; will-change: transform;
+  display: flex; align-items: center; gap: 5px; padding: 3px 9px 4px; border-radius: 4px 11px 11px 11px; background: var(--accent); color: var(--accent-text, #fff);
+  font: 600 12px/1.25 system-ui, sans-serif; white-space: nowrap; box-shadow: 0 2px 6px rgb(0 0 0 / .22); }
+#mycur.on { opacity: 1; }
+#mycur .mc-s { display: contents; }
+#mycur .mc-s i { font-style: normal; font-weight: 500; opacity: .85; font-size: 11px; order: 2; }
+#mycur .mc-s > * { order: 1; } #mycur .mc-s .i { width: 12px; height: 12px; }
 #aicur .ai-tag { margin-top: 15px; padding: 3px 9px 4px; border-radius: 4px 11px 11px 11px; background: var(--ai); color: #fff; font: 600 12px/1.25 system-ui, sans-serif;
   white-space: nowrap; display: flex; gap: 5px; align-items: baseline; }
 #aicur .ai-tag i { font-style: normal; font-weight: 500; opacity: .85; font-size: 11px; }
@@ -2009,7 +2032,7 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 @keyframes aiTouch { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ai) 70%, transparent); border-color: var(--ai); }
   100% { box-shadow: 0 0 0 14px transparent; } }
 .board:not(.panning):not(.space):not([data-tool="pen"]):not([data-tool="arrow"]):not([data-tool="rect"]):not([data-tool="note"]):not([data-tool="text"]):not([data-tool="eraser"]) { cursor: var(--my-cur, default); }
-@media (prefers-reduced-motion: reduce) { #aicur { display: none; } .bcard.ai-touch { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #aicur { display: none; } .bcard.ai-touch { animation: none; } #mycur { transition: none; } }
 
 /* ---------- 121: glass look (Settings → Görünüm → Düz / Cam). Off on slow phones (Glass.slow).
    AA: the blurred backdrop is at most 24% (light) / 20% (dark) of what is behind, and text-2 is one step stronger

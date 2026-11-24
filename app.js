@@ -4992,6 +4992,11 @@ const Board = {
 // name glides from card to card on the board and touches each one; the user's own pointer can wear the same design (Settings → Görünüm) ----------
 const AICOL = { claude: '#d97757', gemini: '#4285f4', codex: '#10a37f' };
 const curSvg = (c, w = 22) => `<svg width="${w}" height="${w}" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 2.2 19 9.6l-6.9 1.9-3.2 6.6Z" fill="${c}" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+// 144: one small spring (semi-implicit Euler, per frame): k stiffness, d damping; returns true while still moving
+const spring = (s, tx, ty, k, d, dt) => {
+  s.vx += ((tx - s.x) * k - s.vx * d) * dt; s.vy += ((ty - s.y) * k - s.vy * d) * dt; s.x += s.vx * dt; s.y += s.vy * dt;
+  return Math.abs(tx - s.x) > .3 || Math.abs(ty - s.y) > .3 || Math.abs(s.vx) > 4 || Math.abs(s.vy) > 4;
+};
 const AICur = {
   q: [], run: false,
   tour(ids, what = 'düzenledi') { // ids: the cards it just changed (only the ones on screen are visited, up to 8)
@@ -5006,28 +5011,91 @@ const AICur = {
     }).slice(0, 8);
     if (!cards.length) return this.next();
     let el = $('#aicur');
-    if (!el) { el = document.createElement('div'); el.id = 'aicur'; el.setAttribute('aria-hidden', 'true'); b.append(el); el.style.transform = `translate(${br.width - 80}px, ${br.height - 90}px)`; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'aicur'; el.setAttribute('aria-hidden', 'true'); b.append(el);
+      this.p = { x: br.width - 80, y: br.height - 90, vx: 0, vy: 0 }; this.t = { ...this.p }; this.put(el, 0);
+    }
     el.style.setProperty('--ai', AICOL[k]); el.className = 'k-' + k;
-    el.innerHTML = `${curSvg(AICOL[k])}<span class="ai-tag">${esc(aiName())}<i>${esc(what)}</i></span>`;
-    clearTimeout(this._h); el.offsetWidth; el.classList.add('on');
+    el.innerHTML = `<span class="ac-p">${curSvg(AICOL[k])}</span><span class="ai-tag">${esc(aiName())}<i class="ac-dots"><b></b><b></b><b></b></i></span>`;
+    clearTimeout(this._h); el.offsetWidth; el.classList.add('on', 'idle');
+    let first = true;
     for (const c of cards) {
       if (!c.isConnected) continue; const r = c.getBoundingClientRect();
       const x = Math.max(Math.max(r.left, br.left) - br.left + Math.min(r.width * .3, 60), 8), y = Math.max(Math.max(r.top, br.top) - br.top + Math.min(r.height * .45, 40), 8); // a half-hidden card: touch its visible part
-      el.style.transform = `translate(${Math.round(Math.min(x, br.width - 130))}px, ${Math.round(Math.min(y, br.height - 120))}px)`;
-      await new Promise(f => setTimeout(f, 420));
-      if (!c.isConnected) continue; c.style.setProperty('--ai', AICOL[k]); c.classList.remove('ai-touch'); c.offsetWidth; c.classList.add('ai-touch');
+      await this.fly(el, Math.round(Math.min(x, br.width - 130)), Math.round(Math.min(y, br.height - 120)));
+      if (!c.isConnected) continue;
+      el.classList.remove('tap'); el.offsetWidth; el.classList.add('tap'); // the "click": the arrow dips, a ring opens at its tip
+      c.style.setProperty('--ai', AICOL[k]); c.classList.remove('ai-touch'); c.offsetWidth; c.classList.add('ai-touch');
       setTimeout(() => c.classList.remove('ai-touch'), 900);
-      await new Promise(f => setTimeout(f, 260));
+      if (first) { first = false; this.type(el, what); }
+      await new Promise(f => setTimeout(f, 300));
     }
     this.next();
   },
-  hide() { this._h = setTimeout(() => { const el = $('#aicur'); if (!el) return; el.classList.remove('on'); setTimeout(() => { if (!this.run) el.remove(); }, 260); }, 1100); },
-  // the user's own pointer on the board in the same design, in the accent colour (a CSS cursor; touch screens have none)
+  // the pill types the verb letter by letter (after "…" while it travels to the first card)
+  type(el, what) {
+    const i = el.querySelector('.ai-tag i'); if (!i) return; i.className = ''; i.textContent = '';
+    let n = 0; const step = () => { if (!i.isConnected || n > what.length) return; i.textContent = what.slice(0, n++); setTimeout(step, 34); }; step();
+  },
+  put(el, tilt) {
+    const p = this.p, t = this.tg || p;
+    el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+    el.style.setProperty('--tilt', tilt.toFixed(1) + 'deg');
+    const cl = v => Math.max(-26, Math.min(26, v)).toFixed(1) + 'px'; el.style.setProperty('--lx', cl(t.x - p.x)); el.style.setProperty('--ly', cl(t.y - p.y));
+  },
+  // a springy, slightly curved flight: the goal slides along a bent path for ~340 ms and the cursor chases it (speeds up, eases in, small overshoot);
+  // the arrow leans into the motion and the name pill follows on a looser spring, like it hangs on a string
+  fly(el, tx, ty) {
+    return new Promise(done => {
+      const p = this.p, sx = p.x, sy = p.y, dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
+      const bend = Math.min(len * .18, 70) * (dx > 0 ? -1 : 1), cx = sx + dx / 2 - dy / len * bend, cy = sy + dy / 2 + dx / len * bend;
+      this.tg = this.tg || { ...p, vx: 0, vy: 0 };
+      const t0 = performance.now(), T = Math.min(420, 220 + len * .35); let last = t0;
+      el.classList.remove('idle');
+      const tick = now => {
+        const dt = Math.min(.034, (now - last) / 1000); last = now;
+        const u = Math.min(1, (now - t0) / T), e = u * u * (3 - 2 * u), a = 1 - e; // smoothstep along the quadratic curve
+        const gx = a * a * sx + 2 * a * e * cx + e * e * tx, gy = a * a * sy + 2 * a * e * cy + e * e * ty;
+        const moving = spring(p, gx, gy, 210, 19, dt);
+        spring(this.tg, p.x, p.y, 170, 18, dt);
+        this.put(el, Math.max(-12, Math.min(12, p.vx * .011 + p.vy * .004)));
+        if (u < 1 || moving || now - t0 < T + 120) { if (now - t0 < 1600) return requestAnimationFrame(tick); }
+        p.x = tx; p.y = ty; p.vx = p.vy = 0; this.tg = { ...p }; this.put(el, 0); el.classList.add('idle'); done();
+      };
+      requestAnimationFrame(tick);
+    });
+  },
+  hide() { this._h = setTimeout(() => { const el = $('#aicur'); if (!el) return; el.classList.remove('on'); setTimeout(() => { if (!this.run) el.remove(); }, 320); }, 1100); },
+  // 144b: the user's own cursor in the same family: the OS still draws the arrow (a CSS cursor, so it never lags), a name pill in the accent colour
+  // follows it on a spring and shows what the hand is doing (taşıyor / çiziyor); buttons and text fields get the normal cursor and no pill; desktop only
   mine() {
-    const on = !!S.settings?.myCursor, b = $('#board'); if (!b) return;
-    if (!on) return b.style.removeProperty('--my-cur');
-    const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c2410c';
-    b.style.setProperty('--my-cur', `url("data:image/svg+xml,${encodeURIComponent(curSvg(c).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}") 3 2, default`);
+    const on = !!S.settings?.myCursor && matchMedia('(hover: hover) and (pointer: fine)').matches, b = $('#board'); if (!b) return;
+    const ac = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c2410c';
+    if (!on) { b.style.removeProperty('--my-cur'); $('#mycur')?.remove(); return; }
+    b.style.setProperty('--my-cur', `url("data:image/svg+xml,${encodeURIComponent(curSvg(ac).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}") 3 2, default`);
+    let el = $('#mycur');
+    if (!el) { el = document.createElement('div'); el.id = 'mycur'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = '<span class="mc-s"></span><b></b>'; b.append(el); }
+    el.querySelector('b').textContent = Cloud.name() || 'Sen';
+    if (this._mine) return; this._mine = true;
+    const s = { x: 0, y: 0, vx: 0, vy: 0 }, t = { x: 0, y: 0 }; let raf = 0, shown = false, state = '';
+    const loop = now => {
+      raf = 0; const dt = Math.min(.034, (now - (loop.l || now - 16)) / 1000); loop.l = now;
+      const m = reduced() ? (s.x = t.x, s.y = t.y, false) : spring(s, t.x, t.y, 520, 30, dt);
+      const e = $('#mycur'); if (e) e.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`;
+      if (m) raf = requestAnimationFrame(loop); else loop.l = 0;
+    };
+    const HOT = 'button, a, input, textarea, select, [contenteditable="true"], .seg, .tool, #pal, .menu, .ctx, [role="menu"], dialog';
+    const move = ev => {
+      const e = $('#mycur'); if (!e || ev.pointerType !== 'mouse') return;
+      const plain = !ev.target.closest(HOT) && !b.classList.contains('panning') && !b.classList.contains('space');
+      if (plain !== shown) { shown = plain; e.classList.toggle('on', plain); if (plain) { s.x = ev.clientX + 18; s.y = ev.clientY + 16; s.vx = s.vy = 0; } }
+      const drag = b.querySelector('#plane > .bcard.dragging'), draw = ev.buttons && /^(pen|arrow|rect)$/.test(S.tool);
+      const st = drag ? 'taşıyor' : draw ? 'çiziyor' : '';
+      if (st !== state) { state = st; const x = e.querySelector('.mc-s'); x.innerHTML = st ? (st === 'çiziyor' ? ic('pen', 'sm') : '') + `<i>${st}</i>` : ''; e.classList.toggle('act', !!st); }
+      t.x = ev.clientX + 18; t.y = ev.clientY + 16; if (!raf) raf = requestAnimationFrame(loop);
+    };
+    b.addEventListener('pointermove', move, { passive: true });
+    b.addEventListener('pointerleave', () => { shown = false; $('#mycur')?.classList.remove('on'); });
   },
 };
 
@@ -5601,8 +5669,9 @@ const Cloud = {
   s: null,
   on() { return !!this.s; },
   email() { return this.s?.user?.email || ''; },
+  name() { return (this.s?.user?.name || '').split(/\s+/)[0]; }, // 144b: the Google first name for the user's cursor pill
   async load() { this.s = (await DB.get('kv', 'sb-session')) || null; },
-  async keep(s) { this.s = s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at || Math.floor(now() / 1000) + (s.expires_in || 3600), user: { id: s.user?.id, email: s.user?.email } } : null; this.s ? await DB.put('kv', this.s, 'sb-session') : await DB.del('kv', 'sb-session'); },
+  async keep(s) { this.s = s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at || Math.floor(now() / 1000) + (s.expires_in || 3600), user: { id: s.user?.id, email: s.user?.email, name: s.user?.user_metadata?.full_name || s.user?.user_metadata?.name || this.s?.user?.name || '' } } : null; this.s ? await DB.put('kv', this.s, 'sb-session') : await DB.del('kv', 'sb-session'); },
   async auth(path, body) {
     const r = await fetch(SB.url + '/auth/v1/' + path, { method: 'POST', headers: { apikey: SB.key, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
     const j = await r.json().catch(() => ({}));
