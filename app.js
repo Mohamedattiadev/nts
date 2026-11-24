@@ -4938,7 +4938,7 @@ const Board = {
     if (placed.length) { let mx = -Infinity, my = Infinity; for (const i of placed) { const p = posOf(i); mx = Math.max(mx, p.x + this.COLW); my = Math.min(my, p.y); } x0 = mx + this.GAP * 1.5; y0 = my; }
     this.M = new Map(); this.heads = []; this.mounted = new Map(); this.mountedHeads = new Map(); this.mountedMonths = new Map(); this.y0 = y0;
     const rb = $('#rangeBtn'); if (rb) { rb.innerHTML = `${ic('clock', 'sm')}<span>${rangeLabel()}</span>`; rb.hidden = !onMain(); }
-    const bn = $('#boardName'), bnm = onMain() ? 'Genel' : S.board; if (bn) { bn.textContent = bnm; const bp = $('#boardBtn'); bp.title = bp.ariaLabel = `Pano: ${bnm} — değiştir`; bp.classList.toggle('sub', !onMain()); } // 116: the logo is the board picker
+    const bn = $('#boardName'), bnm = onMain() ? 'Genel' : S.board; if (bn) { bn.textContent = bnm; const bp = $('#boardBtn'); bp.title = bp.ariaLabel = `Pano: ${bnm} — değiştir`; bp.classList.toggle('bp-other', !onMain()); } // 116: the logo is the board picker (151: not 'sub' — that is the 2-line clamped subtitle class and stacked logo/name/⌄)
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : i.w || 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }

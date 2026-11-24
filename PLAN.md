@@ -800,7 +800,7 @@ Arayüz:
         süzgeç varsa üstte "Süzgeç: X ×" görünsün; (c) proje adı büyük/küçük harf ya da boşluk farkı ("Finential" vs "finential") → eşleştirmeyi
         katla; (d) kayıtlar archive/parent olduğu için düşüyor; (e) pano listesinde var ama 0 kayıtlı pano. Sahte veriyle her adayı dene, gerçek
         sebebi PLAN'a yaz. Ayrıca: bir pano/süzgeç boşsa boş ekran yerine "Bu panoda kart yok · N kayıt süzgeçte gizli · Süzgeci kaldır" + "Genel'e dön".
-- [ ] 151. **Logo / pano seçici kutusu düzgün** (sahip, 2026-11-24, design/feedback-27.png: "fixle, güzel görünmüyor"; sol üstte kutu içinde simge
+- [x] 151. (2026-11-24, A, sw v105: neden app.js'in pano Genel değilken düğmeye verdiği 'sub' sınıfıydı — o genel 2 satır alt yazı sınıfı (display:-webkit-box) logo/ad/⌄'yi alt alta diziyordu; sınıf 'bp-other' oldu. Masaüstü: tek satır 44 px, logo sol çubuğun orta çizgisinde, ad en çok 16ch sonra …, tam ad ipucunda; telefonda 44 px kare kalır (ad listede)) **Logo / pano seçici kutusu düzgün** (sahip, 2026-11-24, design/feedback-27.png: "fixle, güzel görünmüyor"; sol üstte kutu içinde simge
         üstte, "Finential" altta, ⌄ en altta, ad kesik). 116'daki niyet: tek satır [logo] [pano adı] [⌄], yükseklik sol çubuk düğmeleriyle aynı,
         uzun ad en çok ~16 karakter sonra … (tam ad ipucunda), kutu sol çubukla aynı genişlik ritminde/hizada, 146 ile birlikte (liste çubuğun
         sağından açılır). Telefon önce, açık + koyu, ekran görüntüsü.
