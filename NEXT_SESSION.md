@@ -244,7 +244,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 157d proje panosu "1 yıl" seçiliyken bile 4 kart (design/feedback-37.png): gerçek sebep ilgili kayıtların projeye bağlı olmaması → "N ilgili kayıt" öner + tek dokunuşla ekle; PLAN 157 (df90a34)
 - [x] 158a HATA galeri: önizleme kutusu hâlâ zaman çizgisinin üstünde (2026 balonu arkada kalıyor) + "Ekim 2024 ve öncesi" şeridinin arkasında yarım düğmeler (design/feedback-39.png); PLAN 158 (bd39375)
 - [x] 158b Takvim + Liste BİRLEŞSİN (sahip): ayrı Takvim sekmesi kalkar, Liste'nin üstünde katlanır ay takvimi; güne/aya dokununca liste YERİNDE o tarihe kayar (sayfa değişmez) + takvim UI'ı güzelleşir; PLAN 158 (ef1aa5d, sw v132)
-- [~A] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158
+- [x] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158 (35b17a8)
 - [~B] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [x] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme; PLAN 107l (3419c03)
 - [x] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme (ec4072d)
