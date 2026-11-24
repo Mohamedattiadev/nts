@@ -224,7 +224,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 149 zaman çizgisi (sağdaki yıl şeridi, design/feedback-26.png): daha yumuşak + ay çentikleri ("-") ve ay adları + önizleme kutusu (.peek) zaman çizgisinin üstüne binmesin (design/feedback-29.png); PLAN 149 (32285a2; sw v109)
 - [ ] 99b Takvim görünümü
 - [x] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100) (4339f14; sw v110)
-- [~B] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)
+- [x] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce) (48fa45e; sw v111)
 - [ ] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
 - [ ] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
 - [ ] 107b Android ana ekran widget'ı (96'dan sonra)
