@@ -794,7 +794,7 @@ Arayüz:
         başlık; kamera adı ("IMG-2025…") yerine "Resim · tarih"; not kartı ilk satır + altındaki gerçek yazı (gri çizgiler kaldırıldı);
         klasör adı 2 satır; sayı satırı sade "122 kayıt" (tür dağılımı ipucunda). Telefonda "Anlamca grupla" yalnız simge, başlık tek satır.
         Ekran görüntüleri (masaüstü 1366 + telefon 390 × açık/koyu, cam + düz) scratchpad t131.mjs; konsol hatası yok.
-- [ ] 149. **Zaman çizgisi daha yumuşak + aylar** (sahip, 2026-11-24, design/feedback-26.png: sağdaki dikey yıl şeridi 2023–2026 ve turuncu nokta:
+- [x] 149. **Zaman çizgisi daha yumuşak + aylar** (sahip, 2026-11-24, design/feedback-26.png: sağdaki dikey yıl şeridi 2023–2026 ve turuncu nokta:
         "bu line da daha smooth; bir de '-' olsun, ayları gösteren"). Her ay için ince yatay çentik (yıl çentiği daha uzun/kalın), noktaya yakın
         ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin
         (yoğunluk). Sürükleme/tekerlek/dokunmada nokta yaylı ve akıcı kayar (rAF, transform), sayfa da yumuşak kayar, aya oturur (snap) + hafif
@@ -802,6 +802,14 @@ Arayüz:
         EK (sahip, 2026-11-24, design/feedback-29.png: "birbirlerinin üzerinde olmasın o kart ve line"): galeri/listedeki sağ önizleme kutusu
         ("Bir kartın üzerine gel, burada büyük görünür") zaman çizgisinin yıl yazılarını (2026, 2025) kapatıyor. Önizleme zaman çizgisinin SOLUNDA
         bitsin (çizgi + yazıları için yer ayır), hiçbir genişlikte çakışma olmasın; 1366×768, 1920, dar pencere, telefon; çakışma ölçümü 0.
+        YAPILDI (2026-11-24, B hattı): Scrub artık boş aylar dahil HER ay için çentik (kayıt yoğunluğuna göre 3 kademe, yıl çentiği uzun);
+        çizgi iki uçta solarak biter. Ay adları noktanın çevresinde (±3, uzaktakiler soluk; dar çizgide çakışmasın diye her 2.–3. ay) ve
+        fareyle gezerken; sürükleme/gezinmede "May 2025" balonu. Nokta `translate` ile yaylı kayar (0,42 s), sürüklerken parmağı izler (1,3×),
+        bırakınca aya oturur; her yeni ayda hafif titreşim. Klavye ↑↓ ay, PgUp/PgDn yıl, Home/End. reduced-motion'da geçiş yok.
+        Önizleme: body.scrub-on → yapışık galeri önizlemesi right:64px, galeri/liste önizlemesi çizgi + yazılarının solunda biter.
+        Ölçüm (seedyears, 1366/1920/1100/1000 + telefon, açık/koyu): önizleme/kart ↔ çizgi çakışması 0, yazı↔yazı 0, konsol hatası 0.
+        Ders: `scale` özelliği transform'daki translateY'yi de büyütür (nokta 108 px kaydı) → konum `translate` özelliğinde. "Sayfa da yumuşak
+        kayar" yapılmadı: ay seçimi listeyi o aydan yeniden çiziyor (showFrom), kaydırma animasyonu yok.
 - [x] 150. (2026-11-24, A hattı. SEBEP KANITLANDI: veri sağlamdı — köprü snapshot'ında 5 canlı kayıt `project:'finential'`, arşivden; ad farkı
         değil. Hata pano çiziminde: Board._key panonun KİMLİĞİNİ (hangi pano / aralık) tutmuyordu. Pano değişince (Board.go → S.cam=null) önceki
         çizimin bekleyen rAF "sığdır"ı eski panonun kartlarına (Genel'in en yeni ucu, ~%35–54) göre kamera kurdu; yeni pano "kamera var + anahtar

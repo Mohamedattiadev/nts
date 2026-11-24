@@ -3931,9 +3931,11 @@ const Peek = {
     const el = this.el, rail = 76;
     if (S.view === 'list') {
       // list + card move together to the middle of the free area: the list slides left, the card sits right next to it
-      const l = $('#list'), lr = l.getBoundingClientRect(), base = lr.left - (this.dx || 0), w = Math.min(360, innerWidth - rail - lr.width - 56);
+      // 149: the free area ends left of the time line and its month/year labels
+      const R = document.body.classList.contains('scrub-on') ? 64 : 0, W = innerWidth - R;
+      const l = $('#list'), lr = l.getBoundingClientRect(), base = lr.left - (this.dx || 0), w = Math.min(360, W - rail - lr.width - 56);
       if (w < 260) { this.hide(); return; }
-      const total = lr.width + 16 + w, want = rail + (innerWidth - rail - total) / 2;
+      const total = lr.width + 16 + w, want = rail + (W - rail - total) / 2;
       this.dx = Math.min(0, Math.round(want - base)); l.style.transform = this.dx ? `translateX(${this.dx}px)` : '';
       el.style.width = w + 'px'; el.style.left = (base + this.dx + lr.width + 16) + 'px';
     } else {
@@ -4116,40 +4118,69 @@ const Heat = {
   },
 };
 // 60: thin bar on the right edge of the list / gallery: drag from today down to the oldest month
+// 149: every month has a tick (empty months too, so the line reads like a calendar); months with more items get a stronger tick, the year a
+// long one. The dot glides (transform, springy) and snaps to a month; month names show next to the dot and wherever the pointer is, the far
+// ones fade. Dragging follows the finger with a "Mar 2025" bubble and a light tick on every new month. ↑↓ month, PgUp/PgDn year, Home/End.
 const Scrub = {
-  el: null, months: [],
+  el: null, months: [], H: 0, lit: [],
   init() {
     const el = this.el = document.createElement('div'); el.className = 'scrub'; el.hidden = true; el.setAttribute('role', 'slider'); el.setAttribute('aria-label', 'Zamanda git'); el.tabIndex = 0; document.body.appendChild(el);
-    let drag = false;
-    const at = e => { const r = el.getBoundingClientRect(), f = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)); return Math.min(this.months.length - 1, Math.floor(f * this.months.length)); };
-    const show = k => { const m = this.months[k]; if (!m) return; const [y, mo] = m.split('-').map(Number); const b = el.querySelector('.sc-bub'); b.textContent = `${MS_TR[mo - 1]} ${y}`; b.style.top = ((k + .5) / this.months.length * 100) + '%'; el.classList.add('drag'); };
+    let drag = false, last = -1;
+    const fy = e => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(r.height, e.clientY - r.top)); };
+    const at = y => Math.min(this.months.length - 1, Math.max(0, Math.floor(y / (this.H || 1) * this.months.length)));
+    const show = (e, follow) => { const y = fy(e), k = at(y); if (!this.months[k]) return k;
+      const [yr, mo] = this.months[k].split('-').map(Number), b = el.querySelector('.sc-bub'); b.textContent = `${MS_TR[mo - 1]} ${yr}`;
+      b.style.translate = `0 ${(follow ? y : this.y(k)).toFixed(1)}px`; el.classList.add('drag'); this.focus(k);
+      if (follow) { el.querySelector('.sc-now').style.translate = `0 ${y.toFixed(1)}px`; if (k !== last && last >= 0) haptic(4); }
+      last = k; return k; };
     const go = k => { const m = this.months[k]; if (!m) return; const [y, mo] = m.split('-').map(Number); showFrom(k === 0 ? null : new Date(y, mo, 1).getTime() - 1); };
-    el.addEventListener('pointerdown', e => { drag = true; el.setPointerCapture(e.pointerId); show(at(e)); e.preventDefault(); });
-    el.addEventListener('pointermove', e => { if (drag) show(at(e)); else if (e.pointerType === 'mouse') { show(at(e)); } });
-    el.addEventListener('pointerleave', () => { if (!drag) el.classList.remove('drag'); });
-    el.addEventListener('pointerup', e => { if (!drag) return; drag = false; el.classList.remove('drag'); go(at(e)); });
-    el.addEventListener('pointercancel', () => { drag = false; el.classList.remove('drag'); });
+    el.addEventListener('pointerdown', e => { drag = true; last = -1; el.setPointerCapture(e.pointerId); el.classList.add('held'); show(e, true); e.preventDefault(); });
+    el.addEventListener('pointermove', e => { if (drag) show(e, true); else if (e.pointerType === 'mouse') show(e, false); });
+    const rest = () => { el.classList.remove('drag', 'held'); this.focus(this.cur()); this.place(); };
+    el.addEventListener('pointerleave', () => { if (!drag) rest(); });
+    el.addEventListener('pointerup', e => { if (!drag) return; drag = false; const k = at(fy(e)); el.classList.remove('held'); this.place(k); el.classList.remove('drag'); go(k); });
+    el.addEventListener('pointercancel', () => { drag = false; rest(); });
     // phones: only shows while scrolling (a thumb near the edge must still scroll the list)
     const touch = matchMedia('(hover: none), (pointer: coarse)').matches; if (touch) el.classList.add('idle');
     addEventListener('scroll', () => { if (!touch || el.hidden) return; el.classList.remove('idle'); clearTimeout(this._it); this._it = setTimeout(() => el.classList.add('idle'), 1800); }, { passive: true });
     el.addEventListener('pointerup', () => { if (touch) { clearTimeout(this._it); this._it = setTimeout(() => el.classList.add('idle'), 1800); } });
-    el.addEventListener('keydown', e => { const cur = this.cur(); if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); go(Math.max(0, Math.min(this.months.length - 1, cur + (e.key === 'ArrowDown' ? 1 : -1)))); } });
+    el.addEventListener('keydown', e => {
+      const n = this.months.length, cur = this.cur(), d = { ArrowDown: 1, ArrowUp: -1, PageDown: 12, PageUp: -12, Home: -n, End: n }[e.key];
+      if (d == null) return; e.preventDefault(); const k = Math.max(0, Math.min(n - 1, cur + d)); if (k !== cur) { this.place(k); go(k); }
+    });
+    new ResizeObserver(() => { const h = el.clientHeight; if (h && h !== this.H) { this.H = h; this.place(); } }).observe(el);
+  },
+  y(k) { return (k + .5) / this.months.length * this.H; },
+  place(k = this.cur()) { const d = this.el?.querySelector('.sc-now'); if (d && this.H) d.style.translate = `0 ${this.y(k).toFixed(1)}px`; },
+  // month names near k: every `step`-th month so they never touch, fading with distance; year slots keep their year label
+  focus(k) {
+    const ls = this.el.querySelectorAll('.sc-m'), n = this.months.length, step = Math.max(1, Math.ceil(15 / ((this.H || 400) / n)));
+    for (const x of this.lit) { x.style.opacity = ''; } this.lit = [];
+    const k0 = k - k % step;
+    for (let j = -3; j <= 3; j++) { const m = k0 + j * step, x = ls[m]; if (!x || x.classList.contains('yr')) continue; x.style.opacity = [1, .7, .42, .2][Math.abs(j)]; this.lit.push(x); }
   },
   cur() { if (!S.listFrom) return 0; const k = dayKey(S.listFrom).slice(0, 7); const n = this.months.indexOf(k); return n < 0 ? 0 : n; },
   draw(items) {
     if (!this.el) return;
     const on = (S.view === 'list' || S.view === 'gallery') && !(S.searchOn && S.q.trim()) && items.length > 20;
-    const ms = on ? [...new Set(items.map(i => dayKey(i.ts).slice(0, 7)))].sort((a, b) => b.localeCompare(a)) : [];
-    this.el.hidden = !on || ms.length < 3; if (this.el.hidden) return;
-    const key = ms.join(','); this.months = ms;
-    const cur = this.cur(); this.el.setAttribute('aria-valuetext', ms[cur]); this.el.setAttribute('aria-valuemin', 0); this.el.setAttribute('aria-valuemax', ms.length - 1); this.el.setAttribute('aria-valuenow', cur);
-    if (this._key !== key) {
-      this._key = key;
-      const ys = []; ms.forEach((m, k) => { const y = m.slice(0, 4); if (!ys.length || ys.at(-1)[0] !== y) ys.push([y, k]); });
-      this.el.innerHTML = `<div class="sc-track"></div>${ys.map(([y, k]) => `<span class="sc-y" style="top:${k / ms.length * 100}%">${y}</span>`).join('')}<span class="sc-now"></span><span class="sc-bub"></span>`;
+    const cnt = new Map(); if (on) for (const i of items) { const m = dayKey(i.ts).slice(0, 7); cnt.set(m, (cnt.get(m) || 0) + 1); }
+    let ms = [];
+    if (cnt.size >= 3) { // every month from the newest to the oldest, empty ones included (capped at 50 years)
+      const ks = [...cnt.keys()].sort(), [y0, m0] = ks[0].split('-').map(Number); let [y, m] = ks.at(-1).split('-').map(Number);
+      while ((y > y0 || (y === y0 && m >= m0)) && ms.length < 600) { ms.push(`${y}-${String(m).padStart(2, '0')}`); if (--m < 1) { m = 12; y--; } }
     }
-    this.el.querySelector('.sc-now').style.top = ((cur + .5) / ms.length * 100) + '%';
-    this.el.classList.toggle('gal', S.view === 'gallery' && document.body.classList.contains('peek-dock'));
+    this.el.hidden = !on || ms.length < 3; document.body.classList.toggle('scrub-on', !this.el.hidden); if (this.el.hidden) return;
+    const max = Math.max(...cnt.values()), key = ms.map(m => m + ':' + Math.ceil((cnt.get(m) || 0) / max * 3)).join(','); this.months = ms;
+    const cur = this.cur(); this.el.setAttribute('aria-valuetext', `${MS_TR[+ms[cur].slice(5) - 1]} ${ms[cur].slice(0, 4)}`); this.el.setAttribute('aria-valuemin', 0); this.el.setAttribute('aria-valuemax', ms.length - 1); this.el.setAttribute('aria-valuenow', cur);
+    if (this._key !== key) {
+      this._key = key; this.lit = []; this.H = this.el.clientHeight;
+      const n = ms.length, pc = k => ((k + .5) / n * 100).toFixed(3) + '%';
+      let h = '<div class="sc-track"></div>';
+      ms.forEach((m, k) => { const yr = k === 0 || ms[k - 1].slice(0, 4) !== m.slice(0, 4), c = cnt.get(m) || 0, lv = c ? Math.ceil(c / max * 3) : 0;
+        h += `<i class="sc-t l${lv}${yr ? ' yt' : ''}" style="top:${pc(k)}"></i><span class="sc-m${yr ? ' yr' : ''}" style="top:${pc(k)}">${yr ? m.slice(0, 4) : MS_TR[+m.slice(5) - 1]}</span>`; });
+      this.el.innerHTML = h + '<span class="sc-now"></span><span class="sc-bub"></span>';
+    }
+    if (!this.el.classList.contains('drag')) { this.place(cur); this.focus(cur); }
   },
 };
 
