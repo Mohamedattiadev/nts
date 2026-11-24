@@ -6412,7 +6412,9 @@ const AI = {
     if (this._ocr || S.aiBusy || !S.bridgeOk) return; this._ocr = true;
     try {
       // 130b: images also get 3-6 "seen" labels (vtags: objects, colours, style) for search; an older bridge without labels → only text
-      const needV = i => fileKind(i) === 'image' && i.vtags === undefined && !this._noLabels;
+      // 160: a photo with a little text used to get only "yazı" (no objects → "çanta" did not find it): asked again once (vrel)
+      const reV = i => !i.vrel && i.vtags?.length === 1 && i.vtags[0] === 'yazı' && (i.ocr || '').split(/\s+/).length < 60;
+      const needV = i => fileKind(i) === 'image' && (i.vtags === undefined || reV(i)) && !this._noLabels;
       const todo = S.items.filter(i => !i.deleted && !i.pending && ((i.ocr === undefined && (fileKind(i) === 'image' || (fileKind(i) === 'pdf' && i.content != null && i.content.length < 40))) || needV(i))).sort((a, b) => b.ts - a.ts).slice(0, 4);
       const batch = (await Promise.all(todo.map(async i => ({ id: i.id, image: await this.ocrImage(i) })))).filter(x => x.image);
       const skip = todo.filter(i => !batch.some(b => b.id === i.id)); if (skip.length) await upsert(skip.map(i => ({ ...byId(i.id), ocr: byId(i.id).ocr ?? '', ...(fileKind(i) === 'image' ? { vtags: [] } : {}) })), { sync: false });
@@ -6420,7 +6422,7 @@ const AI = {
       const r = await this.call('/ocr', { items: batch }, 180000), got = new Map((r.items || []).map(x => [x.id, x]));
       if ((r.items || []).length && !(r.items || []).some(x => Array.isArray(x.labels))) this._noLabels = true;
       await upsert(batch.map(b => { const x = got.get(b.id) || {}, i = byId(b.id);
-        return { ...i, ocr: i.ocr ?? (x.text || '').slice(0, 3000), ...(Array.isArray(x.labels) && fileKind(i) === 'image' ? { vtags: cleanVtags(x.labels) } : {}) }; }));
+        return { ...i, ocr: i.ocr ?? (x.text || '').slice(0, 3000), ...(Array.isArray(x.labels) && fileKind(i) === 'image' ? { vtags: cleanVtags(x.labels), ...(reV(i) ? { vrel: 1 } : {}) } : {}) }; }));
       DateAsk.after(batch.map(b => b.id));
     } catch (e) { console.warn('ocr', e); } finally { this._ocr = false; }
   },

@@ -263,11 +263,12 @@ async function ocr(items) {
   // 148: the same picture is read once (cache); tesseract reads text-heavy ones here, only photos go to the AI (for "labels")
   const done = [], send = [], keys = new Map(); let saved = 0;
   for (const i of items) {
-    const k = hash('ocr', conf.ai, i.image || ''), hit = cget(k);
+    const k = hash('ocr2', conf.ai, i.image || '') /* 160: new rule for photos with a little text */, hit = cget(k);
     if (hit) { done.push({ ...hit, id: i.id }); saved += 1700; continue; }
     const p = join(WORK_DIR, `ocr-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); delete i.image;
     const text = await tesseract(p).catch(() => null);
-    if (text) { const x = { text, labels: ['yazı'] }; cput(k, x); done.push({ ...x, id: i.id }); saved += 1700; try { unlinkSync(p); } catch { } continue; }
+    // 160: only a real page of text (screenshot, document) skips the AI; a photo with a little text (a bag with its brand, a sign) still gets its "seen" labels
+    if (text && text.split(/\s+/).length >= 60) { const x = { text, labels: ['yazı'] }; cput(k, x); done.push({ ...x, id: i.id }); saved += 1700; try { unlinkSync(p); } catch { } continue; }
     i._imgPath = p; keys.set(i.id, k); send.push(i);
   }
   if (done.length) logUsage({ kind: 'ocr', local: true, n: done.length, saved });
