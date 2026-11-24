@@ -1484,7 +1484,7 @@ function renderChrome() {
     + `<button class="${S.view === 'todo' ? 'on' : ''}" data-todo data-tip="Yapılacaklar · ${todos}" aria-label="Yapılacaklar">${ic('todo')}${todos ? `<span class="cnt">${todos}</span>` : ''}</button>`
     + Saved.list().slice(0, 4).map(v => `<button class="${Saved.same(v) ? 'on' : ''}" data-saved="${v.id}" data-tip="${esc(v.name)}" aria-label="Kayıtlı arama: ${esc(v.name)}"><span class="sv-ab">${esc([...v.name.replace(/^[#\s]+/, '')].slice(0, 2).join(''))}</span></button>`).join('')
     + `<button data-tags data-tip="Daha fazla: listeler, kaynak, konular, şifrelerim" aria-label="Daha fazla">${ic('dots')}</button>`
-    + (board ? `<button class="pal-tab${S.palOpen ? ' on' : ''}" data-paltab data-tip="${S.palOpen ? 'Çizim araçlarını kapat' : 'Çizim araçları'}" aria-label="Çizim araçları" aria-expanded="${!!S.palOpen}">${ic('pen', 'sm')}</button>` : '');
+    + (board ? palTab() : '');
   // 137: a filter picked under ⋯ shows on the rail at once, as its own button; a tap takes it off
   const act = activeFilters(), was = renderChrome.act || new Set(); renderChrome.act = new Set(act.map(a => a.k + a.v));
   if (act.length) $('#rail [data-tags]').insertAdjacentHTML('afterend', act.map(a => `<button class="r-act${was.has(a.k + a.v) ? '' : ' new'}" data-unf="${a.k}" data-tip="${esc(a.l)} · kaldır" aria-label="${esc(a.l)} süzgecini kaldır">${a.k === 'color' ? `<span class="cdot c-${a.v}"></span>` : ic(a.i, 'sm')}<span class="r-x">${ic('x', 'sm')}</span></button>`).join(''));
@@ -1515,6 +1515,14 @@ function renderChrome() {
     + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
     || '<div class="hint" style="padding:0 10px 8px">' + aiName() + ' düzenledikçe konular burada çıkar.</div>';
   if (seen.size) $('#sideTags').insertAdjacentHTML('beforeend', `<div class="side-row vt-count" title="${aiName()} resimlere bakıp bulduğu etiketler; aramada bunlar da bulunur"><span class="hash">${ic('spark', 'sm')}</span><span class="lbl">Resimlerde bulunan etiketler</span><span class="n">${seen.size}</span></div>`);
+}
+const palTab = () => `<button class="pal-tab${S.palOpen ? ' on' : ''}" data-paltab data-tip="${S.palOpen ? 'Çizim araçlarını kapat' : 'Çizim araçları'}" aria-label="Çizim araçları" aria-expanded="${!!S.palOpen}">${ic('pen', 'sm')}</button>`;
+// 147b2: only the view changed between list / board / gallery: the rail, side lists and counts are the same → just move the "on"
+// mark and add / take away the board's pen tab (rebuilding all of it cost 30–300 ms a switch at 10k items on a phone)
+function chromeView() {
+  for (const b of $('#viewSwitch').children) b.classList.toggle('on', b.dataset.view === S.view);
+  const pt = $('#rail .pal-tab'), want = S.view === 'board';
+  if (want && !pt) $('#rail').insertAdjacentHTML('beforeend', palTab()); else if (!want && pt) pt.remove();
 }
 // 137: filters that live under ⋯ (not the rail's own buttons): source, project / list, topic, colour
 function activeFilters() {
@@ -1587,6 +1595,7 @@ function renderNow() {
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
     const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || '') + (S.view === 'cal' ? Cal.month() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
+    const pv = S._vview, viewOnly = !!S._vkey && pv !== S.view && pv !== 'todo' && S.view !== 'todo' && vkey.every((x, k) => k === 6 || x === S._vkey[k]); S._vview = S.view;
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
     renderHits();
@@ -1604,7 +1613,7 @@ function renderNow() {
     const items = visible(), none = !alive().length;
     const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
     const fr = fv && S._fv === fv && !onlyMore && $('#' + fv), fb = fr && Flip.snap(fr); S._fv = fv;
-    if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
+    if (viewOnly && !none) chromeView(); else if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
     for (const v of ['list', 'board', 'gallery', 'topics', 'todo', 'cal']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
     { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; bp.setAttribute('aria-expanded', String(!!pp && !pp.hidden)); } // 146: a redraw keeps the open list's state (the tip checks it) // 116: outside the board the logo is just the logo
@@ -1624,7 +1633,8 @@ function renderNow() {
       // 150: which board (and range) is part of the key: another board is always redrawn, from its own fit (an old camera kept its cards off screen)
       const key = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn && S.q, live ? 'L' : S.searchOn && S.hits, S.linkFrom, Board.id()];
       if (Board._key && Board._key[6] !== key[6]) S.cam = null;
-      if (!S.cam || !Board._key || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
+      if (!Board._key || !Board.M || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
+      else if (!S.cam) { Board.fit(false); Board.cull(); } // 147b2: back on the board with nothing changed: the same cards from the fit, no rebuild (phone 4x: 70–540 ms)
     }
     else if (S.view === 'gallery') renderGallery(items);
     else if (S.view === 'cal') Cal.render(items);
@@ -6316,16 +6326,17 @@ const LinkMeta = {
           return;
         } catch (e) { if (/ 404 /.test(e.message)) this.noFn = true; console.warn('link-preview', e.message); } // not deployed yet → microlink below
       }
-      // 2) otherwise microlink.io (only the link address is sent)
-      for (const i of todo) {
+      // 2) otherwise microlink.io (only the link address is sent); saved together at the end: one redraw, not one per link (147b2)
+      const got = new Map();
+      try { for (const i of todo) {
         if (S.bridgeOk) break; // the bridge does it (and Claude writes the summary)
         let meta = null, r;
         try { r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(i.url), { signal: AbortSignal.timeout(12000) }); } catch { break; }
         if (r.status === 429) break; // daily limit: try again later
         const j = await r.json().catch(() => ({}));
         if (j.status === 'success') { const d = j.data || {}; meta = { title: d.title || '', description: d.description || '', image: d.image?.url, logo: d.logo?.url, site: d.publisher }; }
-        const cur = byId(i.id); if (cur) await upsert([{ ...cur, ...(meta ? { meta } : { metaTry: now() }) }]);
-      }
+        got.set(i.id, meta ? { meta } : { metaTry: now() });
+      } } finally { const l = [...got].map(([id, x]) => byId(id) && { ...byId(id), ...x }).filter(Boolean); if (l.length) await upsert(l); }
     } finally { this.busy = false; }
   },
 };

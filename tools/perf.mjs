@@ -14,7 +14,7 @@ for (const [dev, vp] of devs) {
   });
   const p = await c.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && !/8787|Failed to load|ERR_|net::/.test(m.text()) && errs.push(m.text()));
-  await p.route(/:8787\/|supabase\.co|fonts\.g/, r => r.abort());
+  await p.route(/:8787\/|supabase\.co|fonts\.g|microlink/, r => r.abort());
   const cdp = await c.newCDPSession(p);
   await p.goto(URL_, { waitUntil: 'networkidle' });
   await p.evaluate(async ([N, IMG]) => { // tohum: WhatsApp benzeri notlar, linkler, yapılacaklar, resimler; son 3 yıla yayılmış

@@ -800,6 +800,17 @@ Arayüz:
         (content-visibility:auto ekran dışını zaten atlıyor). Denendi: 17 :has() kuralını kaldırmak yalnız ~%20; .app tamamen gizliyken taban
         35/13 ms. Arka planı gizlemek (content-visibility:hidden) yarı saydam perdenin arkasını boşaltır → yapılmadı. Daha fazlası ancak
         showModal yerine kendi pencere katmanı ile (büyük iş, gerekirse 147b2 ile birlikte bakılır). Kod değişikliği yok.
+- [x] 147b2. (2026-11-24, A hattı) **Görünüm değişimi hafifledi.** Fonksiyon bazında ölçüldü (10k kayıt + 300 resim, telefon 4x): her
+        liste/pano/galeri geçişinde (1) renderChrome bütün kenar çubuğunu, yan listeleri, kaynakları baştan kuruyordu (30–300 ms) —
+        artık yalnız görünüm değiştiyse (veri/süzgeç aynı, Yapılacaklar değil) sadece görünüm düğmesinin "on" işareti taşınır ve panonun
+        kalem sekmesi eklenir/kaldırılır (chromeView); (2) panoya her dönüşte S.cam=null yüzünden Board.render bütün panoyu yeniden
+        kuruyordu (70–540 ms) — veri aynıysa aynı kartlar yalnız fit ile yerleşir; (3) LinkMeta (microlink) her link için ayrı upsert →
+        6 kez bütün 10k liste baştan çiziliyordu; şimdi sonda tek upsert. tools/perf.mjs microlink'i de engeller (ölçümü kirletiyordu).
+        Eski/yeni dönüşümlü (makine yüklü, load 11–19; duvar saati gürültülü, bu yüzden iş süresi): view senaryosu JS (FunctionCall+rAF)
+        masaüstü 2045/3620 → 1541/1301 ms, telefon 3924/4895 → 3646/2783; en uzun görev telefon 846/723 → 611/425 ms; listeye dönüşte
+        renderNow telefon 520–990 → 63–140 ms. KALAN: <100 ms hedefi bu yükte doğrulanamadı; kalan maliyet startViewTransition'ın
+        anlık görüntüsü + gizliden açılan görünümün stil/yerleşim hesabı (pano için Board.fit'in zorladığı yerleşim) ve Scrub.draw
+        (her geçişte 10k dayKey; B'nin 149 bölgesi, dokunulmadı). Sakin makinede perf.mjs ONLY=view ile yeniden ölçülmeli.
 - [x] 131-1. (2026-11-24, B hattı) **Klasör kartı: D Dosya, cam** (sahip D'yi seçti: "cam olsun, şeffaf, ama aynı renkler"). D artık
         varsayılan (Ayarlar → Klasör stili ilk seçenek "Dosya (cam)"; E/A/B/C seçilebilir, önceden seçen kalır). Ön kapak buzlu cam: klasörün
         kendi rengi yarı saydam + blur(7px) saturate, içindeki kâğıtlar bulanık görünür, üstte ince açık kenar, sakin gölge; arka kapak da hafif
