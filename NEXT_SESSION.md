@@ -248,4 +248,4 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [~B] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [x] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme; PLAN 107l (3419c03)
 - [x] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme (ec4072d)
-- [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor
+- [?] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor — SORULDU (2026-11-25, A): Telegram bot token (@BotFather) + Supabase Edge Function mı köprü mü; e-posta için gelen posta servisi (Cloudflare Email Routing / Postmark / Mailgun) ve adres; sahibin cevabı bekleniyor
