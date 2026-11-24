@@ -1027,6 +1027,10 @@ Arayüz:
            phone-audit "tarihten" ekranı 0 (yalnız eski boardBtn 2×2 gizli). Görüntüler design/157a/. sw v124
         b) design/feedback-36.png: kutudaki "+" ve mikrofon düğmeleri kare-yuvarlak; sahip: "yuvarlak olsun bence" → tam daire (border-radius 50%),
            aynı boy (≥40 px, telefonda 44), kutunun yuvarlak köşesiyle eş merkezli hizada; gönder düğmesi de aynı aile.
+           [x] b YAPILDI (2026-11-24, B hattı): kök neden: takvimin .c-btn kuralları (radius 10/12 px, kenarlık) kutunun .c-btn'ini eziyordu →
+           takvim kuralları .c-nav altına alındı. +, mikrofon, gönder: tam daire 40 px (telefonda 44), + ve mikrofon mod hapı gibi hafif zemin;
+           kutu köşesi 26 px (telefon 28) = yarıçap + 6 px dolgu → eş merkezli; dikey merkez farkı 0 (1366/390/320 × açık/koyu).
+           Takvim düğmeleri aynen (36/44 px, 10/12 px köşe). phone-audit (ilgili 9 ekran): yeni bulgu 0. Görüntüler design/157b/. sw v127
         c) design/feedback-35.png (Takvim, Kasım 2026): "2026'dayken önceki yıllara daha hızlı, daha büyük ölçekte gitmek istesem" → takvime
            yakınlık katmanları: Ay (bugünkü) → Yıl (12 küçük ay, günler yoğunluk renginde, kayıt sayısı) → Yıllar (2023–2026 satırları, ay
            kareleri yoğunlukla). Geçiş: başlığa (Kasım 2026) dokun / Ctrl+tekerlek / çimdik ile uzaklaş, bir aya/yıla dokun → yakınlaşarak

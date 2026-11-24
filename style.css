@@ -149,7 +149,7 @@ body.board-view .bpick:hover { border-color: var(--line-2); }
   body.board-view .dock { --dw: min(600px, calc(100vw - var(--bt-w, 380px) - 60px)); width: var(--dw);
     left: min(50%, calc(100vw - var(--bt-w, 380px) - 28px - var(--dw) / 2)); }
 }
-.composer { background: var(--surface); border: 1px solid var(--line-2); border-radius: 24px; padding: 6px; transition: border-color .15s, box-shadow .2s;
+.composer { background: var(--surface); border: 1px solid var(--line-2); border-radius: 26px; padding: 6px; transition: border-color .15s, box-shadow .2s;
   box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 8px 28px rgb(0 0 0 / .1); }
 [data-theme="dark"] .composer { background: var(--surface-2); border-color: #3a3a45; box-shadow: 0 0 0 1px rgb(255 255 255 / .03), 0 10px 30px rgb(0 0 0 / .55); }
 /* soft fade behind the box so list rows don't run into it (on the board the canvas stays visible) */
@@ -159,18 +159,20 @@ body.board-view::after { display: none; }
 .composer:focus-within { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); }
 .composer.drag { border-color: var(--accent); background: var(--accent-soft); }
 .c-row { display: flex; align-items: flex-end; gap: 2px; }
-.composer textarea { flex: 1; min-width: 0; border: 0; background: none; outline: none; resize: none; padding: 7px 6px; max-height: 40vh; line-height: 20px; font-size: calc(14.5px * var(--fs, 1)); }
-/* every button is exactly one text line tall (34px = 7 + 20 + 7): one line → all centred; more lines → buttons sit by the last line */
+.composer textarea { flex: 1; min-width: 0; border: 0; background: none; outline: none; resize: none; padding: 10px 6px; max-height: 40vh; line-height: 20px; font-size: calc(14.5px * var(--fs, 1)); }
+/* 157b: every button is a full circle, one text line tall (40px = 10 + 20 + 10), concentric with the box (26 = 20 + 6 padding): one line → all centred; more lines → buttons sit by the last line */
 .c-btn > span, .c-btn > .i, .send > .i { display: block; }
 .c-btn > span { line-height: 0; }
 .composer textarea::placeholder { color: var(--muted); }
-.c-btn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--text-2); flex: none; cursor: pointer; transition: background .15s, color .15s; }
-.c-btn:hover { background: var(--surface-2); color: var(--text); }
+.c-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--text-2); flex: none; cursor: pointer; transition: background .15s, color .15s; }
+.composer .c-btn { background: var(--surface-2); } /* 157b: a visible circle, same family as the mode pill */
+:where([data-theme="dark"]) .composer .c-btn { background: rgb(255 255 255 / .07); }
+.c-btn:hover, .composer .c-btn:not(.hot):not(.on):not(.rec):hover { background: color-mix(in srgb, var(--text) 9%, var(--surface-2)); color: var(--text); }
 .c-btn.hot { color: var(--accent); background: var(--accent-soft); }
-.send { height: 34px; padding: 0 14px; border-radius: 17px; background: var(--text); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
+.send { height: 40px; padding: 0 15px; border-radius: 20px; background: var(--text); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
   font-size: calc(13.5px * var(--fs, 1)); font-weight: 600; white-space: nowrap; transition: opacity .15s, transform .1s, background .2s, color .2s; }
 .send.ask { background: var(--accent); color: var(--accent-text); }
-.send.round { width: 34px; padding: 0; border-radius: 50%; }
+.send.round { width: 40px; padding: 0; border-radius: 50%; }
 .composer.ask-mode { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 10px 30px rgb(0 0 0 / .18); }
 .c-hint { display: flex; align-items: center; gap: 8px; padding: 2px 8px 2px; font-size: calc(12.5px * var(--fs, 1)); color: var(--text-2); animation: hintIn .18s ease-out; }
 .c-hint[hidden] { display: none; }
@@ -905,7 +907,7 @@ dialog.reader .d-body { gap: 10px; }
   .send { height: 40px; border-radius: 20px; padding: 0 13px; }
   .send.round { width: 40px; padding: 0; }
   .c-hint button { padding: 7px 12px; font-size: calc(13px * var(--fs, 1)); }
-  .composer { border-radius: 26px; }
+  .composer { border-radius: 28px; } /* 157b: 44 px circles + 6 px padding → concentric */
   .composer textarea { padding: 11px 6px; font-size: calc(16px * var(--fs, 1)); line-height: 22px; /* 44 px like the + and send buttons → the text sits on their centre line */ }
   .board-tools { bottom: calc(var(--dock-h, 60px) + 20px + env(safe-area-inset-bottom)); right: 8px; transition: opacity .15s; }
   body.typing .board-tools { opacity: 0; pointer-events: none; }
@@ -1446,7 +1448,7 @@ body:has(#hits.hits:not([hidden]):not(.closing)) .peek { opacity: 0; pointer-eve
 /* ---------- 103b + 118: three modes in the one box (Not · Ara · Sor) and the live Ara window (130a) ---------- */
 /* 136: "+" then ONE mode button (icon + name of the current mode); a tap / Tab goes to the next, the name slides in */
 .modes { flex: none; align-self: flex-end; margin: 0 4px 0 2px; }
-.m-b { height: 34px; padding: 0 12px 0 10px; border-radius: 999px; display: inline-flex; align-items: center; overflow: hidden; white-space: nowrap;
+.m-b { height: 40px; padding: 0 13px 0 11px; border-radius: 999px; display: inline-flex; align-items: center; overflow: hidden; white-space: nowrap;
   color: var(--text); background: var(--surface-2); font-size: calc(13px * var(--fs, 1)); font-weight: 600; transition: background .15s, color .15s; }
 .m-b:hover { background: color-mix(in srgb, var(--text) 9%, var(--surface-2)); }
 [data-theme="dark"] .m-b { background: rgb(255 255 255 / .07); }
@@ -2420,11 +2422,11 @@ dialog.clean .d-body { gap: 12px; }
 .c-title { margin: 0; font-size: calc(22px * var(--fs, 1)); font-weight: 700; letter-spacing: -.01em; text-transform: capitalize; }
 .c-sum { color: var(--text-2); font-size: calc(13px * var(--fs, 1)); }
 .c-nav { margin-left: auto; display: flex; gap: 6px; align-self: center; }
-.c-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center; font: inherit; font-size: calc(13px * var(--fs, 1)); font-weight: 600; cursor: pointer; -webkit-user-select: none; user-select: none; transition: background .15s, transform .1s; }
-.c-btn:hover { background: var(--surface-2); }
-.c-btn:active { transform: scale(.96); }
+.c-nav .c-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center; font: inherit; font-size: calc(13px * var(--fs, 1)); font-weight: 600; cursor: pointer; -webkit-user-select: none; user-select: none; transition: background .15s, transform .1s; }
+.c-nav .c-btn:hover { background: var(--surface-2); }
+.c-nav .c-btn:active { transform: scale(.96); }
 .c-today { padding: 0 14px; }
-.c-btn[data-cgo="-1"] svg { transform: scaleX(-1); }
+.c-nav .c-btn[data-cgo="-1"] svg { transform: scaleX(-1); }
 .c-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 0 0 6px; }
 .c-wd span { font-size: calc(11.5px * var(--fs, 1)); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding-left: 8px; }
 .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -2455,7 +2457,7 @@ dialog.clean .d-body { gap: 12px; }
   .c-head { flex-wrap: wrap; row-gap: 2px; padding: 4px 6px 10px; }
   .c-title { font-size: calc(20px * var(--fs, 1)); }
   .c-sum { order: 3; width: 100%; }
-  .c-btn { min-width: 44px; height: 44px; border-radius: 12px; }
+  .c-nav .c-btn { min-width: 44px; height: 44px; border-radius: 12px; }
   .c-wd, .c-grid { gap: 3px; }
   .c-wd span { padding: 0; text-align: center; font-size: calc(10.5px * var(--fs, 1)); letter-spacing: 0; }
   .c-day { min-height: 64px; padding: 4px 3px; border-radius: 9px; align-items: center; gap: 3px; }
@@ -2467,7 +2469,7 @@ dialog.clean .d-body { gap: 12px; }
   .c-th .c-pic:nth-child(n+2) { display: none; }
   .c-th .c-pic svg { width: 12px; height: 12px; }
 }
-@media (prefers-reduced-motion: reduce) { .c-day, .c-btn, .c-mo, .c-m, .c-yl, .c-z, .c-up { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .c-day, .c-nav .c-btn, .c-mo, .c-m, .c-yl, .c-z, .c-up { transition: none; } }
 /* 157c: zoom layers — Ay → Yıl (12 small months) → Yıllar (a row per year). Tint = how much a day / month holds (same log scale). */
 .cal { touch-action: pan-y; }
 .c-up { font: inherit; color: inherit; background: none; border: 0; padding: 0 6px; margin: 0 -6px; border-radius: 8px; cursor: zoom-out; text-transform: inherit; letter-spacing: inherit; transition: background .15s; }
