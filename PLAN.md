@@ -712,7 +712,24 @@ Arayüz:
         proje kesik orta, etiket noktalı ince, yapay zekâ kapalı (açılınca soluk + ✦); çift başına 1 ok, kümeye en çok 3; yön = eski kümeden
         yeniye; uç/etiket her yakınlıkta aynı boy (telefonda %82). Seçim dosyası zoomout-choices-2.json (z-A1/A2/A3 + r-rules). 4 yapılandırma
         ekran görüntüsü, konsol hatası 0, yatay taşma 0. Sahibin seçimi bekleniyor.
-- [ ] 147. **Uygulama akıcı olsun** (sahip, 2026-11-24: "neden çok smooth değil, yavaş application?"). Sahibin gerçek durumu: binlerce kayıt (WhatsApp
+- [x] 147. (2026-11-24, B hattı: ÖLÇ → DÜZELT. Araç: tools/perf.mjs (10k kayıt + 300 JPEG, masaüstü + telefon 4x CPU; senaryo başına uzun
+        görev, kare p95, fps; PROF=1 CPU profili, yerel çağrılar çağıranıyla). Makine paylaşımlı (yük 6–12) → eski sürüm (origin/main) ayrı
+        portta, önce/sonra dönüşümlü 2'şer tur. Bulunan ve düzeltilenler: (1) resim küçük görseli ana iş parçacığında (tam foto çözme +
+        drawImage + webp, üstelik tam dosyaya kalıcı object URL) → satır içi Worker (OffscreenCanvas), blob doğrudan IndexedDB'den;
+        (2) S.searchOn başta undefined → ilk tuşta bütün liste baştan çiziliyordu + Not'ta her tuşta liste sınırı 60→300 → başlangıç false,
+        Not'ta sınır değişmez, "N benzer kayıt" araması duraklamada (320 ms); (3) kayıt açınca "görüldü" (seenAt) tam upsert → bütün
+        görünümler pencerenin arkasında yeniden çiziliyordu → yerinde değiştir, sol çubuk sayısı boşta; (4) panoda her kamera hareketinde
+        clientWidth okuması + her yeni kartta scrollHeight ölçümü (zorunlu yerleşim) → boyut ResizeObserver'dan, kart ölçümü sürüm+boy
+        anahtarıyla önbellekte; Underlap pano dışında hiç ölçmez; (5) renderChrome 10k kayıtta ~15 ayrı tarama → tek geçiş, önbellek.
+        Önce → sonra (2 turun ortalaması; uzun görev toplamı ms / fps):
+          masaüstü: liste kaydırma 2720→300 / 13→33 · galeri 3125→1280 / 8→15 · Not'ta yazma 1120→260 / 33→49 · Ara'da yazma 2850→600 /
+                    21→45 · kayıt aç/kapa 2640→960 / 8→17 · pano kaydırma 600→350 / 43→47 · görünüm değişimi 2090→1310
+          telefon 4x: açılış (tüm kayıtlar) 14.3→5.7 sn · galeri kaydırma 12930→4940 / 4→11 · kart sürükleme 5640→1690 / 16→34 ·
+                    pano kaydırma 3300→2380 / 21→32 · Not'ta yazma 4450→2130 / 23→43 · kayıt aç/kapa 8800→2560 / 9→21 · Ara 6000→3200 / 13→22
+        HEDEFE ULAŞILMAYAN (sonraki adım 147b): telefonda kutuya ilk dokunuşta ~1–2 sn tek uzun görev (Not modunda, iki sürümde de var),
+        görünüm değişimi hâlâ 200–400 ms (startViewTransition + renderList), pano yakınlaştırma 4x'te 9–18 fps (her adımda cull+fitHeads),
+        kayıt penceresi açılışında Morph getBoundingClientRect + showModal. Ölçüm gürültüsü ±%50: aynı dakikada A/B karşılaştır. sw v101)
+        ESKİ METİN: 147. **Uygulama akıcı olsun** (sahip, 2026-11-24: "neden çok smooth değil, yavaş application?"). Sahibin gerçek durumu: binlerce kayıt (WhatsApp
         arşivleri dahil, 2026-11-24'te 838 kayıt + 436 foto daha geldi), masaüstü + telefon. ÖNCE ÖLÇ (tahmin etme): Playwright + CDP Performance/trace,
         10k kayıt + resimler, 4x CPU telefon: açılış, görünüm değişimi (liste/galeri/pano), panoda kaydırma/yakınlaştırma fps, kart sürükleme, kutuya
         yazma, Ara'da tuş, kayıt penceresi aç/kapa, sol çubuk aç/kapa. Uzun görevler (>50 ms), layout thrash, gereksiz yeniden çizimler, tek seferde çok

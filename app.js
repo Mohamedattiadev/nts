@@ -11,7 +11,7 @@ let _vw = innerWidth; addEventListener('resize', () => { _vw = innerWidth; });
 const narrow = () => _vw < 700;
 
 const S = {
-  items: [], idx: new Map(), view: 'board', q: '', hits: null,
+  items: [], idx: new Map(), view: 'board', q: '', hits: null, searchOn: false, // 147: false from the start (undefined → false on the first key redrew the whole list)
   filter: { type: 'all', tag: null, star: false, list: null, color: null, src: null }, sortPrio: false, tool: 'select', ink: 'ink', attach: [], hitSel: -1,
   settings: {}, bridgeOk: false, aiBusy: false, limit: 300,
   cam: null, linkFrom: null, urls: new Map(), explaining: new Set(),
@@ -219,6 +219,21 @@ const Indexer = {
     return this.w;
   },
   add(items) { const w = this.worker(), list = items.filter(i => i.type !== 'vault' && i.type !== 'bridge'); if (!w) return list.forEach(indexItem); w.postMessage(list.map(i => [i.id, rawText(i), titleOf(i)])); },
+};
+// 147: a picture's small preview (≤320 px webp) is made in a Worker: decoding a 12 MP photo and drawing it on the page cost 50–200 ms a picture
+// (a long task while scrolling the gallery or typing). null → the caller makes it on the page as before
+const ThumbW = {
+  w: null, n: 0, cb: new Map(),
+  make(blob) {
+    if (this.w === null) try {
+      const src = `onmessage = async e => { const { id, blob } = e.data; try { const b = await createImageBitmap(blob), r = Math.min(1, 320 / Math.max(b.width, b.height)), c = new OffscreenCanvas(Math.max(1, Math.round(b.width * r)), Math.max(1, Math.round(b.height * r)));
+        c.getContext('2d').drawImage(b, 0, 0, c.width, c.height); b.close(); postMessage({ id, blob: await c.convertToBlob({ type: 'image/webp', quality: .72 }) }); } catch { postMessage({ id, blob: null }); } };`;
+      this.w = typeof OffscreenCanvas === 'undefined' ? false : new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      if (this.w) this.w.onmessage = e => { const f = this.cb.get(e.data.id); this.cb.delete(e.data.id); f?.(e.data.blob); };
+    } catch { this.w = false; }
+    if (!this.w) return Promise.resolve(null);
+    const id = ++this.n; return new Promise(r => { this.cb.set(id, r); this.w.postMessage({ id, blob }); setTimeout(() => { if (this.cb.delete(id)) r(null); }, 20000); });
+  },
 };
 function near(a, b) {
   if (Math.abs(a.length - b.length) > 1) return false;
@@ -527,7 +542,9 @@ const Prev = {
       let c = null;
       if (k === 'pdf') { const doc = await this.pdfDoc(i); if (doc) { c = await this.renderPage(doc, 1, 480); doc.destroy(); } }
       else if (k === 'video') c = await this.videoFrame(i);
-      else { const u = await blobFor(i); if (!u) return null; const bmp = await createImageBitmap(await (await fetch(u)).blob()), r = Math.min(1, 320 / Math.max(bmp.width, bmp.height));
+      else { const rec = await DB.get('files', i.id), u = !rec && await blobFor(i); if (!rec && !u) return null; const src = rec ? rec.blob : await (await fetch(u)).blob(), tb = await ThumbW.make(src); // 147: decode + shrink + webp off the main thread
+        if (tb) { await DB.put('files', { id: i.id + ':t', blob: tb }); Hues.from(i, tb); PH.from(i, tb); return tb; }
+        const bmp = await createImageBitmap(src), r = Math.min(1, 320 / Math.max(bmp.width, bmp.height));
         c = new OffscreenCanvas(Math.round(bmp.width * r), Math.round(bmp.height * r)); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); }
       if (!c) return null;
       const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/webp', quality: .72 }) : await new Promise(r => c.toBlob(r, 'image/webp', .72));
@@ -1332,18 +1349,40 @@ function renderTopics(items) {
 }
 
 const VIEWS = [['board', 'board', 'Pano'], ['list', 'list', 'Liste'], ['gallery', 'grid', 'Galeri']];
+// 147: every count the rail and the side lists show, in one pass over the items, kept until the items change (a view change
+// counted 10k items ~15 times: 100–300 ms on a phone). Unseen / reading-list counts depend on the time: a new pass each minute.
+function chromeCounts(live) {
+  const key = [S.items, live.length, Math.floor(now() / 6e4)], c0 = chromeCounts.c;
+  if (c0 && key.every((x, k) => x === c0.key[k])) return c0;
+  const c = { key, grp: new Map(), todos: 0, lists: new Map(), unseen: 0, stars: 0, read: 0, projs: new Map(), tags: new Map(), vtags: new Set(), colors: new Set(), trash: 0 };
+  const inc = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  for (const i of live) {
+    inc(c.grp, groupOf(i));
+    if (i.todo && !i.todo.done) c.todos++;
+    for (const l of i.lists || []) inc(c.lists, l);
+    if (unseen(i)) c.unseen++;
+    if (i.starred) c.stars++;
+    if (Read.readable(i) && (i.again ? i.again <= now() : !i.seenAt) && (i.type !== 'link' || i.read)) c.read++;
+    if (i.project) inc(c.projs, i.project);
+    for (const t of i.tags || []) inc(c.tags, t);
+    for (const t of i.vtags || []) c.vtags.add(t);
+    if (i.color) c.colors.add(i.color);
+  }
+  for (const i of S.items) if (i.deleted && !i.purged && i.deletedAt) c.trash++;
+  return chromeCounts.c = c;
+}
 function renderChrome() {
-  const f = S.filter, live = alive(), cnt = t => live.filter(i => groupOf(i) === t).length;
+  const f = S.filter, live = alive(), C = chromeCounts(live), cnt = t => C.grp.get(t) || 0;
   const types = [['all', 'inbox', 'Tümü', live.length], ['link', 'link', 'Linkler', cnt('link')], ['note', 'note', 'Notlar', cnt('note')],
     ['photo', 'image', 'Fotoğraflar', cnt('photo')], ['file', 'file', 'Dosyalar', cnt('file')]];
   const typeOn = t => S.view !== 'todo' && f.type === t && !f.star && !f.list && !(t === 'all' && f.tag);
-  const todos = live.filter(i => i.todo && !i.todo.done).length;
-  const lists = LISTS.filter(([k]) => !listHidden(k)).map(([k, icn]) => [k, icn, listName(k), live.filter(i => inList(i, k)).length]);
-  const nUnseen = live.filter(unseen).length; if (nUnseen || f.list === 'unseen') lists.push(['unseen', 'clock', listName('unseen'), nUnseen]);
+  const todos = C.todos;
+  const lists = LISTS.filter(([k]) => !listHidden(k)).map(([k, icn]) => [k, icn, listName(k), k === 'unseen' ? C.unseen : k.startsWith('p:') ? C.projs.get(k.slice(2)) || 0 : C.lists.get(k) || 0]);
+  const nUnseen = C.unseen; if (nUnseen || f.list === 'unseen') lists.push(['unseen', 'clock', listName('unseen'), nUnseen]);
   const listOn = k => S.view !== 'todo' && f.list === k;
   $('#viewSwitch').innerHTML = VIEWS.map(([v, icn, l]) => `<button class="${S.view === v ? 'on' : ''}" data-view="${v}" title="${l}">${ic(icn, 'sm')}<span>${l}</span></button>`).join('');
   $('#filterLbl').textContent = S.view === 'todo' ? 'Yapılacaklar' : f.src ? srcName(f.src) : f.list ? listName(f.list) : f.tag ? '#' + f.tag : f.star ? 'Yıldızlı' : types.find(t => t[0] === f.type)[2];
-  const stars = live.filter(i => i.starred).length;
+  const stars = C.stars;
   // the rail stays short: the 5 kinds, starred, to-dos; lists, vault, colours and topics live under "Daha fazla"
   const board = S.view === 'board' && alive().length;
   $('#rail').innerHTML = `<button class="r-fold" data-fold data-tip="Kenar çubuğunu gizle ( [ )" aria-label="Kenar çubuğunu gizle">${ic('chev', 'sm')}</button>`
@@ -1358,7 +1397,7 @@ function renderChrome() {
   if (act.length) $('#rail [data-tags]').insertAdjacentHTML('afterend', act.map(a => `<button class="r-act${was.has(a.k + a.v) ? '' : ' new'}" data-unf="${a.k}" data-tip="${esc(a.l)} · kaldır" aria-label="${esc(a.l)} süzgecini kaldır">${a.k === 'color' ? `<span class="cdot c-${a.v}"></span>` : ic(a.i, 'sm')}<span class="r-x">${ic('x', 'sm')}</span></button>`).join(''));
   $('#railTab').innerHTML = `<button data-fold data-tip="${act.length ? 'Süzgeç açık: ' + esc(act.map(a => a.l).join(', ')) + ' · ' : ''}Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}${act.length ? '<span class="rt-dot"></span>' : ''}</button>`; // 88b: only >, where < was; the palette stays
   $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
-  const nTrash = S.items.filter(i => i.deleted && !i.purged && i.deletedAt).length, nRead = live.filter(i => Read.readable(i) && (i.again ? i.again <= now() : !i.seenAt) && (i.type !== 'link' || i.read)).length;
+  const nTrash = C.trash, nRead = C.read;
   $('#popLists').innerHTML = `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n || ''}</span></button>`).join('')
@@ -1368,14 +1407,14 @@ function renderChrome() {
     + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   const sv = Saved.rows(); $('#popSaved').innerHTML = sv; $('#savedLabel').hidden = !sv;
   const sr = srcRows(live, f.src); $('#popSrc').innerHTML = sr; $('#srcLabel').hidden = !sr;
-  const projs = new Map(); live.forEach(i => i.project && projs.set(i.project, (projs.get(i.project) || 0) + 1));
+  const projs = C.projs;
   $('#projLabel').hidden = !projs.size;
   $('#sideProjects').innerHTML = [...projs].sort((a, b) => b[1] - a[1]).map(([p, n]) => `<button class="side-row${f.list === 'p:' + p ? ' on' : ''}" data-list="p:${esc(p)}">${ic('folder', 'sm')}<span class="lbl">${esc(p)}</span><span class="n">${n || ''}</span></button>`).join('');
-  const counts = new Map(); live.forEach(i => (i.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+  const counts = C.tags;
   const all = [...counts].sort((a, b) => b[1] - a[1]), tags = S.allTags ? all : all.slice(0, 10);
-  const seen = new Set(); live.forEach(i => (i.vtags || []).forEach(t => seen.add(t))); // 130b
+  const seen = C.vtags; // 130b
   if (f.tag && !tags.some(([t]) => t === f.tag)) tags.push([f.tag, counts.get(f.tag) || 0]);
-  const used = new Set(live.map(i => i.color).filter(Boolean));
+  const used = C.colors;
   $('#sideMarks').innerHTML = `<div class="mark-dots">${COLORS.filter(([c]) => used.has(c) || f.color === c).map(([c, n]) => `<button class="cdot c-${c}${f.color === c ? ' on' : ''}" data-color="${c}" title="${n}" aria-label="${n}"></button>`).join('') || '<span class="hint">Kayıtlara renk verince burada çıkar.</span>'}</div>
     <button class="side-row${S.sortPrio ? ' on' : ''}" data-sortprio>${ic('flag')}<span class="lbl">Önce yüksek öncelik</span><span class="n">${S.sortPrio ? ic('check', 'sm') : ''}</span></button>`;
   TagArc.sync(all, f.tag); // 123-1
@@ -1412,7 +1451,7 @@ const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic
 
 let renderQueued = false;
 function render(force) {
-  if (force) S._vkey = null;
+  if (force) { S._vkey = null; chromeCounts.c = null; }
   if (renderQueued) return; renderQueued = true;
   requestAnimationFrame(() => {
     renderQueued = false;
@@ -1464,9 +1503,15 @@ function render(force) {
 }
 
 // ---------- data changes ----------
-async function upsert(list, { sync = true } = {}) {
+async function upsert(list, { sync = true, quiet = false } = {}) {
   const t = now(), base = new Map(list.map(i => [i.id, byId(i.id)?.updatedAt || 0])); // the version this edit started from (84)
   for (const i of list) { i.updatedAt = Math.max(t, (i.updatedAt || 0) + 1); indexItem(i); }
+  if (quiet && list.length === 1 && S.items.some((x, k) => x.id === list[0].id && (S.items[k] = list[0]))) {
+    if (_bmOf === S.items) _bm.set(list[0].id, list[0]); chromeCounts.c = null; // 147: same list, one item swapped in place → views don't redraw
+    await DB.putMany('items', list.map(({ ...i }) => i)); await Sync.markDirty(list, base);
+    clearTimeout(upsert._q); upsert._q = setTimeout(() => (window.requestIdleCallback || setTimeout)(() => renderChrome(), { timeout: 2000 }), 600);
+    if (sync) Sync.schedule(); Snapshot.schedule(); return;
+  }
   const map = new Map(S.items.map(i => [i.id, i]));
   list.forEach(i => map.set(i.id, i));
   S.items = [...map.values()];
@@ -3688,7 +3733,8 @@ const Underlap = {
       card = document.querySelector('#plane > .bcard.dragging');
       if (!card && e && e.pointerType === 'mouse' && !e.buttons) card = e.target.closest?.('#plane > .bcard') || null;
     }
-    const cr = card?.getBoundingClientRect(), inp = $('#input');
+    if (!card) { for (const s of this.sels) { const el = $(s); if (el?.classList.contains('ul')) el.classList.remove('ul'); } return; } // 147: nothing to step aside from → no measuring (it forced a layout while scrolling the list)
+    const cr = card.getBoundingClientRect(), inp = $('#input');
     for (const { el, r } of this.rects()) {
       let on = !!(cr && r && cr.left < r.right + 4 && cr.right > r.left - 4 && cr.top < r.bottom + 4 && cr.bottom > r.top - 4);
       if (on && el.id === 'composer' && (el.contains(document.activeElement) || inp?.value)) on = false;
@@ -3856,7 +3902,11 @@ function mergeItem(l, r) {
   m.updatedAt = Math.max(l.updatedAt || 0, r.updatedAt || 0) + 1;
   return m;
 }
-function markSeen(i) { if (!i.seenAt && (i.type === 'link' || i.type === 'file')) upsert([{ ...i, seenAt: now() }]); }
+function markSeen(i) { // 147: no row shows "seen": saved without redrawing the page (a full redraw made opening an item stutter), the rail count follows when idle
+  if (i.seenAt || (i.type !== 'link' && i.type !== 'file')) return;
+  if (S.filter.list === 'unseen') return upsert([{ ...i, seenAt: now() }]);
+  upsert([{ ...i, seenAt: now() }], { quiet: true });
+}
 // once a week: a gentle reminder of what was saved and never opened
 function weeklyUnseen() {
   const n = alive().filter(unseen).length, d = new Date(), wk = `${d.getFullYear()}-${Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 6048e5)}`;
@@ -4777,9 +4827,14 @@ const Board = {
     return w > this.COLW - 26 ? 2 : 1;
   },
   // no "…": text that does not fit fades out at the end of its last line (one batched read, then one write)
-  fades(cards) {
+  fades(all) {
+    // 147: a card that comes back into view (panning, zooming) takes what was measured last time: measuring every new card forced
+    // a layout each frame (phone 4x: 0.5–1.2 s while panning). Keyed by the item's version and the card's height.
+    const fc = this._fc ||= new Map(), keyOf = c => (byId(c.dataset.id)?.updatedAt || 0) + '|' + c.style.height + '|' + c.className.includes('sticky');
+    const cards = all.filter(c => { const m = fc.get(c.dataset.id); if (!m || m.k !== keyOf(c)) return true; c.querySelectorAll('.title, .sub').forEach((e, k) => e.classList.toggle('ov', !!m.ov[k])); return !m.fit; });
     const els = cards.flatMap(c => [...c.querySelectorAll('.title, .sub')]), ov = els.map(e => e.scrollHeight > e.clientHeight + 1);
     els.forEach((e, k) => e.classList.toggle('ov', ov[k]));
+    { let n = 0; for (const c of cards) { const m = c.querySelector('.meta'), len = c.querySelectorAll('.title, .sub').length; fc.set(c.dataset.id, { k: keyOf(c), ov: ov.slice(n, n + len), fit: !m || m.scrollHeight <= m.clientHeight + 1 }); n += len; } }
     // 128: tag chips wrap to a second line; those that still don't fit give way to one "+N" chip (never half a chip)
     for (const m of cards.map(c => c.querySelector('.meta')).filter(Boolean)) {
       if (m.scrollHeight <= m.clientHeight + 1) continue;
@@ -4857,8 +4912,14 @@ const Board = {
   },
   FAR: .14, // below this zoom the days fold into month tiles
   view(pad = 360) { // the visible part of the plane, in plane coordinates
-    const b = $('#board'), c = S.cam; if (!c) return null; const p = pad / c.k;
-    return { x1: -c.x / c.k - p, y1: -c.y / c.k - p, x2: (b.clientWidth - c.x) / c.k + p, y2: (b.clientHeight - c.y) / c.k + p };
+    const c = S.cam; if (!c) return null; const p = pad / c.k, [w, h] = this.size();
+    return { x1: -c.x / c.k - p, y1: -c.y / c.k - p, x2: (w - c.x) / c.k + p, y2: (h - c.y) / c.k + p };
+  },
+  size() { // 147: the board's size from a ResizeObserver: reading clientWidth right after a camera move forced a layout of every card, each wheel step
+    const b = $('#board');
+    if (!this._ro) { this._ro = new ResizeObserver(() => { this._wh = null; }); this._ro.observe(b); }
+    if (!this._wh || !this._wh[0]) this._wh = [b.clientWidth, b.clientHeight];
+    return this._wh;
   },
   cull() {
     if (!this.M) return; const v = this.view(); if (!v) return;
@@ -6844,7 +6905,7 @@ function wire() {
       const m = inp.value === '/' ? 'find' : 'ask'; inp.value = ''; setMode(m);
     }
     autoGrow(); clearTimeout(st); S.hitSel = -1; S.hitsOff = false;
-    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); S.limit = findMode() ? 100 : 300; runSearch(); /* 104g: a live search draws 100 rows (scrolling adds 300), so a redraw per key stays small */ updateSend(); render(); }, 80);
+    st = setTimeout(() => { S.q = inp.value.length < 200 ? inp.value : ''; S.searchOn = findMode() && !!S.q.trim(); if (findMode()) S.limit = 100; runSearch(); /* 147: in Not the list keeps its length (60→300 redrew 240 rows on the first key) */ /* 104g: a live search draws 100 rows (scrolling adds 300), so a redraw per key stays small */ updateSend(); render(); }, findMode() || !inp.value.trim() ? 80 : S.items.length > 2000 ? 320 : 120); // 147: in Not the "N benzer kayıt" chip waits for a pause (scoring 10k items each key was 20–80 ms)
     clearTimeout(rt); rt = setTimeout(() => { if (findMode() && S.hits?.size && S.q.trim()) Recent.add(S.q); }, 2500); // 104e: a search that rested with results is remembered
   });
   let sugT;
