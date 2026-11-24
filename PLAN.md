@@ -919,6 +919,8 @@ Arayüz:
         çubuğu" (solda içerik, sağda ince bilgi sütunu), C "Önizleme önce" (link/görsel büyük üstte, bilgiler altta). Arşiv bilgisi kutu değil,
         tek satır "WhatsApp'tan · Panoya koy" bağlantısı; sohbet dosya adı yerine sohbet adı/kişi. ✓/✗ + not + indir → item-choices.json; [?] yap,
         sahip seçsin, sonra 155 seçilen yönü uygular (masaüstü + telefon, bütün kayıt türleri, phone-audit 0).
+        KARAR (sahip, 2026-11-24): "en uygun seçeneği yap" — seçim beklenmez; A "Belge" uygulanır (en sade, bugünkü kimliğe en yakın, telefonda
+        alt sayfaya doğal geçer). B/C yalnız örnek sayfada kalır.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
