@@ -229,7 +229,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [~B] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
 - [x] 107b Android ana ekran widget'ı (96'dan sonra) (6ff00db; sw v115)
 - [x] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2 (7b66a20; sw v116)
-- [~A] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
+- [x] 107m ilk açılışta örnek verilerle dene + tek tıkla sil (ced3eaa)
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
