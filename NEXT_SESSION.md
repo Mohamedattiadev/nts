@@ -109,8 +109,8 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json) (ab140a2)
 - [x] 95e Ctrl+K komut paleti (f657ed1)
 - [x] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası) (f198621; phone-audit bitmedi, köprü restart gerek)
-- [~A] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?"
-- [ ] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
+- [~B] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?"
+- [~B] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
