@@ -99,7 +99,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 116 logo = pano seçici (sağ alttan taşı) (fbfa07f)
 - [x] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş) (15ef8b5)
 - [?] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer) — ÖRNEK HAZIR: design/zoomout.html (A Kalem · B Balon · C Ada + ok nedenleri), sahibin seçimi bekleniyor (767ba37)
-- [x] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi)
+- [x] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi) (5e5578d)
 - [ ] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi
 - [ ] 122 turda Google ile giriş / Misafir seçimi
 - [ ] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor)
