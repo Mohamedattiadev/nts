@@ -649,6 +649,11 @@ Arayüz:
         açar; kart dışına tık/Esc kapatır; aynı anda tek oynayan medya. b) Kartın üst köşesinde, üzerine gelince (telefonda seçiliyken) küçük "büyüt"
         düğmesi → kayıt penceresinde/popup'ta açar; sağ tık / uzun bas menüsünde "Pencerede aç". c) Uzakta (küçük ölçekte) kart etkinleşmez, önce
         yakınlaştırır. Telefon önce, 4 yapılandırma ekran görüntüsü, phone-audit 0, 10k kartta akıcı (yalnız etkin kart canlı).
+- [ ] 146. **Pano seçici listesi sol çubuğun üstüne binmesin** (sahip, 2026-11-24, design/feedback-24.png: "o kart soldaki menü üzerinde olmamalı sanki").
+        Panoda logo + "Genel ⌄" açılınca Panolar listesi sol çubuğun (filtre/simge sütunu) üstünü kapatıyor; ayrıca açıkken düğmenin ipucu
+        ("Pano: Genel — değiştir") listenin "PANOLAR" başlığının üstüne düşüyor. Düzelt: liste sol çubuğun SAĞINDAN açılsın (çubuk kapalıyken
+        logonun altından, ama hiçbir yüzen parçayla çakışmasın), liste açıkken ipucu gösterilmesin. Masaüstü (çubuk açık/kapalı) + telefon,
+        açık + koyu; phone-audit + çakışma ölçümü 0.
 - [ ] 123-1. **Kasa çarkı uygulamada** (sahip seçimi 2026-11-24, design/dial-choices.json): tarih çarkı t-B Üç kadran, yeri p-filter (süzgeçte tarih
         seçimi). Sahip notu: "halen o güzel his yok; bizim UI'a uygun olması lazım; smooth; ← → ile hareket edebiliyor olması lazım". Yani: bugünkü
         Nts kimliği (style.css değişkenleri, yeni kimlik YOK), savurma + yaylı oturma 60 fps, tık sesi/titreşim isteğe bağlı, ← → kadran içinde değer,
