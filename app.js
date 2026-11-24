@@ -1377,6 +1377,7 @@ function renderChrome() {
   const used = new Set(live.map(i => i.color).filter(Boolean));
   $('#sideMarks').innerHTML = `<div class="mark-dots">${COLORS.filter(([c]) => used.has(c) || f.color === c).map(([c, n]) => `<button class="cdot c-${c}${f.color === c ? ' on' : ''}" data-color="${c}" title="${n}" aria-label="${n}"></button>`).join('') || '<span class="hint">Kayıtlara renk verince burada çıkar.</span>'}</div>
     <button class="side-row${S.sortPrio ? ' on' : ''}" data-sortprio>${ic('flag')}<span class="lbl">Önce yüksek öncelik</span><span class="n">${S.sortPrio ? ic('check', 'sm') : ''}</span></button>`;
+  TagArc.sync(all, f.tag); // 123-1
   $('#sideTags').innerHTML = tags.map(([t, n]) => `<button class="side-row${f.tag === t ? ' on' : ''}" data-tag="${esc(t)}"><span class="hash">${ic('hash', 'sm')}</span><span class="lbl">${esc(t)}</span><span class="n">${n || ''}</span></button>`).join('')
     + (all.length > 10 ? `<button class="side-row" data-alltags><span class="hash">${ic('chev', 'sm')}</span><span class="lbl">${S.allTags ? 'Daha az göster' : `Tümünü göster (${all.length})`}</span></button>` : '')
     || '<div class="hint" style="padding:0 10px 8px">' + aiName() + ' düzenledikçe konular burada çıkar.</div>';
@@ -3292,6 +3293,113 @@ const Rail = {
   },
   fold() { S.railOff = !S.railOff; Pop.close(); try { localStorage.setItem('hn-rail', S.railOff ? 'off' : ''); } catch { } this.apply(); render(); },
   pal(open = !S.palOpen) { S.palOpen = open; if (!open) Ink.use('select'); try { localStorage.setItem('hn-pal', open ? '1' : ''); } catch { } this.apply(); render(); },
+};
+
+// ---------- 123-1: topic arc in the filter popover (owner chose "Alt yay" from design/dial.html, t-B + p-filter) ----------
+// The top arc of a big ring holding "Hepsi" + every topic. Drag sideways (fling: it keeps turning, then springs onto the nearest topic),
+// ← → / ↑ ↓ / Home End / PageUp PageDown, mouse wheel, tap a topic to turn there, tap the one in the window (or the button, or Enter) to filter.
+// The plain topic list stays under it: the arc is never the only way.
+const TagArc = {
+  W: 236, R: 230, Y: 31, STEP: 78, // viewBox width, ring radius, label line, px between topics on the arc
+  list: [], key: null, cur: undefined, pos: 0, vel: 0, target: 0, raf: 0, last: 0, wheel: 0,
+  get n() { return this.list.length + 1; },
+  get step() { return this.STEP / this.R; }, // radians per topic
+  label(i) { return i ? '#' + this.list[i - 1][0] : 'Hepsi'; },
+  build() {
+    const el = $('#tagArc'), { W, R, Y } = this, cy = Y + R, A = Math.asin((W / 2 + 8) / R), x = s => (W / 2 + R * Math.sin(s)).toFixed(1), y = s => (cy - R * Math.cos(s)).toFixed(1);
+    el.innerHTML = `<div class="tarc-dial" tabindex="0" role="slider" aria-label="Konu çarkı: çevir, Enter ile süz" aria-valuemin="0"><svg viewBox="0 0 ${W} 60" aria-hidden="true">
+      <path class="tarc-band" d="M${x(-A)} ${y(-A)}A${R} ${R} 0 0 1 ${x(A)} ${y(A)}"/>
+      <rect class="tarc-win" x="${W / 2 - 46}" y="${Y - 18}" width="92" height="36" rx="11"/>
+      <g transform="translate(${W / 2} ${cy})"><g class="tarc-ticks"></g><g class="tarc-txt"></g></g>
+      <path class="tarc-ptr" d="M${W / 2 - 5} ${Y + 27}L${W / 2 + 5} ${Y + 27}L${W / 2} ${Y + 21}Z"/></svg></div>
+      <button class="tarc-go" type="button"></button>`;
+    this.dial = $('.tarc-dial', el); this.go = $('.tarc-go', el); this.rot = $('.tarc-ticks', el).parentNode;
+    this.wire();
+  },
+  draw() { // labels + detents for the current list
+    const deg = this.step * 180 / Math.PI, R = this.R, cut = s => s.length > 11 ? s.slice(0, 10) + '…' : s;
+    $('.tarc-txt', this.dial).innerHTML = Array.from({ length: this.n }, (_, i) => `<text transform="rotate(${(i * deg).toFixed(2)}) translate(0 ${-R})">${esc(cut(this.label(i)))}</text>`).join('');
+    $('.tarc-ticks', this.dial).innerHTML = Array.from({ length: this.n * 2 - 1 }, (_, k) => `<line class="${k % 2 ? '' : 'm'}" transform="rotate(${(k * deg / 2).toFixed(2)})" x1="0" x2="0" y1="${-R + 21}" y2="${-R + (k % 2 ? 24 : 26)}"/>`).join('');
+    this.T = [...this.dial.querySelectorAll('text')]; this.on = -1; this.sel = -1;
+    this.dial.setAttribute('aria-valuemax', this.n - 1);
+  },
+  sync(tags, cur) {
+    const el = $('#tagArc'); if (!el) return;
+    el.hidden = tags.length < 2; if (el.hidden) return;
+    if (!this.dial) this.build();
+    const key = tags.map(t => t[0]).join('\u0001'), counts = tags.map(t => t[1]).join();
+    this.list = tags;
+    if (key !== this.key) { this.key = key; this.draw(); this.cur = undefined; }
+    this.counts = counts;
+    const idx = cur ? tags.findIndex(t => t[0] === cur) + 1 : 0;
+    if (cur !== this.cur && !this.busy) { this.cur = cur; this.stop(); this.pos = this.target = Math.max(0, idx); this.vel = 0; }
+    this.cur = cur; this.paint();
+  },
+  i() { return Math.max(0, Math.min(this.n - 1, Math.round(this.pos))); },
+  paint(feel) {
+    const deg = this.step * 180 / Math.PI, n = this.n;
+    let p = this.pos; if (p < 0) p = p * .35; else if (p > n - 1) p = n - 1 + (p - n + 1) * .35; // rubber band past the ends
+    this.rot.setAttribute('transform', `translate(${this.W / 2} ${this.Y + this.R}) rotate(${(-p * deg).toFixed(3)})`);
+    const i = this.i(), sel = this.cur ? this.list.findIndex(t => t[0] === this.cur) + 1 : 0;
+    if (i !== this.on) { this.T[this.on]?.classList.remove('on'); this.T[i]?.classList.add('on'); if (feel && this.on >= 0) haptic(3); this.on = i; this.button(); }
+    if (sel !== this.sel) { this.T[this.sel]?.classList.remove('sel'); if (sel) this.T[sel]?.classList.add('sel'); this.sel = sel; this.button(); }
+  },
+  button() {
+    const i = this.on, t = i ? this.list[i - 1] : null, b = this.go; if (!b) return;
+    this.dial.setAttribute('aria-valuenow', i); this.dial.setAttribute('aria-valuetext', this.label(i));
+    if (!t) { b.innerHTML = this.cur ? `${ic('x', 'sm')}Süzgeci kaldır` : 'Bütün konular görünüyor'; b.disabled = !this.cur; b.classList.toggle('off', !!this.cur); return; }
+    b.disabled = false; const off = t[0] === this.cur; b.classList.toggle('off', off);
+    b.innerHTML = off ? `${ic('x', 'sm')}<span class="lbl">#${esc(t[0])}</span><span>süzgecini kaldır</span>` : `${ic('hash', 'sm')}<span class="lbl">${esc(t[0])}</span><span>ile süz</span><span class="n">· ${t[1] || 0}</span>`;
+  },
+  apply() {
+    const i = this.i(), t = i ? this.list[i - 1][0] : null, f = S.filter;
+    if (!t && !f.tag) return;
+    haptic(10); f.tag = t && f.tag !== t ? t : null;
+    S.limit = 300; S.listFrom = null; S.cam = null; Pop.close(); render(); scrollTo({ top: 0, behavior: 'smooth' });
+  },
+  stop() { cancelAnimationFrame(this.raf); this.raf = 0; },
+  // spring onto `to` (slightly under-damped: it settles with a soft give, keeps the fling's speed); reduced motion jumps
+  spring(to) {
+    this.target = Math.max(0, Math.min(this.n - 1, to));
+    if (reduced()) { this.stop(); this.pos = this.target; this.vel = 0; return this.paint(true); }
+    if (this.raf) return;
+    let t0 = performance.now();
+    const f = t => { const dt = Math.min(.032, (t - t0) / 1000); t0 = t;
+      const k = 190, c = 2 * Math.sqrt(k) * .82, a = -k * (this.pos - this.target) - c * this.vel;
+      this.vel += a * dt; this.pos += this.vel * dt;
+      if (Math.abs(this.pos - this.target) < .002 && Math.abs(this.vel) < .02) { this.pos = this.target; this.vel = 0; this.raf = 0; this.paint(true); return; }
+      this.paint(true); this.raf = requestAnimationFrame(f); };
+    this.raf = requestAnimationFrame(f);
+  },
+  by(k) { this.spring(Math.round(this.target) + k); },
+  wire() {
+    const d = this.dial, scale = () => this.W / d.getBoundingClientRect().width;
+    let sx = 0, lx = 0, moved = false, id = null, v = 0;
+    d.addEventListener('pointerdown', e => { if (e.button > 0) return; id = e.pointerId; sx = lx = e.clientX; moved = false; v = 0; this.last = performance.now(); this.stop(); this.busy = true; });
+    d.addEventListener('pointermove', e => { if (e.pointerId !== id) return;
+      if (!moved && Math.abs(e.clientX - sx) > 5) { moved = true; try { d.setPointerCapture(id); } catch { } d.classList.add('grab'); }
+      if (!moved) return;
+      const now = performance.now(), dt = Math.max(1, now - this.last), dp = -(e.clientX - lx) * scale() / this.STEP; // px → topics
+      lx = e.clientX; this.last = now; v = v * .5 + (dp / dt * 1000) * .5; this.vel = v; this.pos += dp; this.target = this.pos; this.paint(true); });
+    const up = e => { if (e.pointerId !== id) return; id = null; d.classList.remove('grab'); this.busy = false;
+      if (!moved) { // tap: the topic under the finger
+        const r = d.getBoundingClientRect(), dx = (e.clientX - r.left - r.width / 2) * scale(), j = Math.round(this.pos + Math.asin(Math.max(-1, Math.min(1, dx / this.R))) / this.step);
+        if (e.type === 'pointerup') { if (j === this.i() && Math.abs(dx) < 46) this.apply(); else this.spring(j); }
+        return; }
+      if (performance.now() - this.last > 90) this.vel = 0;
+      this.spring(Math.round(this.pos + Math.max(-14, Math.min(14, this.vel)) * .16)); };
+    d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
+    d.addEventListener('keydown', e => {
+      const k = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, PageDown: 5, PageUp: -5 }[e.key];
+      if (k) { e.preventDefault(); e.stopPropagation(); return this.by(k); }
+      if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); return this.spring(e.key === 'Home' ? 0 : this.n - 1); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.apply(); }
+    });
+    d.addEventListener('wheel', e => { const dl = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; if (!dl) return;
+      e.preventDefault(); this.wheel += e.deltaMode ? dl * 30 : dl;
+      const k = Math.trunc(this.wheel / 36); if (k) { this.wheel -= k * 36; this.by(k); } }, { passive: false });
+    this.go.onclick = () => this.apply();
+  },
 };
 
 // ---------- filter popover (top left) ----------

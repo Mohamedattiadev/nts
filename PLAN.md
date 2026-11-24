@@ -676,10 +676,21 @@ Arayüz:
         x 18→68; kapalıyken logonun altında, ">" sekmesine değmez); Native.tips aria-expanded="true" düğmede ipucu göstermez; render artık
         #boardBtn aria-expanded'i açık listeye göre korur (eskiden her çizimde false yapıyordu, ipucu geri geliyordu). Test scratchpad t146.mjs
         (d/m × açık/koyu, çubuk açık/kapalı): çakışma 0, açıkken ipucu yok, kapalıyken ipucu var; phone-audit board 0; konsol hatası yok.
-- [ ] 123-1. **Kasa çarkı uygulamada** (sahip seçimi 2026-11-24, design/dial-choices.json): tarih çarkı t-B Üç kadran, yeri p-filter (süzgeçte tarih
+- [x] 123-1. **Kasa çarkı uygulamada** (sahip seçimi 2026-11-24, design/dial-choices.json): tarih çarkı t-B Üç kadran, yeri p-filter (süzgeçte tarih
         seçimi). Sahip notu: "halen o güzel his yok; bizim UI'a uygun olması lazım; smooth; ← → ile hareket edebiliyor olması lazım". Yani: bugünkü
         Nts kimliği (style.css değişkenleri, yeni kimlik YOK), savurma + yaylı oturma 60 fps, tık sesi/titreşim isteğe bağlı, ← → kadran içinde değer,
         Tab kadranlar arası, ↑ ↓ de çalışır, tekerlek; reduced-motion; telefon önce.
+        DÜZELTME: dial-choices.json'daki t-B tarih değil, dial.html'de "2 · Etiket halkası — B Alt yay"; p-filter de "Etiket süzgeci". Yani sahip
+        süzgeç penceresinde etiket yayını seçti (tarih çarkı d-A/B/C hiç seçilmedi) → bu yapıldı.
+        YAPILDI (2026-11-24, A): app.js `TagArc`: süzgeç penceresinde (masaüstü sol çubuk # / telefon "Tümü ⌄") "Konular" başlığının altında büyük
+        halkanın üst yayı: "Hepsi" + bütün konular (sayıya göre), ortada accent pencere + küçük ok, yayın iki ucu solar. Yana sürükle → savurursan
+        döner, bırakınca hafif yaylı (yay k=190, sönüm 0.82) en yakın konuya oturur, uçlarda lastik direnç; her çentikte telefonda 3 ms titreşim;
+        ← → ↑ ↓ bir konu, PageUp/Down 5, Home/End, tekerlek (36 px = 1), Tab ile gelinir (odakta pencere çerçevesi kalınlaşır), Enter/Boşluk = süz.
+        Yandaki konuya dokun → oraya döner; penceredekine dokun ya da alttaki düğme ("#iş ile süz · 5" / "#iş süzgecini kaldır" / "Hepsi"de
+        "Süzgeci kaldır") → süzer, pencere kapanır, tekrar açınca seçili konu ortada ve accent renkte. Liste altında aynen kalır (çark tek yol değil).
+        Bugünkü Nts değişkenleriyle (yeni kimlik yok), reduced-motion'da animasyonsuz atlar, render her çizimde yayı baştan kurmaz (liste aynıysa).
+        Test scratchpad t123.mjs (4 yapılandırma): klavye, tekerlek, savurma tam sayıya oturur, düğme + ortaya dokunma, yeniden açınca ortada,
+        pencere içinde taşma 0, telefonda düğme 44 px; konsol hatası yok.
 - [?] 119-0b. **zoomout örneği yeni tur** (sahip seçimi 2026-11-24, design/zoomout-choices.json): A Kalem seçildi ama "UI hâlâ istediğim gibi değil,
         çok kötü, upgrade et, daha iyi daha görünümlü olsun". A'nın ruhunu (elle çizilmiş kesik küme sınırı + kavisli oklar) koruyup 3 çok daha
         güzel varyant: daha temiz çizgi, daha iyi başlık tipografisi, kümelere sakin renk zemini, okların ucu ve etiketleri; bugünkü Nts görünümü.
