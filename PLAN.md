@@ -1121,6 +1121,14 @@ Arayüz:
            aracı aynı anda yok). Takvim görünümü: kutu değil ince ızgara, bugün accent halka, hafta sonu hafif ton, günde en çok 3 küçük resim
            (kesiksiz kare) ya da tür simgesi + "+N", yoğunluk gün numarasının altında ince nokta/çubuk (kahverengi zemin yok), boş gün sade.
            Eski ?view=calendar / kayıtlı hn-view 'calendar' → Liste + takvim açık (kırık bağlantı yok). Açık + koyu, 1366/1920/390, phone-audit 0.
+           ✓ YAPILDI (2026-11-25, B hattı): sekme kalktı; #cal Liste'nin üstünde (Cal.on(), hn-lcal, ⌃ ile katlanır → zaman çizgisi döner,
+           listede "Takvim" hapı açar). Güne tıkla → liste o güne yerinde kayar (çizilmemişse "… ve öncesi" ile çizilir; content-visibility
+           yüzünden 2,5 s düzeltme, kullanıcı dokununca durur) + gün başlığı vurgusu; kaydırınca üstteki gün takvimde işaretli, ay izler;
+           ‹ › / klavye / hafta kaydırma sayfayı oynatmadan listeyi o ayın/haftanın sonundan çizer. Telefonda tek hafta satırı, "Ay" düğmesi ya
+           da aşağı kaydır → ay. Görünüm: ince ızgara, bugün accent halka, hafta sonu hafif ton, ≤3 kare resim ya da tür simgesi + "+N",
+           yoğunluk noktaları, kahverengi zemin yok. Yıl/Yıllar katmanı aynı kod. Eski ?view=cal|calendar, hn-view 'cal' → Liste + takvim.
+           "Tarihe git" penceresi takvim altında açılırken önce yukarı alınır. Test: 4 yapılandırma, konsol hatası 0, phone-audit
+           liste/takvim/tarihegit 0 (kalan: gizli #boardBtn 2×2 eskiden var; c-grow sticky hap altında, geçici). Ekran: design/158b/.
         c) design/feedback-41.png: sol çubukta "BAĞLANTI…" bölümündeki satırlarda (Mac…, Hom…, Nix…) simge emoji 🔗. Sahip: "gerçek ikon SVG olsun,
            emoji olmasın". Bütün uygulamayı tara: arayüzde simge olarak kullanılan her emoji (veriden gelen liste/klasör/kaynak simgeleri dahil,
            ör. smart list/folder/source ikon alanı) → ic('…') SVG; kullanıcının kendi yazdığı metindeki emojiye dokunma. Tarayıcı emoji fontuna
