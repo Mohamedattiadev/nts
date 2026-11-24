@@ -91,9 +91,9 @@ const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidd
 
 // ---------- utils ----------
 function toast(msg, ms = 2600, icon = '', action = null) {
-  const t = $('#toast'); t.innerHTML = (icon === 'mark' ? `<span class="mark t-mark">${$('header .mark svg, .mark svg')?.outerHTML || ''}</span>` : icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + (action ? `<button class="t-act">${esc(action.label)}</button>` : ''); t.hidden = false;
+  const t = $('#toast'); t.innerHTML = (icon === 'mark' ? `<span class="mark t-mark">${$('header .mark svg, .mark svg')?.outerHTML || ''}</span>` : icon ? ic(icon, 'sm') : '') + `<span>${esc(msg)}</span>` + [].concat(action || []).map((a, k) => `<button class="t-act" data-k="${k}">${esc(a.label)}</button>`).join(''); t.hidden = false;
   if (t.showPopover) try { if (t.matches(':popover-open')) t.hidePopover(); t.showPopover(); } catch { } // top layer: above an open window (reading page, item window), so "Geri al" is seen
-  if (action) t.querySelector('.t-act').onclick = () => { t.hidden = true; action.fn(); };
+  t.querySelectorAll('.t-act').forEach(b => { b.onclick = () => { t.hidden = true; [].concat(action)[+b.dataset.k].fn(); }; }); // 107e: a reminder has two (1 saat ertele · Yarın)
   t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms);
 }
@@ -2325,6 +2325,8 @@ async function save() {
     await Todo.add(lines.map(l => l.replace(TODO_LINE, '').trim()));
     return;
   }
+  const rem = !files.length && NtsWhen.remindOf(text); // 107e: "yarın 9'da annemi ara" → a task with a reminder
+  if (rem) return Remind.make(text, rem);
   let r; try { r = await addFromInput({ text, files }); }
   catch (e) { console.warn('save', e); if (!inp.value.trim()) inp.value = text; S.attach = [...files, ...S.attach]; renderAttach(); autoGrow(); return toast('Kaydedilemedi: ' + e.message, 5000, 'x'); } // 109c: nothing typed is lost
   render();
@@ -3326,10 +3328,11 @@ const Remind = {
       const d = i.todo; if (!d || d.done || i.deleted || !d.due) continue;
       const at = new Date(d.due.includes('T') ? d.due : d.due + 'T09:00').getTime(), key = i.id + '@' + d.due;
       if (at > t || t - at > 6 * 3600e3 || seen.has(key)) continue;
-      seen.add(key); ch = true; const txt = d.text || titleOf(i);
-      toast('Görev zamanı: ' + txt, 8000, 'clock', { label: 'Göster', fn: () => setView('todo') });
-      if (!BridgeLink.local() && 'Notification' in window && Notification.permission === 'granted')
-        navigator.serviceWorker?.ready.then(r => r.showNotification('Nts · görev zamanı', { body: txt, icon: 'icons/icon-192.png', tag: key, data: { view: 'todo' } })).catch(() => { try { new Notification('Nts · görev zamanı', { body: txt }); } catch { } });
+      seen.add(key); ch = true; const txt = d.text || titleOf(i), id = i.id;
+      toast('Hatırlatma: ' + txt, 15000, 'clock', [{ label: '1 saat ertele', fn: () => this.snooze(id, '1h') }, { label: 'Yarın', fn: () => this.snooze(id, 'tomorrow') }]);
+      if (!BridgeLink.local() && 'Notification' in window && Notification.permission === 'granted') // 107e: snooze right from the notification (sw.js)
+        navigator.serviceWorker?.ready.then(r => r.showNotification('Nts · hatırlatma', { body: txt, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: key, renotify: true, data: { view: 'todo', id },
+          actions: [{ action: 'snooze1h', title: '1 saat ertele' }, { action: 'tomorrow', title: 'Yarın' }] })).catch(() => { try { new Notification('Nts · hatırlatma', { body: txt }); } catch { } });
     }
     for (const i of S.items) { // 95c: a "3 gün sonra" item is back in the reading list
       if (!i.again || i.deleted || i.again > t || t - i.again > 7 * 864e5) continue;
@@ -3340,7 +3343,25 @@ const Remind = {
     }
     if (ch) try { localStorage.setItem('hn-reminded', JSON.stringify([...seen].slice(-500))); } catch { }
   },
-  init() { setInterval(() => this.tick(), 30e3); setTimeout(() => this.tick(), 3000); },
+  init() { setInterval(() => this.tick(), 30e3); setTimeout(() => { this.picked(); this.tick(); }, 3000); },
+  // 107e: a line typed as a reminder becomes a task with that time; "Not olsun" keeps it a plain note
+  async make(text, p) {
+    const [it, ...rest] = itemsFromInput({ text: p.text, ts: now() }); if (!it) return;
+    it.todo = { text: p.text, done: false, due: p.due, user: true }; it.createdAt = now();
+    const saved = await saveItems([it, ...rest]); await upsert(saved); this.ask(); haptic(); Motion.hop?.();
+    toast(`Hatırlatma · ${dueInfo(p.due)?.label || p.due} · ${p.text}`, 6000, 'clock', { label: 'Not olsun', fn: async () => { const c = byId(it.id); if (c) await upsert([{ ...c, text, title: undefined, todo: null, noTodo: true }]); } });
+  },
+  async snooze(id, kind) {
+    const i = byId(id); if (!i?.todo || i.deleted) return; const due = NtsWhen.snoozeDue(kind);
+    await upsert([{ ...i, todo: { ...i.todo, due, done: false, user: true } }]);
+    toast('Ertelendi · ' + (dueInfo(due)?.label || due), 3000, 'clock');
+  },
+  // snoozed from a notification while the app was closed: the service worker wrote the new time; send it to the other devices
+  async picked() {
+    const ids = await DB.get('kv', 'snoozed').catch(() => null); if (!ids?.length) return;
+    const list = ids.map(byId).filter(Boolean); await DB.del('kv', 'snoozed');
+    if (list.length) { await Sync.markDirty(list); Sync.schedule(); }
+  },
 };
 
 // 95d: a picture (or scanned page) whose text holds a date still ahead → "göreve çevir?" in its window, and once as a toast
@@ -4667,24 +4688,8 @@ function dueInfo(d) {
   const day = key === dayKey(now()) ? 'Bugün' : key === dayKey(now() + 864e5) ? 'Yarın' : shortDay(key);
   return { ms, at, label: day + (hasT ? ' ' + d.slice(11, 16) : ''), cls: ms < 0 ? 'late' : key === dayKey(now()) ? 'today' : ms < 3 * 864e5 ? 'soon' : '' };
 }
-// Turkish dates in a task line: "yarın 10:30 diş", "cuma toplantı", "haftaya rapor", "12 mart" → { text, due }
-const TR_DAYS = ['pazar', 'pazartesi', 'salı', 'çarşamba', 'perşembe', 'cuma', 'cumartesi'];
-const TR_MONTHS = ['ocak', 'şubat', 'mart', 'nisan', 'mayıs', 'haziran', 'temmuz', 'ağustos', 'eylül', 'ekim', 'kasım', 'aralık'];
-function parseDue(t) {
-  let text = t, day = null, time = null; const lo = () => text.toLocaleLowerCase('tr');
-  const cut = re => { const m = lo().match(re); if (!m) return null; text = (text.slice(0, m.index) + text.slice(m.index + m[0].length)).replace(/\s{2,}/g, ' ').trim(); return m; };
-  const tm = cut(/(?:^|\s)(?:saat\s*)?([01]?\d|2[0-3])[:.]([0-5]\d)(?=\s|$)/); if (tm) time = `${tm[1].padStart(2, '0')}:${tm[2]}`;
-  const d0 = new Date(); d0.setHours(0, 0, 0, 0); const add = n => { const d = new Date(d0); d.setDate(d.getDate() + n); return d; };
-  let m;
-  if (cut(/(?:^|\s)bugün(?=\s|$)/)) day = add(0);
-  else if (cut(/(?:^|\s)yarın(?=\s|$)/)) day = add(1);
-  else if (cut(/(?:^|\s)haftaya(?=\s|$)/)) day = add(7);
-  else if ((m = cut(new RegExp(`(?:^|\\s)(\\d{1,2})\\s+(${TR_MONTHS.join('|')})(?=\\s|$)`)))) { const d = new Date(d0.getFullYear(), TR_MONTHS.indexOf(m[2]), +m[1]); if (d < d0) d.setFullYear(d.getFullYear() + 1); day = d; }
-  else if ((m = cut(new RegExp(`(?:^|\\s)(${TR_DAYS.join('|')})(?:\\s+günü)?(?=\\s|$)`)))) { const w = TR_DAYS.indexOf(m[1]); day = add(((w - d0.getDay()) + 7) % 7 || 7); }
-  if (!day && time) day = add(0);
-  if (!day) return { text: t };
-  return { text: text || t, due: dayKey(day.getTime()) + (time ? 'T' + time : '') };
-}
+// Turkish dates in a task line: "yarın 10:30 diş", "cuma toplantı", "haftaya rapor", "12 mart" → { text, due } (107e: when.js, also "9'da", "2 saat sonra", "akşam 8")
+const parseDue = t => NtsWhen.parseDue(t);
 const REPEATS = [['', 'Tekrar yok'], ['daily', 'Her gün'], ['weekly', 'Her hafta'], ['monthly', 'Her ay']];
 // 94f: the installed app's icon shows how many to-dos are open (Badging API; nothing where unsupported)
 const Badge = {
@@ -7528,7 +7533,7 @@ const Boot = {
   // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
   Cloud.finish().then(() => { if (Cloud.on()) { render(); Sync.run(); Live.start(); BridgeLink.publish(); } });
   BridgeLink.adopt();
-  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.read) Read.queue(); else if (e.data?.view === 'morning') Morning.open(); else if (e.data?.view) setView(e.data.view); });
+  navigator.serviceWorker?.addEventListener('message', e => { if (e.data?.snooze) Remind.snooze(e.data.snooze.id, e.data.snooze.kind); else if (e.data?.read) Read.queue(); else if (e.data?.view === 'morning') Morning.open(); else if (e.data?.view) setView(e.data.view); });
   { // home-screen shortcuts (long-press the icon): new note, to-dos, vault
     const q = new URLSearchParams(location.search), v = q.get('view'), d = q.get('do');
     if (v === 'todo') setView('todo');

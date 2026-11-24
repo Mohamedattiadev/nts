@@ -605,6 +605,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (d) başka uygulamalardan taşıma: Google Keep (Takeout JSON), Apple Notes (HTML dışa aktarım), Notion (Markdown zip), Evernote (.enex),
             Telegram "Kaydedilen Mesajlar" (JSON) — WhatsApp içe aktarımı gibi önizleme + gruplama;
         (e) doğal dille hatırlatma: "yarın 9'da annemi ara" → görev + bildirim; bildirimde "1 saat ertele / yarın" düğmeleri;
+            [x] (2026-11-24, B hattı, sw v113) yeni `when.js` (sayfa + sw + node): parseDue artık "9'da/3'te" (1–6 → öğleden sonra), "saat 10",
+            "16.30'da", "2 saat/yarım saat/20 dk/3 gün sonra", "sabah/öğlen/akşam/gece (+ saat)", "bu akşam", "öbür gün", gün adları, "12 aralık",
+            İngilizce (tomorrow 9am, in 2 hours, on friday at 6pm, remind me to), "hatırlat:" işareti; bugün geçmiş saat → yarın. `remindOf()`: tek
+            kısa satır, link yok, saat açıkça söylenmiş (çıplak "14:30" ya da tek başına "akşam yemeği" hatırlatma DEĞİL). Kutuda Not modunda
+            böyle bir satır → görev + saat, toast "Hatırlatma · Yarın 09:00 · annemi ara" + "Not olsun" (geri al: düz not). Zamanı gelince toast'ta ve
+            telefon bildiriminde "1 saat ertele" · "Yarın" (09:00); uygulama açıksa sw sayfaya iletir (senkron), kapalıysa sw IndexedDB'ye yazar,
+            sayfa açılınca kv 'snoozed' ile buluta gönderir. toast() artık birden çok düğme alır; telefonda düğmeler 44 px. Test: tools/test/
+            when.test.mjs (37), 4 yapılandırmada ekran görüntüsü, phone-audit toast 0 (kalan "small" gizli #boardBtn, eskiden). Sınır: uygulama
+            tamamen kapalıyken telefonda zamanında bildirim yok (tarayıcıda zamanlanmış bildirim API'si yok); PC'de köprü bildiriyor.
         (f) kendiliğinden toparlama: aynı link/benzer not → "birleştireyim mi?" (geri alınır), kırık link işareti, aylardır açılmayanları arşive öner;
         (g) ~~şablonlar~~ KALDIRILDI (sahip): toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
         (h) ~~günlük modu~~ — KALDIRILDI (sahip: "gerek yok, kullanıcı orada kalmıyor, notunu atıp sonra bakıyor");

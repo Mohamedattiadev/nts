@@ -875,6 +875,7 @@ dialog.reader .d-body { gap: 10px; }
 .fbtn:hover { background: var(--surface-2); color: var(--text); }
 .fbtn.danger { color: var(--danger); }
 .toast .t-act { white-space: nowrap; flex: none; margin-left: 6px; padding: 4px 10px; border-radius: 7px; background: color-mix(in srgb, var(--bg) 18%, transparent); color: inherit; font-weight: 700; }
+@media (pointer: coarse) { .toast .t-act { min-height: 44px; padding: 4px 12px; } } /* 107e: "1 saat ertele" / "Yarın" are tapped on a phone */
 
 /* settings: advanced folded away */
 .adv { border-top: 1px solid var(--line); padding-top: 6px; }
