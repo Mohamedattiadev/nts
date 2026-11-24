@@ -1229,13 +1229,13 @@ function renderGallery(items) { // month headers stick to the top while scrollin
 }
 // 131: automatic folders at the top of the list and the gallery ("5000 things = 5000 scrolls" → ~20-40 folders). Virtual: an item is
 // never moved and can sit in several folders. Made without AI from what items already carry: tag, project, WhatsApp chat, bookmarks,
-// site, kind, year. Styles A Cep · B Yığın · C Albüm · D Dosya · E Ayraç (default) from design/folders-choices.json, picked in Settings.
+// site, kind, year. Styles A Cep · B Yığın · C Albüm · D Dosya (default, glass front: 131-1) · E Ayraç, picked in Settings.
 const Folders = {
-  STYLES: [['E', 'Ayraç'], ['A', 'Cep'], ['B', 'Yığın'], ['C', 'Albüm'], ['D', 'Dosya']],
+  STYLES: [['D', 'Dosya (cam)'], ['E', 'Ayraç'], ['A', 'Cep'], ['B', 'Yığın'], ['C', 'Albüm']],
   COLS: ['#c2410c', '#4f5fd6', '#15803d', '#c2255c', '#0b6bcb', '#7c3aed', '#b45309', '#0f766e'],
   KINDS: { image: 'Resimler', video: 'Videolar', pdf: "PDF'ler", audio: 'Sesler' },
   cfg() { return (S.settings ||= {}).folders ||= {}; },
-  style() { const s = this.cfg().style; return this.STYLES.some(x => x[0] === s) ? s : 'E'; },
+  style() { const s = this.cfg().style; return this.STYLES.some(x => x[0] === s) ? s : 'D'; },
   host: i => i.type === 'link' && i.url ? (/^https?:\/\/(?:www\.|m\.)?([^/:?#]+)/i.exec(i.url)?.[1] || '').toLowerCase() : '',
   test(i, k) {
     const c = k.indexOf(':'), t = k.slice(0, c), v = k.slice(c + 1);
@@ -1286,28 +1286,36 @@ const Folders = {
     const L = { image: 'resim', video: 'video', pdf: 'PDF', audio: 'ses', link: 'bağlantı', note: 'not', text: 'metin', file: 'dosya' };
     return Object.entries(f.kinds).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => n + ' ' + (L[k] || k)).join(' · ');
   },
+  // 131-1 (feedback-25): never an empty grey picture box. Until (or unless) the real picture comes, the item shows what it really is:
+  // the site's icon or a small mark in the kind's colour + its title; a note shows its first line and the words under it.
+  fav(i) { const k = fileKind(i), h = this.host(i);
+    return `<em class="${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}${i.type === 'link' ? esc(([...h][0] || '·').toUpperCase()) : ic(k === 'text' ? 'note' : k, 'sm')}</em>`; },
   mini(i) { // a small item that peeks out of the folder: the real picture, else a little paper note / link card
-    if (hasVisual(i)) return thumbBox(i, 'f-it img');
-    if (i.type === 'link') return `<div class="f-it link" dir="auto"><em>${i.meta?.logo ? `<img src="${esc(i.meta.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</em><b>${esc(titleOf(i))}</b><small>${esc(this.host(i))}</small></div>`;
-    return `<div class="f-it note" dir="auto"><b>${esc(titleOf(i))}</b><i></i><i></i><i></i></div>`;
+    const t0 = titleOf(i), t = esc(i.type === 'file' && t0 === i.fileName && noiseName(i.fileName) ? KIND_LABEL[fileKind(i)] + ' · ' + shortDay(dayKey(i.ts)) : t0); // a camera name says nothing
+    if (hasVisual(i)) return `<div class="f-it img" data-tid="${i.id}" dir="auto"><span class="f-fb">${this.fav(i)}<b>${t}</b></span></div>`;
+    if (i.type === 'link') return `<div class="f-it link" dir="auto">${this.fav(i)}<b>${t}</b><small>${esc(this.host(i))}</small></div>`;
+    const ls = i.type === 'note' && i.text && !i.sticky ? i.text.split('\n').filter(l => l.trim() && !/^```|^\|?\s*:?-{2,}|^(-{3,}|\*{3,})$/.test(l.trim())).map(Ed.plain) : [],
+      rest = (i.userTitle ? ls : ls.slice(1)).join(' ').replace(/\s+/g, ' ').trim();
+    return `<div class="f-it note" dir="auto"><b>${t}</b>${rest ? `<p>${esc(rest.slice(0, 120))}</p>` : ''}</div>`;
   },
   card(f, st) {
     const name = esc(this.label(f.k)), meta = this.meta(f), c = this.color(f.k), top = f.top, fill = n => Array.from({ length: n }, (_, k) => top[k % top.length]);
     const aim = f.k.startsWith('ai:') ? `<span class="f-ai" title="Anlamca gruplandı">${ic('spark', 'sm')}</span>` : ''; // 131b
-    const cap = `<div class="f-name" dir="auto">${aim}${name}</div><div class="f-cnt">${meta}</div>`, pin = (this.cfg().pin || []).includes(f.k) ? ` <span class="f-pin">${ic('pin', 'sm')}</span>` : '';
+    // 131-1: a plain count ("122 kayıt"); the kind mix stays in the hint
+    const cnt = `<div class="f-cnt" title="${esc(meta)}"><b>${f.n}</b> kayıt</div>`, cap = `<div class="f-name" dir="auto">${aim}${name}</div>${cnt}`, pin = (this.cfg().pin || []).includes(f.k) ? ` <span class="f-pin">${ic('pin', 'sm')}</span>` : '';
     const a = `class="fold f${st.toLowerCase()}" data-fold="${esc(f.k)}" style="--c:${c}" aria-label="${name}, ${f.n} kayıt"`;
     if (st === 'A') return `<button ${a}><div class="f-back"></div><div class="f-pk">${top.map(i => this.mini(i)).join('')}</div><div class="f-front">${cap}</div></button>`;
     if (st === 'B') return `<button ${a}><div class="f-st">${top.slice().reverse().map(i => this.mini(i)).join('')}</div><div class="f-cap">${cap}</div></button>`;
     if (st === 'C') { const tiles = fill(3).map((i, k) => k === 2 && f.n > 3 ? this.mini(i).replace('class="f-it', 'class="f-it more').replace(/<\/div>$/, `<span>+${f.n - 2}</span></div>`) : this.mini(i));
       return `<button ${a}><div class="f-mos">${tiles.join('')}</div><div class="f-cap"><span class="f-ic"></span><div>${cap}</div></div></button>`; }
     if (st === 'D') return `<button ${a}><div class="f-ico"><div class="f-bk"></div><div class="f-pk">${top.slice(0, 2).map(i => this.mini(i)).join('')}</div><div class="f-fr"><span>${esc([...this.label(f.k).replace(/^#/, '')][0] || '·')}</span></div></div>${cap}</button>`;
-    return `<button ${a}><div class="f-tab" dir="auto">${aim}${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div><div class="f-cnt">${f.n} kayıt · ${meta}</div></div></button>`;
+    return `<button ${a}><div class="f-tab" dir="auto">${aim}${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div>${cnt}</div></button>`;
   },
   html(items) {
     if (!this.shown() || items.length < 24) return '';
     const all = this.build(items); if (all.length < 2) return '';
     const st = this.style(), cap = innerWidth < 600 ? 4 : innerWidth < 1100 ? 6 : 8, list = S.foldAll ? all : all.slice(0, cap);
-    return `<section class="folders fs-${st}" aria-label="Klasörler"><div class="f-top"><h2>Klasörler</h2><span class="n">${all.length}</span><span class="sp"></span>${Sem.on() ? '' : `<button class="link-btn f-aion" data-faion title="${esc(Sem.say())}">${ic('spark', 'sm')}<span>Anlamca grupla</span></button>`}${all.length > cap ? `<button class="link-btn" data-foldall>${S.foldAll ? 'Daha az' : `Tümü (${all.length})`}</button>` : ''}</div>`
+    return `<section class="folders fs-${st}" aria-label="Klasörler"><div class="f-top"><h2>Klasörler</h2><span class="n">${all.length}</span><span class="sp"></span>${Sem.on() ? '' : `<button class="link-btn f-aion" data-faion title="${esc(Sem.say())}" aria-label="Anlamca grupla">${ic('spark', 'sm')}<span>Anlamca grupla</span></button>`}${all.length > cap ? `<button class="link-btn" data-foldall>${S.foldAll ? 'Daha az' : `Tümü (${all.length})`}</button>` : ''}</div>`
       + `<div class="f-grid">${list.map(f => this.card(f, st)).join('')}</div></section>`;
   },
   head() { // inside a folder: back, name, count, pin / rename / hide
@@ -6864,7 +6872,7 @@ const Glass = {
   },
   want() { try { return localStorage.getItem('hn-glass') === '1'; } catch { return false; } },
   on() { return document.documentElement.hasAttribute('data-glass'); },
-  apply() { document.documentElement.toggleAttribute('data-glass', this.want() && !this.slow()); },
+  apply() { const slow = !!this.slow(); document.documentElement.toggleAttribute('data-glass', this.want() && !slow); document.documentElement.toggleAttribute('data-gslow', slow); }, // data-gslow: the folder glass (131-1) turns solid too
   set(v) { try { localStorage.setItem('hn-glass', v ? '1' : '0'); } catch { } this.apply(); },
   // two tiny previews (Düz / Cam); data-look="0|1"
   pick() {

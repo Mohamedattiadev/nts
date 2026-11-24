@@ -777,13 +777,14 @@ Arayüz:
         KALAN (147d): her pencere (showModal) arkadaki 10k satırlık liste yüzünden telefonda 300–1300 ms (Çöp, okuma, Ayarlar, kayıt) —
         açılınca arka plan inert/top-layer stil yeniden hesabı; Ara'da yazma + Enter telefonda ~5 sn toplam (147b ile ortak, FLIP getBoundingClientRect);
         pano seçici, Sor, Şifrelerim, senkron gelişi < 350 ms, sorun yok.
-- [ ] 131-1. **Klasör kartı: D Dosya, cam** (sahip, 2026-11-24, design/folders.html'de D seçti, design/folders-choices-3.json: "bu fena değil ama cam
-        olsun, şeffaf yani, ama aynı renkler anladın"). 131-0c yeni tur İPTAL, doğrudan uygula: D Dosya stili (gerçek klasör biçimi) uygulamada
-        varsayılan; zemini buzlu cam (backdrop-filter blur + yarı saydam), klasörün kendi rengi (etiket/tür rengi) aynen kalır, cam altında
-        okunur; kenar ince açık çizgi, sakin gölge. 121'deki cam kurallarını kullan (yavaş telefonda / saydamlığı azalt'ta düz zemine döner, AA
-        kontrast korunur). Aynı işte feedback-25 sorunları: resimsiz kayıtta gri boş resim simgesi YOK (site favicon + başlık, notun ilk satırı,
-        tür rengi), kesik başlıklar 2 satır, sayı satırı sade ("122" + küçük "kayıt"). Açık + koyu, masaüstü + telefon 2 sütun, ekran görüntüsü;
-        Ayarlar'daki stil seçicide D "Dosya (cam)" olarak dursun.
+- [x] 131-1. (2026-11-24, B hattı) **Klasör kartı: D Dosya, cam** (sahip D'yi seçti: "cam olsun, şeffaf, ama aynı renkler"). D artık
+        varsayılan (Ayarlar → Klasör stili ilk seçenek "Dosya (cam)"; E/A/B/C seçilebilir, önceden seçen kalır). Ön kapak buzlu cam: klasörün
+        kendi rengi yarı saydam + blur(7px) saturate, içindeki kâğıtlar bulanık görünür, üstte ince açık kenar, sakin gölge; arka kapak da hafif
+        saydam. Yavaş telefon / saydamlığı azalt / desteklemeyen tarayıcı (Glass.slow) → <html data-gslow> → eski düz kapak. feedback-25:
+        resimsiz/küçük resmi gelmeyen kayıtta gri boş resim simgesi YOK — sitenin simgesi (yoksa baş harfi) ya da tür renginde küçük işaret +
+        başlık; kamera adı ("IMG-2025…") yerine "Resim · tarih"; not kartı ilk satır + altındaki gerçek yazı (gri çizgiler kaldırıldı);
+        klasör adı 2 satır; sayı satırı sade "122 kayıt" (tür dağılımı ipucunda). Telefonda "Anlamca grupla" yalnız simge, başlık tek satır.
+        Ekran görüntüleri (masaüstü 1366 + telefon 390 × açık/koyu, cam + düz) scratchpad t131.mjs; konsol hatası yok.
 - [ ] 149. **Zaman çizgisi daha yumuşak + aylar** (sahip, 2026-11-24, design/feedback-26.png: sağdaki dikey yıl şeridi 2023–2026 ve turuncu nokta:
         "bu line da daha smooth; bir de '-' olsun, ayları gösteren"). Her ay için ince yatay çentik (yıl çentiği daha uzun/kalın), noktaya yakın
         ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin

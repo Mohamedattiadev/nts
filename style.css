@@ -1847,21 +1847,29 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .fold { all: unset; box-sizing: border-box; position: relative; display: block; cursor: pointer; border-radius: 16px; min-width: 0; min-height: 44px; -webkit-tap-highlight-color: transparent; }
 .fold *, .fold *::before, .fold *::after { box-sizing: border-box; }
 .fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.f-name { font-weight: 620; font-size: 14px; line-height: 1.25; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.f-cnt { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-name { font-weight: 620; font-size: 14px; line-height: 1.25; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; } /* 131-1: two lines, not "Absolute Beast…" */
+.f-cnt { font-size: 11.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-cnt b { font-size: 13px; font-weight: 650; color: var(--text-2); font-variant-numeric: tabular-nums; margin-right: 1px; }
 /* the little items that peek out: real thumbnails, else a paper note / link card */
 .f-it { position: absolute; border-radius: 7px; overflow: hidden; box-shadow: var(--f-shi); background: var(--paper); transition: transform .18s var(--f-ease); color: var(--muted); }
 .f-it.img { display: grid; place-items: center; background: var(--surface-2); }
 .f-it.img > svg { width: 22px; height: 22px; opacity: .55; }
-.f-it.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
-.f-it.img img.ok { opacity: 1; }
+/* 131-1: no empty grey picture: the site icon / kind mark + title sit under the picture until (unless) it arrives */
+.f-it.img { place-items: stretch; background: var(--paper); border: 1px solid var(--paper-line); }
+.f-it .f-fb { display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; min-width: 0; text-align: start; }
+.f-it .f-fb b { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 9.5px; line-height: 1.25; font-weight: 650; color: var(--text); overflow: hidden; overflow-wrap: anywhere; }
+.f-it em { flex: none; display: grid; place-items: center; position: relative; width: 16px; height: 16px; border-radius: 4px; overflow: hidden; font: 700 9px/1 Inter, system-ui, sans-serif; font-style: normal;
+  background: color-mix(in srgb, currentColor 16%, transparent); }
+.f-it em svg { width: 11px; height: 11px; }
+.f-it em img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #fff; }
+.f-it.note p { margin: 4px 0 0; font-size: 8.5px; line-height: 1.3; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.f-it.note { border-top: 2px solid var(--t-note); }
+.f-it.img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
+.f-it.img > img.ok { opacity: 1; z-index: 1; }
 .f-it .badge { position: absolute; left: 4px; bottom: 4px; font-size: 8.5px; font-weight: 700; padding: 1px 4px; border-radius: 4px; background: var(--surface-3); color: var(--text-2); }
 .f-it.note, .f-it.link { padding: 8px 9px; border: 1px solid var(--paper-line); }
 .f-it.note b, .f-it.link b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 9.5px; line-height: 1.25; font-weight: 650; color: var(--text); overflow: hidden; overflow-wrap: anywhere; }
-.f-it.note i { display: block; height: 4px; border-radius: 2px; background: var(--paper-line); margin-top: 6px; }
-.f-it.note i:nth-of-type(2) { width: 80%; } .f-it.note i:nth-of-type(3) { width: 62%; }
-.f-it.link em { display: block; width: 14px; height: 14px; border-radius: 4px; margin-bottom: 6px; background: var(--c); overflow: hidden; }
-.f-it.link em img { width: 100%; height: 100%; object-fit: cover; display: block; background: #fff; }
+.f-it.link em { margin-bottom: 6px; }
 .f-it.link small { display: block; font-size: 8.5px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A · Cep */
 .fa { aspect-ratio: 1.32; }
@@ -1921,7 +1929,17 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .fd:hover .f-fr, .fd:focus-visible .f-fr { transform: rotateX(-26deg); box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 8px 14px -6px rgb(0 0 0 / .3); }
 .fd:hover .f-pk .f-it:nth-child(1), .fd:focus-visible .f-pk .f-it:nth-child(1) { transform: rotate(-8deg) translateY(-10px); }
 .fd:hover .f-pk .f-it:nth-child(2), .fd:focus-visible .f-pk .f-it:nth-child(2) { transform: rotate(7deg) translateY(-7px); }
-.fd .f-name { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 6px; }
+.fd .f-name { max-width: 100%; padding: 1px 8px; border-radius: 6px; }
+/* 131-1 (owner: "cam olsun, şeffaf, ama aynı renkler"): the front flap is frosted glass in the folder's own colour, so the sheets inside
+   show through blurred; a thin light edge, a calm shadow. Slow phone / reduce transparency (data-gslow) → the solid flap above. */
+:root:not([data-gslow]) .fd .f-bk { background: linear-gradient(color-mix(in oklab, var(--c) 78%, transparent), color-mix(in oklab, var(--c) 90%, transparent)); }
+:root:not([data-gslow]) .fd .f-fr { background: linear-gradient(180deg, rgb(255 255 255 / .3), rgb(255 255 255 / .04) 55%), color-mix(in oklab, color-mix(in oklab, var(--c) 84%, #fff) 64%, transparent);
+  -webkit-backdrop-filter: blur(7px) saturate(1.5); backdrop-filter: blur(7px) saturate(1.5); border: 1px solid rgb(255 255 255 / .5); border-bottom-color: rgb(255 255 255 / .18);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), 0 1px 2px rgb(0 0 0 / .12), 0 6px 14px -8px rgb(0 0 0 / .3); }
+:root[data-theme="dark"]:not([data-gslow]) .fd .f-fr { background: linear-gradient(180deg, rgb(255 255 255 / .2), rgb(255 255 255 / .02) 55%), color-mix(in oklab, color-mix(in oklab, var(--c) 88%, #fff) 58%, transparent);
+  border-color: rgb(255 255 255 / .28); border-bottom-color: rgb(255 255 255 / .08); }
+:root:not([data-gslow]) .fd:hover .f-fr, :root:not([data-gslow]) .fd:focus-visible .f-fr { box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), 0 8px 14px -6px rgb(0 0 0 / .3); }
+:root:not([data-gslow]) .fd .f-fr span { opacity: .62; color: #fff; text-shadow: 0 1px 2px color-mix(in oklab, var(--c) 60%, #000); }
 .fd:focus-visible { outline: none; } .fd:focus-visible .f-name { background: var(--accent); color: var(--bg); }
 /* E · Ayraç (default; the owner liked the coloured tab) */
 .fe { padding-top: 24px; isolation: isolate; }
@@ -1933,7 +1951,9 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .fe .f-body { position: relative; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 4px 14px 14px 14px; padding: 10px; box-shadow: var(--f-sh1); }
 .fe .f-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .fe .f-row .f-it { position: relative; aspect-ratio: 1; border-radius: 8px; padding: 6px; box-shadow: none; }
-.fe .f-row .f-it.note i, .fe .f-row .f-it.link small { display: none; }
+.fe .f-row .f-it.note p, .fe .f-row .f-it.link small { display: none; }
+.fe .f-row .f-it .f-fb { padding: 0; } .fe .f-row .f-it .f-fb b { -webkit-line-clamp: 2; }
+.fe .f-row .f-it b { overflow-wrap: break-word; } @media (max-width: 600px) { .fe .f-row .f-it b { -webkit-line-clamp: 1 !important; } }
 .fe .f-cnt { margin-top: 8px; }
 .fe:hover .f-tab, .fe:focus-visible .f-tab { transform: translateY(-4px); }
 .fe:hover .f-pg, .fe:focus-visible .f-pg { transform: translate(3px, 3px) rotate(1deg); }
@@ -1955,6 +1975,8 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .f-name .f-ai { color: var(--c); }
 .f-top .f-aion { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12.5px; }
 .f-top .f-aion:hover { color: var(--text); }
+.f-top .link-btn { white-space: nowrap; }
+@media (max-width: 600px) { .f-top .f-aion span { display: none; } .f-top .f-aion { min-width: 44px; justify-content: center; } } /* 131-1: one line on a phone */
 .f-merge { position: fixed; z-index: 60; min-width: 220px; max-width: min(320px, calc(100vw - 16px)); max-height: min(60vh, 420px); overflow: auto; padding: 6px; }
 .f-merge .side-row { min-height: 44px; }
 .f-merge .f-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
