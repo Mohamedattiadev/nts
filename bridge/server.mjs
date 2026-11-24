@@ -246,6 +246,24 @@ async function ask(question, items) {
   return runClaude({ prompt, system, schema: ASK_SCHEMA, model: conf.askModel });
 }
 
+// 93: "poultrycare için pano hazırla" → the AI picks the fitting items and puts them in titled groups; only ids + group names come back
+const PLAN_SCHEMA = { type: 'object', required: ['name', 'summary', 'groups'], properties: {
+  name: { type: 'string', description: 'short board name, 1-3 lowercase words, max 30 characters, in the request language, not one of the existing boards' },
+  summary: { type: 'string', description: '2-3 short plain sentences: what is on this board and what stands out (open tasks, dates); in the request language' },
+  groups: { type: 'array', maxItems: 6, items: { type: 'object', required: ['title', 'ids'], properties: {
+    title: { type: 'string', description: '1-2 words, e.g. Belgeler, Linkler, Görevler, Fikirler, Kişiler, or a topic' },
+    ids: { type: 'array', maxItems: 12, items: { type: 'string' }, description: 'item ids, most useful first' } } } } } };
+async function boardPlan(request, items, boards) {
+  const system = 'You make a board (a canvas of cards) from a person\'s saved notes, links and files. Pick ONLY the items that really fit the request; leave the rest out. ' +
+    'Put the picked items in 2-6 groups with short titles (Belgeler, Linkler, Görevler, Fikirler, Kişiler, or topics when that reads better). Every id at most once; never invent ids. ' +
+    'Name the board and write a short plain summary in the request language. No emojis, no sales talk, never describe your own process. Output only per schema.';
+  const lite = items.map(i => ({ id: i.id, type: i.type, date: i.ts ? localTime(i.ts) : undefined, title: (i.title || '').slice(0, 140) || undefined,
+    text: (i.text || '').slice(0, 300) || undefined, url: i.url || undefined, file: i.fileName || undefined, tags: i.tags?.length ? i.tags : undefined,
+    project: i.project || undefined, summary: i.summary ? i.summary.slice(0, 200) : undefined, todo: i.todo ? (i.todo.done ? 'done' : 'open') : undefined }));
+  const prompt = `Now: ${localTime(Date.now())}\nRequest: ${request}\nExisting boards: ${boards.join(', ') || '(none)'}\n\nItems:\n${JSON.stringify(lite)}`;
+  return runClaude({ prompt, system, schema: PLAN_SCHEMA, model: conf.askModel });
+}
+
 // one line per day / month for the list's day headers and the board's month grid (61)
 const SUM_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'line'],
   properties: { key: { type: 'string' }, line: { type: 'string', description: 'one short line, max ~90 characters, in Turkish' } } } } } };
@@ -344,7 +362,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -509,6 +527,7 @@ http.createServer(async (req, res) => {
     }
     if (req.url === '/summaries') { const r = await summaries((body.groups || []).slice(0, 24)); console.log(`summaries ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/folders') { const r = await folderNames((body.groups || []).slice(0, 30)); console.log(`folders ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+    if (req.url === '/board-plan') { const r = await boardPlan(String(body.request || '').slice(0, 300), (body.items || []).slice(0, 120), (body.boards || []).slice(0, 60)); console.log(`board-plan ${body.items?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));
       console.log(`ask "${String(body.question).slice(0, 60)}" ${Date.now() - t}ms`);

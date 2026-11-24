@@ -2865,6 +2865,7 @@ const Busy = {
     if (k === '/article') return 'okunur kopya alıyor';
     if (k === '/tags') return 'konuları topluyor';
     if (k === '/folders') return 'klasörlere ad veriyor'; // 131b
+    if (k === '/board-plan') return 'pano hazırlıyor'; // 93
     if (k === '/ocr') return 'resimlerdeki yazıyı okuyor';
     return null; // health, inbox, snapshot, meta: not Claude
   },
@@ -4956,6 +4957,7 @@ const AI = {
   },
   async ask(q) {
     q = q.replace(/^\?\s*/, '').trim(); if (!q) return this.suggest();
+    if (Plan.is(q)) return Plan.make(q); // 93: "… için pano hazırla"
     const box = $('#answer'); box.hidden = false; document.body.classList.add('answering');
     const head = `<div class="a-head">${ic('spark', 'sm')}<span>${aiName()}</span><span class="q">· ${esc(q)}</span><button data-copy title="Cevabı kopyala" style="margin-left:auto">${ic('copy', 'sm')}</button><button data-close title="Kapat" style="margin-left:0">${ic('x', 'sm')}</button></div>`;
     if (!S.bridgeOk && !(await this.health())) { box.innerHTML = head + `<div class="txt">${claudeOff()}</div>`; return; }
@@ -5005,6 +5007,68 @@ const AI = {
     } catch (e) { toast('Toparlanamadı: ' + e.message, 3500); }
   },
   refreshExplain(id) { const dlg = $('#sheet'); if (dlg.open && dlg.dataset.id === id) { if (!S.explaining.has(id)) openItem(id); else $('#explainBox').innerHTML = explainHtml(byId(id)); } },
+};
+
+// ---------- 93: the AI makes a board ("poultrycare için pano hazırla") ----------
+// The bridge gets the likely items and returns only ids in titled groups + a name and a short summary. Here the board is made: a new
+// own board, a summary note at the top, one column per group under a title, the cards placed with posBy. One "Geri al" removes it all.
+const Plan = {
+  RE: /(pano|board|لوحة)\S*\s.*(hazırla|yap|oluştur|kur|aç|topla|make|build|create|أنشئ|اصنع|جهز)|(hazırla|oluştur|make|build|create|أنشئ|اصنع|جهز)\S*\s.*(pano|board|لوحة)|\S\s+(topla|toparla)\s*[.!]?$/i,
+  is(q) { return this.RE.test(q); },
+  topic: q => q.replace(/(?<!\p{L})(için|icin|hakkında|ile ilgili|ilgili|about|for|on|عن|حول|pano\p{L}*|board\p{L}*|لوحة|hazırla|yap|oluştur|kur|aç|topla|toparla|make|build|create|a|an|the|أنشئ|اصنع|جهز)(?!\p{L})/giu, ' ').replace(/\s+/g, ' ').trim(),
+  name(n) {
+    let v = String(n || '').toLocaleLowerCase('tr').replace(/[#/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 30) || 'yeni pano';
+    const have = new Set(boardNames()); if (!have.has(v)) return v;
+    for (let k = 2; ; k++) if (!have.has(`${v} ${k}`)) return `${v} ${k}`;
+  },
+  async make(q, extra = []) {
+    q = q.trim(); if (!q) return;
+    if (!S.bridgeOk && !(await AI.health())) return toast(claudeOff(), 3200, 'cpu');
+    const topic = this.topic(q) || q;
+    toast(`${aiName()} pano hazırlıyor…`, 120000, 'spark');
+    let r; try { r = await AI.call('/board-plan', { request: q, items: AI.pick(topic, extra.map(byId).filter(Boolean)).slice(0, 110), boards: boardNames() }); }
+    catch (e) { return toast('Pano hazırlanamadı: ' + e.message, 3500, 'x'); }
+    const seen = new Set(), groups = (Array.isArray(r?.groups) ? r.groups : []).slice(0, 6).map(g => ({ title: Parts.str(g?.title, 28),
+      ids: Parts.ids(g?.ids).filter(id => !seen.has(id) && !byId(id).sticky && !HIDDEN.has(byId(id).type) && seen.add(id)).slice(0, 12) })).filter(g => g.ids.length);
+    if (!groups.length) return toast('Bu isteğe uyan kayıt bulamadım', 3500, 'search');
+    closeAnswer(); const inp = $('#input'); if (inp.value.trim() === q) { inp.value = ''; inp.dispatchEvent(new Event('input')); }
+    await this.build(this.name(r.name || topic), Parts.str(r.summary, 400), groups);
+  },
+  async build(name, summary, groups) {
+    const t = now(), at = Date.now(), COL = Board.COLW + 56, before = new Map(), ch = [], made = [];
+    const cur = byId('boards'), cols = groups.length;
+    ch.push({ ...(cur || { id: 'boards', type: 'boards', tags: [], ts: t }), names: [...new Set([...(cur?.names || []), name])] });
+    const sticky = (kind, text, pos, more = {}) => { const i = { id: newId(), type: 'note', text, sticky: kind, posBy: { [name]: pos }, posByAt: { [name]: at }, boards: [name], ts: t, createdAt: t, tags: [], pending: false, ...more }; made.push(i.id); ch.push(i); };
+    if (summary) sticky('note', summary, { x: 0, y: 0 }, { color: 'yellow', w: Math.max(260, Math.min(cols, 2) * COL - 56) });
+    const y0 = summary ? 190 : 0;
+    groups.forEach((g, k) => {
+      const x = k * COL; sticky('text', '## ' + g.title, { x, y: y0 }, { fs: 22 });
+      let y = y0 + 56;
+      for (const id of g.ids) {
+        const i = byId(id); before.set(id, { boards: i.boards, posBy: i.posBy?.[name] });
+        ch.push({ ...i, boards: [...new Set([...(i.boards || []), name])], posBy: { ...(i.posBy || {}), [name]: { x, y } }, posByAt: { ...(i.posByAt || {}), [name]: at } });
+        y += Board.est(i) + 18;
+      }
+    });
+    await upsert(ch);
+    if (S.view !== 'board') setView('board');
+    Board.go(name);
+    if (innerWidth < 900) requestAnimationFrame(() => { S.cam = { k: .9, x: 16, y: 80 }; Board.apply(); }); // phone: start at the summary and the first group, not at the right end
+    const ids = groups.flatMap(g => g.ids);
+    setTimeout(() => AICur.tour(ids, 'yerleştirdi'), 450); // 120
+    toast(`“${name}” panosu: ${ids.length} kayıt, ${groups.length} grup`, 8000, 'board', { label: 'Geri al', fn: () => this.undo(name, before, made, !(cur?.names || []).includes(name)) });
+  },
+  async undo(name, before, made, newName) {
+    const t = now(), at = Date.now(), ch = made.map(id => byId(id)).filter(Boolean).map(i => ({ id: i.id, deleted: true, ts: i.ts, updatedAt: t }));
+    for (const [id, b] of before) {
+      const i = byId(id); if (!i) continue;
+      const pb = { ...(i.posBy || {}) }; if (b.posBy) pb[name] = b.posBy; else delete pb[name];
+      ch.push({ ...i, boards: b.boards, posBy: pb, posByAt: { ...(i.posByAt || {}), [name]: at } });
+    }
+    const cur = byId('boards'); if (newName && cur) ch.push({ ...cur, names: (cur.names || []).filter(n => n !== name) });
+    await upsert(ch); if (S.board === name) Board.go('main');
+    toast('Pano geri alındı', 2500, 'check');
+  },
 };
 
 // ---------- 106e: rich AI answers (OpenUI idea, vanilla) ----------
@@ -5063,14 +5127,15 @@ const Parts = {
     if (p.type === 'chart') return `<div class="ap"${st}>${Rich.chartHtml({ name: p.title, pts: p.pts })}</div>`;
     return '';
   },
-  ACT: { board: ['board', 'Pano yap'], todo: ['todo', 'Göreve çevir'], open: ['ext', 'Aç'], save: ['note', 'Not olarak kaydet'] },
+  ACT: { plan: ['board', 'Pano yap'], board: ['board', 'Panoya koy'], todo: ['todo', 'Göreve çevir'], open: ['ext', 'Aç'], save: ['note', 'Not olarak kaydet'] },
   show(box, head, q, r) {
     const parts = this.clean(r.parts), src = this.ids(r.sources), acts = parts.filter(p => p.type === 'actions').flatMap(p => p.acts);
     // 106s one focus: the found items become cards only when the answer has no part of its own; otherwise they stay small source chips
     if (src.length >= 2 && !parts.some(p => p.type !== 'actions')) parts.unshift({ type: 'records', title: '', ids: src.slice(0, 6), auto: true });
+    if (src.length >= 2 && !acts.some(a => a.do === 'board')) acts.unshift({ do: 'plan' }); // 93: build a board from this question
     acts.push({ do: 'save' });
     const next = (Array.isArray(r.next) ? r.next : []).map(x => this.str(x, 90)).filter(Boolean).slice(0, 3);
-    this.cur = { q, answer: this.str(r.answer, 4000), parts, acts };
+    this.cur = { q, answer: this.str(r.answer, 4000), parts, acts, src };
     const body = parts.filter(p => p.type !== 'actions'), shown = new Set(body.filter(p => p.type === 'records').flatMap(p => p.ids)), rest = src.filter(id => !shown.has(id)).slice(0, 12);
     box.innerHTML = head + `<div class="ap-who">${ic('spark', 'sm')}Nts · ${src.length} kayıt</div><div class="txt" dir="auto">${this.md(this.cur.answer)}</div>`
       + body.map((p, n) => this.html(p, n + 1)).join('')
@@ -5092,6 +5157,7 @@ const Parts = {
     const a = this.cur?.acts[k]; if (!a) return;
     if (a.do === 'open') return openItem(a.ids[0]);
     if (a.do === 'todo') return Todo.add([a.text]);
+    if (a.do === 'plan') return Plan.make(this.cur.q, this.ids(this.cur.src));
     if (a.do === 'board') { const list = a.ids.map(byId).filter(Boolean); await upsert(list.map(i => ({ ...i, onBoard: true })));
       return toast(`${list.length} kayıt panoya kondu`, 3000, 'board', { label: 'Panoya git', fn: () => { closeAnswer(); S.board = 'main'; setView('board'); } }); }
     if (a.do === 'save') { const t = this.text(); const r = await addFromInput({ text: t, source: 'note' }); if (Array.isArray(r) && r[0]) toast('Cevap not olarak kaydedildi', 3000, 'note', { label: 'Aç', fn: () => openItem(r[0].id) }); }

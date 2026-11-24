@@ -293,10 +293,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         kısalmadan dursun (gerekirse "20 Kas" gibi kısa biçim + sayı). %10–%200 arası tara, ekran görüntüsü.
         + (sahip, uzak görünüm ekran görüntüsü) günler arasında ayrım görünmüyor: her gün kendi zemin bandında (dönüşümlü ton, Bugün accent
         tonlu) + aralarında ince dikey çizgi; ayrım HER yakınlıkta görünür (uzakta kaybolmaz, çizgi ≥ 1 px ekranda).
-- [ ] 93. **Yapay zekâya pano hazırlat:** kutuya "poultrycare için pano hazırla" / "yazılımla ilgili ipuçlarını topla" yazınca seçili yapay zekâ
+- [x] 93. **Yapay zekâya pano hazırlat:** kutuya "poultrycare için pano hazırla" / "yazılımla ilgili ipuçlarını topla" yazınca seçili yapay zekâ
         (87) tüm kayıtlardan ilgilileri seçer, yeni proje panosu açar (`boards` + `posBy`), kartları başlıklı gruplara dizer (ör. Belgeler /
         Linkler / Görevler / Fikirler / Kişiler), en üste kısa özet yapışkan notu koyar; tek tıkla geri alınır. Köprüde yeni uç (`/board-plan`,
         sadece id + grup döner, metin göndermez fazlası). Kutudaki "Claude'a sor" cevabında "Pano yap" düğmesi de olsun.
+        YAPILDI (2026-11-24, B hattı): Sor modunda "… için pano hazırla / … topla / make a board … / اصنع لوحة …" (Plan.is) → köprüde `/board-plan` (röle de;
+        istek + kısa kayıt özetleri gider, yalnız ad + 2–3 cümle özet + en çok 6 grup × 12 id döner). Uygulama: yeni kendi panosu (ad çakışırsa "ad 2"), üstte sarı özet
+        notu, her grup bir sütun (## başlık yazısı + kartlar posBy ile), sonra panoya geçer, AICur.tour(ids, 'yerleştirdi'); telefonda kamera özet + ilk gruptan
+        başlar. Bildirimde "Geri al": notlar silinir, kartların boards/posBy'ı eski hâline döner, pano adı kalkar. Sor cevabında 2+ kaynak varsa "Pano yap"
+        (aynı soruyla, kaynaklar öncelikli); eski 'board' eylemi "Panoya koy" oldu. Sahte köprüyle 4 yapılandırma test, konsol hatası yok; sw v89.
 - [x] 94. **Daha native his + hız** (sahip: "daha native, daha hızlı, daha efektli olsun"):
         (a) görünüm geçişleri View Transitions API ile (Pano↔Liste↔Galeri, kayıt penceresi tıklanan karttan büyüyerek açılır/kapanır);
         (b) dokunma geri bildirimi: `:active` hafif küçülme, telefonda kısa titreşim (kaydet, görev bitti, sil), yalnız transform/opacity animasyonu;
