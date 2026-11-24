@@ -246,6 +246,6 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [ ] 158b Takvim + Liste BİRLEŞSİN (sahip): ayrı Takvim sekmesi kalkar, Liste'nin üstünde katlanır ay takvimi; güne/aya dokununca liste YERİNDE o tarihe kayar (sayfa değişmez) + takvim UI'ı güzelleşir; PLAN 158
 - [ ] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158
 - [ ] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
-- [ ] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
+- [~D] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme
 - [ ] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme
 - [ ] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor
