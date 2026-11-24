@@ -17,6 +17,8 @@ lane() {
   # a lane session calls "handoff.sh A" from inside its own window, so only the no-argument start checks for an open window
   if [ -z "$ONE" ] && pgrep -f "title nts-$L " >/dev/null; then echo "lane $L already open"; return; fi
   git fetch -q origin
+  # keep the owner's main folder (served on 8790) on the latest pushed work; only when it has no uncommitted edits
+  [ -z "$(git -C "$MAIN" status --porcelain --untracked-files=no)" ] && git -C "$MAIN" merge -q --ff-only origin/main 2>/dev/null
   if [ ! -d "$dir" ]; then git worktree add -q -B "lane-$L" "$dir" origin/main
   elif [ -z "$(git -C "$dir" status --porcelain --untracked-files=no)" ]; then git -C "$dir" checkout -q -B "lane-$L" origin/main
   fi
