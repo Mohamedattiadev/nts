@@ -960,6 +960,17 @@ Arayüz:
         4 kayıt (PoultryCare linki, Mehmet Usta sohbeti, Kümes 3 fanı fotosu, haftalık plan notu) × masaüstü/telefon alt sayfa, açık+koyu;
         ⋯ menüsü (Paylaş/Kopyala/Tarayıcıda aç/Panoya koy/Sil, telefonda alttan), yıldız, not, etiket, Panoya koy çalışıyor. Ortak kurallar ayrıca
         ✓/✗. Playwright 4 yapılandırma: konsol hatası 0, yatay taşma 0. Sahip kararı yukarıda: A uygulanır (155).
+- [ ] 156. **Masaüstünde her yerden hızlı not kutusu** (sahip, 2026-11-24: "Claude, ChatGPT'nin Ctrl+Space gibi text box çıksın mouse'un olduğu yerde,
+        notlarımı orada yazayım, Win+Shift+S yerine"). Sahibin PC'si: Arch + Hyprland (Wayland), ~/.config/hypr/binds.conf. Bugün `$mod SHIFT, S`
+        → ~/.config/hypr/scripts/sum-toggle.sh (ATITODOS/TODOS.md'yi terminalde açar). Yap: (a) bridge/quick/ altında hızlı açılan küçük pencere
+        (GTK4 python ya da benzeri; <150 ms açılış, gerekirse arka planda bekleyen tek süreç + toggle), Nts görünümünde (koyu/açık sistemden, logo,
+        yuvarlak köşe, gölge), tek satırla başlar, yazdıkça büyür (Shift+Enter yeni satır), sol tarafta mod Not/Ara/Sor (Tab, uygulamadaki gibi),
+        Enter → köprüye (/inbox ya da hn ile aynı yol) kaydeder, "Kaydedildi" küçük onay + kapanır; Esc kapatır, dışarı tıklayınca kapanır (yazı
+        varsa taslak saklanır); yapıştırılan resim/dosya da gider; Ara modunda sonuç listesi kutunun altında, Enter uygulamada açar. (b) Hyprland:
+        pencere farenin olduğu yerde açılır (windowrule float + move cursor, ekran kenarından taşmaz), pin, odak alır; bind `CTRL, SPACE` ve
+        `$mod SHIFT, S` ikisi de bu kutuyu açar/kapatır; eski TODOS penceresi silinmez, boşta bir tuşa taşınır (ör. `$mod ALT, S`, önce boş mu
+        bak) ve binds.conf'ta yorumla yazılır. Ctrl+Space giriş yöntemi (fcitx vb.) ile çakışıyor mu kontrol et. hyprctl reload sonrası dene.
+        (c) köprü kapalıyken: yerel kuyruğa yazar, köprü gelince gönderir. Ekran görüntüsü (grim) açık + koyu, açılış süresi ölçümü PLAN'a.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
