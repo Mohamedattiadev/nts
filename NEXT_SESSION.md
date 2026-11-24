@@ -103,7 +103,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi (d1198ca)
 - [x] 122 turda Google ile giriş / Misafir seçimi (f73e1f5)
 - [?] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor) — ÖRNEK HAZIR: design/dial.html (tarih: A Kasa · B Üç kadran · C Bavul kilidi; etiket: A Tam halka · B Alt yay; nerede kullanılsın), sahibin seçimi bekleniyor (ab7efb3)
-- [ ] 124 tanıtım sayfası (site/) + README düğmesi
+- [~B] 124 tanıtım sayfası (site/) + README düğmesi
 - [ ] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay
 - [ ] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan)
 - [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
