@@ -106,7 +106,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 124 tanıtım sayfası (site/) + README düğmesi (e1eaf25)
 - [x] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay (9b353df)
 - [x] 93 yapay zekâya pano hazırlat (87'den sonra; köprüde /board-plan) (c565969)
-- [ ] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
+- [~B] 96 Android seçim menüsünde "Nts'e kaydet" (Bubblewrap TWA + PROCESS_TEXT; ?do=new&text= desteği; assetlinks.json)
 - [ ] 95e Ctrl+K komut paleti
 - [ ] 95a sesli not (basılı tut → kaydet → yapay zekâ yazıya döker; köprü yoksa sadece ses dosyası)
 - [ ] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?"
