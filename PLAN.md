@@ -983,7 +983,7 @@ Arayüz:
         4 kayıt (PoultryCare linki, Mehmet Usta sohbeti, Kümes 3 fanı fotosu, haftalık plan notu) × masaüstü/telefon alt sayfa, açık+koyu;
         ⋯ menüsü (Paylaş/Kopyala/Tarayıcıda aç/Panoya koy/Sil, telefonda alttan), yıldız, not, etiket, Panoya koy çalışıyor. Ortak kurallar ayrıca
         ✓/✗. Playwright 4 yapılandırma: konsol hatası 0, yatay taşma 0. Sahip kararı yukarıda: A uygulanır (155).
-- [ ] 156. **Masaüstünde her yerden hızlı not kutusu** (sahip, 2026-11-24: "Claude, ChatGPT'nin Ctrl+Space gibi text box çıksın mouse'un olduğu yerde,
+- [x] 156. **Masaüstünde her yerden hızlı not kutusu** (sahip, 2026-11-24: "Claude, ChatGPT'nin Ctrl+Space gibi text box çıksın mouse'un olduğu yerde,
         notlarımı orada yazayım, Win+Shift+S yerine"). Sahibin PC'si: Arch + Hyprland (Wayland), ~/.config/hypr/binds.conf. Bugün `$mod SHIFT, S`
         → ~/.config/hypr/scripts/sum-toggle.sh (ATITODOS/TODOS.md'yi terminalde açar). Yap: (a) bridge/quick/ altında hızlı açılan küçük pencere
         (GTK4 python ya da benzeri; <150 ms açılış, gerekirse arka planda bekleyen tek süreç + toggle), Nts görünümünde (koyu/açık sistemden, logo,
@@ -994,6 +994,23 @@ Arayüz:
         `$mod SHIFT, S` ikisi de bu kutuyu açar/kapatır; eski TODOS penceresi silinmez, boşta bir tuşa taşınır (ör. `$mod ALT, S`, önce boş mu
         bak) ve binds.conf'ta yorumla yazılır. Ctrl+Space giriş yöntemi (fcitx vb.) ile çakışıyor mu kontrol et. hyprctl reload sonrası dene.
         (c) köprü kapalıyken: yerel kuyruğa yazar, köprü gelince gönderir. Ekran görüntüsü (grim) açık + koyu, açılış süresi ölçümü PLAN'a.
+        YAPILDI (2026-11-24, A hattı): bridge/quick/nts-quick.py (GTK4 python, 4.22) arka planda gizli bekler (exec-once
+        `nts-quick --daemon`), bridge/quick/nts-quick.sh FIFO'ya "toggle" yazar → yalnız pencere çizilir. Ölçüm (~/.cache/nts-quick.log, tuştan
+        farede yerleşmiş ilk kareye): ilk açılış ~200 ms, sonrakiler 35–83 ms (çizim 10–24 ms). Yer: Hyprland ifade kuralı
+        `move (cursor_x-40>monitor_w-window_w-8?…)` ilk karede farede, sağ/alt kenardan taşmaz (alta 200 px sonuç payı); kuralda virgül argüman
+        ayırdığı için min()/max() yerine ?:. Kural yoksa yedek: Hyprland soketi (hyprctl süreci 100+ ms, soket ~1 ms) ile taşır. float + pin,
+        odak alır. Not/Ara/Sor (Tab/Shift+Tab), yazdıkça büyür, Shift+Enter yeni satır, Enter → köprü /inbox (hn ile aynı yol), "Kaydedildi ✓" →
+        650 ms sonra kapanır; köprü kapalı → ~/.config/hizli-note/quick-queue.jsonl, 30 sn'de bir ve her açılışta gönderilir. Esc / dışarı tıklama
+        kapatır, yazı taslak olarak kalır (quick-draft.txt). Ctrl+V resim/dosya, sürükle-bırak dosya → 📎 çip. Ara: snapshot.json'da canlı (İ/ı,
+        aksan katlanır, tüm sözcükler), ↑↓ seç, Enter → uygulamada `?open=<id>` (app.js: kayıt yüklenince openItem; yoksa "Kayıt bulunamadı");
+        snapshot artık `app` adresini taşır (hangi Nts açıksa orada açılır). Sor: en iyi 40 eşleşmeyle /ask, cevap + kaynaklar (tıkla aç).
+        Tema sistemden (org.gnome.desktop.interface color-scheme), Nts tokenları, logo. Hyprland (~/.config/hypr, commit edilmedi, yedek oturum
+        scratchpad'inde): `$mod SHIFT, S` ve `CTRL, SPACE` → ~/.local/bin/nts-quick; eski TODOS (sum-toggle.sh) `$mod ALT, S`'ye taşındı (boştu,
+        yorumla yazıldı); kurallar rules.conf sonunda (bridge/quick/hypr.conf kopyası), install.sh bunları ekler. Ctrl+Space: fcitx/ibus kurulu
+        değil → çakışma yok (GTK_IM_MODULE=fcitx ortamda tanımlı ama modül yok, yalnız uyarı); DİKKAT: editörlerin Ctrl+Space tamamlaması artık
+        Nts'e gider (Igrek bu yüzden $mod Y seçmişti). Test: tools/test/quick.test.py (sahte köprü, 14 kontrol: arama, Tab, kaydet, dosya,
+        köprü kapalı → kuyruk → gönderim, taslak); ?open masaüstü + telefon konsol hatası 0. Ekran: design/156/ (Not koyu/açık uzun, Ara koyu/açık,
+        Sor açık). sw v125
 - [ ] 149b. **Zaman çizgisi: imleç + akıcılık** (sahip, 2026-11-24, design/feedback-33.png, 149'dan sonra: "bunu kullanırken cursor daha uygun olsun,
         bir de daha smooth"). İmleç: şeridin üstünde `grab`/ns-resize benzeri dikey sürükleme imleci, sürüklerken `grabbing`, nokta üzerinde
         büyür (hover ölçeği), şeridin tıklanabilir alanı ≥24 px geniş (ince çizgiyi tutturmak zorunda kalınmasın), basınca sayfada metin seçilmez
