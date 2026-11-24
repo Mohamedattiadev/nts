@@ -1,6 +1,6 @@
-const VERSION = 'v122';
+const VERSION = 'v123';
 const CACHE = 'hizli-note-' + VERSION;
-const ASSETS = ['./', './index.html', './style.css', './app.js', './query.js', './when.js', './dedup.js', './ed.js', './sem.js', './db.js', './manifest.webmanifest',
+const ASSETS = ['./', './index.html', './style.css', './app.js', './query.js', './when.js', './dedup.js', './migrate.js', './ed.js', './sem.js', './db.js', './manifest.webmanifest',
   './vendor/jszip.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg', './icons/sc-note.png', './icons/sc-todo.png', './icons/sc-lock.png', './icons/sc-find.png'];
 importScripts('./db.js', './when.js');
 

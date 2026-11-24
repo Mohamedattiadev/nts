@@ -2588,3 +2588,16 @@ dialog.clean .d-body { gap: 12px; }
   .d-addnote, .d-quiet { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .d-menu { animation: none; } }
+/* 107d: Başka uygulamadan taşı — app list, preview (counts, groups → tags, sample) */
+.mig-apps .set-row.static { padding: 8px 10px; }
+.mig-go { margin: 6px 10px 0; min-height: 44px; }
+.mig-hint { padding: 0 10px; }
+.mig-sum { padding: 4px 10px; }
+.mig-big { margin: 0 0 2px; font-size: calc(20px * var(--fs, 1)); color: var(--text); }
+.mig-big b { font-weight: 600; }
+.mig-sum .hint { margin: 2px 0; padding: 0; }
+.mig-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px; }
+.mig-tag { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: calc(13px * var(--fs, 1)); }
+.mig-tag small { color: var(--muted); margin-left: 2px; }
+.mig-btns { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 10px 4px; }
+.mig-btns .btn { min-height: 44px; }

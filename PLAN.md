@@ -611,6 +611,20 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             (köprüde ya da Edge Function'da; sadece sahibin hesabı, gizli anahtar);
         (d) başka uygulamalardan taşıma: Google Keep (Takeout JSON), Apple Notes (HTML dışa aktarım), Notion (Markdown zip), Evernote (.enex),
             Telegram "Kaydedilen Mesajlar" (JSON) — WhatsApp içe aktarımı gibi önizleme + gruplama;
+            [x] (2026-11-24, B hattı, sw v123) yeni `migrate.js` (sayfa + node; DOM/zip yok): detect + okuyucular — Keep (Takeout/Keep/*.json:
+            başlık, yazı, liste → "[ ] / [x]" satırları, etiketler, iğneli → yıldız, ek foto, link notu; çöptekiler alınmaz), Apple Notes (.html;
+            <title>/ilk satır başlık, klasör → etiket, gömülü base64 ve yan dosya resimleri), Notion (Markdown & CSV zip, içindeki Part-N.zip de
+            açılır; "Ad 32hex.md" → kimlik atılır, Created/Tags satırları, alt sayfa linkleri ada döner, resimler; YAML front matter da),
+            Evernote (.enex: ENML → yazı, en-todo kutuları, base64 resimler, source-url, etiket yoksa defter adı), Telegram (result.json; tam
+            dışa aktarımda Kaydedilen Mesajlar seçilir, her kayıt ayrı, albüm/foto + hemen gelen açıklama tek kayıt). tools/test/migrate.test.mjs 59/59.
+            Ayarlar → Kayıtları taşı → "Başka uygulamadan taşı" (+ komut paleti; .enex ya da başka uygulamanın zip'i sürükle-bırak, WhatsApp
+            zip'i eskisi gibi): 5 uygulama + nasıl dışa aktarılır, Dosya seç (çoklu) → önizleme: "N kayıt gelecek", not/link/foto/dosya sayısı,
+            tarih aralığı, "zaten Nts'te" sayısı, eksik ek sayısı, Gruplar → etiket çipleri, 5 örnek, "Arşive koy" (açık), içe aktar. Kimlik
+            kaynaktan (iki kez alınca "Hepsi zaten Nts'te ✓"), link/dosya/foto kopyaları dedup.js ile atlanır; notun ekleri aynı grupta ayrı
+            dosya kaydı; tek linkli kısa not → link. Kaynak süzgecinde Google Keep/Apple Notes/Notion/Evernote/Telegram. ≥100 kayıt → 148
+            importHold. Toast: Göster (Kaynak süzgeci) · Geri al. Playwright 4 yapılandırma × 5 uygulama, konsol 0; phone-audit ayarlar-tasi-uyg /
+            -onizle 0. Denenmedi: gerçek dışa aktarma dosyaları (sahte örneklerle test edildi; Apple'ın resmi HTML dışa aktarımı yok, üçüncü
+            parti araçların biçimi değişebilir).
         (e) doğal dille hatırlatma: "yarın 9'da annemi ara" → görev + bildirim; bildirimde "1 saat ertele / yarın" düğmeleri;
             [x] (2026-11-24, B hattı, sw v113) yeni `when.js` (sayfa + sw + node): parseDue artık "9'da/3'te" (1–6 → öğleden sonra), "saat 10",
             "16.30'da", "2 saat/yarım saat/20 dk/3 gün sonra", "sabah/öğlen/akşam/gece (+ saat)", "bu akşam", "öbür gün", gün adları, "12 aralık",

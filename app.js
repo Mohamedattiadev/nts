@@ -1566,7 +1566,7 @@ function chromeView() {
 // 137: filters that live under ⋯ (not the rail's own buttons): source, project / list, topic, colour
 function activeFilters() {
   const f = S.filter, out = []; if (S.view === 'todo') return out;
-  if (f.src) out.push({ k: 'src', v: f.src, i: f.src.startsWith('wa:') ? 'chat' : { pc: 'cpu', web: 'link', phone: 'share', bookmarks: 'book' }[f.src] || 'inbox', l: srcName(f.src) });
+  if (f.src) out.push({ k: 'src', v: f.src, i: f.src.startsWith('wa:') ? 'chat' : { pc: 'cpu', web: 'link', phone: 'share', bookmarks: 'book' }[f.src] || (NtsMigrate.NAMES[f.src] ? Mig.icon(f.src) : 'inbox'), l: srcName(f.src) });
   if (f.list) out.push({ k: 'list', v: f.list, i: f.list.startsWith('p:') ? 'folder' : (LISTS.find(l => l[0] === f.list) || [0, f.list === 'unseen' ? 'clock' : 'flag'])[1], l: listName(f.list) });
   if (f.tag) out.push({ k: 'tag', v: f.tag, i: 'hash', l: '#' + f.tag });
   if (f.color) out.push({ k: 'color', v: f.color, l: (COLORS.find(c => c[0] === f.color) || [0, f.color])[1] });
@@ -2691,6 +2691,7 @@ const Cmd = {
       ['import', 'upload', 'Yedekten geri yükle…', 'import restore backup', () => $('#backupInput').click()],
       ['wa', 'chat', 'WhatsApp sohbeti içe aktar…', 'import whatsapp zip', () => $('#waInput').click()],
       ['bm', 'book', 'Yer imlerini içe aktar…', 'import bookmarks html', () => $('#bmInput').click()],
+      ['mig', 'layers', 'Başka uygulamadan taşı…', 'import google keep apple notes notion evernote telegram enex taşı', later(() => Mig.open())],
       ['organize', 'spark', 'Yapay zekâ ile düzenle', 'organize ai tidy', async () => { if (await AI.health()) { AI.process(); toast(aiName() + ' düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }],
       ['tags', 'hash', 'Etiketleri toparla', 'clean tags merge', () => AI.cleanTags()],
       ['tour', 'eye', 'Tanıtımı yeniden göster', 'tour onboarding help yardım', later(() => Tour.start())],
@@ -4468,16 +4469,18 @@ const deviceNow = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) 
 function srcMatch(i, s) {
   if (s.startsWith('wa:')) return i.source === 'whatsapp' && (i.chat || '') === s.slice(3);
   if (s === 'bookmarks') return i.source === 'bookmarks';
+  if (NtsMigrate.NAMES[s]) return i.source === s; // 107d
   if (s === 'web') return i.source === 'web'; // 95g: sent with the browser extension
   if (s === 'pc') return i.source === 'pc' || (i.dev === 'pc' && i.source !== 'whatsapp' && i.source !== 'bookmarks');
   if (s === 'phone') return i.source === 'share' || (i.dev === 'phone' && i.source !== 'whatsapp' && i.source !== 'bookmarks');
   return true;
 }
-const srcName = s => s.startsWith('wa:') ? s.slice(3) || 'WhatsApp' : { bookmarks: 'Yer imleri', pc: 'Bilgisayar', web: 'Tarayıcı', phone: 'Telefon' }[s] || s;
+const MIG_SRC = ['keep', 'apple', 'notion', 'evernote', 'telegram']; // 107d
+const srcName = s => s.startsWith('wa:') ? s.slice(3) || 'WhatsApp' : { bookmarks: 'Yer imleri', pc: 'Bilgisayar', web: 'Tarayıcı', phone: 'Telefon', ...NtsMigrate.NAMES }[s] || s;
 function srcRows(live, cur) {
   const n = {}, chats = new Map();
-  for (const i of live) { if (i.source === 'whatsapp') chats.set(i.chat || '', (chats.get(i.chat || '') || 0) + 1); for (const s of ['bookmarks', 'pc', 'web', 'phone']) if (srcMatch(i, s)) n[s] = (n[s] || 0) + 1; }
-  const rows = [...[...chats].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c, k]) => ['wa:' + c, 'chat', c || 'WhatsApp', k]), ['pc', 'cpu', 'Bilgisayar', n.pc], ['web', 'link', 'Tarayıcı', n.web], ['phone', 'share', 'Telefon', n.phone], ['bookmarks', 'book', 'Yer imleri', n.bookmarks]].filter(r => r[3] || r[0] === cur);
+  for (const i of live) { if (i.source === 'whatsapp') chats.set(i.chat || '', (chats.get(i.chat || '') || 0) + 1); for (const s of ['bookmarks', 'pc', 'web', 'phone', ...MIG_SRC]) if (srcMatch(i, s)) n[s] = (n[s] || 0) + 1; }
+  const rows = [...[...chats].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c, k]) => ['wa:' + c, 'chat', c || 'WhatsApp', k]), ['pc', 'cpu', 'Bilgisayar', n.pc], ['web', 'link', 'Tarayıcı', n.web], ['phone', 'share', 'Telefon', n.phone], ['bookmarks', 'book', 'Yer imleri', n.bookmarks], ...MIG_SRC.map(k => [k, Mig.icon(k), NtsMigrate.NAMES[k], n[k]])].filter(r => r[3] || r[0] === cur);
   return rows.map(([k, icn, l, c]) => `<button class="side-row${cur === k ? ' on' : ''}" data-src="${esc(k)}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${c || ''}</span></button>`).join('');
 }
 // 64: a search or filter pinned to the side bar; one hidden, synced record
@@ -7043,6 +7046,143 @@ const Dups = {
   },
 };
 
+// ---------- 107d: Ayarlar → Kayıtları taşı → Başka uygulamadan taşı ----------
+// Google Keep, Apple Notes, Notion, Evernote, Telegram. migrate.js reads each export; here: open the zip (and a Notion Part-N.zip
+// inside it), a preview first (how many notes / photos / links, which tags they become, what is already in Nts), then one tap makes
+// the items: a note's photos/files become their own items in the same group, a short note that is only a link becomes a link,
+// Telegram "Kaydedilen Mesajlar" stays one item per save (an album = one). Ids come from the source, so importing twice adds nothing;
+// links, files and photos already in Nts are skipped (dedup.js, 152). Like WhatsApp: into the Archive by default, "Geri al" undoes it.
+const Mig = {
+  APPS: [['keep', 'note', 'Google Keep', 'takeout.google.com → yalnız Keep → zip'], ['apple', 'note', 'Apple Notes', 'Notlar\'ı HTML olarak dışa aktar (ör. Exporter) → klasörü zip yap'],
+    ['notion', 'layers', 'Notion', 'Ayarlar → Dışa aktar → Markdown & CSV → zip'], ['evernote', 'book', 'Evernote', 'Defter → Dışa aktar → .enex'],
+    ['telegram', 'chat', 'Telegram', 'Masaüstü: Kaydedilen Mesajlar → ⋮ → Sohbeti dışa aktar → JSON (klasörü zip yap)']],
+  st: null, arch: true,
+  icon: k => Mig.APPS.find(a => a[0] === k)?.[1] || 'inbox',
+  // a dropped zip: WhatsApp's (a chat .txt) or another app's export?
+  async other(f) { const z = await (await needZip()).loadAsync(f), ps = Object.keys(z.files); return !ps.some(p => /\.txt$/i.test(p)) && !!NtsMigrate.detect(ps); },
+  open() { this.st = null; openSettings('mig'); },
+  page(head) {
+    const s = this.st;
+    if (!s) return `${head('Başka uygulamadan taşı', true)}
+      <p class="hint mig-hint">Dışa aktardığın dosyayı seç; önce ne geleceğini gösteririm, sonra tek dokunuşla içeri alırım. Aynı şey iki kez gelmez.</p>
+      <div class="set-sec mig-apps">${this.APPS.map(([k, icn, n, how]) => `<div class="set-row static">${ic(icn)}<span>${n}<small>${how}</small></span></div>`).join('')}</div>
+      <button class="btn primary mig-go" data-migpick>${ic('upload', 'sm')}Dosya seç</button>
+      <p class="hint mig-hint" id="migMsg" aria-live="polite">.zip, .json, .enex, .html ya da .md · birden çok dosya seçebilirsin</p>`;
+    const N = s.counts, span = s.from && s.to ? `${F_DMY.format(s.from)} – ${F_DMY.format(s.to)}` : '';
+    const parts = [N.note && N.note + ' not', N.link && N.link + ' link', N.photo && N.photo + ' foto', N.file && N.file + ' dosya'].filter(Boolean).join(' · ');
+    const tags = [...s.tagN].sort((a, b) => b[1] - a[1]);
+    return `${head(NtsMigrate.NAMES[s.kind] + { keep: '\'ten', apple: '\'tan', notion: '\'dan', evernote: '\'tan', telegram: '\'dan' }[s.kind] + ' taşı', true)}
+      <div class="set-sec mig-sum">${s.make.length ? `<p class="mig-big"><b>${s.make.length} kayıt</b> gelecek</p><p class="hint">${parts}${span ? ' · ' + span : ''}</p>
+        ${s.dup ? `<p class="hint">${s.dup} tanesi zaten Nts'te, tekrar eklenmez.</p>` : ''}` : `<p class="mig-big"><b>Hepsi zaten Nts'te</b> ✓</p><p class="hint">${s.dup} kayıt daha önce alınmış; yeni bir şey yok.</p>`}
+        ${s.miss ? `<p class="hint">${s.miss} ek dosya dışa aktarımda yok (yalnız yazısı gelir).</p>` : ''}</div>
+      ${tags.length ? `<div class="set-sec"><h4>Gruplar → etiket</h4><div class="mig-tags">${tags.slice(0, 14).map(([t, n]) => `<span class="mig-tag">#${esc(t)} <small>${n}</small></span>`).join('')}${tags.length > 14 ? `<span class="mig-tag"><small>+${tags.length - 14}</small></span>` : ''}</div></div>` : ''}
+      <div class="set-sec"><h4>Örnek</h4><div class="dup-list">${s.make.filter(i => !i._kid).slice(0, 5).map(i => `<div class="dup-row">${ic(i.type === 'link' ? 'link' : i.type === 'file' ? (/^image\//.test(i.mime) ? 'image' : 'file') : 'note', 'sm')}<span><b>${esc(i.title || (i.type === 'file' && i.text) || i.fileName || (i.text || '').split('\n')[0] || i.url || 'Kayıt')}</b><small>${esc(shortDay(dayKey(i.ts)))}${(i.tags || []).length ? ' · #' + esc(i.tags.join(' #')) : ''}${i.text && i.title ? ' · ' + esc(i.text.slice(0, 60)) : ''}</small></span></div>`).join('')}</div></div>
+      <div class="set-sec"><label class="set-line"><span>Arşive koy<small>Ana sayfayı ve panoyu doldurmaz; sol çubukta Kaynak → ${NtsMigrate.NAMES[s.kind]}</small></span><span class="switch"><input type="checkbox" data-migarch ${this.arch ? 'checked' : ''}><span></span></span></label></div>
+      <div class="mig-btns"><button class="btn primary" data-miggo ${s.make.length ? '' : 'disabled'}>${ic('check', 'sm')}${s.make.length ? s.make.length + ' kaydı içe aktar' : 'Yeni kayıt yok'}</button><button class="btn secondary" data-migpick>Başka dosya</button></div>`;
+  },
+  bind(m) {
+    m.querySelectorAll('[data-migpick]').forEach(b => b.onclick = () => $('#migInput').click());
+    const a = m.querySelector('[data-migarch]'); if (a) a.onchange = () => { this.arch = a.checked; };
+    const g = m.querySelector('[data-miggo]'); if (g) g.onclick = () => { g.disabled = true; this.go().catch(e => toast('Hata: ' + e.message)); };
+  },
+  // every file of what was picked: zips opened (one zip inside a zip too: Notion's Part-1.zip), plain files as they are
+  async entries(files) {
+    const out = [], add = async (f, pre = '') => {
+      if (/\.zip$/i.test(f.name)) {
+        const z = await (await needZip()).loadAsync(f);
+        for (const e of Object.values(z.files)) {
+          if (e.dir || /(^|\/)(__MACOSX|\.DS_Store)/.test(e.name)) continue;
+          if (/\.zip$/i.test(e.name) && !pre) { const b = await e.async('blob'); await add(Object.assign(b, { name: e.name }), e.name + '/'); continue; }
+          out.push({ path: pre + e.name, date: +e.date || 0, text: () => e.async('string'), blob: () => e.async('blob') });
+        }
+      } else out.push({ path: pre + f.name, date: f.lastModified || 0, text: () => f.text(), blob: async () => f });
+    };
+    for (const f of files) await add(f);
+    return out;
+  },
+  async read(files) {
+    const say = t => { const el = $('#migMsg'); if (el) el.textContent = t; else toast(t, 60000); };
+    say('Okunuyor…');
+    const ents = await this.entries(files), paths = ents.map(e => e.path);
+    const js = ents.find(e => /\.json$/i.test(e.path)), peek = js ? (await js.text()).slice(0, 4000) : '';
+    const kind = NtsMigrate.detect(paths, peek);
+    if (!kind) { say('Bu dosyayı tanıyamadım: Keep (zip/json), Apple Notes (html), Notion (md/zip), Evernote (.enex) ya da Telegram (result.json) olmalı'); return; }
+    const byPath = new Map(ents.map(e => [e.path, e])), byName = new Map(ents.map(e => [e.path.split('/').pop(), e]));
+    const find = p => byPath.get(p) || [...byPath.keys()].find(k => k.endsWith('/' + p)) && byPath.get([...byPath.keys()].find(k => k.endsWith('/' + p))) || byName.get(p.split('/').pop());
+    let notes = [];
+    if (kind === 'telegram') {
+      const r = ents.find(e => /(^|\/)result\.json$/i.test(e.path)) || js, tg = NtsMigrate.telegram(await r.text());
+      if (!tg?.msgs.length) { say('Bu Telegram dosyasında mesaj yok'); return; }
+      const root = r.path.split('/').slice(0, -1).join('/');
+      notes = NtsMigrate.tgGroups(tg.msgs).map(g => ({ key: 'tg:' + tg.name + g[0].id, title: '', text: g.map(m => m.text).filter(Boolean).join('\n'), ts: g[0].ts, tags: [], chat: tg.name,
+        who: g[0].who && !tg.saved ? g[0].who : '', atts: g.filter(m => m.att).map(m => ({ ...m.att, path: (root ? root + '/' : '') + m.att.path })) }));
+    } else {
+      let k = 0;
+      for (const e of ents) {
+        if (kind === 'keep' && /\.json$/i.test(e.path)) { const n = NtsMigrate.keep(await e.text(), e.path); if (n) notes.push(n); }
+        else if (kind === 'apple' && /\.html?$/i.test(e.path)) { const n = NtsMigrate.apple(await e.text(), e.path, e.date); if (n) notes.push(n); }
+        else if (kind === 'notion' && /\.md$/i.test(e.path)) { const n = NtsMigrate.notion(await e.text(), e.path, e.date); if (n) notes.push(n); }
+        else if (kind === 'evernote' && /\.enex$/i.test(e.path)) notes.push(...NtsMigrate.enex(await e.text(), e.path));
+        if (++k % 100 === 0) say(`Okunuyor… ${k}/${ents.length}`);
+      }
+    }
+    if (!notes.length) { say('Dosyada not bulunamadı'); return; }
+    await PH.load().catch(() => null);
+    const ix = NtsDedup.index(S.items, PH.m), make = [], counts = { note: 0, link: 0, photo: 0, file: 0 }, tagN = new Map();
+    const hash = t => { let h = 2166136261; for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+    let dup = 0, miss = 0, from = 0, to = 0;
+    for (const n of notes) {
+      const id = 'mg' + hash(kind + n.key), ts = n.ts || now();
+      if (byId(id)) { dup++; continue; } // imported before
+      const base = { ts, createdAt: now(), source: kind, tags: n.tags || [], group: id, ...(n.starred ? { starred: true } : {}), ...(n.chat ? { chat: n.chat } : {}) };
+      const kids = [];
+      for (const [k, a] of (n.atts || []).entries()) {
+        let blob = null;
+        if (a.b64) { try { const bin = atob(a.b64), u = new Uint8Array(bin.length); for (let x = 0; x < bin.length; x++) u[x] = bin.charCodeAt(x); blob = new Blob([u], { type: a.mime }); } catch { } }
+        else { const e = find(a.path); if (e) blob = await e.blob(); }
+        if (!blob?.size) { miss++; continue; }
+        const f = { ...base, id: id + 'f' + k, type: 'file', fileName: a.name, mime: a.mime || blob.type || mimeOf(a.name), size: blob.size, text: '', _blob: blob, _kid: true };
+        f.sha = await sha1Hex(blob); if (ix.sha(f.sha)) { dup++; continue; }
+        ix.add(f); kids.push(f);
+      }
+      const body = [n.text, n.url && !(n.text || '').includes(n.url) ? n.url : ''].filter(Boolean).join('\n').trim();
+      const urls = body.match(URL_RE) || [], rest = urls.reduce((t, u) => t.split(u).join(''), body).trim();
+      let main = null;
+      if (urls.length === 1 && rest.length < 280 && !kids.length) { // a saved link (+ a line about it) is a link
+        if (ix.url(urls[0])) { dup++; continue; }
+        main = { ...base, id, type: 'link', url: urls[0], title: n.title || n.urlTitle || undefined, text: rest };
+      } else if (kids.length && !n.title && body && body.length < 280 && !urls.length) kids[0].text = body, delete kids[0]._kid; // a photo + its caption = one save
+      else if (body || n.title && !kids.length) main = { ...base, id, type: 'note', title: n.title || undefined, text: body };
+      else if (kids[0]) { kids[0].text = n.title || ''; delete kids[0]._kid; }
+      if (n.who && main) main.text = n.who + ': ' + main.text;
+      if (main && kids.length && n.title) kids.forEach(k => k.text ||= n.title);
+      for (const it of [main, ...kids].filter(Boolean)) {
+        make.push(it); counts[it.type === 'link' ? 'link' : it.type === 'note' ? 'note' : /^image\//.test(it.mime) ? 'photo' : 'file']++;
+        if (it === main || !main && it === kids[0]) { (it.tags || []).forEach(t => tagN.set(t, (tagN.get(t) || 0) + 1)); from = from ? Math.min(from, ts) : ts; to = Math.max(to, ts); }
+      }
+    }
+    this.st = { kind, make, counts, tagN, dup, miss, from, to };
+    openSettings('mig');
+  },
+  async go() {
+    const s = this.st; if (!s?.make.length) return;
+    const list = s.make.map(({ _kid, ...i }) => ({ ...i, archive: this.arch || undefined, seenAt: this.arch ? i.ts : undefined }));
+    const all = [];
+    for (let k = 0; k < list.length; k += 200) {
+      all.push(...await saveItems(list.slice(k, k + 200)));
+      if (list.length > 200) toast(`İçeri alınıyor… ${Math.min(k + 200, list.length)}/${list.length}`, 60000);
+    }
+    await upsert(all.map(i => i.type === 'file' && i.group !== i.id && all.some(x => x.id === i.group) ? { ...i, pending: false } : i), { sync: false });
+    if (all.length >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } // 148: a big import waits for a yes
+    const kind = s.kind, ids = all.map(i => i.id); this.st = null;
+    $('#menu').close();
+    toast(`${NtsMigrate.NAMES[kind]}: ${all.length} kayıt içeri alındı${this.arch ? ' (Arşiv)' : ''}`, 8000, 'check', [
+      { label: 'Göster', fn: () => { Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: kind }); if (!['list', 'gallery'].includes(S.view)) setView('list'); render(); } },
+      { label: 'Geri al', fn: async () => { await upsert(ids.map(byId).filter(Boolean).map(i => ({ ...i, deleted: true, deletedAt: now() }))); toast('Geri alındı', 1800, 'check'); } }]);
+    Sync.schedule(); if (S.settings.importHold) setTimeout(() => AI.holdAsk(), 8200); else AI.kick();
+  },
+};
+
 // ---------- backup ----------
 async function exportBackup() {
   toast('Yedek hazırlanıyor…', 60000);
@@ -7465,7 +7605,7 @@ function openSettings(page = 'main') {
       <button class="set-row d-only" data-do="keys">${ic('kbd')}<span>Klavye kısayolları<small>Her yerde <kbd>?</kbd> tuşu da açar</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="tour">${ic('spark')}<span>Nasıl kullanılır?<small>6 adımlık kısa tur</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="lists">${ic('flag')}<span>Listeler<small>${aiOf()} doldurduğu listelerin adı ve görünürlüğü</small></span>${ic('chev', 'sm')}</button>
-      <button class="set-row" data-do="move">${ic('upload')}<span>Kayıtları taşı<small>WhatsApp'tan içe aktar, yedek indir, yedekten geri yükle</small></span>${ic('chev', 'sm')}</button>
+      <button class="set-row" data-do="move">${ic('upload')}<span>Kayıtları taşı<small>WhatsApp, Keep, Notion, Evernote… içe aktar, yedek indir, geri yükle</small></span>${ic('chev', 'sm')}</button>
     </div>
     <details class="adv"><summary>${ic('chev', 'sm')}Gelişmiş</summary>
       <div class="set-sec">
@@ -7489,6 +7629,7 @@ function openSettings(page = 'main') {
       <button class="set-row" data-do="export">${ic('down')}<span>Yedek indir<small>Her şeyi tek dosya olarak indir${locked ? ' (şifreli)' : ''}</small></span></button>
       <button class="set-row" data-do="import">${ic('upload')}<span>Yedekten geri yükle</span></button>
       <button class="set-row" data-do="dups">${ic('copy')}<span>Kopyaları birleştir<small>Aynı link, aynı dosya ya da aynı foto birden çok kayıtsa tek kayıt olur; hiçbir şey silinmez</small></span>${ic('chev', 'sm')}</button>
+      <button class="set-row" data-do="mig">${ic('layers')}<span>Başka uygulamadan taşı<small>Google Keep, Apple Notes, Notion, Evernote, Telegram · önce ne geleceğini gösterir</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="bookmarks">${ic('star')}<span>Tarayıcı yer imlerini içe aktar<small>Chrome/Firefox: Yer imleri → Dışa aktar (HTML). Klasörler konu olur, aynı link iki kez eklenmez.</small></span></button>
     </div>`;
   const listsPage = `${head('Listeler', true)}
@@ -7497,8 +7638,9 @@ function openSettings(page = 'main') {
       <label class="switch" title="Sol çubukta göster"><input type="checkbox" data-lshow="${k}" ${listHidden(k) ? '' : 'checked'}><span></span></label></div>`).join('')}</div>`;
   const wasOpen = m.open;
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
-  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'a11y' ? A11y.page(head) : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
+  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'mig' ? Mig.page(head) : page === 'a11y' ? A11y.page(head) : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
   if (page === 'dups') Dups.run();
+  if (page === 'mig') Mig.bind(m); // 107d
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
   if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
     const msg = m.querySelector('#tokMsg'); if (!msg || !u) return;
@@ -7527,6 +7669,7 @@ function openSettings(page = 'main') {
     else if (d === 'move') openSettings('move');
     else if (d === 'a11y') openSettings('a11y');
     else if (d === 'dups') Dups.open();
+    else if (d === 'mig') Mig.open();
     else if (d === 'imphold') { await AI.holdGo(); toast(`${aiName()} içe aktarılanları düzenliyor`, 2500, 'spark'); openSettings(); } // 148
     else if (d === 'lists') openSettings('lists');
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
@@ -7534,7 +7677,7 @@ function openSettings(page = 'main') {
     else if (d === 'cmdk') { m.close(); setTimeout(() => Cmd.open(), 250); }
     else if (d === 'morning') { m.close(); Remind.ask(); setTimeout(() => Morning.open(), 250); }
     else if (d === 'keys') { m.close(); setTimeout(() => Native.keysOpen(), 250); }
-    else if (d === 'back') openSettings();
+    else if (d === 'back') openSettings(page === 'mig' ? 'move' : 'main');
     else if (d === 'import') $('#backupInput').click();
     else if (d === 'bookmarks') $('#bmInput').click();
     else if (d === 'export') { m.close(); exportBackup(); }
@@ -7658,7 +7801,8 @@ function wire() {
     if (ownField(e.target)) return;
     e.preventDefault();
     const fs = [...e.dataTransfer.files];
-    if (fs.length === 1 && /\.zip$/i.test(fs[0].name)) { importWhatsApp(fs[0]).catch(err => toast('Hata: ' + err.message)); return; }
+    if (fs.length && fs.every(f => /\.(enex)$/i.test(f.name))) { Mig.read(fs).catch(err => toast('Hata: ' + err.message)); return; } // 107d
+    if (fs.length === 1 && /\.zip$/i.test(fs[0].name)) { Mig.other(fs[0]).then(o => o ? Mig.read(fs) : importWhatsApp(fs[0])).catch(err => toast('Hata: ' + err.message)); return; }
     if (fs.length === 1 && findMode() && ImgFind.isImg(fs[0])) return ImgFind.run(fs[0]); // 105f
     if (fs.length) { S.attach.push(...fs); renderAttach(); Motion.fly(e.clientX, e.clientY, [...$('#attachList').children].slice(-fs.length)); } // 142 m4-B
     else { const t = e.dataTransfer.getData('text'); if (t) { inp.value = (inp.value ? inp.value + '\n' : '') + t; autoGrow(); } }
@@ -7756,6 +7900,7 @@ function wire() {
   $('#syncBtn').onclick = e => { e.stopPropagation(); Sync.pop(); };
   addEventListener('offline', () => Sync.paint());
   $('#waInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importWhatsApp(f).catch(err => toast('Hata: ' + err.message)); } };
+  $('#migInput').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) Mig.read(fs).catch(err => toast('Hata: ' + err.message)); }; // 107d
   $('#bmInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importBookmarks(f).catch(err => toast('Hata: ' + err.message)); } };
   $('#backupInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { $('#menu').close(); importBackup(f).catch(err => toast('Hata: ' + err.message)); } };
 
