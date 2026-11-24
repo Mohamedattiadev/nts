@@ -987,6 +987,21 @@ Arayüz:
         transform; layout okuma yok), sayfa kaydırması hedefe yaylı yaklaşır (kesik kesik atlamaz), ay etiketleri (Eyl/Tem/May) noktaya yakınken
         yumuşak belirip kaybolur (opacity, titreşim yok), bırakınca aya oturma ≤180 ms. Ölç: sürüklemede uzun görev 0, 60 fps (telefon 4x ≥45);
         tools/perf.mjs'e zaman çizgisi sürükleme senaryosu ekle. reduced-motion'da anında. Masaüstü + telefon (dokunma), açık + koyu.
+- [ ] 157. **Sahibin 2026-11-24 akşam ekran görüntüleri** (4 iş, a–d ayrı commit olabilir):
+        a) design/feedback-34.png: Ara/liste üstünde "Tarihe git" hap düğmesi turuncu "En yeniye dön" şeridinin sağ üst köşesine biniyor ("düzelt").
+           İkisi aynı satırda yan yana ya da şerit görünürken "Tarihe git" şeridin içine girsin; hiçbir genişlikte çakışma 0 (ölç), açık + koyu, telefon.
+        b) design/feedback-36.png: kutudaki "+" ve mikrofon düğmeleri kare-yuvarlak; sahip: "yuvarlak olsun bence" → tam daire (border-radius 50%),
+           aynı boy (≥40 px, telefonda 44), kutunun yuvarlak köşesiyle eş merkezli hizada; gönder düğmesi de aynı aile.
+        c) design/feedback-35.png (Takvim, Kasım 2026): "2026'dayken önceki yıllara daha hızlı, daha büyük ölçekte gitmek istesem" → takvime
+           yakınlık katmanları: Ay (bugünkü) → Yıl (12 küçük ay, günler yoğunluk renginde, kayıt sayısı) → Yıllar (2023–2026 satırları, ay
+           kareleri yoğunlukla). Geçiş: başlığa (Kasım 2026) dokun / Ctrl+tekerlek / çimdik ile uzaklaş, bir aya/yıla dokun → yakınlaşarak
+           girer (FLIP, 200 ms). Klavye: PgUp/PgDn ay, Shift+PgUp yıl, "−"/"+" katman. Tarih çarkı (123-1) ile de aynı tarihe gidilebilsin. 10k kayıtta akıcı.
+        d) design/feedback-37.png: "Poultrycare" panosunda "1 yıl" seçili, yine 4 kart. Ölçüldü (snapshot, 2026-11-24): project=poultrycare olan
+           yalnız 4 kayıt var, 4'ü de son yılda — süzgeç doğru çalışıyor; sahibin beklediği WhatsApp'taki PoultryCare yazışmaları/linkleri projeye
+           bağlı değil (yalnız 1'inde #poultrycare etiketi). Yap: proje panosunda (ve boş/az kartlı panoda) "Bu projeyle ilgili N kayıt daha var"
+           çipi → liste (etiket eşleşmesi + başlık/metin/URL'de proje adı geçenler, tr/ar katlama + varsa sem.js anlam benzerliği ✦) → "Hepsini
+           ekle" / tek tek ekle, Geri al. Eklenen kayıt i.project değil i.boards'a girer (başka projeyi bozmasın). İsteğe bağlı: yapay zekâ
+           organize ederken proje adıyla eşleşen kayda proje önerisi (148 token kurallarıyla, toplu).
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
