@@ -1371,7 +1371,7 @@ const Folders = {
     if (st === 'B') return `<button ${a}><div class="f-st">${top.slice().reverse().map(i => this.mini(i)).join('')}</div><div class="f-cap">${cap}</div></button>`;
     if (st === 'C') { const tiles = fill(3).map((i, k) => k === 2 && f.n > 3 ? this.mini(i).replace('class="f-it', 'class="f-it more').replace(/<\/div>$/, `<span>+${f.n - 2}</span></div>`) : this.mini(i));
       return `<button ${a}><div class="f-mos">${tiles.join('')}</div><div class="f-cap"><span class="f-ic"></span><div>${cap}</div></div></button>`; }
-    if (st === 'D') return `<button ${a}><div class="f-ico"><div class="f-bk"></div><div class="f-pk">${top.slice(0, 2).map(i => this.mini(i)).join('')}</div><div class="f-fr"><span>${esc([...this.label(f.k).replace(/^#/, '')][0] || '·')}</span></div></div>${cap}</button>`;
+    if (st === 'D') return `<button ${a}><div class="f-ico"><div class="f-bk"></div><div class="f-pk">${top.slice(0, 3).map(i => this.mini(i)).join('')}</div><div class="f-fr"><span>${esc([...this.label(f.k).replace(/^#/, '')][0] || '·')}</span></div></div>${cap}</button>`;
     return `<button ${a}><div class="f-tab" dir="auto">${aim}${name}${pin}</div><div class="f-pg"></div><div class="f-pg"></div><div class="f-body"><div class="f-row">${fill(3).map(i => this.mini(i)).join('')}</div>${cnt}</div></button>`;
   },
   html(items) {

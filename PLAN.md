@@ -871,13 +871,19 @@ Arayüz:
         kayıt açma, var olana "WhatsApp'ta da var" bağı ekle; (c) nts import ve uygulamadaki içe aktarma ikisi de bu kuralı kullansın (ortak işlev),
         deneme raporunda "Zaten Nts'te: N link, M foto"; (d) var olan kopyalar için Ayarlar → "Kopyaları birleştir" (önce liste + sayı, tek dokunuş,
         Geri al), etiket/not/pano yerleri birleşir, hiçbir şey silinmez (çöpe). Birim testleri (URL katlama tr/en/ar karakterli linkler dahil).
-- [ ] 131-2. **Cam klasörün içi görünsün** (sahip, 2026-11-24, 131-1'i görünce: "güzel de sorunu şu: cam ama şeyler gözükmüyor içinden").
+- [x] 131-2. **Cam klasörün içi görünsün** (sahip, 2026-11-24, 131-1'i görünce: "güzel de sorunu şu: cam ama şeyler gözükmüyor içinden").
         Şeffaf plastik dosya gibi: klasörün içindeki ilk 3–5 kayıt (gerçek foto küçük resimleri, notun ilk satırları kâğıt gibi, link kartı
         favicon + başlık) cam ön kapağın ARKASINDA, biraz yukarı taşmış ve hafif eğik kâğıtlar olarak dursun; cam ön yüz bunların üstünde
         hafif bulanık (blur ~4–6 px, yüksek saydamlık) ki içerik net seçilsin — şu an bulanıklık/opaklık içeriği tamamen kapatıyor. Klasör
         rengi camda ince ton olarak kalır, başlık ve sayı camın üstünde okunur (AA). Üzerine gelince kâğıtlar biraz daha dışarı çıkar. Resimsiz
         klasörde boş simge yok (131-1 kuralı). Yavaş telefonda / saydamlığı azalt'ta blur kapalı ama içerik yine görünür. Açık + koyu, telefon
         2 sütun, ekran görüntüsü önce/sonra.
+        YAPILDI (2026-11-24, A hattı): D kartında artık 3 gerçek kayıt (foto küçük resmi, not ilk satır + yazı, link simge + başlık)
+        arkadaki kapağın üstüne taşmış, hafif eğik kâğıtlar; cam ön kapak alçak (%54), ince ton (klasör rengi %22, koyu %32) + blur 4 px,
+        büyük harf camda kaldırıldı (içeriği örtüyordu; ad klasörün altında). Kâğıtlar artık kendi katmanında (z-index sızıp camın önüne
+        çıkmıyor). Üzerine gelince kâğıtlar sırayla yukarı çıkar, kapak -14° açılır. Yavaş telefon / saydamlığı azalt (data-gslow): blur yok,
+        düz kapak alçak (%46) → kâğıtlar yine görünür. Diğer stiller (E/A/B/C) değişmedi. Ekran görüntüleri design/131-2/ (önce/sonra,
+        telefon koyu, hover, yavaş); konsol hatası 0; phone-audit liste: çakışma/taşma 0 (tek "small" #boardBtn 2×2, önceden var). sw v116
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
