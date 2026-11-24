@@ -1142,7 +1142,7 @@ Arayüz:
            ☐ • ❝ </> ⊞ ▣ — ↶ ↷ yazı glifleri → ic() SVG (yeni: ul, quote, table, code, hr, undo, redo); Aa/H1/H2/1. harf olarak kalır.
            (3) bildirimlerdeki ✓ glifleri → toast 'check' simgesi / "Eşit · 12:30"; Hepsi zaten Nts'te başlığında SVG. (4) site/index.html
            tanıtımındaki ✎ Not / 🔍 Ara / ✦ Sor → satır içi SVG. Kullanıcı metnindeki emojiye dokunulmadı. Not: Playwright'ta page.route varken
-           dış resimler yüklenmiyor (düzenek kısıtı) → testte iki kayda data: logo verildi; 4 görüntü konsol hatası 0. Görüntüler design/158c/.
+           dış resimler yüklenmiyor (düzenek kısıtı) → testte iki kayda data: logo verildi; 4 görüntü konsol hatası 0. Görüntüler design/158c/; sw v133.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
