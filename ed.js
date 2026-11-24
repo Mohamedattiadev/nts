@@ -5,9 +5,9 @@
 const Ed = {
   ZW: '​',
   BLOCKS: [['p', 'Aa', 'Metin', 'düz paragraf', 'metin yazı paragraf text'], ['h1', 'H1', 'Başlık', 'büyük başlık', 'baslik heading h1'], ['h2', 'H2', 'Alt başlık', 'orta başlık', 'alt baslik heading h2'],
-    ['todo', '☐', 'Onay listesi', 'işaretlenen kutular', 'onay yapilacak todo check liste'], ['ul', '•', 'Madde listesi', 'noktalı liste', 'madde liste bullet list'], ['ol', '1.', 'Numaralı liste', '1, 2, 3', 'numara sirali numbered list'],
-    ['quote', '❝', 'Alıntı', 'girintili alıntı', 'alinti quote'], ['code', '</>', 'Kod', 'eş aralıklı blok', 'kod code'], ['table', '⊞', 'Tablo', '3 × 3', 'tablo table'],
-    ['img', '▣', 'Resim', 'cihazdan seç', 'resim foto gorsel image'], ['hr', '—', 'Ayırıcı', 'ince çizgi', 'ayirici cizgi divider']],
+    ['todo', '@todo', 'Onay listesi', 'işaretlenen kutular', 'onay yapilacak todo check liste'], ['ul', '@ul', 'Madde listesi', 'noktalı liste', 'madde liste bullet list'], ['ol', '1.', 'Numaralı liste', '1, 2, 3', 'numara sirali numbered list'],
+    ['quote', '@quote', 'Alıntı', 'girintili alıntı', 'alinti quote'], ['code', '@code', 'Kod', 'eş aralıklı blok', 'kod code'], ['table', '@table', 'Tablo', '3 × 3', 'tablo table'],
+    ['img', '@image', 'Resim', 'cihazdan seç', 'resim foto gorsel image'], ['hr', '@hr', 'Ayırıcı', 'ince çizgi', 'ayirici cizgi divider']],
   phone: () => matchMedia('(pointer: coarse)').matches,
   fold: s => s.toLocaleLowerCase('tr').replace(/[çğıöşü]/g, c => ({ ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' })[c]),
 
@@ -179,7 +179,7 @@ const Ed = {
 
     // --- the "/" menu (desktop list at the caret, phone bottom sheet) and the phone strip ---
     const menu = document.createElement('div'); menu.className = 'ed-menu'; menu.setAttribute('role', 'listbox'); menu.setAttribute('aria-label', 'Blok ekle');
-    menu.innerHTML = `<div class="ed-in">${this.BLOCKS.map(([k, g, n, d]) => `<button type="button" role="option" data-k="${k}"><span class="gi">${esc(g)}</span><span class="nm">${n}<small>${d}</small></span></button>`).join('')}</div><div class="ed-none">Eşleşen blok yok</div>`;
+    menu.innerHTML = `<div class="ed-in">${this.BLOCKS.map(([k, g, n, d]) => `<button type="button" role="option" data-k="${k}"><span class="gi">${g[0] === '@' ? ic(g.slice(1), 'sm') : esc(g)}</span><span class="nm">${n}<small>${d}</small></span></button>`).join('')}</div><div class="ed-none">Eşleşen blok yok</div>`;
     const scrim = document.createElement('div'); scrim.className = 'ed-scrim';
     let msel = 0, mfor = null, sheet = false;
     const opts = () => [...menu.querySelectorAll('button:not([hidden])')];
@@ -200,9 +200,9 @@ const Ed = {
     scrim.addEventListener('click', () => { const at = mfor; hideMenu(); if (at) place(at); });
     const strip = document.createElement('div'); strip.className = 'ed-strip'; strip.setAttribute('role', 'toolbar'); strip.setAttribute('aria-label', 'Not araçları');
     strip.innerHTML = `<button type="button" data-s="plus" aria-label="Blok ekle">${ic('plus', 'sm')}</button><span class="sep"></span>
-      <button type="button" data-s="todo" aria-label="Onay listesi">☐</button><button type="button" data-s="ul" aria-label="Madde listesi">•</button><button type="button" data-s="h1" aria-label="Başlık">H</button>
+      <button type="button" data-s="todo" aria-label="Onay listesi">${ic('todo', 'sm')}</button><button type="button" data-s="ul" aria-label="Madde listesi">${ic('ul', 'sm')}</button><button type="button" data-s="h1" aria-label="Başlık">H</button>
       <button type="button" data-s="bold" aria-label="Kalın"><b>B</b></button><button type="button" data-s="italic" aria-label="İtalik"><i>I</i></button><span class="sep"></span>
-      <button type="button" data-s="undo" aria-label="Geri al">↶</button><button type="button" data-s="redo" aria-label="Yinele">↷</button><button type="button" data-s="done" aria-label="Klavyeyi kapat">${ic('check', 'sm')}</button>`;
+      <button type="button" data-s="undo" aria-label="Geri al">${ic('undo', 'sm')}</button><button type="button" data-s="redo" aria-label="Yinele">${ic('redo', 'sm')}</button><button type="button" data-s="done" aria-label="Klavyeyi kapat">${ic('check', 'sm')}</button>`;
     strip.addEventListener('mousedown', e => e.preventDefault());
     strip.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') e.preventDefault(); });
     strip.addEventListener('click', e => { const s = e.target.closest('[data-s]')?.dataset.s; if (!s) return; haptic(6);

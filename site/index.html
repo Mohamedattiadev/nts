@@ -113,6 +113,7 @@ h2, .sub, .lead { text-wrap: pretty; }
 .dock .plus, .dock .send { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); flex: none; }
 .dock .send { background: var(--surface-2); transition: background .2s, color .2s; }
 .dock .send.go { background: var(--accent); color: var(--accent-text); }
+.mode svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; margin-right: 4px; }
 .mode { flex: none; font-size: 12.5px; font-weight: 600; padding: 5px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); transition: background .25s, color .25s; }
 .typed { flex: 1; min-width: 0; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .typed:empty::before { content: attr(data-ph); color: var(--muted); }
@@ -236,7 +237,7 @@ footer a:hover { color: var(--text); }
           <div class="ans" id="ans"></div>
           <div class="dock">
             <span class="plus"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
-            <span class="mode" id="mode">✎ Not</span>
+            <span class="mode" id="mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Not</span>
             <span class="typed" id="typed" data-ph="Not, link ya da soru yaz…"></span>
             <span class="send" id="send"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></span>
           </div>
@@ -389,14 +390,16 @@ footer a:hover { color: var(--text); }
   const idle = async () => { while (!visible || document.hidden) await wait(400); };
   const type = async s => { typed.classList.add('caret'); typed.textContent = ''; for (const ch of s) { await idle(); typed.textContent += ch; await wait(42 + Math.random() * 40); } send.classList.add('go'); };
   const clear = () => { typed.textContent = ''; typed.classList.remove('caret'); send.classList.remove('go'); };
-  const setMode = m => { mode.textContent = m; };
+  // 158c: real SVG marks, never emoji / font glyphs
+  const MODE_SVG = { Not: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', Ara: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', Sor: '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/>' };
+  const setMode = m => { mode.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${MODE_SVG[m]}</svg>${m}`; };
   const moveTo = (el, dx = 0.62, dy = 0.5) => {
     const s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
     cur.style.transform = `translate(${r.left - s.left + r.width * dx}px, ${r.top - s.top + r.height * dy}px)`;
   };
   const reset = () => {
     for (const k of ['today', 'yday', 'older']) $(k).replaceChildren(...(SEED[k] || []).map(c => { c.classList.remove('dim', 'hit', 'glow'); return c; }));
-    ans.classList.remove('on'); cur.classList.remove('on'); setMode('✎ Not'); clear();
+    ans.classList.remove('on'); cur.classList.remove('on'); setMode('Not'); clear();
   };
   const loop = async () => {
     reset();
@@ -418,7 +421,7 @@ footer a:hover { color: var(--text); }
       for (const t of ['yemek', 'tarif']) { m.insertAdjacentHTML('beforeend', `<span class="chip">#${t}</span>`); await wait(260); }
       await wait(700); c.classList.remove('glow'); cur.classList.remove('on'); await idle(); await wait(900);
       // search mode: live filter
-      setMode('🔍 Ara'); await wait(500);
+      setMode('Ara'); await wait(500);
       typed.classList.add('caret');
       const all = [...stage.querySelectorAll('.card')];
       for (const ch of 'sözleşme') {
@@ -428,7 +431,7 @@ footer a:hover { color: var(--text); }
       }
       await wait(1500); clear(); all.forEach(x => x.classList.remove('dim', 'hit'));
       // ask mode: Claude answers
-      setMode('✦ Sor'); await wait(500);
+      setMode('Sor'); await wait(500);
       await type('annemin doğum günü ne zaman?'); await wait(400); clear();
       ans.innerHTML = '<b>Claude:</b> Dün "Annemi ara, doğum günü" notunu bırakmışsın. Hediye için #aile etiketinde 2 kayıt daha var.';
       ans.classList.add('on'); await wait(3800); ans.classList.remove('on'); await wait(700);

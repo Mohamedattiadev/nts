@@ -86,6 +86,14 @@ const I = {
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
   kbd: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 16h8"/>', // 141
   install: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  // 158c: the editor's block / strip marks (were font glyphs ☐ • ❝ ⊞ ▣ — ↶ ↷)
+  ul: '<path d="M10 6h10M10 12h10M10 18h10"/><circle cx="5" cy="6" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="18" r="1.2" fill="currentColor"/>',
+  quote: '<path d="M10 7H6a2 2 0 0 0-2 2v3h5v5H4v-5M20 7h-4a2 2 0 0 0-2 2v3h5v5h-5v-5"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
+  code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5"/>',
+  hr: '<path d="M4 12h16"/><path d="M8 6h8M8 18h8" opacity=".45"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
 };
 const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || I.file}</svg>`;
 
@@ -862,7 +870,11 @@ function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image
   return `<div class="${cls}" data-tid="${i.id}">${ic(k === 'text' ? 'note' : k, 'lg')}${i.type === 'file' && !['image'].includes(k) ? `<span class="badge">${esc(extOf(i))}</span>` : ''}</div>`;
 }
 const hookThumbs = root => root.querySelectorAll('[data-tid]').forEach(el => thumbIO.observe(el));
-const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i.type === 'link' && i.meta?.logo ? `<img class="fav" src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.replaceWith(document.createRange().createContextualFragment(ic('link')))">` : ic(fileKind(i) === 'text' ? 'note' : fileKind(i))}</div>`;
+// 158c (feedback-41): a link shows its OWN mark: the logo the bridge found, else the site's favicon straight from the site (no third party);
+// the SVG chain under it shows when neither loads. Never an emoji, never a font glyph.
+const linkFav = i => { if (i.type !== 'link') return ''; let s = i.meta?.logo; if (!s) try { const u = new URL(i.url); if (u.protocol === 'https:') s = u.origin + '/favicon.ico'; } catch { }
+  return s ? `<img class="lfav" src="${esc(s)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ''; };
+const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${linkFav(i)}${ic(fileKind(i) === 'text' ? 'note' : fileKind(i))}</div>`;
 
 // 106a (+130e): rich card previews on the board. Only what the item really holds (PLAN 106s): a video/music/map link plays inside the
 // card (a picture first, the player only after a tap), a WhatsApp talk shows its last messages as bubbles, a note with a check list is a
@@ -1620,7 +1632,7 @@ const Folders = {
   // 131-1 (feedback-25): never an empty grey picture box. Until (or unless) the real picture comes, the item shows what it really is:
   // the site's icon or a small mark in the kind's colour + its title; a note shows its first line and the words under it.
   fav(i) { const k = fileKind(i), h = this.host(i);
-    return `<em class="${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}${i.type === 'link' ? esc(([...h][0] || '·').toUpperCase()) : ic(k === 'text' ? 'note' : k, 'sm')}</em>`; },
+    return `<em class="${i.type}-c">${linkFav(i)}${i.type === 'link' ? esc(([...h][0] || '·').toUpperCase()) : ic(k === 'text' ? 'note' : k, 'sm')}</em>`; },
   mini(i) { // a small item that peeks out of the folder: the real picture, else a little paper note / link card
     const t0 = titleOf(i), t = esc(i.type === 'file' && t0 === i.fileName && noiseName(i.fileName) ? KIND_LABEL[fileKind(i)] + ' · ' + shortDay(dayKey(i.ts)) : t0); // a camera name says nothing
     if (hasVisual(i)) return `<div class="f-it img" data-tid="${i.id}" dir="auto"><span class="f-fb">${this.fav(i)}<b>${t}</b></span></div>`;
@@ -1915,7 +1927,7 @@ const Rel = {
   paint() {
     const p = $('#relPop'), l = this.items(), max = 60;
     p.innerHTML = `<div class="rp-top"><div><b>${esc(S.board)}</b> ile ilgili</div><div class="rp-sub">${l.length} kayıt bu panoda değil. Eklenen kayıt başka projeden çıkmaz.</div></div>
-      <div class="rp-list">${l.slice(0, max).map(({ i, why }) => `<div class="rp-row" data-id="${esc(i.id)}"><button class="rp-open" data-ropen title="Aç"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}</span><span class="rp-t" dir="auto">${esc(titleOf(i).slice(0, 90))}</span><span class="rp-why">${ic(this.WHY[why][0], 'sm')}${this.WHY[why][1]} · ${shortDay(dayKey(i.ts))}</span></button><button class="rp-add" data-radd aria-label="Panoya ekle" title="Panoya ekle">${ic('plus', 'sm')}</button></div>`).join('')}</div>
+      <div class="rp-list">${l.slice(0, max).map(({ i, why }) => `<div class="rp-row" data-id="${esc(i.id)}"><button class="rp-open" data-ropen title="Aç"><span class="b-ico ${i.type}-c">${linkFav(i)}${ic(i.conv ? 'chat' : fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}</span><span class="rp-t" dir="auto">${esc(titleOf(i).slice(0, 90))}</span><span class="rp-why">${ic(this.WHY[why][0], 'sm')}${this.WHY[why][1]} · ${shortDay(dayKey(i.ts))}</span></button><button class="rp-add" data-radd aria-label="Panoya ekle" title="Panoya ekle">${ic('plus', 'sm')}</button></div>`).join('')}</div>
       <div class="rp-foot">${l.length > max ? `<span class="rp-more">İlk ${max} gösteriliyor</span>` : ''}<button class="btn primary rp-all" data-rall>${ic('plus', 'sm')}Hepsini ekle (${l.length})</button></div>`;
   },
   open() {
@@ -2339,7 +2351,7 @@ const Find = {
     const vis = hasVisual(i), k = fileKind(i);
     b.className = 'h-row f-tile ' + (vis ? 'vis' : 'doc');
     b.innerHTML = vis ? `${thumbBox(i, 'f-th')}<span class="f-t" dir="auto"></span>`
-      : `<span class="f-ic ${i.type}-c">${i.type === 'link' && i.meta?.logo ? `<img src="${esc(i.meta.logo)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
+      : `<span class="f-ic ${i.type}-c">${linkFav(i)}${i.type === 'link' ? `<b class="f-l">${esc(([...domain(i.url)][0] || '·').toLocaleUpperCase('tr'))}</b>` : ic(k === 'text' ? 'note' : k, 'sm')}</span><span class="f-t" dir="auto"></span><span class="f-s" dir="auto"></span><span class="f-d">${i.type === 'link' ? esc(domain(i.url)) : fmtDay(dayKey(i.ts))}</span>`;
     return b;
   },
   open(n = 0) { const id = this.top[n]; if (id) { if (!ImgFind.on()) { Recent.add(S.q); Learn.add(S.q, id); } openItem(id); } },
@@ -5733,7 +5745,7 @@ const Board = {
     const k = fileKind(i), sub = subOf(i), H = S.searchOn ? hl : esc;
     c.className = 'bcard' + (S.hits && S.searchOn ? (S.hits.has(i.id) ? ' hit' : ' dim') : '') + (S.linkFrom === i.id || Link.sel.has(i.id) ? ' sel' : '') + markCls(i);
     const rich = Rich.html(i), rb = Rich.body(i); // 106a
-    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div>${Rich.pill(i)}</div>
+    c.innerHTML = `<span class="b-date">${shortDay(dayKey(i.ts))}</span>${rich || (hasVisual(i) ? thumbBox(i) : '')}<div class="b-in"><div class="b-head"><span class="b-ico ${i.type}-c">${linkFav(i)}${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}</span><div class="title">${H(titleOf(i))}</div>${Rich.pill(i)}</div>
       ${rb != null ? rb : sub ? `<div class="sub">${H(sub.slice(0, 200))}</div>` : ''}${metaHtml(i, { day: !!posOf(i), due: !Rich.due(i) }).replace('class="meta"', `class="meta${this.metaLines(i) > 1 ? ' m2' : ''}"`)}</div>${OnBoard.can(i) ? `<button class="b-open" title="Pencerede aç" aria-label="Pencerede aç">${ic('expand', 'sm')}</button>` : ''}${this.deg?.get(i.id) ? `<span class="b-lk" title="${this.deg.get(i.id)} bağlantı">${ic('link', 'sm')}${this.deg.get(i.id)}</span>` : ''}`;
     return c;
   },
@@ -7203,7 +7215,7 @@ const Sync = {
   },
   paint() {
     const v = this.view(), b = $('#syncBtn');
-    const msg = v ? (v.k === 'ok' ? `✓ ${new Date(this.st.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt${S.repoKB && !Cloud.on() ? ` · repo ${Math.round(S.repoKB / 1024)} MB` : ''}` : v.d) : '';
+    const msg = v ? (v.k === 'ok' ? `Eşit · ${new Date(this.st.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${alive().length} kayıt${S.repoKB && !Cloud.on() ? ` · repo ${Math.round(S.repoKB / 1024)} MB` : ''}` : v.d) : '';
     GH.status(msg);
     if (b) { b.hidden = !v; if (v) { if (b.dataset.k !== v.k) { b.dataset.k = v.k; b.innerHTML = (v.k === 'busy' || v.k === 'wait' ? `<span class="sy-r">${ic('repeat')}</span>` : ic('cloud') + `<span class="sy-g" aria-hidden="true">${v.k === 'ok' ? ic('check', 'sm') : v.k === 'err' ? '!' : ''}</span>`) + '<span class="sy-n"></span>'; }
       b.querySelector('.sy-n').textContent = (v.k === 'off' || v.k === 'wait') && this.st.n ? (this.st.n > 99 ? '99+' : this.st.n) : '';
@@ -7311,7 +7323,7 @@ async function importWhatsApp(file) {
   if (upd.size) await upsert([...upd.values()], { sync: true, quiet: true });
   if (PH.m?.size) DB.put('kv', Object.fromEntries(PH.m), 'ph').catch(() => null);
   const dupTxt = [dupN.link && dupN.link + ' link', dupN.photo && dupN.photo + ' foto', dupN.file && dupN.file + ' dosya'].filter(Boolean).join(', ');
-  if (!out.length) return toast(dupTxt ? `Hepsi zaten içeride ✓ · Zaten Nts'te: ${dupTxt}` : 'Hepsi zaten içeride ✓', 4000, 'check');
+  if (!out.length) return toast(dupTxt ? `Hepsi zaten içeride · Zaten Nts'te: ${dupTxt}` : 'Hepsi zaten içeride', 4000, 'check');
   const all = []; // 147c: files are written 200 at a time (progress shows), the list is merged and redrawn ONCE at the end
   for (let k = 0; k < out.length; k += 200) {
     all.push(...await saveItems(out.slice(k, k + 200)));
@@ -7353,7 +7365,7 @@ const Dups = {
     const msg = $('#dupMsg'), box = $('#dupList'); if (!msg || !box) return;
     if (this.shaUpd.size) { upsert([...this.shaUpd.values()], { quiet: true }); this.shaUpd.clear(); }
     const n = gs.reduce((a, g) => a + g.ids.length - 1, 0), by = k => gs.filter(g => g.kind === k).reduce((a, g) => a + g.ids.length - 1, 0);
-    if (!n) { msg.textContent = 'Kopya yok ✓ Her link, dosya ve foto bir kez kayıtlı.'; box.innerHTML = ''; return; }
+    if (!n) { msg.textContent = 'Kopya yok: her link, dosya ve foto bir kez kayıtlı.'; box.innerHTML = ''; return; }
     msg.innerHTML = `<b>${n} kopya</b> bulundu (${[by('link') && by('link') + ' link', by('file') && by('file') + ' dosya', by('photo') && by('photo') + ' benzer foto'].filter(Boolean).join(', ')}). Birleşince etiketler, not ve pano yeri kalan kayda geçer; kopyalar çöp kutusuna gider.`;
     box.innerHTML = gs.slice(0, 60).map(g => { const [k, ...c] = g.ids.map(byId); return `<div class="dup-row">${ic(g.kind === 'link' ? 'link' : g.kind === 'photo' ? 'image' : 'file', 'sm')}<span><b>${esc(titleOf(k))}</b><small>${c.length + 1} kez · ilk ${esc(fmtDay(dayKey(Math.min(k.ts, ...c.map(x => x.ts)))))}${g.kind === 'photo' ? ' · benzer foto' : ''}</small></span></div>`; }).join('')
       + (gs.length > 60 ? `<p class="hint">…ve ${gs.length - 60} grup daha</p>` : '')
@@ -7401,7 +7413,7 @@ const Mig = {
     const tags = [...s.tagN].sort((a, b) => b[1] - a[1]);
     return `${head(NtsMigrate.NAMES[s.kind] + { keep: '\'ten', apple: '\'tan', notion: '\'dan', evernote: '\'tan', telegram: '\'dan' }[s.kind] + ' taşı', true)}
       <div class="set-sec mig-sum">${s.make.length ? `<p class="mig-big"><b>${s.make.length} kayıt</b> gelecek</p><p class="hint">${parts}${span ? ' · ' + span : ''}</p>
-        ${s.dup ? `<p class="hint">${s.dup} tanesi zaten Nts'te, tekrar eklenmez.</p>` : ''}` : `<p class="mig-big"><b>Hepsi zaten Nts'te</b> ✓</p><p class="hint">${s.dup} kayıt daha önce alınmış; yeni bir şey yok.</p>`}
+        ${s.dup ? `<p class="hint">${s.dup} tanesi zaten Nts'te, tekrar eklenmez.</p>` : ''}` : `<p class="mig-big">${ic('check', 'sm')}<b>Hepsi zaten Nts'te</b></p><p class="hint">${s.dup} kayıt daha önce alınmış; yeni bir şey yok.</p>`}
         ${s.miss ? `<p class="hint">${s.miss} ek dosya dışa aktarımda yok (yalnız yazısı gelir).</p>` : ''}</div>
       ${tags.length ? `<div class="set-sec"><h4>Gruplar → etiket</h4><div class="mig-tags">${tags.slice(0, 14).map(([t, n]) => `<span class="mig-tag">#${esc(t)} <small>${n}</small></span>`).join('')}${tags.length > 14 ? `<span class="mig-tag"><small>+${tags.length - 14}</small></span>` : ''}</div></div>` : ''}
       <div class="set-sec"><h4>Örnek</h4><div class="dup-list">${s.make.filter(i => !i._kid).slice(0, 5).map(i => `<div class="dup-row">${ic(i.type === 'link' ? 'link' : i.type === 'file' ? (/^image\//.test(i.mime) ? 'image' : 'file') : 'note', 'sm')}<span><b>${esc(i.title || (i.type === 'file' && i.text) || i.fileName || (i.text || '').split('\n')[0] || i.url || 'Kayıt')}</b><small>${esc(shortDay(dayKey(i.ts)))}${(i.tags || []).length ? ' · #' + esc(i.tags.join(' #')) : ''}${i.text && i.title ? ' · ' + esc(i.text.slice(0, 60)) : ''}</small></span></div>`).join('')}</div></div>
@@ -7518,7 +7530,7 @@ async function exportBackup() {
   for (const f of await DB.all('files')) zip.file('files/' + f.id, f.blob);
   const blob = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `hizli-not-${dayKey(now())}.zip`; a.click();
-  toast('Yedek indirildi ✓');
+  toast('Yedek indirildi', 2600, 'check');
 }
 // Markdown zip + Obsidian folder sync + board PDF: export.js (107j)
 // browser bookmarks (Chrome / Firefox / Safari "export bookmarks" = Netscape HTML): each link becomes an item, folder → topic
@@ -7547,7 +7559,7 @@ async function importBackup(file) {
   const local = new Map(S.items.map(i => [i.id, i]));
   const take = items.filter(x => !local.has(x.id) || (x.updatedAt || 0) > (local.get(x.id).updatedAt || 0));
   for (const x of take) { const f = zip.file('files/' + x.id); if (f) await DB.put('files', { id: x.id, blob: await f.async('blob') }); }
-  await upsert(take); toast(`${take.length} kayıt geri yüklendi ✓`);
+  await upsert(take); toast(`${take.length} kayıt geri yüklendi`, 2600, 'check');
 }
 
 // ---------- privacy: app lock + end-to-end encrypted sync ----------

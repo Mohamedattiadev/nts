@@ -1133,6 +1133,16 @@ Arayüz:
            emoji olmasın". Bütün uygulamayı tara: arayüzde simge olarak kullanılan her emoji (veriden gelen liste/klasör/kaynak simgeleri dahil,
            ör. smart list/folder/source ikon alanı) → ic('…') SVG; kullanıcının kendi yazdığı metindeki emojiye dokunma. Tarayıcı emoji fontuna
            bağlı hiçbir simge kalmasın (grep \p{Extended_Pictographic} in app.js, index.html, ed.js, query.js…; kalan her biri gerekçeli).
+           YAPILDI (2026-11-25, A hattı): tarama (Extended_Pictographic + ☐❝⊞▣↶↷✓, app/ed/query/index/style/site/bridge/extension): app.js ve
+           index.html'de arayüzde emoji simge YOKTU (hepsi ic() SVG; kalanlar yorum ya da metin: ↔, ⌘ tuş adı, LaTeX ©®™). Ekrandaki 🔗 gibi
+           görünen şey arama sonucu kutucuğundaki mavi SVG zincirdi (logosu olmayan her link aynı zinciri gösteriyordu). Yapılan: (1) linkFav():
+           link kendi işaretini gösterir — köprünün bulduğu logo, yoksa sitenin favicon'u doğrudan siteden (https, üçüncü taraf servis yok,
+           loading=lazy); yüklenemezse img kalkar ve alttaki SVG görünür — liste (.ico), pano kartı (.b-ico), arama kutucuğu (.f-tile), klasör
+           kartı (Folders.fav), ilgili listesi; arama kutucuğunda yedek zincir değil sitenin baş harfi. (2) ed.js blok menüsü ve telefon şeridi:
+           ☐ • ❝ </> ⊞ ▣ — ↶ ↷ yazı glifleri → ic() SVG (yeni: ul, quote, table, code, hr, undo, redo); Aa/H1/H2/1. harf olarak kalır.
+           (3) bildirimlerdeki ✓ glifleri → toast 'check' simgesi / "Eşit · 12:30"; Hepsi zaten Nts'te başlığında SVG. (4) site/index.html
+           tanıtımındaki ✎ Not / 🔍 Ara / ✦ Sor → satır içi SVG. Kullanıcı metnindeki emojiye dokunulmadı. Not: Playwright'ta page.route varken
+           dış resimler yüklenmiyor (düzenek kısıtı) → testte iki kayda data: logo verildi; 4 görüntü konsol hatası 0. Görüntüler design/158c/.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da

@@ -292,7 +292,11 @@ main { position: relative; }
 .item.hit::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--hit); }
 .ico { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); }
 .ico.link, .link-c { color: var(--t-link); }
-.ico img.fav { width: 20px; height: 20px; border-radius: 4px; object-fit: contain; } .ico.note, .note-c { color: var(--t-note); } .ico.file, .file-c { color: var(--t-file); }
+/* 158c: a link's own favicon sits over the SVG chain; if it fails to load the img is removed and the chain shows */
+.ico, .b-ico, .f-tile .f-ic { position: relative; }
+.ico > img.lfav, .b-ico > img.lfav, .f-tile .f-ic > img.lfav { position: absolute; inset: 0; margin: auto; width: 58%; height: 58%; border-radius: 4px; object-fit: contain; }
+img.lfav + .i, img.lfav + .f-l { visibility: hidden; }
+.f-tile .f-ic .f-l { font: 700 calc(12px * var(--fs, 1))/1 Inter, system-ui, sans-serif; color: var(--text-2); } /* a link with no icon: the site's first letter, not a chain that reads as 🔗 */ .ico.note, .note-c { color: var(--t-note); } .ico.file, .file-c { color: var(--t-file); }
 .thumb { width: 56px; height: 56px; flex: none; border-radius: 10px; background: var(--surface-2); position: relative; overflow: hidden; display: grid; place-items: center; color: var(--t-file); }
 .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
 .thumb img.ok { opacity: 1; }
@@ -2679,6 +2683,7 @@ dialog.clean .d-body { gap: 12px; }
 .mig-sum { padding: 4px 10px; }
 .mig-big { margin: 0 0 2px; font-size: calc(20px * var(--fs, 1)); color: var(--text); }
 .mig-big b { font-weight: 600; }
+.mig-big .i { color: var(--accent); vertical-align: -2px; margin-inline-end: 6px; }
 .mig-sum .hint { margin: 2px 0; padding: 0; }
 .mig-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px; }
 .mig-tag { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: calc(13px * var(--fs, 1)); }
