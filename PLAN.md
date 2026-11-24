@@ -1049,7 +1049,7 @@ Arayüz:
            çipi → liste (etiket eşleşmesi + başlık/metin/URL'de proje adı geçenler, tr/ar katlama + varsa sem.js anlam benzerliği ✦) → "Hepsini
            ekle" / tek tek ekle, Geri al. Eklenen kayıt i.project değil i.boards'a girer (başka projeyi bozmasın). İsteğe bağlı: yapay zekâ
            organize ederken proje adıyla eşleşen kayda proje önerisi (148 token kurallarıyla, toplu).
-- [ ] 156b. **Hızlı kutu yükseltme** (sahip, 2026-11-24, 156'yı görünce: "çok güzel görünmedi sanki; Win+Shift+S'i eskiye geri al; bunun UI'ı daha iyi
+- [x] 156b. **Hızlı kutu yükseltme** (sahip, 2026-11-24, 156'yı görünce: "çok güzel görünmedi sanki; Win+Shift+S'i eskiye geri al; bunun UI'ı daha iyi
         olsun; kesin çalışıyor mu kontrol et; açılınca eski yazdığım notları da görmem lazım; upgrade it; şimdilik onu F7 yap, sonra değişecek —
         summary terminalde notlarım var"). YAPILDI (ana oturum): binds.conf'ta `$mod SHIFT, S` yine sum-toggle.sh (TODOS), kutu `, F7`'de,
         CTRL SPACE ve `$mod ALT, S` kaldırıldı; ~/.local/bin/nts-quick artık ana klasöre bağlı (hizli_note-A worktree'sine bağlıydı — hat
@@ -1062,6 +1062,16 @@ Arayüz:
         kanıt: sahte köprüyle (gerçek veriye yazmadan) F7 → yaz → Enter → kayıt köprüye ulaştı → uygulamada görünür; köprü kapalı → kuyrukta
         bekler → açılınca gider; Esc taslak saklar; ekran kenarında taşmaz; çoklu monitörde fare olan ekranda açılır; açılış süresi ölçümü.
         grim ekran görüntüleri açık + koyu, PLAN'a sonuç.
+        SONUÇ (2026-11-25, A hattı): (a) kart 18 px yuvarlak, ince kenar, odakta sakin accent halka, 17 px yazı, 120 ms ölçek+opaklık; Hyprland
+        kenarlığı/animasyonu/cam bulanıklığı kural ile kapalı (156'daki turuncu çizgi pencere kenarlığıydı). (b) altta SON NOTLAR (8 kayıt, tür simgesi,
+        "5 dk önce/dün/12 Kas"), kutunun kendi gönderdikleri snapshot'a girene kadar üstte "sırada/gönderildi"; yazınca 60 ms sonra canlı süzülür
+        (Not: BENZER KAYITLAR, Ara: N SONUÇ, ilk satır seçili), ↑↓ seç (ilk satırdan ↑ yazıya döner), Enter uygulamada ?open=id; boş geçmişte başlık yok.
+        (c) tools/test/quick.test.py 27/27; tools/test/quick-e2e/e2e.sh geçici HOME + geçici köprü (8793), gerçek veriye dokunmaz: köprü kapalı → kuyruk
+        ("sırada") → köprü açık → /inbox → uygulama 29 ms'de aldı → snapshot'ta → kutuda gerçek kayıt → Enter ?open kaydı açıyor, konsol hatası 0.
+        Esc taslak saklar (test). Sağ alt köşede (1366×768) kutu ekranın içinde (sağ 8, alt 48 px pay). Açılış (günlük): 19–113 ms, ortanca ~56 ms.
+        Tek monitör var: çoklu monitör denenemedi, kural monitöre göre (cursor/monitor_w), place() farenin monitörünü seçer. install.sh worktree'den
+        çalışsa da ANA klasörü yazar, eski kural bloğunu değiştirir. Görüntüler design/156b/. Not: arka plandaki kutu ana klasördeki kodu çalıştırır;
+        ana klasör main'i çekince `nts-quick` sürecini yeniden başlat (pkill -f nts-quick.py; F7).
 - [ ] 158. **Sahibin 2026-11-24 akşam ekran görüntüleri (2)**:
         a) design/feedback-39.png (Galeri, 1366×768, "Ekim 2024 ve öncesi"): sağdaki önizleme kutusu ("Bir kartın üzerine gel…") zaman çizgisinin
            üstüne biniyor — sürükleme balonu "2026" kutunun arkasında yarım görünüyor (149'daki düzeltme yetmemiş ya da balon/sürükleme hâli

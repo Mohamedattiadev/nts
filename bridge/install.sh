@@ -2,6 +2,9 @@
 # Nts PC setup: bridge as a user service, `hn` command, "Send to Nts" in file managers, the phone through Supabase (Google sign-in).
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
+# run from a lane worktree (../hizli_note-A/B) it must still point at the MAIN folder: lanes are reset to main and would break the links (156b)
+MAIN="$(git -C "$DIR" worktree list --porcelain 2>/dev/null | awk 'NR==1{print $2}')"
+[ -n "$MAIN" ] && [ -d "$MAIN/bridge" ] && DIR="$MAIN/bridge"
 NODE="$(command -v node)"
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/applications ~/.local/share/kio/servicemenus
 
@@ -56,8 +59,19 @@ SVC
 chmod +x ~/.local/share/kio/servicemenus/hizli-note.desktop
 update-desktop-database ~/.local/share/applications 2>/dev/null || true
 
-# 156: Hyprland rules for the quick box, once
+# 156/156b: Hyprland rules for the quick box; an older copy (from "# Nts quick box" to its last nts-quick line) is replaced
 R=~/.config/hypr/rules.conf
-if [ -f "$R" ] && ! grep -q 'nts-quick' "$R"; then printf '\n' >> "$R"; cat "$DIR/quick/hypr.conf" >> "$R"; fi
+if [ -f "$R" ]; then
+  python3 - "$R" "$DIR/quick/hypr.conf" <<'PY'
+import sys
+r, new = sys.argv[1], open(sys.argv[2]).read()
+L = open(r).read().split('\n')
+s = next((k for k, l in enumerate(L) if l.startswith('# Nts quick box')), None)
+if s is not None:
+    e = max(k for k, l in enumerate(L) if 'nts-quick' in l)
+    L = L[:s] + L[e + 1:]
+open(r, 'w').write('\n'.join(L).rstrip('\n') + '\n\n' + new)
+PY
+fi
 echo "Köprü kuruldu. Kısayol için Hyprland binds'e ekle:  bind = SUPER SHIFT, N, exec, nts --clip"
-echo "Hızlı kutu:  bind = CTRL, SPACE, exec, ~/.local/bin/nts-quick   ve autostart'a  exec-once = ~/.local/bin/nts-quick --daemon"
+echo "Hızlı kutu:  bind = , F7, exec, ~/.local/bin/nts-quick   ve autostart'a  exec-once = ~/.local/bin/nts-quick --daemon"
