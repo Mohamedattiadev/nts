@@ -594,9 +594,13 @@ Arayüz:
         güzel, tatlı, el çizimi havasında katman: kesik çizgili çerçeve/daireler ile kart kümelerini sarmak, kümeye başlık ("İş", "Aile"),
         kümeler arasında oklar "bu bununla ilgili" (etiket, bağlantı, proje, yapay zekâ benzerliği). Yaklaşınca yumuşakça kaybolur. Önce
         `design/zoomout.html` örnek sayfası (2–3 stil), sahip seçsin; sonra yapım. 108 ve 92b ile uyumlu, uzakta da 60 fps.
-- [ ] 120. **Yapay zekâ imleci (Figma imleçleri gibi)**: Claude/Codex/Gemini bir şey yaparken (düzenle, pano hazırla 93, etiketle) panoda kendi
+- [x] 120. **Yapay zekâ imleci (Figma imleçleri gibi)**: Claude/Codex/Gemini bir şey yaparken (düzenle, pano hazırla 93, etiketle) panoda kendi
         imleci görünsün, kartları onunla taşısın/çizsin; imlecin yanında küçük ad etiketi ("Claude"), rengi yapay zekânın logo rengi (Claude
         turuncu, Gemini mavi, Codex yeşil/siyah). Kullanıcının kendi imleci de aynı güzel tasarımda (isteğe bağlı, ayarlardan). reduced-motion: atla.
+        YAPILDI (2026-11-24): AICur — yapay zekâ kayıtları düzenleyince (/organize dönüşü) panoda logo renginde imleç (Claude #d97757, Gemini #4285f4,
+        Codex yeşil/siyah) + ad etiketi ("Claude etiketledi") ekrandaki değişen kartlara sırayla uçar (400 ms), dokunduğu kart bir kez parlar; en fazla 8 kart,
+        yarı görünen kartta görünen kısmına gider, pano değilse/gizliyse/reduced-motion'da hiç çıkmaz. Ayarlar → Görünüm → "Pano imleci: Sistem / Nts":
+        kullanıcının kendi imleci aynı tasarımda, ana renkte (yalnız masaüstü). 93 (pano hazırlat) gelince AICur.tour(ids, 'yerleştirdi') kullanılsın.
 - [ ] 121. **Cam (liquid glass) görünüm ayarı**: Ayarlar → Görünüm'de aç/kapat; tüm yüzen yüzeyler (kutu, çubuklar, pencereler) iPhone gibi
         bulanık cam; AA kontrast korunur, yavaş telefonda otomatik kapalı. İlk tanıtımın (tur) sonunda da sorulsun: yan yana 2 küçük örnek
         (Düz / Cam), seçer; sonra Ayarlar'dan değiştirebilir.

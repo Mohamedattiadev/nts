@@ -1979,3 +1979,18 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .composer { transition: border-color .15s, box-shadow .2s, opacity .18s var(--ease, ease); }
 .ul:not(.vs-hid) { opacity: .18; }
 .composer.ul { opacity: .92; background: color-mix(in srgb, var(--surface) 38%, transparent); box-shadow: none; } /* the box stays readable: only its ground thins out */
+
+/* 120: the AI's cursor (Figma-like): its logo colour, a name pill beside it; glides card to card, touched cards glow once */
+#aicur { position: absolute; left: 0; top: 0; z-index: 30; pointer-events: none; opacity: 0; display: flex; align-items: flex-start; gap: 2px;
+  transition: transform 400ms cubic-bezier(.3, .7, .2, 1), opacity 220ms ease; will-change: transform; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .25)); }
+#aicur.on { opacity: 1; }
+#aicur svg { flex: none; }
+#aicur .ai-tag { margin-top: 15px; padding: 3px 9px 4px; border-radius: 4px 11px 11px 11px; background: var(--ai); color: #fff; font: 600 12px/1.25 system-ui, sans-serif;
+  white-space: nowrap; display: flex; gap: 5px; align-items: baseline; }
+#aicur .ai-tag i { font-style: normal; font-weight: 500; opacity: .85; font-size: 11px; }
+#aicur.k-codex .ai-tag { background: #0d0d0d; } [data-theme="dark"] #aicur.k-codex .ai-tag { background: #10a37f; color: #04130d; }
+.bcard.ai-touch { animation: aiTouch 900ms ease-out; }
+@keyframes aiTouch { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ai) 70%, transparent); border-color: var(--ai); }
+  100% { box-shadow: 0 0 0 14px transparent; } }
+.board:not(.panning):not(.space):not([data-tool="pen"]):not([data-tool="arrow"]):not([data-tool="rect"]):not([data-tool="note"]):not([data-tool="text"]):not([data-tool="eraser"]) { cursor: var(--my-cur, default); }
+@media (prefers-reduced-motion: reduce) { #aicur { display: none; } .bcard.ai-touch { animation: none; } }

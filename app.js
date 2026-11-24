@@ -4736,6 +4736,49 @@ const Board = {
   },
 };
 
+// ---------- 120: the AI's own cursor (like Figma's): when Claude / Codex / Gemini changes cards, a pointer in its logo colour with its
+// name glides from card to card on the board and touches each one; the user's own pointer can wear the same design (Settings → Görünüm) ----------
+const AICOL = { claude: '#d97757', gemini: '#4285f4', codex: '#10a37f' };
+const curSvg = (c, w = 22) => `<svg width="${w}" height="${w}" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 2.2 19 9.6l-6.9 1.9-3.2 6.6Z" fill="${c}" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const AICur = {
+  q: [], run: false,
+  tour(ids, what = 'düzenledi') { // ids: the cards it just changed (only the ones on screen are visited, up to 8)
+    if (S.view !== 'board' || reduced() || document.hidden) return;
+    this.q.push([ids, what]); if (!this.run) this.next();
+  },
+  async next() {
+    const job = this.q.shift(); if (!job) { this.run = false; return this.hide(); }
+    this.run = true; const [ids, what] = job, b = $('#board'), br = b.getBoundingClientRect(), k = aiKey();
+    const cards = ids.map(id => b.querySelector(`#plane > .bcard[data-id="${CSS.escape(id)}"]`)).filter(c => {
+      const r = c?.getBoundingClientRect(); return r && r.right > br.left + 20 && r.left < br.right - 60 && r.bottom > br.top + 20 && r.top < br.bottom - 40;
+    }).slice(0, 8);
+    if (!cards.length) return this.next();
+    let el = $('#aicur');
+    if (!el) { el = document.createElement('div'); el.id = 'aicur'; el.setAttribute('aria-hidden', 'true'); b.append(el); el.style.transform = `translate(${br.width - 80}px, ${br.height - 90}px)`; }
+    el.style.setProperty('--ai', AICOL[k]); el.className = 'k-' + k;
+    el.innerHTML = `${curSvg(AICOL[k])}<span class="ai-tag">${esc(aiName())}<i>${esc(what)}</i></span>`;
+    clearTimeout(this._h); el.offsetWidth; el.classList.add('on');
+    for (const c of cards) {
+      if (!c.isConnected) continue; const r = c.getBoundingClientRect();
+      const x = Math.max(Math.max(r.left, br.left) - br.left + Math.min(r.width * .3, 60), 8), y = Math.max(Math.max(r.top, br.top) - br.top + Math.min(r.height * .45, 40), 8); // a half-hidden card: touch its visible part
+      el.style.transform = `translate(${Math.round(Math.min(x, br.width - 130))}px, ${Math.round(Math.min(y, br.height - 120))}px)`;
+      await new Promise(f => setTimeout(f, 420));
+      if (!c.isConnected) continue; c.style.setProperty('--ai', AICOL[k]); c.classList.remove('ai-touch'); c.offsetWidth; c.classList.add('ai-touch');
+      setTimeout(() => c.classList.remove('ai-touch'), 900);
+      await new Promise(f => setTimeout(f, 260));
+    }
+    this.next();
+  },
+  hide() { this._h = setTimeout(() => { const el = $('#aicur'); if (!el) return; el.classList.remove('on'); setTimeout(() => { if (!this.run) el.remove(); }, 260); }, 1100); },
+  // the user's own pointer on the board in the same design, in the accent colour (a CSS cursor; touch screens have none)
+  mine() {
+    const on = !!S.settings?.myCursor, b = $('#board'); if (!b) return;
+    if (!on) return b.style.removeProperty('--my-cur');
+    const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c2410c';
+    b.style.setProperty('--my-cur', `url("data:image/svg+xml,${encodeURIComponent(curSvg(c).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}") 3 2, default`);
+  },
+};
+
 // ---------- Claude bridge ----------
 const AI = {
   async ocrImage(i) { // a ~1280 px JPEG (base64) of an image or page 1 of a PDF
@@ -4871,7 +4914,7 @@ const AI = {
           ...(i.todo && !i.todo.user && !i.todo.due && validDue(x.todo?.due) ? { todo: { ...i.todo, due: validDue(x.todo.due) } } : {}),
           ...(i.userLists ? {} : { lists: (x.lists || []).filter(k => LISTS.some(l => l[0] === k)), project: x.project ? x.project.toLowerCase().trim() : undefined }) };
       }));
-      S.aiBusy = false; this.dot();
+      S.aiBusy = false; this.dot(); setTimeout(() => AICur.tour(batch.map(b => b.id), 'düzenledi'), 350); // 120: after the board redrew
       if (S.items.some(i => i.pending && !i.deleted)) this.kick();
     } catch (e) { console.warn('AI', e); S.aiBusy = false; this.dot(); this.health(); }
   },
@@ -5901,6 +5944,7 @@ function setTheme(t) {
   try { localStorage.setItem('hn-theme', t); } catch { }
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim();
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.content = bg);
+  AICur.mine();
 }
 const ACCENTS = [['orange', 'Turuncu', '#c2410c', '#ff9a4d'], ['indigo', 'Çivit', '#4f5fd6', '#8b9cff'], ['green', 'Yeşil', '#15803d', '#5fd68a'],
   ['blue', 'Mavi', '#0b6bcb', '#6cb6ff'], ['pink', 'Pembe', '#c2255c', '#ff85b0'], ['teal', 'Turkuaz', '#0f766e', '#4fd1c5']];
@@ -5909,6 +5953,7 @@ function setAccent(a) {
   if (a?.startsWith('#')) { r.dataset.accent = 'custom'; r.style.setProperty('--accent', a); r.style.setProperty('--accent-soft', `color-mix(in srgb, ${a} 14%, transparent)`); r.style.setProperty('--accent-text', contrastText(a)); }
   else { ['--accent', '--accent-soft', '--accent-text'].forEach(k => r.style.removeProperty(k)); if (a && a !== 'orange') r.dataset.accent = a; else delete r.dataset.accent; }
   try { localStorage.setItem('hn-accent', a || ''); } catch { }
+  AICur.mine();
 }
 const contrastText = hex => { const n = parseInt(hex.slice(1), 16), l = (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255; return l > .6 ? '#0c0c0e' : '#fff'; };
 const onPhone = () => /Android|iPhone|iPad/.test(navigator.userAgent);
@@ -5953,6 +5998,7 @@ function openSettings(page = 'main') {
       <div class="set-line"><span>Tema</span><div class="seg sm"><button data-do="light" class="${dark ? '' : 'on'}">${ic('sun', 'sm')}Açık</button><button data-do="dark" class="${dark ? 'on' : ''}">${ic('moon', 'sm')}Koyu</button></div></div>
       <div class="set-line"><span>Ana renk</span><div class="swatches">${ACCENTS.map(([k, n, l, d]) => `<button class="sw${k === cur ? ' on' : ''}" data-accent="${k}" title="${n}" style="--c:${dark ? d : l}"></button>`).join('')}
         <label class="sw custom${cur === 'custom' ? ' on' : ''}" title="Özel renk" style="--c:${cur === 'custom' ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)'}"><input type="color" id="accentPick" value="${(() => { try { const v = localStorage.getItem('hn-accent'); return v?.startsWith('#') ? v : '#e8590c'; } catch { return '#e8590c'; } })()}"></label></div></div>
+      <div class="set-line d-only"><span>Pano imleci</span><div class="seg sm"><button data-mycur="0" class="${S.settings.myCursor ? '' : 'on'}" aria-pressed="${!S.settings.myCursor}">Sistem</button><button data-mycur="1" class="${S.settings.myCursor ? 'on' : ''}" aria-pressed="${!!S.settings.myCursor}">${curSvg('currentColor', 14)}Nts</button></div></div>
       <div class="set-line f-set"><span>Klasör stili</span><div class="seg sm">${Folders.STYLES.map(([k, l]) => `<button data-fstyle="${k}" class="${Folders.style() === k ? 'on' : ''}" aria-pressed="${Folders.style() === k}">${l}</button>`).join('')}</div></div>
       ${AIF.on() ? `<button class="set-row" data-fregroup>${ic('spark')}<span>Anlam klasörlerini yeniden grupla<small>${AIF.list.length} klasör, kayıtlarına bakarak cihazında gruplanır; adları ${aiName()} verir</small></span></button>` : ''}
       ${(Folders.cfg().hide || []).length ? `<button class="set-row" data-fshow>${ic('eye')}<span>Gizli klasörleri geri getir (${Folders.cfg().hide.length})<small>${esc(Folders.cfg().hide.map(k => Folders.label(k)).slice(0, 4).join(', '))}</small></span></button>` : ''}
@@ -6007,6 +6053,7 @@ function openSettings(page = 'main') {
     const d = e.target.closest('[data-do]')?.dataset.do, acc = e.target.closest('[data-accent]')?.dataset.accent;
     if (e.target === m || e.target.closest('[data-act="close"]')) return m.close();
     if (acc) { setAccent(acc); return openSettings(); }
+    const mc = e.target.closest('[data-mycur]'); if (mc) { S.settings.myCursor = mc.dataset.mycur === '1'; DB.put('kv', S.settings, 'settings').then(() => { AICur.mine(); openSettings(); }); return; }
     const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
     if (e.target.closest('[data-fregroup]')) { AIF.ask(true); toast('Klasörler yeniden gruplanıyor…', 2500, 'spark'); return; }
     if (e.target.closest('[data-fshow]')) { Folders.set(c => c.hide = []).then(openSettings); return; }
@@ -6241,7 +6288,7 @@ function wire() {
   addEventListener('pagehide', () => Cloud.flush());
   addEventListener('focus', () => { if (!Cloud.on() || document.hidden || (Lock.conf && !Crypt.key)) return; if (now() - (Cloud._focusAt || 0) > 10e3) { Cloud._focusAt = now(); Cloud.schedule(); } Live.check(); });
   addEventListener('online', () => { Sync.paint(); Sync.schedule(); Live.check(); });
-  Board.init(); Back.init(); Folders.init(); Morph.init(); Native.init();
+  Board.init(); AICur.mine(); Back.init(); Folders.init(); Morph.init(); Native.init();
 }
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
