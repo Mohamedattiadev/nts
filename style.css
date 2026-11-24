@@ -1973,3 +1973,9 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 /* 115: the view switch hides itself (slides up + fades) after 10 s without a hover; JS brings it back */
 .hud-c { transition: translate .22s var(--ease, ease), opacity .22s var(--ease, ease); }
 .hud-c.vs-hid { translate: 0 calc(-100% - 18px - env(safe-area-inset-top)); opacity: 0; pointer-events: none; }
+/* 117: a HUD piece over the card you point at (or drag) fades so the card shows through; pointing at the piece brings it back */
+.hud-l, .hud-r, #boardTools, .rail-tab { transition: opacity .18s var(--ease, ease); }
+@media (min-width: 900px) { .board-tools.pal { transition: transform .15s var(--ease), opacity .18s var(--ease, ease); } }
+.composer { transition: border-color .15s, box-shadow .2s, opacity .18s var(--ease, ease); }
+.ul:not(.vs-hid) { opacity: .18; }
+.composer.ul { opacity: .92; background: color-mix(in srgb, var(--surface) 38%, transparent); box-shadow: none; } /* the box stays readable: only its ground thins out */

@@ -3167,6 +3167,39 @@ const ViewHide = {
   },
 };
 
+// 117: floating chrome steps aside when a board card is under it: the card under the mouse (or the one being dragged, any pointer)
+// overlaps a HUD piece → that piece fades (.ul); pointing at the piece itself brings it back. The box only fades a little and never
+// while it is focused or holds text, so it stays readable.
+const Underlap = {
+  sels: ['.hud-l', '.hud-c', '.hud-r', '#rail', '#railTab', '#pal', '#boardTools', '#composer'],
+  init() {
+    let ev = null, raf = 0;
+    const run = () => { raf = 0; this.check(ev); };
+    addEventListener('pointermove', e => { ev = e; if (!raf) raf = requestAnimationFrame(run); }, { passive: true });
+    addEventListener('pointerup', () => setTimeout(() => this.check(null), 0), { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => this.check(null));
+    addEventListener('resize', () => { this.rt = 0; });
+  },
+  rects() { // the HUD hardly moves: re-measure at most every 400 ms
+    const now = performance.now(); if (this.r && now - this.rt < 400) return this.r;
+    this.rt = now;
+    return this.r = this.sels.map(s => $(s)).filter(Boolean).map(el => { const r = el.getBoundingClientRect(); return { el, r: r.width ? r : null }; });
+  },
+  check(e) {
+    let card = null;
+    if (S.view === 'board' && !document.querySelector('.tour')) {
+      card = document.querySelector('#plane > .bcard.dragging');
+      if (!card && e && e.pointerType === 'mouse' && !e.buttons) card = e.target.closest?.('#plane > .bcard') || null;
+    }
+    const cr = card?.getBoundingClientRect(), inp = $('#input');
+    for (const { el, r } of this.rects()) {
+      let on = !!(cr && r && cr.left < r.right + 4 && cr.right > r.left - 4 && cr.top < r.bottom + 4 && cr.bottom > r.top - 4);
+      if (on && el.id === 'composer' && (el.contains(document.activeElement) || inp?.value)) on = false;
+      if (el.classList.contains('ul') !== on) el.classList.toggle('ul', on);
+    }
+  },
+};
+
 const Tour = {
   steps() {
     const phone = innerWidth < 900;
@@ -6173,6 +6206,7 @@ function wire() {
   Scrub.init();
   Rail.init();
   ViewHide.init();
+  Underlap.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
   Ctx.init(); Sel.init(); Peek.init(); Read.init(); Remind.init();
   Todo.init();
