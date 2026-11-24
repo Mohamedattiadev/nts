@@ -623,6 +623,14 @@ Arayüz:
         Codex yeşil/siyah) + ad etiketi ("Claude etiketledi") ekrandaki değişen kartlara sırayla uçar (400 ms), dokunduğu kart bir kez parlar; en fazla 8 kart,
         yarı görünen kartta görünen kısmına gider, pano değilse/gizliyse/reduced-motion'da hiç çıkmaz. Ayarlar → Görünüm → "Pano imleci: Sistem / Nts":
         kullanıcının kendi imleci aynı tasarımda, ana renkte (yalnız masaüstü). 93 (pano hazırlat) gelince AICur.tour(ids, 'yerleştirdi') kullanılsın.
+- [ ] 144. **İmleçler daha canlı + sahibin kendi imleci** (sahip, 2026-11-24, 120'yi görünce: "güzel ama sanki daha animasyonlu, daha hareketli
+        olması lazım; ona benzer bi tane benim olsun"). a) AICur hareketi: düz 400 ms uçuş yerine yaylı, hafif kavisli yol (hızlanıp yavaşlar, varınca
+        küçük taşma + oturma), uçarken uca doğru hafif eğilme, ad etiketi ipe bağlı gibi bir tık geriden gelir; beklerken çok hafif nefes/süzülme;
+        kartta "tık" anı (imleç ufak basılır + kartta halka), etiket/yazı eklerken etiket içinde yazıyor gibi kısa harf animasyonu ya da üç nokta;
+        iş bitince imleç hafifçe kaybolur. Logo renkleri ve 120'nin tasarımı aynen kalır. b) Sahibin imleci: Claude'unkiyle aynı aileden — ok + ad
+        etiketi (Ayarlar'daki ad ya da Google adı, yoksa "Sen"), ana renkte; Ayarlar → Pano imleci "Nts" seçiliyken masaüstünde panoda; gerçek fareyi
+        gecikmesiz izler (yalnız etiket yaylı gelir), sürüklerken/çizerken küçük durum ("taşıyor", kalem simgesi); düğme ve yazı alanlarında sistem
+        imlecine döner; performans: tek rAF, transform, 60 fps, 10k kartta da. reduced-motion'da hareketsiz. Ekran görüntüsü + kısa GIF/video kareleri.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
