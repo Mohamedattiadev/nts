@@ -319,6 +319,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         gerçek native gerekirse aynı kodla Tauri (masaüstü) / Capacitor (telefon) sarmalayıcı.
         95a sesli not · 95b sabah özeti bildirimi · 95c okuma listesinde "3 gün sonra tekrar" · 95d resimde tarih → "göreve çevir?"
         · 95e Ctrl+K komut paleti · 95f salt okunur paylaşılan pano linki · 95g tarayıcı eklentisi (sağ tık → Nts'e gönder).
+        ✓ 95a 2026-11-24 (B hattı): sesli not — Not modunda kutu boşken gönder düğmesinin yerinde mikrofon (`Voice`, app.js): basılı tut = tuttuğun
+            sürece kaydeder, bırakınca kaydedilir; kısa dokunuş = başla, tekrar dokun = kaydet; "İptal" / Esc atar; en çok 5 dk. Kayıt sırasında kırmızı
+            düğme + kutunun altında süre (0:07) + TR/EN/AR dil çipleri (Ara'daki sesle aramayla aynı ayar). Ses hemen dosya kaydı olur (webm/opus, iPhone'da
+            m4a; çevrimdışı ve köprüsüz de çalışır), başlığı "Sesli not · 0:07", tür Ses (.webm artık video sanılmıyor). Köprü açıksa yazıya döküm:
+            yeni `/transcribe` ucu (röleye de açık) PC'de ffmpeg → 16 kHz wav → whisper.cpp (`whisper-cli`, ~/.local/share/whisper/ggml-small.bin,
+            seçili dil; bulut yok) → kaydın notu olur (kullanıcı arada not yazdıysa dokunmaz); köprü kapalıyken kaydedilenler köprü gelince yazıya
+            dökülür (Voice.backfill). whisper yoksa ses kalır, bir kez söylenir. Test: sahte mikrofon (Chromium fake device) 4 yapılandırma: dokun/dokun,
+            basılı tut, Esc iptal, kayıt + döküm, Ara'da mikrofon hâlâ sesle arama; konsol hatası 0. Köprü değişti: `systemctl --user restart hizli-note-bridge`.
+            Not: CPU'da small modelle 5 sn ses ~12 sn sürüyor. CİHAZ TESTİ sahipte (gerçek telefon mikrofonu, uzun basma). phone-audit bu oturumda bitmedi (makine yüklü, sahip kapattı) → sonraki B oturumu çalıştırsın.
         ✓ 95e 2026-11-24 (B hattı): Ctrl+K / ⌘K komut paleti (`Cmd`, app.js) — her yerden açılır (kutuda yazarken de; başka pencere açıkken açılmaz),
             telefonda Ayarlar → "Komut paleti" satırı; üstte açılan kart (klavye örtmez), masaüstünde ekranın üst üçte birinde. Boşken son kullanılan
             komutlar önde (hn-cmd-recent); yazınca gruplar en iyi eşleşmeye göre sıralanır: Komutlar (görünümler, Not/Ara/Sor, kenar çubuğu, sığdır/%100,

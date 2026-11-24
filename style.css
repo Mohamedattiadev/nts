@@ -1684,6 +1684,16 @@ input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] { 
 .c-hint button[data-mic].on { color: var(--accent); background: var(--accent-soft); }
 @media (pointer: coarse) { .c-hint button[data-mic] { min-height: 36px; min-width: 48px; } }
 @media (prefers-reduced-motion: reduce) { .c-btn.mic.on, .c-hint .mic-live i { animation: none; } }
+/* 95a: voice note: the mic in Not records (hold or tap); red dot + running time, İptal */
+.c-btn.mic { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.c-btn.mic.rec { background: var(--c-red); color: #fff; }
+.c-btn.mic.rec { animation-name: recPulse; }
+@keyframes recPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-red) 30%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c-red) 22%, transparent); } }
+.c-hint .mic-live.rec i { background: var(--c-red); }
+.c-hint .mic-live b { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.2em; }
+.c-hint button.vx { color: var(--text); }
+@media (max-width: 420px) { .c-hint .mic-live .vl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .c-hint .mic-live.rec { gap: 8px; } }
+@media (pointer: coarse) { .c-hint button.vx { min-height: 36px; padding: 4px 14px; } }
 /* 105f: the searched picture in the Ara window's head */
 .f-q .f-qimg { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; flex: none; box-shadow: 0 0 0 1px var(--line-2); }
 

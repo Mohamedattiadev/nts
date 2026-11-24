@@ -202,6 +202,23 @@ async function ocr(items) {
   finally { for (const i of items) try { unlinkSync(i._imgPath); } catch { } }
 }
 
+// 95a: voice notes → text on this computer (whisper.cpp, no cloud): ffmpeg makes 16 kHz mono wav, whisper-cli in the mic language (tr/en/ar)
+const WHISPER_MODELS = ['ggml-small.bin', 'ggml-medium.bin', 'ggml-base.bin'].map(f => join(homedir(), '.local', 'share', 'whisper', f));
+const whisperBin = async () => (await which('whisper-cli')) ? 'whisper-cli' : (await which('whisper.cpp')) ? 'whisper.cpp' : null;
+async function transcribe(b64, mime, hint) {
+  const lang = /^(tr|en|ar)$/.test(hint || '') ? hint : 'auto'; // the app's mic language; auto guesses badly on short notes
+  const bin = await whisperBin(), model = WHISPER_MODELS.find(f => existsSync(f));
+  if (!bin || !model) return { ok: false, error: 'no-whisper' };
+  const id = randomBytes(6).toString('hex'), src = join(WORK_DIR, `voice-${id}.${/mp4|m4a|aac/.test(mime || '') ? 'm4a' : /ogg/.test(mime || '') ? 'ogg' : 'webm'}`), wav = join(WORK_DIR, `voice-${id}.wav`);
+  const run = (cmd, args, ms) => new Promise((ok, no) => execFile(cmd, args, { timeout: ms, maxBuffer: 8e6 }, (e, out, err) => e ? no(new Error(String(err || e.message).slice(-300))) : ok({ out: String(out), err: String(err) })));
+  writeFileSync(src, Buffer.from(b64, 'base64'));
+  try {
+    await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', src, '-ar', '16000', '-ac', '1', wav], 60000);
+    const r = await run(bin, ['-m', model, '-l', lang, '-nt', '-np', '-t', '4', '-bs', '2', '-bo', '2', '-f', wav], 600000);
+    return { ok: true, text: r.out.replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim(), lang };
+  } finally { for (const f of [src, wav]) try { unlinkSync(f); } catch { } }
+}
+
 const TAGS_SCHEMA = {
   type: 'object', required: ['map'],
   properties: { map: { type: 'array', items: { type: 'object', required: ['from', 'to'],
@@ -362,7 +379,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -527,6 +544,7 @@ http.createServer(async (req, res) => {
     }
     if (req.url === '/summaries') { const r = await summaries((body.groups || []).slice(0, 24)); console.log(`summaries ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/folders') { const r = await folderNames((body.groups || []).slice(0, 30)); console.log(`folders ${body.groups?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
+    if (req.url === '/transcribe') { const r = await transcribe(String(body.audio || ''), String(body.mime || ''), String(body.lang || '')); console.log(`transcribe ${Math.round((body.audio || '').length / 1365)} KB ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/board-plan') { const r = await boardPlan(String(body.request || '').slice(0, 300), (body.items || []).slice(0, 120), (body.boards || []).slice(0, 60)); console.log(`board-plan ${body.items?.length} ${Date.now() - t}ms`); return send(res, 200, r, origin); }
     if (req.url === '/ask') {
       const r = await ask(String(body.question || ''), (body.items || []).slice(0, 80));

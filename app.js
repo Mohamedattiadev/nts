@@ -112,6 +112,7 @@ const fmtSize = n => n > 1e6 ? (n / 1e6).toFixed(1) + ' MB' : n > 1e3 ? Math.rou
 function fileKind(i) {
   if (i.type !== 'file') return i.type;
   const m = i.mime || '', n = (i.fileName || '').toLowerCase();
+  if (i.voice || m.startsWith('audio')) return 'audio'; // 95a: a voice note in .webm is sound, not a video
   if (m.startsWith('image') || /\.(jpe?g|png|gif|webp|heic|avif|bmp|svg)$/.test(n)) return 'image';
   if (m.startsWith('video') || /\.(mp4|mov|3gp|webm|mkv)$/.test(n)) return 'video';
   if (m.startsWith('audio') || /\.(opus|mp3|m4a|ogg|wav|aac|flac)$/.test(n)) return 'audio';
@@ -125,6 +126,7 @@ function titleOf(i) {
   if (i.conv) return i.title || `${shortDay(dayKey(i.ts))} · ${i.conv.n} mesaj`; // a conversation: Claude's title, else date + count
   if (i.type === 'note' && i.text && !i.userTitle) return (i.sticky ? stPlain(i.text) : Ed.plain(i.text.split('\n').find(l => l.trim() && !/^```|^\|?\s*:?-{2,}|^(-{3,}|\*{3,})$/.test(l.trim())) || i.text.split('\n')[0])).slice(0, 140); // the user's own words come first
   if (i.title && !(i.type === 'file' && !i.userTitle && i.title === i.fileName)) return i.title;
+  if (i.voice) return `Sesli not · ${Math.floor(i.voice / 60)}:${String(i.voice % 60).padStart(2, '0')}`; // 95a
   if (i.type === 'file') { const a = autoTitle(i); if (a) return a; }
   if (i.type === 'link') { if (i.meta?.title) return i.meta.title; try { const u = new URL(i.url); return domain(i.url) + decodeURI(u.pathname).replace(/\/$/, ''); } catch { return i.url; } }
   if (i.type === 'file') return i.fileName;
@@ -720,6 +722,65 @@ const Mic = {
     if (!findMode()) setMode('find'); else updateSend();
   },
   stop() { const r = this.r; this.on = false; this.r = null; try { r?.stop(); } catch { } updateSend(); },
+};
+// 95a: voice note. In Not with an empty box the mic records: hold it = record while held, release saves; a short tap = start, tap
+// again = save; İptal / Esc throws it away. The sound is saved at once as an audio file (works offline, without the bridge); the bridge
+// writes it out as text on the PC (whisper.cpp, no cloud), also later for notes recorded while it was off. Language = the mic chip.
+const Voice = {
+  can: () => !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder),
+  here: () => S.mode === 'note' && Voice.can(),
+  on: false, rec: null, t0: 0, tick: 0, dn: 0, cancel: false, MAX: 300e3,
+  mime: () => ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'].find(m => MediaRecorder.isTypeSupported?.(m)) || '',
+  async start() {
+    if (this.rec || this._asking) return;
+    let st; this._asking = true;
+    try { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch (e) { return toast(e.name === 'NotAllowedError' ? 'Mikrofon izni yok (adres çubuğundan izin ver)' : 'Mikrofon açılamadı', 3000, 'mic'); }
+    finally { this._asking = false; }
+    const m = this.mime(), parts = [];
+    let r; try { r = new MediaRecorder(st, m ? { mimeType: m, audioBitsPerSecond: 32000 } : undefined); } catch (e) { st.getTracks().forEach(t => t.stop()); return toast('Ses kaydı bu tarayıcıda açılamadı', 3000, 'mic'); }
+    this.rec = r;
+    r.ondataavailable = e => { if (e.data.size) parts.push(e.data); };
+    r.onstop = () => {
+      st.getTracks().forEach(t => t.stop()); clearInterval(this.tick);
+      const dur = (performance.now() - this.t0) / 1000, cancel = this.cancel;
+      this.rec = null; this.on = false; this.cancel = false; updateSend();
+      if (cancel) return toast('Sesli not silindi', 1600, 'x');
+      if (dur < .7) return toast('Çok kısa: basılı tutup konuş ya da dokun, konuş, tekrar dokun', 2800, 'mic');
+      this.save(new Blob(parts, { type: (r.mimeType || m || 'audio/webm').split(';')[0] }), dur);
+    };
+    r.start(1000); this.on = true; this.t0 = performance.now(); haptic(10);
+    this.tick = setInterval(() => { this.time(); if (performance.now() - this.t0 > this.MAX) this.stop(); }, 250);
+    updateSend();
+  },
+  stop(cancel) { if (!this.rec || this.rec.state === 'inactive') return; this.cancel = !!cancel; try { this.rec.stop(); } catch { } haptic(8); },
+  time() { const el = $('#vTime'); if (!el) return; const s = Math.floor((performance.now() - this.t0) / 1000); el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; },
+  async save(blob, dur) {
+    const d = new Date(), p = n => String(n).padStart(2, '0'), ext = /mp4/.test(blob.type) ? 'm4a' : /ogg/.test(blob.type) ? 'ogg' : 'webm';
+    const f = new File([blob], `sesli-not-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${ext}`, { type: blob.type });
+    const [it] = itemsFromInput({ files: [f] }); it.voice = Math.round(dur); it.createdAt = now(); it.dev = deviceNow();
+    const [saved] = await saveItems([it]); await upsert([saved]); render(); Motion.hop();
+    toast(S.bridgeOk ? 'Sesli not kaydedildi · yazıya dökülüyor…' : 'Sesli not kaydedildi (köprü açılınca yazıya dökülür)', 2600, 'mic');
+    if (S.bridgeOk) this.write(saved.id, blob);
+  },
+  async write(id, blob) { // → i.text (only if the user wrote nothing there meanwhile); tx: 1 done, 0 = the bridge can't (no whisper)
+    try {
+      const r = await AI.call('/transcribe', { audio: b64enc(new Uint8Array(await blob.arrayBuffer())), mime: blob.type, lang: Mic.lang().slice(0, 2) }, 600000);
+      const i = byId(id); if (!i || i.deleted) return;
+      if (!r.ok) { await upsert([{ ...i, tx: 0 }]); if (r.error === 'no-whisper') toast('Köprüde whisper yok: ses kaydı duruyor, yazıya dökülmedi', 4000, 'mic'); return; }
+      await upsert([{ ...i, text: i.text?.trim() ? i.text : r.text, tx: 1, txLang: r.lang || undefined }]);
+      if (r.text) toast('Sesli not yazıya döküldü', 2000, 'check');
+    } catch (e) { console.warn('transcribe', e); }
+  },
+  async backfill() { // voice notes saved while the bridge was off (this device has the sound)
+    if (this._bf || !S.bridgeOk) return; this._bf = true;
+    try {
+      for (const i of S.items.filter(i => i.voice && i.tx === undefined && !i.deleted).sort((a, b) => b.ts - a.ts).slice(0, 6)) {
+        const u = await blobFor(i).catch(() => null); if (!u) continue;
+        await this.write(i.id, await (await fetch(u)).blob());
+      }
+    } finally { this._bf = false; }
+  },
 };
 // 132: colour words in the search (renk:mavi, color:blue, لون:أزرق, or just "mavi") get a small dot in the search chip
 const HUE_DOT = { red: 'var(--c-red)', orange: 'var(--c-orange)', yellow: 'var(--c-yellow)', green: 'var(--c-green)', blue: 'var(--c-blue)', purple: 'var(--c-purple)',
@@ -1941,9 +2002,11 @@ const nextMode = (d = 1) => MODES[(MODES.findIndex(x => x[0] === S.mode) + d + M
 const updateSend = () => {
   const v = $('#input').value.trim(), ask = askMode(), find = findMode(), b = $('#saveBtn'), phone = narrow();
   // 105e: in Ara with an empty box (or while listening) the mic takes the send button's place; 105f: "+" in Ara picks a picture to search with
-  const mic = $('#micBtn'), useMic = !!Mic.SR && find && (!v || Mic.on), lg = Mic.lang();
+  // 95a: in Not with an empty box the same mic records a voice note
+  const vo = Voice.on, vn = !find && !ask && Voice.here() && !v && !S.attach.length;
+  const mic = $('#micBtn'), useMic = vo || vn || (!!Mic.SR && find && (!v || Mic.on)), lg = Mic.lang();
   if (mic.hidden === useMic) { mic.hidden = !useMic; b.hidden = useMic; }
-  mic.classList.toggle('on', Mic.on); const mt = Mic.on ? 'Dinlemeyi durdur' : `Sesle ara (${MIC_L.find(x => x[0] === lg)[1]})`; if (mic.title !== mt) { mic.title = mt; mic.setAttribute('aria-label', mt); mic.setAttribute('aria-pressed', Mic.on); }
+  mic.classList.toggle('on', Mic.on || vo); mic.classList.toggle('rec', vo); const mt = vo ? 'Sesli notu kaydet' : vn ? 'Sesli not: basılı tut ya da dokun' : Mic.on ? 'Dinlemeyi durdur' : `Sesle ara (${MIC_L.find(x => x[0] === lg)[1]})`; if (mic.title !== mt) { mic.title = mt; mic.setAttribute('aria-label', mt); mic.setAttribute('aria-pressed', Mic.on || vo); }
   const fi = $('#fileInput'), cl = fi.closest('label'), ct = find ? 'Resimle ara' : 'Dosya ekle'; if (cl.title !== ct) { cl.title = ct; cl.setAttribute('aria-label', ct); fi.accept = find ? 'image/*' : ''; fi.multiple = !find; }
   b.disabled = find ? !Find.top.length : !ask && !v && !S.attach.length;
   const icn = ask ? 'spark' : find ? 'search' : !S.attach.length && TODO_LINE.test(v) ? 'todo' : 'up'; // 118: the button says what Enter will do
@@ -1959,10 +2022,11 @@ const updateSend = () => {
   // Not mode: a chip "4 benzer kayıt" (so the same thing isn't saved twice) → Ara; on a phone (no Tab key) also the way to Sor
   // 136: the mode button already says the mode, so no "soruyorsun" line and no Tab/Esc key hints here
   const h = $('#cHint'), n = S.mode === 'note' && v && !S.attach.length ? S.hits?.size || 0 : 0;
-  const tip = Mic.on ? 'mic' + lg : S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', isQuestion(v) ? 'ask' : ''].filter(Boolean).join(' ');
+  const tip = vo ? 'voice' + lg : Mic.on ? 'mic' + lg : S.mode !== 'note' || S.attach.length ? '' : [n ? 'sim' + n : '', isQuestion(v) ? 'ask' : ''].filter(Boolean).join(' ');
   if (h.dataset.k !== tip) {
     h.dataset.k = tip; h.hidden = !tip;
-    h.innerHTML = Mic.on ? `<span class="mic-live" role="status"><i></i>Dinliyorum…</span>${MIC_L.map(([l, t]) => `<button data-mic="${l}" class="${l === lg ? 'on' : ''}" aria-pressed="${l === lg}" title="Konuşma dili">${t}</button>`).join('')}` : (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
+    const chips = MIC_L.map(([l, t]) => `<button data-mic="${l}" class="${l === lg ? 'on' : ''}" aria-pressed="${l === lg}" title="Konuşma dili">${t}</button>`).join('');
+    h.innerHTML = vo ? `<span class="mic-live rec" role="status"><i></i><span class="vl">Kaydediyorum</span> <b id="vTime">0:00</b></span>${chips}<button data-vx class="vx">İptal</button>` : Mic.on ? `<span class="mic-live" role="status"><i></i>Dinliyorum…</span>${MIC_L.map(([l, t]) => `<button data-mic="${l}" class="${l === lg ? 'on' : ''}" aria-pressed="${l === lg}" title="Konuşma dili">${t}</button>`).join('')}` : (n ? `<button data-mode="find" class="sim">${ic('search', 'sm')}${n} benzer kayıt</button>` : '') + (tip.includes('ask') ? `<button data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>` : '');
   }
 };
 const submitBox = () => { const v = $('#input').value; if (findMode()) return Find.open(Math.max(0, S.hitSel)); if (askMode()) { const q = v.trim(); q ? AI.ask(q) : AI.suggest(); } else save(); };
@@ -2978,6 +3042,7 @@ const Busy = {
     if (k === '/folders') return 'klasörlere ad veriyor'; // 131b
     if (k === '/board-plan') return 'pano hazırlıyor'; // 93
     if (k === '/ocr') return 'resimlerdeki yazıyı okuyor';
+    if (k === '/transcribe') return 'sesli notu yazıya döküyor'; // 95a
     return null; // health, inbox, snapshot, meta: not Claude
   },
   start(label) { const id = ++this.n; this.jobs.set(id, label); this.draw(); return id; },
@@ -4990,7 +5055,7 @@ const AI = {
     else if (S.settings.aiChosen && h.ai !== aiKey()) setTimeout(() => this.pushAi(), 0);
   },
   async pushAi() { if (!S.bridgeOk && !S.via) return; try { const r = await this.call('/ai-conf', { ai: aiKey() }, 8000); if (r && r.installed === false) toast(`${aiName()} bu bilgisayarda kurulu değil`, 4000, 'cpu'); } catch { } },
-  setOk(ok) { const ch = ok !== S.bridgeOk; S.bridgeOk = ok; this.dot(); if (ch) render(); if (ok) { this.kick(); this.pullInbox(); setTimeout(() => Reader.background(), 8000); setTimeout(() => this.ocrBackfill(), 20000); setTimeout(() => Summ.run(), 45000); setTimeout(() => AIF.name(), 25000); this.pullImports(); if (ch) { Snapshot.schedule(); BridgeLink.publish(); RelayConf.publish(); } } },
+  setOk(ok) { const ch = ok !== S.bridgeOk; S.bridgeOk = ok; this.dot(); if (ch) render(); if (ok) { this.kick(); this.pullInbox(); setTimeout(() => Reader.background(), 8000); setTimeout(() => this.ocrBackfill(), 20000); setTimeout(() => Voice.backfill(), 12000); setTimeout(() => Summ.run(), 45000); setTimeout(() => AIF.name(), 25000); this.pullImports(); if (ch) { Snapshot.schedule(); BridgeLink.publish(); RelayConf.publish(); } } },
   dot() {
     const n = S.items.filter(i => i.pending && !i.deleted).length;
     for (const d of document.querySelectorAll('.ai')) { d.classList.toggle('ok', S.bridgeOk && !S.aiBusy); d.classList.toggle('busy', S.aiBusy);
@@ -6340,8 +6405,15 @@ function wire() {
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', $('#composer').offsetHeight + 'px')).observe($('#composer'));
   { const dk = $('#composer').closest('.dock'); if (dk) new ResizeObserver(() => document.documentElement.style.setProperty('--dock-full', dk.offsetHeight + 'px')).observe(dk); } // 101: the toast sits above the open search list / answer
   new ResizeObserver(() => { const w = $('#boardTools').offsetWidth; if (w) document.documentElement.style.setProperty('--bt-w', w + 'px'); }).observe($('#boardTools'));
-  $('#micBtn').onclick = () => Mic.toggle();
-  $('#cHint').onclick = e => { const m = e.target.closest('[data-mic]'); if (m) return Mic.setLang(m.dataset.mic); const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
+  { const mb = $('#micBtn'); // 95a: Not → voice note (hold, or tap / tap); Ara → search by voice
+    mb.addEventListener('pointerdown', e => { if (!Voice.here() && !Voice.on) return; if (e.button) return; e.preventDefault();
+      if (Voice.on) { Voice.dn = 0; return Voice.stop(); } Voice.dn = performance.now(); try { mb.setPointerCapture(e.pointerId); } catch { } Voice.start(); }); // capture: the box grows (time row) under the finger
+    const up = () => { if (Voice.dn && Voice.on && performance.now() - Voice.dn > 450) Voice.stop(); Voice.dn = 0; };
+    mb.addEventListener('pointerup', up); mb.addEventListener('lostpointercapture', up);
+    mb.addEventListener('contextmenu', e => { if (Voice.here()) e.preventDefault(); });
+    mb.onclick = e => { if (Voice.here() || Voice.on) { if (!e.detail) Voice.on ? Voice.stop() : Voice.start(); return; } Mic.toggle(); }; // keyboard: Enter/Space toggles
+    addEventListener('keydown', e => { if (e.key === 'Escape' && Voice.on) { e.preventDefault(); e.stopPropagation(); Voice.stop(true); } }, true); }
+  $('#cHint').onclick = e => { if (e.target.closest('[data-vx]')) return Voice.stop(true); const m = e.target.closest('[data-mic]'); if (m) return Mic.setLang(m.dataset.mic); const b = e.target.closest('[data-mode]'); if (b) { setMode(b.dataset.mode); $('#input').focus(); } };
   const inp = $('#input');
   // one box: typing filters the list live, Enter saves, a question (ends with ?) goes to Claude
   let st, rt;
