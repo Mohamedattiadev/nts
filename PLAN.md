@@ -612,7 +612,11 @@ Arayüz:
         ESKİ METİN: **Cam (liquid glass) görünüm ayarı**: Ayarlar → Görünüm'de aç/kapat; tüm yüzen yüzeyler (kutu, çubuklar, pencereler) iPhone gibi
         bulanık cam; AA kontrast korunur, yavaş telefonda otomatik kapalı. İlk tanıtımın (tur) sonunda da sorulsun: yan yana 2 küçük örnek
         (Düz / Cam), seçer; sonra Ayarlar'dan değiştirebilir.
-- [ ] 122. **İlk tanıtımda giriş seçimi**: "Google ile giriş yap" (önerilen: telefon ve bilgisayar aynı kayıtları görür) ya da "Misafir olarak
+- [x] 122. (yapıldı: turun 5. adımı girişsizken "Nasıl devam edelim?" — büyük "Google ile giriş yap" (önerilen, iki cihazda aynı kayıtlar) ve
+        "Misafir olarak devam et" (bu cihazda kalır, senkron yok; hn-guest=1); bu adımda İleri yok, Atla/Geri var. Google: tur hn-tour-at'e bir sonraki adımı
+        yazar, Google'dan dönünce tur kaldığı yerden (Hazırsın + Düz/Cam) sürer. Girişliyse eski adım: "Girişlisin (e-posta)". Sahte Supabase ile test
+        (authorize → ?code, token → sahte oturum): dönüşte 6/6, Cloud.email() doğru, konsol hatası yok; ekran görüntüleri design/122/. sw v86)
+        ESKİ METİN: **İlk tanıtımda giriş seçimi**: "Google ile giriş yap" (önerilen: telefon ve bilgisayar aynı kayıtları görür) ya da "Misafir olarak
         devam et" (bu cihazda kalır, senkron yok, sonra Ayarlar'dan girebilir). Atla/İleri akışı içinde, sahte Supabase ile test.
 Fikir (yeri belli değil, önce öneri):
 - [ ] 123. **Kasa kilidi gibi yuvarlak çarklar**: kasa şifresi kadranları gibi döner sayılı halkalar → tarih seçici (yıl · ay · gün halkaları) ve

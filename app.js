@@ -64,6 +64,7 @@ const I = {
   text: '<path d="M5 6V5h14v1M12 5v14M9 19h6"/>',
   eraser: '<path d="m7 21-4-4 10-10 7 7-7 7zM13 21h8"/><path d="m9 11 6 6"/>',
   lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>',
   cpu: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
@@ -3200,6 +3201,8 @@ const Underlap = {
   },
 };
 
+const G_SVG = '<svg class="i" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4" stroke="none"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853" stroke="none"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z" fill="#FBBC05" stroke="none"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.4 3-4.1 5.6-4.1z" fill="#EA4335" stroke="none"/></svg>';
+
 const Tour = {
   steps() {
     const phone = innerWidth < 900;
@@ -3208,26 +3211,33 @@ const Tour = {
       ['#composer', '' + aiTo() + ' sor', '<b>Sor</b> modunda (başa <b>?</b> yaz) sor: "geçen hafta kaydettiğim PDF neydi?" ' + aiName() + ' kayıtlarını da kendisi düzenler.'],
       [phone ? '#filterBtn' : '#rail', 'Neye bakmak istersin', 'Linkler, notlar, fotoğraflar ve <b>Yapılacaklar</b>. Listeler, konular ve Şifrelerim <b>⋯</b> altında; çubuğu <b>[</b> ile gizlersin.'],
       ['#viewSwitch', 'Pano, liste, galeri', 'Panoda kartları sürükleyip istediğin yere koy, boş yere çift tıklayıp not yaz, kalemle çiz.'],
-      ['#settingsBtn', 'Telefon ve bilgisayar', 'Ayarlar\'dan <b>Google ile gir</b>: iki cihaz da aynı kayıtları görür. ' + aiName() + ' bağlantısı da burada.'],
+      Cloud.on() ? ['#settingsBtn', 'Telefon ve bilgisayar', 'Girişlisin (<b>' + esc(Cloud.email()) + '</b>): telefon ve bilgisayar aynı kayıtları görür. ' + aiName() + ' bağlantısı Ayarlar\'da.']
+        : [null, 'Nasıl devam edelim?', 'Google ile girersen telefon ve bilgisayar aynı kayıtları görür. Misafir kalırsan kayıtlar yalnız bu cihazda durur; sonra Ayarlar\'dan girebilirsin.', 'auth'],
       [null, 'Hazırsın', 'Kendine bir not at, gerisini Nts ve ' + aiName() + ' halleder. Son olarak görünümü seç; sonra Ayarlar → Görünüm\'den değiştirebilirsin.'],
     ];
   },
-  start() {
-    this.end(); this.n = 0; Pop.close(); document.querySelectorAll('dialog[open]').forEach(d => d.close());
+  // 122: Google sign-in leaves the page; come back to the step after it (hn-tour-at), the tour is not done yet
+  google() { try { localStorage.setItem('hn-tour-at', String(this.n + 1)); localStorage.removeItem('hn-guest'); } catch { } this.end(); Cloud.signIn(); },
+  start(at = 0) {
+    this.end(); this.n = at; Pop.close(); document.querySelectorAll('dialog[open]').forEach(d => d.close());
     const el = this.el = document.createElement('div'); el.className = 'tour';
     el.innerHTML = '<div class="tour-hole"></div><div class="tour-card" role="dialog" aria-live="polite"></div>';
     document.body.appendChild(el);
-    el.addEventListener('click', e => { const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return this.show(); } const a = e.target.closest('[data-tour]')?.dataset.tour; if (a === 'next') this.go(1); else if (a === 'back') this.go(-1); else if (a === 'skip') this.end(true); });
-    this.key = e => { if (e.key === 'Escape') this.end(true); else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.go(1); } else if (e.key === 'ArrowLeft') this.go(-1); };
+    el.addEventListener('click', e => { const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return this.show(); } const a = e.target.closest('[data-tour]')?.dataset.tour;
+      if (a === 'google') return this.google(); if (a === 'guest') { try { localStorage.setItem('hn-guest', '1'); } catch { } return this.go(1); }
+      if (a === 'next') this.go(1); else if (a === 'back') this.go(-1); else if (a === 'skip') this.end(true); });
+    this.key = e => { if (e.key === 'Enter' && document.activeElement?.closest?.('.tour-card button')) return; if (e.key === 'Escape') this.end(true); else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.go(1); } else if (e.key === 'ArrowLeft') this.go(-1); };
     addEventListener('keydown', this.key, true); this.rs = () => this.show(); addEventListener('resize', this.rs);
     this.show();
   },
   go(d) { const all = this.steps(); this.n += d; if (this.n >= all.length) return this.end(true); this.n = Math.max(0, this.n); this.show(); },
   show() {
-    const all = this.steps(), [sel, h, p] = all[this.n], el = this.el, hole = el.querySelector('.tour-hole'), card = el.querySelector('.tour-card');
+    const all = this.steps(), [sel, h, p, kind] = all[this.n], el = this.el, hole = el.querySelector('.tour-hole'), card = el.querySelector('.tour-card');
     const t = sel && document.querySelector(sel), r = t?.getBoundingClientRect(), pad = 8;
-    card.innerHTML = `<div class="tour-n">${this.n + 1} / ${all.length}</div><h3>${h}</h3><p>${p}</p>${this.n === all.length - 1 ? Glass.pick() : ''}
-      <div class="tour-acts">${this.n < all.length - 1 ? '<button class="link-btn" data-tour="skip">Atla</button>' : ''}<span class="sp"></span>
+    card.innerHTML = `<div class="tour-n">${this.n + 1} / ${all.length}</div><h3>${h}</h3><p>${p}</p>${this.n === all.length - 1 ? Glass.pick() : ''}${kind === 'auth' ? `<div class="tour-auth">
+        <button class="btn primary g-btn" data-tour="google">${G_SVG}<span>Google ile giriş yap<small>Önerilen · iki cihazda aynı kayıtlar</small></span></button>
+        <button class="btn secondary" data-tour="guest">${ic('user')}<span>Misafir olarak devam et<small>Bu cihazda kalır, senkron yok</small></span></button></div>` : ''}
+      <div class="tour-acts${kind === 'auth' ? ' no-next' : ''}">${this.n < all.length - 1 ? '<button class="link-btn" data-tour="skip">Atla</button>' : ''}<span class="sp"></span>
         ${this.n ? '<button class="btn secondary" data-tour="back">Geri</button>' : ''}<button class="btn primary" data-tour="next">${this.n < all.length - 1 ? 'İleri' : 'Başla'}</button></div>`;
     if (r && r.width) {
       Object.assign(hole.style, { display: '', left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
@@ -3240,13 +3250,16 @@ const Tour = {
       const cw = Math.min(360, innerWidth - 24); card.style.width = cw + 'px'; card.style.left = (innerWidth - cw) / 2 + 'px'; card.style.top = (innerHeight - card.offsetHeight) / 2 + 'px';
     }
     el.classList.toggle('dim', !(r && r.width));
-    card.querySelector('[data-tour="next"]').focus({ preventScroll: true });
+    card.querySelector(kind === 'auth' ? '[data-tour="google"]' : '[data-tour="next"]').focus({ preventScroll: true });
   },
   end(done) {
     if (this.el) { this.el.remove(); this.el = null; removeEventListener('keydown', this.key, true); removeEventListener('resize', this.rs); }
-    if (done) try { localStorage.setItem('hn-tour', '1'); } catch { }
+    if (done) try { localStorage.setItem('hn-tour', '1'); localStorage.removeItem('hn-tour-at'); } catch { }
   },
-  maybe() { try { if (localStorage.getItem('hn-tour')) return; } catch { return; } setTimeout(() => { if (!document.querySelector('dialog[open]') && !$('#lock:not([hidden])')) this.start(); }, 900); },
+  maybe() {
+    let at = 0; try { if (localStorage.getItem('hn-tour')) return; at = Math.min(+localStorage.getItem('hn-tour-at') || 0, this.steps().length - 1); } catch { return; }
+    setTimeout(() => { if (!document.querySelector('dialog[open]') && !$('#lock:not([hidden])')) this.start(at); }, 900);
+  },
 };
 
 // ---------- hover preview (desktop list + gallery): a big card on the free side, click opens the item ----------
@@ -5993,7 +6006,7 @@ function claudeBlock() {
 function openSettings(page = 'main') {
   const m = $('#menu'), st = S.settings, locked = !!Lock.conf;
   const head = (title, back) => `<div class="d-head">${back ? `<button class="icon-btn sm" data-do="back" title="Geri">${ic('chev', 'sm flip')}</button>` : ''}<span class="type">${title}</span><span class="sp"></span><button class="icon-btn sm" data-act="close" title="Kapat">${ic('x')}</button></div>`;
-  const gBtn = `<button class="btn primary g-btn" data-do="signin"><svg class="i" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4" stroke="none"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853" stroke="none"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z" fill="#FBBC05" stroke="none"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.4 3-4.1 5.6-4.1z" fill="#EA4335" stroke="none"/></svg>Google ile giriş yap</button>`;
+  const gBtn = `<button class="btn primary g-btn" data-do="signin">${G_SVG}Google ile giriş yap</button>`;
   const lockHtml = locked
     ? `<div class="set-row static">${ic('lock')}<span>Şifre açık<small>Açılışta sorulur, yedekler ve senkron şifreli. Unutursan açılamaz.</small></span></div>
        <button class="set-row" data-do="unlock-off">${ic('x')}<span>Şifreyi kaldır</span></button>`
