@@ -378,7 +378,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         içeriğin üstünde, kutu ile araçlar sıkışık. Telefonda: varsayılan yakınlık en az %70 ve en yeni günden başla, çizim paleti sadece kalem
         düğmesine basınca açılsın (tek yüzen düğme), pano araçları tek satırda sade (pano seçici + zaman + sığdır), kutuyla çakışma yok,
         gün sütunları tam genişlik (yatay kaydır). 390×844 ve 360×740, açık + koyu.
-- [ ] 99. **Görünümler birbirine benzemesin + yeni görünümler** (sahip: "galeri ve liste birbirine benziyor, başka view var mı?"):
+- [ ] 99. (2026-11-24 A hattı: **(a) yapıldı** — galeri yaslanmış satırlar (her resim kendi oranıyla, satırda eşit boy; masaüstü ~190 px, telefon ~116 px, 3–6 px aralık), yazı yok: ad + tür/gün yalnız üzerine gelince / klavye odağında (dokunmatikte hiç), ekran okuyucuya aria-label; resim oranları cihazda hatırlanır (localStorage hn-gar, son 20k) → ikinci açılışta kayma 0 (ilk açılışta resim gelince satır bir kez yumuşakça yerleşir); çok geniş/uzun resim 0.62–2.2 arası kırpılır; ay sonundaki satır gerilmez (g-fill). **130c yapıldı**: galeri ↔ pano geçişinde ekranda olan aynı kartlar eski yerinden yeni yerine uçar (View Transition, kart başına ad, en çok 40; ötekiler eskisi gibi solar); bunun için render() çizimi renderNow() olarak ayrıldı (geçiş içinde kare çalışmıyor) ve pano kamerası + kartları geçişin içinde hemen kuruluyor. Test: 34 resim 10 farklı oran, 4 yapılandırma, konsol hatası yok. (b) takvim hâlâ açık.) **Görünümler birbirine benzemesin + yeni görünümler** (sahip: "galeri ve liste birbirine benziyor, başka view var mı?"):
         (a) Galeri gerçekten görsel olsun: yazısız büyük küçük resimler (masonry, oranları korunan), başlık sadece üzerine gelince; metin kaydı yok;
         (b) (sahip: şimdilik kalsın) Takvim görünümü: ay ızgarası, her günde kayıt sayısı + 2-3 küçük resim/başlık, güne tıkla → o gün (ısı haritasının büyük hali);
         (c) ~~Konular görünümü~~ KALDIRILDI (sahip: gerek yok; yerine 93 yapay zekâ panoları): proje/konu başına sütun (kanban gibi), kartı sürükleyip başka konuya taşı (zaten var olan renderTopics'ten).
@@ -849,7 +849,7 @@ Site:
         (b) **Resimlere otomatik içerik etiketi**: köprü yapay zekâsı resme bakıp 3–6 etiket (nesne, renk, stil, "siyah beyaz", "logo"), OCR'nin yanında;
             sol çubukta "Bulunan etiketler 1445" sayacı; aramada bu etiketler de bulunur. Köprü yoksa sessizce atla.
         (c) **Galeri ↔ pano geçişi aynı kartlarla**: görünüm değişince her kart galeri yerinden panodaki yerine uçar (çapraz FLIP), çapraz solma değil.
-            99a masonry galeri ile birlikte.
+            99a masonry galeri ile birlikte. → YAPILDI (2026-11-24, 99a ile, Fly + View Transition).
         (d) **Koleksiyon/proje kartı**: üstünde 2–3 içeriğin küçük önizlemesi üst üste (klasör sekmesi gibi), altında "3 not · 38 resim".
         (e) **Notlar ana ızgarada gerçek mini belge**: onay listesi kutucuklarıyla, notun içindeki resim kartta görünür, tıklamadan işaretlenebilir (106a/106d).
         (f) **Sade görünüm dersi**: bol beyaz, tek vurgu rengi (seçimde 2 px mavi çerçeve), yumuşak gölge, küçük gri yan çubuk yazısı; renkli

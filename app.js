@@ -579,6 +579,15 @@ function noteCover(i) {
 const hasVisual = i => ['image', 'pdf', 'video'].includes(fileKind(i)) || (i.type === 'link' && (i.meta?.image || ytId(i))) || !!(i.cover && byId(i.cover)) || !!noteCover(i);
 // 102: image shapes (id → w/h) so the item window keeps the image's room from the first frame; growTo animates a box to its new height
 const AR = new Map();
+// 99a: the gallery keeps each picture's shape (justified rows): thumbnail shapes are remembered on this device so a tile is the
+// right size from the first frame (no rows jumping when the pictures arrive). id → w/h, kept small (2 decimals, last 20k).
+const GAR = { m: null, T: 0,
+  map() { if (!this.m) { try { this.m = new Map(Object.entries(JSON.parse(localStorage.getItem('hn-gar') || '{}'))); } catch { this.m = new Map(); } } return this.m; },
+  get(id) { return this.map().get(id) || AR.get(id); },
+  fit: r => Math.min(2.2, Math.max(.62, r || 4 / 3)),
+  set(id, r) { r = Math.round(r * 100) / 100; const m = this.map(); if (!r || m.get(id) === r) return false; m.delete(id); m.set(id, r);
+    clearTimeout(this.T); this.T = setTimeout(() => { try { const e = [...m]; localStorage.setItem('hn-gar', JSON.stringify(Object.fromEntries(e.slice(-20000)))); } catch { } }, 800); return true; },
+};
 function growTo(box, change) {
   const h0 = box.offsetHeight; change(); const h1 = box.offsetHeight;
   if (Math.abs(h1 - h0) > 4 && !matchMedia('(prefers-reduced-motion: reduce)').matches) box.animate([{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 200, easing: 'cubic-bezier(.2, .8, .2, 1)' });
@@ -819,7 +828,9 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.decoding = 'async';
   img.onerror = () => img.remove(); img.src = u;
   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
-    .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight); e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
+    .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight);
+      if (img.naturalWidth) { GAR.set(i.id, img.naturalWidth / img.naturalHeight); const t = e.target.closest('#gallery .tile'), a = GAR.fit(GAR.get(i.id)).toFixed(3); if (t && t.style.getPropertyValue('--ar') !== a) t.style.setProperty('--ar', a); } // 99a: changes only the first time
+      e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
 }), { rootMargin: '400px' });
 function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
   const k = fileKind(i);
@@ -1197,10 +1208,12 @@ function renderGallery(items) { // month headers stick to the top while scrollin
   let last = '', html = '';
   for (const i of media) {
     const m = dayKey(i.ts).slice(0, 7);
-    if (m !== last) { const [y, mo] = m.split('-').map(Number); html += `<div class="g-month">${new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>`; last = m; }
-    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0">
-    ${thumbBox(i)}<div class="tile-cap"><div class="t">${esc(titleOf(i))}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
+    if (m !== last) { const [y, mo] = m.split('-').map(Number); html += `${last ? '<i class="g-fill"></i>' : ''}<div class="g-month">${new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>`; last = m; }
+    const t = titleOf(i); // 99a: picture only; the name shows on hover / focus (and is the tile's label for screen readers)
+    html += `<div class="tile${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${Sel.ids.has(i.id) ? ' sel' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0" style="--ar:${GAR.fit(GAR.get(i.id)).toFixed(3)}" aria-label="${esc(t)}">
+    ${thumbBox(i)}<div class="tile-cap" aria-hidden="true"><div class="t">${esc(t)}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
+  if (last) html += '<i class="g-fill"></i>'; // the last row of a month keeps its height instead of stretching across
   el.innerHTML = Folders.head() + (media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + Folders.html(media) + html
     : filtered() ? emptyHtml('filter', 'Bu süzgeçte görsel yok', 'Resim, PDF, video ya da görseli olan link bu süzgeçte yok.', unfilterBtn()) : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.'));
   hookThumbs(el);
@@ -1453,8 +1466,11 @@ let renderQueued = false;
 function render(force) {
   if (force) { S._vkey = null; chromeCounts.c = null; }
   if (renderQueued) return; renderQueued = true;
-  requestAnimationFrame(() => {
-    renderQueued = false;
+  requestAnimationFrame(renderNow);
+}
+// the frame's drawing; also called right away when a view transition needs the new view now (130c: no frame runs inside its update)
+function renderNow() {
+    if (!renderQueued) return; renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
     const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
@@ -1499,7 +1515,6 @@ function render(force) {
     Scrub.draw(none || S.view === 'todo' ? [] : items);
     if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
     Badge.set();
-  });
 }
 
 // ---------- data changes ----------
@@ -7076,13 +7091,32 @@ function wire() {
   addEventListener('online', () => { Sync.paint(); Sync.schedule(); Live.check(); });
   Board.init(); AICur.mine(); Back.init(); Folders.init(); Morph.init(); Native.init(); Cmd.init();
 }
+// 130c: gallery ↔ board with the same cards: a picture on screen in both views flies from its old place to its new one
+// (one shared view-transition-name per card, at most 40 on screen), the rest cross-fade with the view as before.
+const Fly = {
+  SEL: { gallery: '#gallery .tile[data-id]:not(.q-out)', board: '#board .bcard[data-id]:not(.sticky)' },
+  on(els) { const out = new Map(), vw = innerWidth, vh = innerHeight;
+    for (const el of els) { const r = el.getBoundingClientRect(); if (r.width && r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw) out.set(el.dataset.id, el); if (out.size >= 40) break; }
+    return out; },
+  from(a, b) {
+    if (!a || a === b || !this.SEL[a] || !this.SEL[b]) return null;
+    const old = this.on(document.querySelectorAll(this.SEL[a])); if (!old.size) return null;
+    const names = new Map(); let k = 0; for (const [id, el] of old) { const n = 'fly' + k++; names.set(id, n); el.style.viewTransitionName = n; el.classList.add('fly'); }
+    const used = [...old.values()];
+    return { to: () => { // after the new view is drawn: the same cards get the same names; a card not on the new screen just fades out
+        if (b === 'board') { if (!S.cam) Board.fit(false); Board.cull(); } // camera and mounted cards now (not a frame later), so the cards' new places are known
+        for (const [id, el] of this.on(document.querySelectorAll(this.SEL[b]))) { const n = names.get(id); if (!n) continue; el.style.viewTransitionName = n; el.classList.add('fly'); used.push(el); }
+        for (const el of old.values()) if (!used.includes(el) || el.closest('[hidden]')) el.style.viewTransitionName = ''; },
+      done: () => { for (const el of used) { el.style.viewTransitionName = ''; el.classList.remove('fly'); } } };
+  },
+};
 function setView(v) {
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
   const ch = v !== S.view;
-  if (ch) { S.cam = null; hideHits(); } S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
+  S._vfrom = S.view; if (ch) { S.cam = null; hideHits(); } S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
   if (ch && document.startViewTransition && !reduced()) { // 94a: the old view cross-fades into the new one, the floating chrome stays still
-    const h = document.documentElement; h.classList.add('vt');
-    try { document.startViewTransition(() => render()).finished.finally(() => h.classList.remove('vt')); return; } catch { h.classList.remove('vt'); }
+    const h = document.documentElement, fly = Fly.from(S._vfrom, v); h.classList.add('vt');
+    try { document.startViewTransition(() => { render(); renderNow(); try { fly?.to(); } catch { } }).finished.finally(() => { h.classList.remove('vt'); fly?.done(); }); return; } catch { h.classList.remove('vt'); fly?.done(); }
   }
   render();
   if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change

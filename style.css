@@ -1090,7 +1090,7 @@ dialog.readpage::backdrop { background: var(--bg); }
 .dock { contain: layout style; }
 .list .group, .list .day { content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .list .day { contain-intrinsic-size: auto 40px; }
-.gallery .tile { content-visibility: auto; contain-intrinsic-size: auto 220px; }
+/* 99a: gallery tiles size themselves from their picture shape (justified rows below), no content-visibility box guess */
 
 /* ---------- WhatsApp conversation inside one item ---------- */
 .conv-pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
@@ -2228,3 +2228,27 @@ dialog.cmdk .d-body { padding: 0; gap: 0; display: flex; flex-direction: column;
 /* 148: AI token spend line in Settings — the cap buttons go under the text on a narrow phone */
 .tok-line { flex-wrap: wrap; row-gap: 6px; }
 .tok-line > span:first-child { flex: 1 1 180px; white-space: normal; }
+/* ---------- 99a: the gallery is really visual: justified rows of pictures with their own shape, no text (name on hover / focus) ---------- */
+.gallery { --rh: 190px; --gg: 6px; display: flex; flex-wrap: wrap; gap: var(--gg); align-items: flex-start; align-content: flex-start; }
+.gallery > :not(.tile):not(.g-fill) { flex: 0 0 100%; min-width: 0; }
+.gallery > .l-top { display: flex; justify-content: flex-end; }
+.gallery .tile { --ar: 1.333; flex: var(--ar) 1 calc(var(--ar) * var(--rh)); aspect-ratio: var(--ar); min-width: 0; border: 0; border-radius: 10px; background: var(--surface-2); transition: flex-grow .2s var(--ease), flex-basis .2s var(--ease), box-shadow .15s, filter .15s; }
+.gallery .tile .thumb { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; background: none; }
+.gallery .tile:hover { transform: none; box-shadow: none; filter: brightness(1.04); }
+.gallery .g-fill { flex: 1e6 1 0; height: 0; }
+.gallery .tile-cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 26px 10px 8px; color: #fff; background: linear-gradient(transparent, rgb(0 0 0 / .66)); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.gallery .tile-cap .s { color: rgb(255 255 255 / .82); }
+.gallery .tile:hover .tile-cap, .gallery .tile:focus-visible .tile-cap, .gallery .tile.peeked .tile-cap { opacity: 1; }
+.gallery .tile.hit { box-shadow: 0 0 0 2px var(--hit); }
+.gallery .tile[class*=" c-"] { box-shadow: inset 0 -3px 0 var(--cl); }
+.gallery .tile.sel { box-shadow: 0 0 0 3px var(--accent); }
+.gallery .tile.peeked { box-shadow: 0 0 0 2px var(--accent); }
+.gallery .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gallery .g-month { padding: 12px 4px 4px; }
+@media (hover: none) { .gallery .tile-cap { display: none; } }
+@media (max-width: 699px) { .gallery { --rh: 116px; --gg: 3px; padding-left: 8px; padding-right: 8px; } .gallery .tile { border-radius: 6px; } }
+@media (prefers-reduced-motion: reduce) { .gallery .tile { transition: none; } }
+/* 130c: gallery ↔ board, the same card flies to its new place (Fly in app.js names the cards) */
+::view-transition-group(*) { animation-duration: .26s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-group(root), ::view-transition-group(main) { animation-duration: .2s; }
+.fly { z-index: 5; }
