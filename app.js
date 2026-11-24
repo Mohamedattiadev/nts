@@ -180,7 +180,8 @@ function subOf(i) {
 }
 const mdPlain = t => !/[*=`#>|!\[]|^\s*[-+\d]/m.test(t) ? t : t.split('\n').filter(l => !/^```|^\|?\s*:?-{2,}[-|: ]*$|^(-{3,}|\*{3,})$/.test(l.trim())).filter(l => !Ed.IMG.test(l.trim())).map(Ed.plain).join('\n'); // 106b (106c: picture lines never show as "![](nts:…)"): no Markdown marks in one-line previews
 const HIDDEN = new Set(['draw', 'vault', 'bridge', 'ghlink', 'boards', 'summaries', 'saved']); // drawings live only on the board; the vault is its own place; 'bridge' is the phone's Claude address
-const alive = () => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type));
+const hid = i => HIDDEN.has(i.type) || !!i.priv && !S.privOn; // 107l: hidden records (priv.js) stay out of every list until 'Gizli kayıtlar' is opened
+const alive = () => S.items.filter(i => !i.deleted && !hid(i));
 // lookups rebuilt only when the item list changes (S.items is always replaced, never mutated in place)
 let _bm, _bmOf;
 const byId = id => { if (_bmOf !== S.items) { _bm = new Map(S.items.map(i => [i.id, i])); _bmOf = S.items; } return _bm.get(id); };
@@ -287,7 +288,7 @@ function runSearch0(q) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
     const toks = tokens(x.terms.join(' ')); S.hits = new Map();
     for (const i of S.items) {
-      if (i.deleted || HIDDEN.has(i.type) || !x.test(i)) continue;
+      if (i.deleted || hid(i) || !x.test(i)) continue;
       S.hits.set(i.id, x.sort === 'old' ? -i.ts : x.sort === 'new' ? i.ts : (toks.length && scoreItem(i, toks, true)) || 1 + (i.starred ? .5 : 0));
     }
     // a broken piece never breaks the search: it's searched as text and the warning shows once the typing stops
@@ -300,7 +301,7 @@ function runSearch0(q) {
     S.nl = nl; const f = nl.filter ? NtsQuery.compile(nl.filter, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc }) : null;
     const toks = tokens(nl.rest); S.hits = new Map();
     for (const i of S.items) {
-      if (i.deleted || HIDDEN.has(i.type) || (f && !f.test(i))) continue;
+      if (i.deleted || hid(i) || (f && !f.test(i))) continue;
       const s = toks.length ? scoreItem(i, toks) : 1 + (i.starred ? .5 : 0); if (s) S.hits.set(i.id, s);
     }
     if (!S.hits.size) loose(toks, f, nl.chips);
@@ -314,7 +315,7 @@ function runSearch0(q) {
 // 105c: never an empty result. No item has every word → the ones with the most of them ("en yakınlar"); a sentence's chips found
 // nothing → the words without the chips; and a word nobody wrote → "Bunu mu demek istedin: fatura" from the words that are in the notes
 function loose(toks, f, chips = []) {
-  const fill = g => { for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type) || (g && !g.test(i))) continue; const s = toks.length ? scoreItem(i, toks, true) : 1; if (s) S.hits.set(i.id, s / 10); } };
+  const fill = g => { for (const i of S.items) { if (i.deleted || hid(i) || (g && !g.test(i))) continue; const s = toks.length ? scoreItem(i, toks, true) : 1; if (s) S.hits.set(i.id, s / 10); } };
   if (toks.length > 1) { fill(f); if (S.hits.size) S.loose = 'any'; }
   // only chips ("geçen ay annem resim") and nothing has all of them → without one of them (the kind goes first, the person last)
   if (!S.hits.size && chips.length > 1) {
@@ -361,11 +362,11 @@ function editDist(a, b, max) { // Damerau-Levenshtein, stops once every cell of 
 const SEM_TOP = 1.9, SEM_NEXT = 1.5, SEM_MAX = 12;
 function semMerge(q, f) {
   Sem.ask(q);
-  const add = (id, s) => { if (S.hits.has(id)) return; const i = byId(id); if (!i || i.deleted || HIDDEN.has(i.type) || (f && !f.test(i))) return; S.hits.set(id, s); (S.semIds ||= new Set()).add(id); };
+  const add = (id, s) => { if (S.hits.has(id)) return; const i = byId(id); if (!i || i.deleted || hid(i) || (f && !f.test(i))) return; S.hits.set(id, s); (S.semIds ||= new Set()).add(id); };
   const h = Sem.hits;
   if (h && h.q === q && (h.list[0]?.[1] || 0) >= SEM_TOP) { let k = 0; for (const [id, z] of h.list) { if (z < SEM_NEXT || k++ >= SEM_MAX) break; add(id, .5 + z / 10); } }
   if (S.aiFind?.ids && S.aiFind.q === S.q) S.aiFind.ids.forEach((id, k) => add(id, .85 - k * .001));
-  for (const [id, b] of Learn.boost(S.q)) if (b >= 2 && !S.hits.has(id)) { const i = byId(id); if (i && !i.deleted && !HIDDEN.has(i.type) && (!f || f.test(i))) S.hits.set(id, .9); } // 105g
+  for (const [id, b] of Learn.boost(S.q)) if (b >= 2 && !S.hits.has(id)) { const i = byId(id); if (i && !i.deleted && !hid(i) && (!f || f.test(i))) S.hits.set(id, .9); } // 105g
 }
 let _chats, _chatsOf;
 const chatNames = () => { if (_chatsOf !== S.items) { _chats = [...new Set(S.items.filter(i => i.chat && !i.deleted).map(i => i.chat))]; _chatsOf = S.items; } return _chats; };
@@ -473,7 +474,7 @@ const rangeLabel = () => (RANGES().find(r => r[0] === Range.get()) || [0, RSHORT
 const rangeShort = () => RSHORT[Range.get()] || rangeLabel();
 let _vis = {};
 function visible(keepAll = false) { // same list, same filter → same answer (render runs often)
-  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.view === 'board' ? Range.get() + Range.arch() : '', S.board, S.folder, S.folder?.startsWith('ai:') ? AIF.ver : ''].map(String).join('|') + (keepAll ? 'k' : '');
+  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.view === 'board' ? Range.get() + Range.arch() : '', S.board, S.folder, S.folder?.startsWith('ai:') ? AIF.ver : '', S.privOn].map(String).join('|') + (keepAll ? 'k' : '');
   if (_vis.items === S.items && _vis.hits === S.hits && _vis.key === key) return _vis.out;
   const out = visible0(keepAll); _vis = { items: S.items, hits: S.hits, key, out }; return out;
 }
@@ -487,7 +488,7 @@ function visible0(keepAll) {
     && (!f.color || i.color === f.color)
     && (!f.src || srcMatch(i, f.src))
     && (!inFolder() || Folders.test(i, S.folder))
-    && !HIDDEN.has(i.type)
+    && !hid(i)
     && (keepAll || !S.searchOn || !S.hits || S.hits.has(i.id))
     // photos inside a conversation: in the gallery and in search results, not as their own rows/cards
     && (!i.parent || ((S.view === 'gallery' || (S.searchOn && S.hits?.has(i.id))) && !byId(i.parent)?.deleted))
@@ -722,7 +723,7 @@ const ImgFind = {
     catch (e) { console.warn('imgfind', e); if (S.imgFind === me) { this.drop(); clearBox(); } return toast('Resim okunamadı', 2400, 'x'); }
     this.read(file, me); // the text in it, in parallel
     await PH.load();
-    const imgs = S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && fileKind(i) === 'image').sort((a, b) => b.ts - a.ts);
+    const imgs = S.items.filter(i => !i.deleted && !hid(i) && fileKind(i) === 'image').sort((a, b) => b.ts - a.ts);
     const todo = imgs.filter(i => !PH.m.has(i.id));
     for (let k = 0; k < todo.length && S.imgFind === me; k += 8) { // previews not seen here yet: made once (a cloud preview only when online)
       await Promise.all(todo.slice(k, k + 8).map(async i => { const b = await Prev.thumbBlob(i).catch(() => null); if (b) await PH.from(i, b); }));
@@ -1682,12 +1683,12 @@ function renderChrome() {
   $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
   const nTrash = C.trash, nRead = C.read;
   $('#popLists').innerHTML = `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-tidy>${ic('spark')}<span class="lbl">Toparla</span><span class="n">${Tidy.n || ''}</span></button>` + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
-    + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
+    + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>${typeof Priv !== 'undefined' ? Priv.row() : ''}`;
   $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row${f.star ? ' on' : ''}" data-star>${ic('star')}<span class="lbl">Yıldızlı</span><span class="n">${stars || ''}</span></button>`
     + `<button class="side-row${S.view === 'todo' ? ' on' : ''}" data-todo>${ic('todo')}<span class="lbl">Yapılacaklar</span><span class="n">${todos || ''}</span></button>`
     + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
-    + `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-tidy>${ic('spark')}<span class="lbl">Toparla</span><span class="n">${Tidy.n || ''}</span></button><button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
+    + `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-tidy>${ic('spark')}<span class="lbl">Toparla</span><span class="n">${Tidy.n || ''}</span></button><button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>${typeof Priv !== 'undefined' ? Priv.row() : ''}`;
   const sv = Saved.rows(); $('#popSaved').innerHTML = sv; $('#savedLabel').hidden = !sv;
   const sr = srcRows(live, f.src); $('#popSrc').innerHTML = sr; $('#srcLabel').hidden = !sr;
   const projs = C.projs;
@@ -1790,7 +1791,7 @@ const Rel = {
     if (kj.length < 3) return [];
     const out = [];
     for (const i of S.items) {
-      if (i.deleted || HIDDEN.has(i.type) || i.sticky || i.parent || inBoard(i)) continue;
+      if (i.deleted || hid(i) || i.sticky || i.parent || inBoard(i)) continue;
       let why = (i.tags || []).some(t => this.fit(t) === kj) ? 'tag' : '';
       if (!why) { const h = S.idx.get(i.id)?.h ?? norm(rawText(i));
         if (h.includes(k) || (h.includes(kj.slice(0, 4)) && h.replace(/[\s._#-]+/g, '').includes(kj))) why = this.fit(titleOf(i)).includes(kj) ? 'title' : 'text'; }
@@ -1812,7 +1813,7 @@ const Rel = {
     if (this.key !== key || this._of !== S.items) {
       this.key = key; this._of = S.items; this.list = this.calc();
       const have = new Set(this.list.map(x => x.i.id));
-      for (const id of this.sem || []) { const i = byId(id); if (i && !have.has(id) && !i.deleted && !HIDDEN.has(i.type) && !i.parent && !inBoard(i)) this.list.push({ i, why: 'sem' }); }
+      for (const id of this.sem || []) { const i = byId(id); if (i && !have.has(id) && !i.deleted && !hid(i) && !i.parent && !inBoard(i)) this.list.push({ i, why: 'sem' }); }
     }
     return this.list;
   },
@@ -2175,7 +2176,7 @@ const Find = {
     const rel = !S.qx || !S.qx.sort || S.qx.sort === 'rel', ph = rel ? norm((S.nl ? S.nl.rest : S.qx ? S.qx.terms.join(' ') : S.q).trim()) : '';
     byId(''); Opens.load(); const bm = _bm, nt = ntMap(), om = Opens.mm, idx = S.idx, long = ph.length > 1, lm = Learn.boost(S.q);
     S.hits?.forEach((s, id) => {
-      const i = bm.get(id); if (!i || i.deleted || HIDDEN.has(i.type) || (f.tag && !(i.tags || []).includes(f.tag))) return;
+      const i = bm.get(id); if (!i || i.deleted || hid(i) || (f.tag && !(i.tags || []).includes(f.tag))) return;
       if (rel) { // 104e: the whole words in the title > starred (in the score) > often opened here > newer
         if (long) { let t = nt.get(id); if (t === undefined) nt.set(id, t = idx.get(id)?.t ?? norm(titleOf(i))); const at = t.indexOf(ph); if (at >= 0) s += at ? 2 : t.length === ph.length ? 4 : 3; }
         const o = om.get(id); if (o) s += Math.min(1.5, Math.log2(1 + o) * .5);
@@ -2319,7 +2320,7 @@ let _fc, _fcOf;
 function facets() { // tag / project / chat counts, counted once per items array
   if (_fcOf === S.items) return _fc;
   const tag = new Map(), project = new Map(), chat = new Map(), add = (m, k) => k && m.set(k, (m.get(k) || 0) + 1);
-  for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type)) continue; for (const t of i.tags || []) add(tag, t); add(project, i.project); add(chat, i.chat); }
+  for (const i of S.items) { if (i.deleted || hid(i)) continue; for (const t of i.tags || []) add(tag, t); add(project, i.project); add(chat, i.chat); }
   _fcOf = S.items; return _fc = { tag, project, chat };
 }
 const Suggest = {
@@ -2391,7 +2392,7 @@ const Sem = {
     this._s = setTimeout(() => {
       const put = [], seen = new Set();
       for (const i of S.items) {
-        if (i.deleted || HIDDEN.has(i.type)) continue; const t = this.text(i); if (t.length < 3) continue;
+        if (i.deleted || hid(i)) continue; const t = this.text(i); if (t.length < 3) continue;
         seen.add(i.id); const h = fnv(t); if (this.sent.get(i.id) !== h) { this.sent.set(i.id, h); put.push([i.id, t]); }
       }
       const del = [...this.sent.keys()].filter(id => !seen.has(id)); del.forEach(id => this.sent.delete(id));
@@ -2962,7 +2963,7 @@ const Cmd = {
     out.push(...tags.sort((a, b) => b.s - a.s || b.note - a.note).slice(0, 4));
     if (fq.length >= 2) { // items by title: kept to the best 6, titles folded once per item object
       const best = [];
-      for (const i of S.items) { if (i.deleted || HIDDEN.has(i.type)) continue;
+      for (const i of S.items) { if (i.deleted || hid(i)) continue;
         let f = this._tf.get(i); if (f === undefined) { f = this.fold(titleOf(i)).slice(0, 200); this._tf.set(i, f); }
         const s = f && f.includes(fq) ? this.score(f, fq) + (i.ts || 0) / 1e15 : 0; if (!s) continue;
         if (best.length < 6 || s > best[5].s) { best.push({ i, s }); best.sort((a, b) => b.s - a.s); if (best.length > 6) best.pop(); } }
@@ -3074,7 +3075,7 @@ function simOf(i, n = 12) {
   const tags = new Set(i.tags || []), vt = new Set(i.vtags || []), host = i.url && domain(i.url), hs = new Set(i.hues || []),
     k = fileKind(i), skip = new Set([i.id, ...relatedOf(i).map(r => r.id)]), out = [];
   for (const j of S.items) {
-    if (j.deleted || skip.has(j.id) || HIDDEN.has(j.type)) continue;
+    if (j.deleted || skip.has(j.id) || hid(j)) continue;
     let s = 0;
     for (const t of j.tags || []) if (tags.has(t)) s += 3;
     for (const t of j.vtags || []) if (vt.has(t)) s += 1;
@@ -3146,7 +3147,7 @@ function openItem(id) {
         ${i.type === 'file' ? `<button class="side-row" role="menuitem" data-act="download">${ic('down', 'sm')}<span class="lbl">İndir</span></button>` : ''}
         ${onB ? '' : `<button class="side-row" role="menuitem" data-act="toboard">${ic('board', 'sm')}<span class="lbl">Panoya koy</span></button>`}
         <button class="side-row" role="menuitem" data-act="explain">${ic('spark', 'sm')}<span class="lbl">${aiName()} anlatsın</span></button>
-        <hr><button class="side-row danger" role="menuitem" data-act="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button></div></div>
+        <button class="side-row" role="menuitem" data-act="priv">${ic('lock', 'sm')}<span class="lbl">${i.priv ? 'Gizlemeyi kaldır' : 'Gizle'}</span></button><hr><button class="side-row danger" role="menuitem" data-act="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button></div></div>
     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${emb ? `<div class="d-emb ${emb.k}" style="${emb.k === 'vimeo' ? 'aspect-ratio:16/9' : `height:${emb.k === 'spotify' ? emb.h : 320}px`}"><iframe src="${esc(emb.src.replace(/[?&]autoplay=1/, ''))}" title="${emb.label}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
@@ -3203,6 +3204,7 @@ function openItem(id) {
     if (e.target === dlg || act === 'close') { await commit(); Morph.close(dlg); }
     else if (act === 'star') { await commit(); await toggleStar(i.id); openItem(i.id); }
     else if (act === 'del') { Morph.close(dlg); await removeItem(i); }
+    else if (act === 'priv') { await commit(); Morph.close(dlg); Priv.toggle(i.id); }
     else if (act === 'share') shareItem(byId(i.id));
     else if (act === 'explain') { await commit(); AI.explain(i.id); }
     else if (act === 'download') itemAction('download', i.id);
@@ -5860,7 +5862,7 @@ const Board = {
       p.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); this.closeBoardMenu(); $('#boardBtn').focus(); } });
       document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#boardPop,#boardBtn')) this.closeBoardMenu(); }); }
     if (!p.hidden) return this.closeBoardMenu();
-    const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && !i.parent && inBoard(i, n)).length;
+    const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !hid(i) && !i.parent && inBoard(i, n)).length;
     const own = !onMain() && (byId('boards')?.names || []).includes(S.board) && !S.items.some(i => !i.deleted && i.project === S.board);
     p.innerHTML = `<div class="side-label">Panolar</div><button class="side-row${cur === 'main' ? ' on' : ''}" data-board="main" role="menuitemradio" aria-checked="${cur === 'main'}">${ic('board', 'sm')}<span class="lbl">Genel</span>${cur === 'main' ? ic('check', 'sm') : ''}</button>`
       + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}" role="menuitemradio" aria-checked="${cur === n}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
@@ -5905,7 +5907,7 @@ const Board = {
       addEventListener('resize', () => close(false)); }
     const cur = Range.get(), main = onMain(), arch = Range.arch(), row = (v, l) => `<button class="side-row${v === cur ? ' on' : ''}" role="menuitemradio" aria-checked="${v === cur}" data-range="${v}">${ic(v === 'all' ? 'layers' : 'clock', 'sm')}<span class="lbl">${l}</span>${v === cur ? ic('check', 'sm') : ''}</button>`;
     const all = RANGES(), base = all.filter(r => r[0][0] !== 'y'), ys = all.filter(r => r[0][0] === 'y');
-    const na = main ? alive().filter(i => i.archive && !i.parent && !i.pos && !i.onBoard && !HIDDEN.has(i.type) && inRange(i.ts)).length : 0;
+    const na = main ? alive().filter(i => i.archive && !i.parent && !i.pos && !i.onBoard && !hid(i) && inRange(i.ts)).length : 0;
     p.innerHTML = `<div class="side-label">Göster</div>` + base.map(r => row(...r)).join('')
       + (ys.length > 1 ? `<div class="rp-years">${ys.map(([v, l]) => `<button class="rp-y${v === cur ? ' on' : ''}" role="menuitemradio" aria-checked="${v === cur}" data-range="${v}">${l}</button>`).join('')}</div>` : '')
       + (main ? `<div class="rp-sep"></div><button class="side-row rp-arch" role="menuitemcheckbox" aria-checked="${arch}" data-rarch>${ic('inbox', 'sm')}<span class="lbl">Arşivi de göster<small>${na.toLocaleString('tr')} kayıt · WhatsApp, yer imleri</small></span><span class="switch" aria-hidden="true"><input type="checkbox" tabindex="-1"${arch ? ' checked' : ''}><span></span></span></button>` : '')
@@ -6507,7 +6509,7 @@ const Plan = {
     let r; try { r = await AI.call('/board-plan', { request: q, items: AI.pick(topic, extra.map(byId).filter(Boolean)).slice(0, 110), boards: boardNames() }); }
     catch (e) { return toast('Pano hazırlanamadı: ' + e.message, 3500, 'x'); }
     const seen = new Set(), groups = (Array.isArray(r?.groups) ? r.groups : []).slice(0, 6).map(g => ({ title: Parts.str(g?.title, 28),
-      ids: Parts.ids(g?.ids).filter(id => !seen.has(id) && !byId(id).sticky && !HIDDEN.has(byId(id).type) && seen.add(id)).slice(0, 12) })).filter(g => g.ids.length);
+      ids: Parts.ids(g?.ids).filter(id => !seen.has(id) && !byId(id).sticky && !hid(byId(id)) && seen.add(id)).slice(0, 12) })).filter(g => g.ids.length);
     if (!groups.length) return toast('Bu isteğe uyan kayıt bulamadım', 3500, 'search');
     closeAnswer(); const inp = $('#input'); if (inp.value.trim() === q) { inp.value = ''; inp.dispatchEvent(new Event('input')); }
     await this.build(this.name(r.name || topic), Parts.str(r.summary, 400), groups);
@@ -7507,6 +7509,7 @@ const Lock = {
       el.hidden = false; $('#splash').classList.add('gone');
       const f = el.querySelector('form'), inp = f.querySelector('input'), err = f.querySelector('.lock-err');
       setTimeout(() => inp.focus(), 50);
+      if (typeof Bio !== 'undefined') Bio.offer(f, key => { Crypt.key = key; el.hidden = true; el.innerHTML = ''; resolve(); }); // 107l
       f.onsubmit = async e => {
         e.preventDefault(); err.textContent = ''; f.querySelector('button').textContent = 'Açılıyor…';
         const { key, check } = await Crypt.derive(inp.value);
@@ -7520,7 +7523,7 @@ const Lock = {
     this.conf = { check, timeout: 5 }; await DB.put('kv', this.conf, 'lock'); Crypt.key = key;
     await this.reupload();
   },
-  async disable() { this.conf = null; await DB.del('kv', 'lock'); Crypt.key = null; await this.reupload(); },
+  async disable() { this.conf = null; await DB.del('kv', 'lock'); await DB.del('kv', 'lock-bio'); Crypt.key = null; await this.reupload(); },
   async reupload() { // rewrite everything in the repo in the new form (encrypted / plain)
     const files = S.items.filter(i => i.type === 'file' && (i.fileSynced || i.sbPath)).map(i => ({ ...i, fileSynced: false, sbPath: null }));
     if (files.length) await upsert(files, { sync: false });

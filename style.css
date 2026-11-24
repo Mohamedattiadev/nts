@@ -856,6 +856,9 @@ dialog.reader .d-body { gap: 10px; }
 .lock-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .lock-card .btn { width: 100%; height: 44px; }
 .lock-err { color: var(--danger); font-size: calc(13px * var(--fs, 1)); min-height: 18px; }
+dialog.priv-ask { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; color: var(--text); } /* 107l */
+dialog.priv-ask::backdrop { background: transparent; }
+.lock-card .bio-btn { display: flex; align-items: center; justify-content: center; gap: 8px; } .priv-ask .lock-card > .i.lg { width: 36px; height: 36px; color: var(--accent); }
 .a-head button + button { margin-left: 0; }
 
 /* row actions, drawer foot, settings fold */

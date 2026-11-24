@@ -669,6 +669,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             eskiden de 16 px çakışıyordu). 4 yapılandırmada ekran görüntüsü; phone-audit (yeni 'erisim' ekranı, A11Y env ile büyük ayarlar) normal ve
             büyük: 0 (gizli #boardBtn eskiden). Kalan: en büyük yazıda 360 px'te gelen kutusu toast'ı "Tarihe git"in üstüne geçici biniyor.
         (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
+            [x] (2026-11-25, D hattı) yeni dosya priv.js. Bio: platform passkey + WebAuthn PRF; PRF çıktısından (HKDF) AES anahtarı, uygulama
+            kilidinin 64 baytını (AES anahtarı + kontrol) sarar → şifre saklanmaz, şifreli senkron aynen çalışır. Ayarlar'da şifre açıkken "Parmak
+            izi / yüzle aç" (önce şifre sorulur, sonra parmak/yüz), kilit ekranında şifrenin üstünde düğme; PRF yoksa dürüstçe "desteklemiyor, şifre
+            kullan" (anahtarı açıkta saklayan sahte kapı yok); şifre değişirse "yeniden aç"; şifre kaldırılınca parmak izi kaydı da silinir. Passkey
+            alan adı ister: 127.0.0.1'de düğme gizli (localhost/github.io çalışır). Priv: kayıt penceresi ⋯ → "Gizle" (`priv: true`, senkronla öteki
+            cihaza da gider, Geri al); app.js'te hid() tüm liste/pano/arama/sayım süzgeçlerinde HIDDEN.has'in yerine geçti. Sol çubukta "Gizli
+            kayıtlar · N" → parmak izi/yüz ya da şifre (şifre yoksa doğrudan açılır, gizleme yalnız toparlar) → görünür; "Gizlileri kapat" ya da
+            uygulama arka plana geçince yeniden gizlenir. Test: sanal doğrulayıcı (CDP WebAuthn, hasPrf) ile 4 yapılandırmada gizle → kaybolur,
+            kilit + parmak izi kaydı, gizlileri aç/kapat, yeniden yükle → kilit ekranında parmak iziyle açıldı; konsol hatası yok. Gerçek cihazda
+            denenmedi (Android Chrome / iOS 18 Safari PRF destekler; masaüstü Windows Hello/Touch ID tarayıcıya bağlı).
         (m) ilk açılışta "örnek verilerle dene" (30 sn), sonra tek tıkla örnekleri sil.
             [x] (2026-11-24, A hattı, sw v117) boş ekranda birincil düğme "Örnek verilerle dene" → `Sample` (app.js, Trash'in üstünde) 13 kayıt
             yazar (`sample: true`, son 3 güne yayılı): yıldızlı karşılama notu, 3 görev (bugün, yarın, biri bitmiş), 3 link (meta hazır, ağ
