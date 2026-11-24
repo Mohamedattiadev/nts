@@ -221,7 +221,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 150 HATA (sahip, design/feedback-28.png): "Finential" panosu BOMBOŞ, "bütün notları göstermiyor" → önce sebebi kanıtla, düzelt; PLAN 150 (df9076c; sw v103)
 - [x] 151 HATA (sahip, design/feedback-27.png): sol üstteki logo/pano seçici kutusu çirkin (simge üstte, ad altta, ⌄ en altta, uzun ad kesik) → tek satır; PLAN 151 (c58469e; sw v105)
 - [x] 131-1 klasör kartı = D Dosya, CAM (şeffaf) ama aynı renkler (sahip seçti, design/folders-choices-3.json) + feedback-25 sorunları; uygulamada varsayılan yap; PLAN 131-1 (0cc1aad)
-- [~B] 149 zaman çizgisi (sağdaki yıl şeridi, design/feedback-26.png): daha yumuşak + ay çentikleri ("-") ve ay adları + önizleme kutusu (.peek) zaman çizgisinin üstüne binmesin (design/feedback-29.png); PLAN 149
+- [x] 149 zaman çizgisi (sağdaki yıl şeridi, design/feedback-26.png): daha yumuşak + ay çentikleri ("-") ve ay adları + önizleme kutusu (.peek) zaman çizgisinin üstüne binmesin (design/feedback-29.png); PLAN 149 (55478ec; sw v109)
 - [ ] 99b Takvim görünümü
 - [ ] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100)
 - [ ] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce)
