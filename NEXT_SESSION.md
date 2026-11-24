@@ -228,7 +228,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri (1a99172; sw v113)
 - [~B] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
 - [x] 107b Android ana ekran widget'ı (96'dan sonra) (6ff00db; sw v115)
-- [ ] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2
+- [~A] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2
 - [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
 - [ ] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
