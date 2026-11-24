@@ -758,6 +758,14 @@ Arayüz:
         sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
         EK (sahip, 2026-11-24: "çok hızlı olsun abi bütün app"): yalnız 5 nokta değil, BÜTÜN uygulama — her ekran ve her etkileşim ölçülsün;
         biten noktalardan sonra kalanlar yeni maddeler olarak sıraya (147b, 147c…) eklensin.
+- [x] 147b. (2026-11-24, B hattı) **Akıcılık 2. tur** (telefon 4x, 10k kayıt, eski/yeni dönüşümlü 2 tur; uzun görev toplamı ms / fps):
+        pano yakınlaştırma 2703–1766 → 494–484 / 24–31 → 46 fps (hedef ≥45 ✓): --hs/--ik her adımda #plane'e yazılıyordu → bütün kartların
+        stili yeniden hesaplanıyordu; artık tek bir CSS kuralında yalnız .day-band/.b-date/.b-lk için; hareket sırasında yeni kartların ölçümü
+        durunca. Kayıt penceresi aç/kapa 2037–2231 → 603–674 / 25 → 43 fps: HATA — hiç değiştirilmeyen not kapanınca "değişti" sayılıyordu
+        (başlık sonundaki boşluk trim, düzenleyicinin Markdown biçimi) → userTitle + kayıt + senkron + 10k liste baştan; artık yalnız gerçek
+        düzenleme. Görünüm değişimi: listeye geri dönüşte başka değişiklik yoksa satırlar yeniden çizilmez, dayKey önbellekli → liste 282–1068 →
+        191–225 ms; pano/galeri ~200 ms kaldı (startViewTransition + top-layer stil hesabı, 147d ile). Kutuya ilk dokunuş bu ölçümde 55–66 ms
+        (147'de çözülmüş). tools/perf.mjs: TRACE=1 → senaryo başına stil/yerleşim/boyama/betik ms. KALAN: görünüm değişimi <100 ms (147b2).
 - [x] 147c. (2026-11-24, B hattı) **Bütün uygulama ölçüldü**: tools/perf.mjs'e 12 yeni senaryo (Yapılacaklar, ⋯/süzgeç penceresi,
         Tarihe git, Ara + Enter ile açma, Sor, okuma sayfası, Ayarlar, Şifrelerim, Çöp, pano seçici, WhatsApp içe aktarma 1000 mesaj, senkron
         gelirken 300 kayıt); ONLY=todo,trash… ile yalnız seçilenler. En kötüler düzeltildi: (1) Yapılacaklar bütün açık görevleri (yüzlerce,

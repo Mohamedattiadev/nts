@@ -98,7 +98,8 @@ function toast(msg, ms = 2600, icon = '', action = null) {
 }
 const kTok = n => n >= 1e6 ? (n / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' milyon' : n >= 1000 ? Math.round(n / 1000).toLocaleString('tr-TR') + ' bin' : String(Math.round(n)); // 148
 const domain = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
-const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+// 147b: asked for every item on many redraws (10k items: ~60 ms a view change on a phone) → remembered per timestamp
+const _dk = new Map(), dayKey = ts => { let k = _dk.get(ts); if (k) return k; const d = new Date(ts); k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if (_dk.size > 60000) _dk.clear(); _dk.set(ts, k); return k; };
 // Intl formatters are slow to build: make them once, and remember day labels (thousands of rows ask for the same few days)
 const F_TIME = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }), F_SD = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' }), F_SDY = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: '2-digit' });
 const memoDay = fn => { const m = new Map(); let today = ''; return key => { const t = dayKey(now()); if (t !== today) { m.clear(); today = t; } let v = m.get(key); if (v === undefined) { v = fn(key); m.set(key, v); } return v; }; };
@@ -1504,7 +1505,7 @@ const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic
 
 let renderQueued = false;
 function render(force) {
-  if (force) { S._vkey = null; chromeCounts.c = null; }
+  if (force) { S._vkey = S._lkey = null; chromeCounts.c = null; }
   if (renderQueued) return; renderQueued = true;
   requestAnimationFrame(renderNow);
 }
@@ -1544,6 +1545,8 @@ function renderNow() {
     if (S.view === 'todo') Todo.render();
     else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Kutunun solunda üç mod var: <b>Not</b> kaydeder, <b>Ara</b> yazdıkça bulur, <b>Sor</b> ' + aiTo() + ' sorar (<b>Tab</b> ile değişir).',
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
+    // 147b: back to the list from another view with nothing else changed → the rows drawn last time are still right (10k items, phone: ~0.3 s saved)
+    else if (S.view === 'list' && !live && !onlyMore && S._lkey && vkey.every((x, k) => x === S._lkey[k]) && $('#list').firstElementChild) { }
     else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : !S.q && filtered() ? emptyHtml('filter', 'Bu süzgeçte kayıt yok', 'Süzgeci kaldır ya da kutuya yeni bir şey yaz.', unfilterBtn()) : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
     else if (S.view === 'board') { // typing in the box doesn't rebuild the board: only data, filters or a real search do
       // 150: which board (and range) is part of the key: another board is always redrawn, from its own fit (an old camera kept its cards off screen)
@@ -1554,6 +1557,7 @@ function renderNow() {
     else if (S.view === 'gallery') renderGallery(items);
     else renderTopics(items);
     if (S.view !== 'gallery' && Sel.mode) Sel.clear(); if (S.view !== 'board') Link.end();
+    S._lkey = S.view === 'list' && !live && items.length ? vkey : S.view === 'list' ? null : S._lkey;
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' ? [] : items);
     if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
@@ -2720,14 +2724,17 @@ function openItem(id) {
   hookThumbs(dlg);
   dlg._ed?.destroy(); // 106b: the note is a rich editor, stored as Markdown
   const ned = dlg._ed = Ed.mount(dlg.querySelector('[data-ed]'), i.text || '', { placeholder: i.type === 'note' ? 'Yaz ya da "/" ile blok ekle…' : 'Bir şey ekle… ("/" ile blok)', onImage: f => noteImage(i, f) });
-  const ta = dlg.querySelector('.d-title'); const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+  // 147b: the editor writes some texts back a little differently (trailing spaces, Markdown form): only a real edit counts, or just
+  // opening + closing a note saved it, synced it and redrew the whole list behind the window (10k items, phone: ~0.5–1 s)
+  const ed0 = ned.value, ta = dlg.querySelector('.d-title'), ti0 = ta.value; // same for the title: "metin " shown, "metin" read back
+  const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
   ta.addEventListener('input', fit);
   const commit = async () => {
     const cur = byId(i.id); if (!cur || cur.deleted) return;
     const title = ta.value.trim().replace(/\n/g, ' '), text = ned.value;
     const ch = {};
-    if (title && title !== titleOf(cur)) { ch.title = title; ch.userTitle = true; }
-    if (text !== (cur.text || '')) ch.text = text;
+    if (title && ta.value !== ti0 && title !== titleOf(cur)) { ch.title = title; ch.userTitle = true; }
+    if (text !== ed0 && text !== (cur.text || '')) ch.text = text;
     const nt = dlg.querySelector('.tag-in').value.trim().replace(/^#/, '').toLowerCase();
     if (nt) ch.tags = [...new Set([...(cur.tags || []), nt])];
     if (Object.keys(ch).length) await upsert([{ ...cur, ...ch }]);
@@ -5038,7 +5045,9 @@ const Board = {
         frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
-    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => { c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t)); Rich.hook(c); }); this.fades(fresh); }
+    if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => { c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t)); Rich.hook(c); });
+      // 147b: while a zoom is moving, measuring the new cards forced a layout every frame (phone 4x: ~15 fps) → measure them once it rests
+      if (plane.classList.contains('moving')) (this._fq ||= []).push(...fresh); else this.fades(fresh); }
     this.fitHeads();
     this.wires();
     BoardHint.update();
@@ -5110,12 +5119,14 @@ const Board = {
   },
   apply() {
     const c = S.cam, pl = $('#plane'); pl.style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`;
-    if (c.k !== this._lk) { this._lk = c.k; pl.classList.add('moving'); clearTimeout(this._sharp); this._sharp = setTimeout(() => pl.classList.remove('moving'), 180); } // 140: crisp letters once the zoom rests
+    if (c.k !== this._lk) { this._lk = c.k; pl.classList.add('moving'); clearTimeout(this._sharp); this._sharp = setTimeout(() => { pl.classList.remove('moving'); const q = (this._fq || []).filter(c => c.isConnected); this._fq = null; if (q.length) this.fades(q); }, 180); } // 140: crisp letters once the zoom rests
     Ink.place();
-    pl.style.setProperty('--hs', Math.max(1, 1 / c.k)); // day labels keep a readable size at any zoom
+    // day labels keep a readable size at any zoom. 147b: the two zoom numbers live in one rule for the few elements that use them; set on
+    // #plane every zoom step restyled every card (phone 4x: style recalc was most of the frame)
+    const zr = this._zr ||= (() => { const st = document.head.appendChild(document.createElement('style')); st.textContent = '.day-band, .b-date, .b-lk { --hs: 1; --ik: 1 }'; return st.sheet.cssRules[0].style; })();
+    zr.setProperty('--hs', Math.max(1, 1 / c.k)); zr.setProperty('--ik', 1 / c.k);
     const b = $('#board'); b.classList.toggle('far', c.k < .7); b.classList.toggle('nowire', c.k < this.WIREK); const g = 24 * c.k * 2 ** Math.max(0, Math.ceil(Math.log2(12 / (24 * c.k)))); b.style.backgroundSize = `${g}px ${g}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
     const p = $('#zoomPct'); if (p) p.textContent = (c.k < .1 ? (c.k * 100).toFixed(1) : Math.round(c.k * 100)) + '%';
-    $('#plane').style.setProperty('--ik', 1 / c.k);
     if (!this._cq) this._cq = requestAnimationFrame(() => { this._cq = 0; this.cull(); });
   },
   zoomAt(px, py, f) {
