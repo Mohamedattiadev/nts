@@ -607,7 +607,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             dokunuş olmadan titreşim çağırmıyor (widget'tan açılışta konsol hatası). Test: 4 yapılandırmada 4 link × koşul = 16/16, konsol 0.
             "Son kayıtlar" widget'ta YOK: veriler PWA'nın IndexedDB'sinde, yerel APK okuyamaz (bulut girişi/anahtar gerekir) → sahibe soruldu.
             CİHAZ TESTİ sahipte (emülatör yok).
-        (c) her yerden gönderme: e-posta adresine yazılan Nts'e (Supabase Edge Function + gelen e-posta servisi) ve Telegram botu
+        (c) ~~her yerden gönderme~~ KALDIRILDI (sahip 2026-11-25: "gerek yok"): e-posta adresine yazılan Nts'e (Supabase Edge Function + gelen e-posta servisi) ve Telegram botu
             (köprüde ya da Edge Function'da; sadece sahibin hesabı, gizli anahtar);
         (d) başka uygulamalardan taşıma: Google Keep (Takeout JSON), Apple Notes (HTML dışa aktarım), Notion (Markdown zip), Evernote (.enex),
             Telegram "Kaydedilen Mesajlar" (JSON) — WhatsApp içe aktarımı gibi önizleme + gruplama;
@@ -723,7 +723,7 @@ Arayüz:
         güzel, tatlı, el çizimi havasında katman: kesik çizgili çerçeve/daireler ile kart kümelerini sarmak, kümeye başlık ("İş", "Aile"),
         kümeler arasında oklar "bu bununla ilgili" (etiket, bağlantı, proje, yapay zekâ benzerliği). Yaklaşınca yumuşakça kaybolur. Önce
         `design/zoomout.html` örnek sayfası (2–3 stil), sahip seçsin; sonra yapım. 108 ve 92b ile uyumlu, uzakta da 60 fps.
-        119-0c (2026-11-25, C hattı): sahip "10 tane bambaşka şekil" istedi → design/zoomout3.html: aynı pano/motor, 10 farklı dil (Sekme, Harita eş yükselti, Vizör köşeleri, Metro hattı, Petek, Bulut, Kâğıt + yapışkan bant, Neon, Kement, kayıt sayısı kadar parçalı Halka sayaç); ✓/✗ + not → zoomout-choices-3.json; sahibin seçimi bekleniyor.
+        119-0c (2026-11-25, C hattı): sahip "10 tane bambaşka şekil" istedi → design/zoomout3.html: aynı pano/motor, 10 farklı dil (Sekme, Harita eş yükselti, Vizör köşeleri, Metro hattı, Petek, Bulut, Kâğıt + yapışkan bant, Neon, Kement, kayıt sayısı kadar parçalı Halka sayaç); ✓/✗ + not → zoomout-choices-3.json; sahibin seçimi bekleniyor. → sahip: "hiçbirini beğenmedim, daha doğal, humanize olsun".
 - [x] 120. **Yapay zekâ imleci (Figma imleçleri gibi)**: Claude/Codex/Gemini bir şey yaparken (düzenle, pano hazırla 93, etiketle) panoda kendi
         imleci görünsün, kartları onunla taşısın/çizsin; imlecin yanında küçük ad etiketi ("Claude"), rengi yapay zekânın logo rengi (Claude
         turuncu, Gemini mavi, Codex yeşil/siyah). Kullanıcının kendi imleci de aynı güzel tasarımda (isteğe bağlı, ayarlardan). reduced-motion: atla.
