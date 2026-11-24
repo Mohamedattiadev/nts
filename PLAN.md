@@ -685,6 +685,19 @@ Arayüz:
         güzel varyant: daha temiz çizgi, daha iyi başlık tipografisi, kümelere sakin renk zemini, okların ucu ve etiketleri; bugünkü Nts görünümü.
         Ok nedenleri (etiket / elle bağ / proje / yapay zekâ): sahip "en uygun neyse" dedi → sen en iyisini seç (öneri: elle bağ hep, proje ve
         etiket kalın-ince ayrımla, yapay zekâ benzerliği varsayılan kapalı) ve sayfada gerekçesini yaz. [?] yap, sahip seçsin, sonra 119.
+- [ ] 147. **Uygulama akıcı olsun** (sahip, 2026-11-24: "neden çok smooth değil, yavaş application?"). Sahibin gerçek durumu: binlerce kayıt (WhatsApp
+        arşivleri dahil, 2026-11-24'te 838 kayıt + 436 foto daha geldi), masaüstü + telefon. ÖNCE ÖLÇ (tahmin etme): Playwright + CDP Performance/trace,
+        10k kayıt + resimler, 4x CPU telefon: açılış, görünüm değişimi (liste/galeri/pano), panoda kaydırma/yakınlaştırma fps, kart sürükleme, kutuya
+        yazma, Ara'da tuş, kayıt penceresi aç/kapa, sol çubuk aç/kapa. Uzun görevler (>50 ms), layout thrash, gereksiz yeniden çizimler, tek seferde çok
+        DOM, büyük resimlerin ana iş parçacığında çözülmesi, IndexedDB/senkronun ana iş parçacığını kilitlemesi, transform/opacity dışı animasyon,
+        box-shadow/backdrop-filter maliyeti. En kötü 5 noktayı düzelt, önce/sonra tablosu PLAN'a; hedef: etkileşimde uzun görev yok, pano 60 fps
+        (telefon 4x'te ≥45), görünüm değişimi <100 ms. tools/perf.mjs olarak kalsın (pwa-large-data-performance skill'ine yaz).
+- [ ] 148. **Yapay zekâ (Claude/Codex/Gemini) az token harcasın** (sahip, 2026-11-24: "az token harcaması gerek, düşünsene çok şey olursa"). Önce ölç:
+        köprüdeki her çağrı türü (organize, ocr, ask, brief, folders, board-plan, transcribe) için çağrı başına giriş/çıkış token'ı (claude -p json
+        usage) → ~/.local/share/nts/usage.jsonl + Ayarlar'da "Bu ay ~N token" satırı. Sonra kes: yerelde yapılabileni gönderme (anlamsız WhatsApp
+        kayıtları, kopyalar, kısa notlar; OCR önce tesseract, yapay zekâ yalnız gerekirse), aynı içeriği tekrar gönderme (hash önbelleği), toplu gönder
+        (bir çağrıda çok kayıt, kısa alanlar), ucuz model (organize haiku), claude -p araçsız + kısa sistem istemi; günlük/aylık üst sınır (aşınca
+        sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
