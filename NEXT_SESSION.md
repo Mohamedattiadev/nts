@@ -234,7 +234,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 155 kayıt penceresi: sahip "en uygun seçeneği yap" (örnek turu beklemeden) → design/item.html'deki A "Belge" yönünü (yoksa PLAN 155'teki A tarifini) uygula; 155-0'ı [x] yap; PLAN 155 — örnekteki A + "Ortak" bölümündeki kurallar referans (ea5c173; sw v120)
 - [x] 153 panoda boş yere sağ tık (telefonda uzun bas) → zaman aralığı: Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + "Arşivi de göster" (WhatsApp vb.); PLAN 153 (5b10942; sw v119)
 - [x] 154 HATA zengin kartlar kesik (design/feedback-31.png: WhatsApp balonlarında yazı satırın ortasından kesiliyor) → "full gözüksün"; PLAN 154 (bb01596; sw v121)
-- [~A] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)
+- [x] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi) (be15688)
 - [~B] 107d başka uygulamalardan taşıma (Keep, Apple Notes, Notion, Evernote, Telegram)
 - [ ] 156 masaüstü hızlı kutu: Ctrl+Space (ve Super+Shift+S yerine) → farenin olduğu yerde küçük yüzen yazı kutusu (Claude/ChatGPT masaüstü gibi), Enter → Nts'e not; Hyprland; PLAN 156
 - [ ] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
