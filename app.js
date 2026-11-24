@@ -1282,6 +1282,7 @@ function render(force) {
     if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
     for (const v of ['list', 'board', 'gallery', 'topics', 'todo']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
+    { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; bp.setAttribute('aria-expanded', 'false'); const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; } // 116: outside the board the logo is just the logo
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
     $('#boardTools').hidden = none || S.view !== 'board';
     $('#pal').hidden = none || S.view !== 'board' || !S.palOpen; // desktop: slides out of the rail; phone: opens from the pen button (98)
@@ -4268,7 +4269,7 @@ const Board = {
     if (placed.length) { let mx = -Infinity, my = Infinity; for (const i of placed) { const p = posOf(i); mx = Math.max(mx, p.x + this.COLW); my = Math.min(my, p.y); } x0 = mx + this.GAP * 1.5; y0 = my; }
     this.M = new Map(); this.heads = []; this.mounted = new Map(); this.mountedHeads = new Map(); this.mountedMonths = new Map(); this.y0 = y0;
     const rb = $('#rangeBtn'); if (rb) { rb.innerHTML = `${ic('clock', 'sm')}<span>${rangeLabel()}</span>`; rb.hidden = !onMain(); }
-    const bb = $('#boardBtn'); if (bb) bb.innerHTML = `${ic('board', 'sm')}<span>${onMain() ? 'Genel' : esc(S.board)}</span>${ic('chev', 'sm rot')}`;
+    const bn = $('#boardName'), bnm = onMain() ? 'Genel' : S.board; if (bn) { bn.textContent = bnm; const bp = $('#boardBtn'); bp.title = bp.ariaLabel = `Pano: ${bnm} — değiştir`; bp.classList.toggle('sub', !onMain()); } // 116: the logo is the board picker
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : i.w || 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
@@ -4432,17 +4433,39 @@ const Board = {
     const z = Math.max(.35, Math.min(.8, (b.clientWidth - 140) / (m.x2 - m.x)));
     this.animate(() => { S.cam = { k: z, x: (b.clientWidth - (m.x2 - m.x) * z) / 2 - m.x * z, y: 72 - m.y * z }; this.apply(); });
   },
-  boardMenu(anchor) {
-    let p = $('#boardPop'); if (!p) { p = document.createElement('div'); p.id = 'boardPop'; p.className = 'pop range-pop'; document.body.appendChild(p);
-      p.addEventListener('click', e => { const b = e.target.closest('[data-board]'); if (!b) return; this.go(b.dataset.board); p.hidden = true; });
+  boardMenu(anchor) { // 116: opens from the logo (top left): boards, new board, rename the current own board
+    let p = $('#boardPop'); if (!p) { p = document.createElement('div'); p.id = 'boardPop'; p.className = 'pop range-pop'; p.setAttribute('role', 'menu'); p.hidden = true; document.body.appendChild(p);
+      p.addEventListener('click', e => { if (e.target.closest('[data-brename]')) { p.querySelector('.ren-board').hidden = false; p.querySelector('[data-brename]').hidden = true; const i = p.querySelector('.ren-board input'); i.focus(); i.select(); return; }
+        const b = e.target.closest('[data-board]'); if (!b) return; this.go(b.dataset.board); this.closeBoardMenu(); });
       p.addEventListener('submit', async e => { e.preventDefault(); const v = e.target.querySelector('input').value.trim().toLocaleLowerCase('tr').slice(0, 40); if (!v) return;
-        const cur = byId('boards'), t = now(); await upsert([{ id: 'boards', type: 'boards', names: [...new Set([...(cur?.names || []), v])], ts: cur?.ts || t, tags: [] }]); p.hidden = true; this.go(v); });
-      document.addEventListener('pointerdown', e => { if (!e.target.closest('#boardPop,#boardBtn')) p.hidden = true; }); }
+        if (e.target.classList.contains('ren-board')) { await this.renameBoard(S.board, v); this.closeBoardMenu(); return; }
+        const cur = byId('boards'), t = now(); await upsert([{ id: 'boards', type: 'boards', names: [...new Set([...(cur?.names || []), v])], ts: cur?.ts || t, tags: [] }]); this.closeBoardMenu(); this.go(v); });
+      p.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); this.closeBoardMenu(); $('#boardBtn').focus(); } });
+      document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#boardPop,#boardBtn')) this.closeBoardMenu(); }); }
+    if (!p.hidden) return this.closeBoardMenu();
     const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && (i.project === n || (i.boards || []).includes(n))).length;
-    p.innerHTML = `<div class="side-label">Panolar</div><button class="side-row${cur === 'main' ? ' on' : ''}" data-board="main">${ic('board', 'sm')}<span class="lbl">Genel</span></button>`
-      + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
-      + `<form class="new-board"><input placeholder="+ Yeni pano (ör. ev)" aria-label="Yeni pano adı" maxlength="40"></form><p class="hint" style="padding:4px 9px">${aiName()} bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
-    p.hidden = false; const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, r.right - p.offsetWidth) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 8) + 'px';
+    const own = !onMain() && (byId('boards')?.names || []).includes(S.board) && !S.items.some(i => !i.deleted && i.project === S.board);
+    p.innerHTML = `<div class="side-label">Panolar</div><button class="side-row${cur === 'main' ? ' on' : ''}" data-board="main" role="menuitemradio" aria-checked="${cur === 'main'}">${ic('board', 'sm')}<span class="lbl">Genel</span>${cur === 'main' ? ic('check', 'sm') : ''}</button>`
+      + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}" role="menuitemradio" aria-checked="${cur === n}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
+      + `<form class="new-board"><input placeholder="+ Yeni pano (ör. ev)" aria-label="Yeni pano adı" maxlength="40"></form>`
+      + (own ? `<button class="side-row" data-brename>${ic('pen', 'sm')}<span class="lbl">“${esc(S.board)}” adını değiştir</span></button><form class="new-board ren-board" hidden><input value="${esc(S.board)}" aria-label="Panonun yeni adı" maxlength="40"></form>` : '')
+      + `<p class="hint" style="padding:4px 9px">${aiName()} bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
+    p.hidden = false; anchor.setAttribute('aria-expanded', 'true'); const r = anchor.getBoundingClientRect();
+    if (r.top < innerHeight / 2) { p.style.left = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)) + 'px'; p.style.top = (r.bottom + 8) + 'px'; }
+    else { p.style.left = Math.max(8, r.right - p.offsetWidth) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 8) + 'px'; }
+    p.classList.remove('bp-in'); void p.offsetWidth; p.classList.add('bp-in');
+  },
+  closeBoardMenu() { const p = $('#boardPop'); if (p) p.hidden = true; $('#boardBtn')?.setAttribute('aria-expanded', 'false'); },
+  async renameBoard(from, to) { // own boards only (project boards follow the project name); cards keep their place on the board
+    if (!from || from === to || boardNames().includes(to)) { if (from !== to && boardNames().includes(to)) toast('Bu adda bir pano zaten var', 3000, 'x'); return; }
+    const cur = byId('boards'), t = now(), ch = [{ ...cur, names: [...new Set((cur.names || []).map(n => n === from ? to : n))], ts: cur.ts || t }];
+    for (const i of S.items) {
+      if (i.deleted || !((i.boards || []).includes(from) || i.posBy?.[from])) continue;
+      const c = { ...i, boards: (i.boards || []).map(n => n === from ? to : n) };
+      if (i.posBy?.[from]) { const pb = { ...i.posBy }, pa = { ...(i.posByAt || {}) }; pb[to] = pb[from]; delete pb[from]; pa[to] = t; pa[from] = t; c.posBy = pb; c.posByAt = pa; }
+      ch.push(c);
+    }
+    await upsert(ch); this.go(to); toast(`Pano adı: ${to}`, 2500, 'check');
   },
   go(name) { S.board = name === 'main' ? null : name; try { localStorage.setItem('hn-board', S.board || ''); } catch { } S.cam = null; render(); },
   rangeMenu(anchor) {

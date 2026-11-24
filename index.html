@@ -40,7 +40,7 @@
 <div class="app">
   <!-- floating chrome: the canvas is the whole screen -->
   <div class="hud hud-l">
-    <span class="mark" title="Nts"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"/><path class="mk-l" d="M34 38h30M34 52h18"/><circle class="mk-d" cx="79" cy="21" r="10"/></svg></span>
+    <button class="bpick" id="boardBtn" title="Hangi pano" aria-haspopup="menu" aria-label="Pano seç"><span class="mark"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"/><path class="mk-l" d="M34 38h30M34 52h18"/><circle class="mk-d" cx="79" cy="21" r="10"/></svg></span><span class="bp-name" id="boardName">Genel</span><svg class="i sm bp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <button class="chip m-only" id="filterBtn" title="Filtre"><span id="filterLbl">Tümü</span><svg class="i sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
   </div>
   <!-- desktop: small vertical toolbar, left middle -->
@@ -86,7 +86,6 @@
     <button id="zoomOut" class="tool" title="Uzaklaş"></button>
     <button id="zoomPct" class="tool pct" title="%100'e dön"></button>
     <button id="zoomIn" class="tool" title="Yakınlaş"></button>
-    <button id="boardBtn" class="tool range" title="Hangi pano"></button>
     <button id="rangeBtn" class="tool range" title="Panoda hangi zaman"></button>
     <button id="fitBtn" class="tool" title="Hepsini göster (Shift+1)"></button>
     <button id="tidyBtn" class="tool" title="Otomatik diz: günlere göre"></button>
