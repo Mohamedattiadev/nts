@@ -773,7 +773,16 @@ Arayüz:
         EK (sahip, 2026-11-24, design/feedback-29.png: "birbirlerinin üzerinde olmasın o kart ve line"): galeri/listedeki sağ önizleme kutusu
         ("Bir kartın üzerine gel, burada büyük görünür") zaman çizgisinin yıl yazılarını (2026, 2025) kapatıyor. Önizleme zaman çizgisinin SOLUNDA
         bitsin (çizgi + yazıları için yer ayır), hiçbir genişlikte çakışma olmasın; 1366×768, 1920, dar pencere, telefon; çakışma ölçümü 0.
-- [ ] 150. **"Finential" panosu boş görünüyor** (sahip, 2026-11-24, design/feedback-28.png, masaüstü koyu, yakınlık %54: pano seçicide "Finential",
+- [x] 150. (2026-11-24, A hattı. SEBEP KANITLANDI: veri sağlamdı — köprü snapshot'ında 5 canlı kayıt `project:'finential'`, arşivden; ad farkı
+        değil. Hata pano çiziminde: Board._key panonun KİMLİĞİNİ (hangi pano / aralık) tutmuyordu. Pano değişince (Board.go → S.cam=null) önceki
+        çizimin bekleyen rAF "sığdır"ı eski panonun kartlarına (Genel'in en yeni ucu, ~%35–54) göre kamera kurdu; yeni pano "kamera var + anahtar
+        aynı" deyip ya hiç çizilmedi (Genel'in çizimi "Finential" adıyla kaldı) ya da kartlar ekran dışında kaldı → sahibin ekranının aynısı.
+        Eski sürümde 6/6, yenide 0/6 (çok kartlı Genel → hemen Finential; scratchpad fin6.mjs), 5 kartlı yarışta 2/8 → 0/10. Düzeltme: anahtara
+        Board.id() (pano|aralık); kimlik değişince kamera sıfırlanır ve yeni panonun kendi sığdırması kullanılır; başka panonun kartlarıyla fit()
+        yapılmaz. Ek: (c) ad eşleşmesi katlanır (bfold: büyük/küçük harf, baş/son/çift boşluk; boardNames tekilleşir, seçicideki sayı da), boş/gizli
+        panoda açıklayıcı kutu (BoardHint): "“X” panosunda kart yok · Kaydı aç → Panolar…" + Genel'e dön / "N kart süzgeçte gizli · Süzgeci kaldır" /
+        "Son 30 gün içinde kart yok · Tümü" / "Kartlar görüş alanının dışında · Hepsini gör". Hızlı görünüm değişimindeki yakalanmamış
+        "Transition was skipped" hatası da susturuldu. Masaüstü + telefon, açık + koyu; konsol hatası yok.) "Finential" panosu boş görünüyor** (sahip, 2026-11-24, design/feedback-28.png, masaüstü koyu, yakınlık %54: pano seçicide "Finential",
         ekranda tek kart yok; sahip: "bütün notları göstermiyor"). Önce sebebi KANITLA (tahminle düzeltme): proje panosu visible0'da onBoard(i)
         (i.project === S.board || boards || posBy) ile süzülüyor. Adaylar: (a) kartlar var ama kamera (S.cam, hn-cam) başka yerde → pano açılınca
         hiç kart görünmüyorsa kartlara sığdır (Hepsini gör); (b) sol çubukta bir süzgeç açık kalmış (üstteki gelen kutusu simgesi seçili görünüyor) →

@@ -432,8 +432,14 @@ function keepPos(m, l, r) {
   }
   return m;
 }
-const onBoard = i => onMain() ? true : i.project === S.board || (i.boards || []).includes(S.board) || !!posOf(i);
-const boardNames = () => { const b = byId('boards'), own = b && !b.deleted ? b.names || [] : []; const proj = [...new Set(S.items.filter(i => i.project && !i.deleted).map(i => i.project))]; return [...new Set([...proj, ...own])].sort((a, b) => a.localeCompare(b, 'tr')); };
+// 150c: a board name matches whatever its case or spaces ("Finential" = "finential " = "finential")
+const bfold = n => String(n || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('tr');
+let _bf = ['', '']; const curFold = () => _bf[0] === S.board ? _bf[1] : (_bf = [S.board, bfold(S.board)])[1];
+const inBoard = (i, n) => { const b = n === undefined ? curFold() : bfold(n); return !!i.project && bfold(i.project) === b || (i.boards || []).some(x => bfold(x) === b); };
+const onBoard = i => onMain() ? true : inBoard(i) || !!posOf(i);
+const boardNames = () => { const b = byId('boards'), own = b && !b.deleted ? b.names || [] : [], seen = new Map();
+  for (const n of [...S.items.filter(i => i.project && !i.deleted).map(i => i.project), ...own]) { const k = bfold(n); if (k && !seen.has(k)) seen.set(k, n); }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, 'tr')); };
 // board time range: 'week' | '30' (default) | 'month' | 'y2024' … | 'all'
 const RANGES = () => { const ys = [...new Set(S.items.filter(i => !i.deleted).map(i => new Date(i.ts).getFullYear()))].sort((a, b) => b - a);
   return [['week', 'Bu hafta'], ['30', 'Son 30 gün'], ['month', 'Bu ay'], ...ys.map(y => ['y' + y, String(y)]), ['all', 'Tümü']]; };
@@ -1460,6 +1466,39 @@ function emptyHtml(icn, h, p, actions = '') {
 }
 const filtered = () => { const f = S.filter; return f.type !== 'all' || f.star || !!(f.list || f.tag || f.color || f.src || inFolder()); };
 const inFolder = () => !!S.folder && (S.view === 'list' || S.view === 'gallery'); // 131: a folder holds in the list and the gallery, not on the board
+// 150: a board with no card on screen says why, instead of a blank dotted plane: no cards on it / hidden by a filter / not in this
+// time range / all out of view → one small card with the way out (Genel'e dön, Süzgeci kaldır, Tümü, Hepsini gör)
+const BoardHint = {
+  el() {
+    let e = $('#boardHint'); if (e) return e;
+    e = document.createElement('div'); e.id = 'boardHint'; e.className = 'board-hint'; e.hidden = true; e.setAttribute('role', 'status'); $('main').appendChild(e);
+    e.addEventListener('click', ev => { const b = ev.target.closest('[data-bh]'); if (!b) return; const a = b.dataset.bh;
+      if (a === 'main') return Board.go('main');
+      if (a === 'unfilter') { if (S.folder) Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); S.cam = null; return render(); }
+      if (a === 'all') { S.boardRange = 'all'; _rs = null; try { localStorage.setItem('hn-range', 'all'); } catch { } S.cam = null; return render(); }
+      if (a === 'fit') Board.fit(); });
+    return e;
+  },
+  why() { // what the board would hold with no filter, and why it shows nothing
+    const mine = alive().filter(i => !i.parent && onBoard(i)), name = onMain() ? 'Genel' : S.board, F = S.filter;
+    const btn = (a, icn, l, sec) => `<button class="btn${sec ? ' secondary' : ''}" data-bh="${a}">${ic(icn, 'sm')}${l}</button>`;
+    const back = onMain() ? '' : btn('main', 'board', "Genel'e dön", false);
+    if (Board.M?.size) return { k: 'out', t: 'Kartlar görüş alanının dışında', p: `${Board.M.size} kart var, şu an ekranda değil.`, a: btn('fit', 'fit', 'Hepsini gör', true) };
+    if (!mine.length) return { k: 'none', t: `“${esc(name)}” panosunda kart yok`, p: onMain() ? 'Kutuya yaz ya da bir dosya bırak: kart buraya gelir.' : `Kaydı aç → <b>Panolar</b> → “${esc(name)}”, ya da listede seç → <b>Panoya koy</b>.`, a: back };
+    const f = filtered() ? mine.filter(i => (F.type === 'all' || groupOf(i) === F.type) && (!F.tag || (i.tags || []).includes(F.tag)) && (!F.star || i.starred) && (!F.list || inList(i, F.list)) && (!F.color || i.color === F.color) && (!F.src || srcMatch(i, F.src))).length : mine.length;
+    if (f < mine.length) return { k: 'filter', t: `${mine.length - f} kart süzgeçte gizli`, p: `“${esc(name)}” panosunda ${mine.length} kart var; seçili süzgeç hepsini saklıyor.`, a: btn('unfilter', 'x', 'Süzgeci kaldır', true) + back };
+    if (onMain()) return { k: 'range', t: `${esc(rangeLabel())} içinde kart yok`, p: 'Arşivden gelenler (WhatsApp, yer imleri) panoyu doldurmaz; zaman aralığını genişlet.', a: btn('all', 'clock', 'Tümü', true) };
+    return { k: 'none', t: `“${esc(name)}” panosunda kart yok`, p: '', a: back };
+  },
+  update() {
+    const e = $('#boardHint') || (S.view === 'board' ? this.el() : null); if (!e) return;
+    const on = S.view === 'board' && !$('#board').hidden && !$('#board').classList.contains('months') && !(Board.mounted?.size) && !OnBoard.el?.isConnected;
+    if (!on) { if (!e.hidden) e.hidden = true; return; }
+    const w = this.why(), key = w.k + w.t + w.a; e.dataset.k = w.k;
+    if (e._key !== key) { e._key = key; e.innerHTML = `<div class="bh-ic">${ic(w.k === 'filter' ? 'eye' : w.k === 'out' ? 'fit' : w.k === 'range' ? 'clock' : 'board', 'sm')}</div><div class="bh-t"><b>${w.t}</b>${w.p ? `<span>${w.p}</span>` : ''}</div>${w.a ? `<div class="bh-a">${w.a}</div>` : ''}`; }
+    e.hidden = false;
+  },
+};
 const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic('x', 'sm')}Süzgeci kaldır</button>`;
 
 let renderQueued = false;
@@ -1497,6 +1536,7 @@ function renderNow() {
     { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; bp.setAttribute('aria-expanded', String(!!pp && !pp.hidden)); } // 146: a redraw keeps the open list's state (the tip checks it) // 116: outside the board the logo is just the logo
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
     $('#boardTools').hidden = none || S.view !== 'board';
+    if (S.view !== 'board' || none) BoardHint.update();
     $('#pal').hidden = none || S.view !== 'board' || !S.palOpen; // desktop: slides out of the rail; phone: opens from the pen button (98)
     Rail.place();
     $('#empty').hidden = !none || S.view === 'todo';
@@ -1505,7 +1545,9 @@ function renderNow() {
       `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
     else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : !S.q && filtered() ? emptyHtml('filter', 'Bu süzgeçte kayıt yok', 'Süzgeci kaldır ya da kutuya yeni bir şey yaz.', unfilterBtn()) : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
     else if (S.view === 'board') { // typing in the box doesn't rebuild the board: only data, filters or a real search do
-      const key = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn && S.q, live ? 'L' : S.searchOn && S.hits, S.linkFrom];
+      // 150: which board (and range) is part of the key: another board is always redrawn, from its own fit (an old camera kept its cards off screen)
+      const key = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn && S.q, live ? 'L' : S.searchOn && S.hits, S.linkFrom, Board.id()];
+      if (Board._key && Board._key[6] !== key[6]) S.cam = null;
       if (!S.cam || !Board._key || key.some((x, k) => x !== Board._key[k])) { Board._key = key; Board.render(visible(true)); }
     }
     else if (S.view === 'gallery') renderGallery(items);
@@ -4147,7 +4189,7 @@ const Sel = {
       p.innerHTML = `<form class="sel-form"><input dir="auto" placeholder="Etiket yaz, Enter" aria-label="Etiket" autocomplete="off" enterkeyhint="done"><button class="btn sm">Ekle</button></form>
         ${top.length ? `<div class="side-label">Sık kullanılan</div><div class="tp-chips">${top.map(t => `<button class="lchip" data-stag="${esc(t)}" dir="auto">#${esc(t)}</button>`).join('')}</div>` : ''}`;
     } else {
-      const has = n => list.every(i => n ? (i.boards || []).includes(n) || i.project === n : i.onBoard || i.pos);
+      const has = n => list.every(i => n ? inBoard(i, n) : i.onBoard || i.pos);
       p.innerHTML = `<div class="side-label">${list.length} kaydı panoya koy</div>
         ${['', ...boardNames()].map(n => `<button class="side-row" data-sboard="${esc(n)}">${ic(n ? 'folder' : 'board', 'sm')}<span class="lbl" dir="auto">${n ? esc(n) : 'Ana pano'}</span>${has(n) ? ic('check', 'sm') : ''}</button>`).join('')}`;
     }
@@ -4954,7 +4996,7 @@ const Board = {
             : `<span class="m-tile empty"><span class="m-name">${l}</span></span>`; }).join('')}</div></div>`).join('') + '<p class="hint my-tip">Bir aya dokun: o günlere yaklaşır. Yakınlaşınca kartlar geri gelir.</p>';
         mg._key = key; hookThumbs(mg);
       }
-      mg.hidden = false; return;
+      mg.hidden = false; BoardHint.update(); return;
     }
     mg.hidden = true;
     for (const [k, el] of this.mountedMonths || []) { el.remove(); this.mountedMonths.delete(k); }
@@ -4978,6 +5020,7 @@ const Board = {
     if (fresh.length || frag.childNodes.length) { plane.appendChild(frag); fresh.forEach(c => { c.querySelectorAll('[data-tid]').forEach(t => thumbIO.observe(t)); Rich.hook(c); }); this.fades(fresh); }
     this.fitHeads();
     this.wires();
+    BoardHint.update();
   },
   // 92b: a day head is never cut. Full label if it fits its band on screen, else the short one ("20 Kas 3"), else it stands vertically in the band
   fitHeads() {
@@ -5073,7 +5116,7 @@ const Board = {
       p.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); this.closeBoardMenu(); $('#boardBtn').focus(); } });
       document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#boardPop,#boardBtn')) this.closeBoardMenu(); }); }
     if (!p.hidden) return this.closeBoardMenu();
-    const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && (i.project === n || (i.boards || []).includes(n))).length;
+    const cur = S.board || 'main', count = n => S.items.filter(i => !i.deleted && !HIDDEN.has(i.type) && !i.parent && inBoard(i, n)).length;
     const own = !onMain() && (byId('boards')?.names || []).includes(S.board) && !S.items.some(i => !i.deleted && i.project === S.board);
     p.innerHTML = `<div class="side-label">Panolar</div><button class="side-row${cur === 'main' ? ' on' : ''}" data-board="main" role="menuitemradio" aria-checked="${cur === 'main'}">${ic('board', 'sm')}<span class="lbl">Genel</span>${cur === 'main' ? ic('check', 'sm') : ''}</button>`
       + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}" role="menuitemradio" aria-checked="${cur === n}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
@@ -5125,7 +5168,9 @@ const Board = {
     for (const m of this.M.values()) if (m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + Math.min(m.h, 400) > v.y1) return true;
     return false;
   },
+  id: () => (S.board || 'main') + '|' + (onMain() ? S.boardRange || '30' : ''), // 150: the board on screen (a fit for another board's cards is never used)
   fit(anim = true) {
+    if (this._key && this._key[6] !== this.id()) return; // the cards in M belong to the board we just left: the redraw fits
     const ms = [...(this.M?.values() || [])], b = $('#board');
     if (!b.clientWidth) { if (!b.hidden) requestAnimationFrame(() => this.fit(anim)); return; } // not laid out yet
     if (!ms.length) { S.cam = { k: 1, x: 24, y: 72 }; return this.apply(); }
@@ -7116,7 +7161,8 @@ function setView(v) {
   S._vfrom = S.view; if (ch) { S.cam = null; hideHits(); } S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
   if (ch && document.startViewTransition && !reduced()) { // 94a: the old view cross-fades into the new one, the floating chrome stays still
     const h = document.documentElement, fly = Fly.from(S._vfrom, v); h.classList.add('vt');
-    try { document.startViewTransition(() => { render(); renderNow(); try { fly?.to(); } catch { } }).finished.finally(() => { h.classList.remove('vt'); fly?.done(); }); return; } catch { h.classList.remove('vt'); fly?.done(); }
+    try { const vt = document.startViewTransition(() => { render(); renderNow(); try { fly?.to(); } catch { } }); vt.ready.catch(() => { }); vt.finished.catch(() => { }).finally(() => { h.classList.remove('vt'); fly?.done(); }); return; } catch { // a 2nd quick switch skips the 1st: not an error
+    h.classList.remove('vt'); fly?.done(); }
   }
   render();
   if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change
