@@ -1045,6 +1045,19 @@ Arayüz:
            çipi → liste (etiket eşleşmesi + başlık/metin/URL'de proje adı geçenler, tr/ar katlama + varsa sem.js anlam benzerliği ✦) → "Hepsini
            ekle" / tek tek ekle, Geri al. Eklenen kayıt i.project değil i.boards'a girer (başka projeyi bozmasın). İsteğe bağlı: yapay zekâ
            organize ederken proje adıyla eşleşen kayda proje önerisi (148 token kurallarıyla, toplu).
+- [ ] 156b. **Hızlı kutu yükseltme** (sahip, 2026-11-24, 156'yı görünce: "çok güzel görünmedi sanki; Win+Shift+S'i eskiye geri al; bunun UI'ı daha iyi
+        olsun; kesin çalışıyor mu kontrol et; açılınca eski yazdığım notları da görmem lazım; upgrade it; şimdilik onu F7 yap, sonra değişecek —
+        summary terminalde notlarım var"). YAPILDI (ana oturum): binds.conf'ta `$mod SHIFT, S` yine sum-toggle.sh (TODOS), kutu `, F7`'de,
+        CTRL SPACE ve `$mod ALT, S` kaldırıldı; ~/.local/bin/nts-quick artık ana klasöre bağlı (hizli_note-A worktree'sine bağlıydı — hat
+        sıfırlanınca bozulurdu; bridge/install.sh de her zaman ANA klasörün yolunu yazsın, worktree'den çalıştırılsa bile). KALAN:
+        (a) Görünüm (design/feedback-38.png bugünkü hali: düz kutu, logo + "Not" hapı + "Not yaz…"): Claude/ChatGPT masaüstü kutusu kalitesi —
+        daha büyük yazı (17–18 px), rahat iç boşluk, yuvarlak 16+ px, ince kenar + yumuşak gölge, açılırken 120 ms ölçek+opaklık, kenar çizgisi
+        turuncu değil sakin (odakta accent ince halka), mod hapı uygulamadakiyle aynı. (b) Açılınca kutunun ALTINDA son notlar listesi
+        (son 8–10 kayıt: başlık/ilk satır + zaman "2 sa önce", tür simgesi), ↑↓ ile seç, Enter uygulamada açar, yazmaya başlayınca liste canlı
+        süzülür (Ara modu gibi), liste köprüden gelir (/recent ya da snapshot), köprü kapalıysa son bilinen liste önbellekten. (c) Uçtan uca
+        kanıt: sahte köprüyle (gerçek veriye yazmadan) F7 → yaz → Enter → kayıt köprüye ulaştı → uygulamada görünür; köprü kapalı → kuyrukta
+        bekler → açılınca gider; Esc taslak saklar; ekran kenarında taşmaz; çoklu monitörde fare olan ekranda açılır; açılış süresi ölçümü.
+        grim ekran görüntüleri açık + koyu, PLAN'a sonuç.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
