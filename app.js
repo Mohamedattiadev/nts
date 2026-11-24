@@ -1262,7 +1262,9 @@ function renderGallery(items) { // month headers stick to the top while scrollin
     ${thumbBox(i)}<div class="tile-cap" aria-hidden="true"><div class="t">${esc(t)}</div><div class="s">${KIND_LABEL[fileKind(i)]} · ${fmtDay(dayKey(i.ts))}</div></div></div>`;
   }
   if (last) html += '<i class="g-fill"></i>'; // the last row of a month keeps its height instead of stretching across
-  el.innerHTML = Folders.head() + (media.length ? `${topBtns('g-jump', `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`)}${S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : ''}` + Folders.html(media) + html
+  // 158a: with the "… ve öncesi" strip, Seç / Tarihe git sit inside it (both are sticky at the same top: the buttons peeked out from behind it)
+  const selB = `<button class="l-jump" data-selmode aria-pressed="${Sel.mode}" title="Birden çok seç (uzun bas, Ctrl+tık ya da boş yerde sürükle)">${ic('check', 'sm')}<span>Seç</span></button>`;
+  el.innerHTML = Folders.head() + (media.length ? (S.listFrom ? `<div class="l-from g-from">${ic('clock', 'sm')}<span class="l-from-t">${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button>${topBtns('in-from', selB)}</div>` : topBtns('g-jump', selB)) + Folders.html(media) + html
     : filtered() ? emptyHtml('filter', 'Bu süzgeçte görsel yok', 'Resim, PDF, video ya da görseli olan link bu süzgeçte yok.', unfilterBtn()) : emptyHtml('grid', 'Galeri boş', 'Resimler, PDF\'ler, videolar ve görseli olan linkler burada görünür.'));
   hookThumbs(el);
   Peek.dock(); // no tiles → no docked "hover a card" panel Sel.paint();
@@ -4399,7 +4401,7 @@ const Peek = {
     if (S.view === 'list') {
       // list + card move together to the middle of the free area: the list slides left, the card sits right next to it
       // 149: the free area ends left of the time line and its month/year labels
-      const R = document.body.classList.contains('scrub-on') ? 64 : 0, W = innerWidth - R;
+      const R = document.body.classList.contains('scrub-on') ? parseFloat(getComputedStyle(document.body).getPropertyValue('--tl-col')) || 108 : 0, W = innerWidth - R;
       const l = $('#list'), lr = l.getBoundingClientRect(), base = lr.left - (this.dx || 0), w = Math.min(360, W - rail - lr.width - 56);
       if (w < 260) { this.hide(); return; }
       const total = lr.width + 16 + w, want = rail + (W - rail - total) / 2;

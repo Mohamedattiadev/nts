@@ -1085,6 +1085,13 @@ Arayüz:
            ayrılmış sütunun SOLUNDA biter; balon hiçbir zaman başka yüzeyin arkasında kalmaz (z-index + yer); şerit ve düğmeler ayrı satır ya da
            şeridin içinde. Ölç: liste/galeri/takvim × 1366, 1920, 1024, 390 × sürüklerken/değilken, bütün yüzen öğeler arasında kesişme = 0
            (tools/overlap.mjs kalsın, her arayüz işinde koşulsun).
+           YAPILDI (2026-11-25, A hattı): önce ölçüldü (tools/overlap.mjs: liste/galeri × 1366/1920/1024/390 × şerit açık/kapalı × sürüklerken,
+           açık+koyu) → 14 kesişme: (1) balon "Ağu 2026" ~80 px, önizleme yalnız 64 px yer bırakıyordu + çizgi z 22 < önizleme z 30 → body.scrub-on
+           --tl-col: 108px (çizgi + yazılar + balon sütunu), yapışık önizleme right: var(--tl-col), galeri sağ boşluğu ve liste önizlemesi (Peek.show
+           R) aynı değişkeni okur; sürüklerken/basılıyken .scrub z 31. (2) Galeride "Seç / Tarihe git" (g-jump) ve "… ve öncesi" şeridi aynı
+           top'ta yapışık → düğmeler şeridin arkasından yarım görünüyordu; listedeki gibi şeridin İÇİNE alındı (in-from). (3) Telefonda şerit varken
+           çizginin "2026" yazısı/balonu şeridin altına giriyordu → body:has(.l-from) .scrub top 128 px. Sonra: 64 durumda kesişme 0, konsol hatası 0,
+           phone-audit galeri/liste çakışma 0 (tek "small": gizli 2×2 #boardBtn, önceden var). Görüntüler design/158a/ (once-* = önce).
         b) design/feedback-40.png (Takvim, Kasım 2026): "UI geliştir takvimin" + KARAR (sahip, aynı akşam): "takvim ile listeyi birleştirelim
            bence, çünkü takvimden bir ayı açınca beni listeye alıyor". Yap: görünüm seçicide Takvim sekmesi KALKAR (Pano · Liste · Galeri);
            Liste'nin en üstünde katlanabilir ay takvimi (varsayılan açık masaüstünde, telefonda tek satır hafta şeridi, aşağı çekince ay).

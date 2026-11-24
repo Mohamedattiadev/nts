@@ -1256,15 +1256,20 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 .sc-m.yr { font-size: calc(10.5px * var(--fs, 1)); font-weight: 650; opacity: 1; right: 24px; }
 .sc-now { position: absolute; top: 0; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 1px 4px rgb(0 0 0 / .25); margin-top: -4.5px; pointer-events: none; will-change: translate; transition: translate .42s var(--sp), scale .15s; }
 .scrub.held .sc-now { transition: translate .07s linear, scale .15s; scale: 1.3; }
-.sc-bub { position: absolute; top: 0; right: 30px; padding: 5px 10px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%); transition: opacity .12s, translate .12s var(--ease); }
+.sc-bub { position: absolute; top: 0; right: 28px; padding: 5px 9px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%); transition: opacity .12s, translate .12s var(--ease); }
 .scrub.held .sc-bub { transition: opacity .12s, translate .07s linear; }
 .scrub.drag .sc-bub { opacity: 1; }
 .scrub.drag .sc-m:not(.yr) { opacity: 0 !important; } /* the bubble names the month while pointing */
 @media (max-width: 899px) { .sc-m { display: none; } .scrub.drag .sc-m.yr { display: block; } }
 @media (prefers-reduced-motion: reduce) { .sc-now, .sc-bub, .sc-t, .sc-track, .sc-m { transition: none !important; } }
 /* 149: the docked preview and the gallery stop left of the line and its labels (they used to cover "2026") */
+/* 158a: the column also holds the drag bubble ("Ağu 2026", right of the line): 2 + 28 + ~70 px bubble + 8 px air = --tl-col */
+body.scrub-on { --tl-col: 108px; }
 @media (hover: hover) and (min-width: 1100px) { .peek.docked { right: 34px; } body.peek-dock .gallery { padding-right: calc(34px + 360px + 16px); }
-  body.scrub-on .peek.docked { right: 64px; } body.scrub-on.peek-dock .gallery { padding-right: calc(64px + 360px + 16px); } }
+  body.scrub-on .peek.docked { right: var(--tl-col); } body.scrub-on.peek-dock .gallery { padding-right: calc(var(--tl-col) + 360px + 16px); } }
+/* 158a: the bubble is never behind another surface while you point at the line; with the "… ve öncesi" strip the line starts below it */
+.scrub.drag, .scrub.held { z-index: 31; }
+body:has(.l-from) .scrub { top: calc(128px + env(safe-area-inset-top)); }
 @media (hover: hover) and (min-width: 900px) { body.scrub-on .gallery { padding-right: max(16px, calc(64px - (100vw - 1240px) / 2)); } }
 .saved-row { padding: 0; gap: 0; }
 .saved-row .sv-go { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; height: 100%; padding: 0 0 0 9px; text-align: left; color: inherit; font: inherit; }
