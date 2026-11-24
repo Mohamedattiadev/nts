@@ -6554,7 +6554,7 @@ const Snapshot = {
       url: i.url, file: i.fileName, sha: i.sha, summary: i.summary, tags: i.tags?.length ? i.tags : undefined, project: i.project, lists: i.lists?.length ? i.lists : undefined,
       todo: i.todo ? { text: i.todo.text, due: i.todo.due, done: !!i.todo.done } : undefined, starred: i.starred || undefined,
       highlights: i.highlights?.length ? i.highlights.map(h => h.text) : undefined }));
-    try { await AI.call('/snapshot', { items, morning: Morning.at() }, 20000); } catch (e) { console.warn('snapshot', e); }
+    try { await AI.call('/snapshot', { items, morning: Morning.at(), app: location.origin + location.pathname }, 20000); } /* app: where the PC quick box (156) opens a record */ catch (e) { console.warn('snapshot', e); }
   },
 };
 
@@ -8000,7 +8000,9 @@ const Boot = {
     if (d === 'vault') setTimeout(() => Vault.open(), 300);
     if (d === 'find') setTimeout(() => { setMode('find'); $('#input').focus(); }, 300); // 141: "Ara" home-screen shortcut
     if (d === 'voice') setTimeout(() => { setMode('note'); if (Voice.can()) Voice.start(); else $('#input').focus(); }, 400); // 107b: Android widget "Sesli not" → recording starts, tap the mic to finish
-    if (v || d) history.replaceState(null, '', location.pathname);
+    const op = q.get('open'); // 156: the PC quick box (bridge/quick) opens a search result here
+    if (op) { let n = 0; const t = setInterval(() => { const ok = byId(op); if (ok || ++n > 20) { clearInterval(t); ok ? openItem(op) : toast('Kayıt bulunamadı'); } }, 250); } // items may still be loading
+    if (v || d || op) history.replaceState(null, '', location.pathname);
   }
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });

@@ -653,7 +653,7 @@ http.createServer(async (req, res) => {
       console.log('new repo ' + name); return send(res, 200, { ok: true, name }, origin);
     }
     if (req.url === '/snapshot' && req.method === 'POST') { // a plain copy for the MCP server (bridge/mcp.mjs); only this computer reads it
-      writeFileSync(join(CONF_DIR, 'snapshot.json'), JSON.stringify({ at: Date.now(), morning: typeof body.morning === 'string' ? body.morning : undefined, items: (body.items || []).slice(0, 20000) }), { mode: 0o600 });
+      writeFileSync(join(CONF_DIR, 'snapshot.json'), JSON.stringify({ at: Date.now(), morning: typeof body.morning === 'string' ? body.morning : undefined, app: /^https?:\/\/[^\s"']+$/.test(body.app || '') ? body.app : undefined, items: (body.items || []).slice(0, 20000) }), { mode: 0o600 });
       return send(res, 200, { ok: true, n: body.items?.length || 0 }, origin);
     }
     if (req.url === '/article') {
