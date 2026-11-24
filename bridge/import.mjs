@@ -106,7 +106,9 @@ function nextRepo() {
 }
 let dir = repo ? openRepo(repo) : nextRepo();
 let pending = 0, pendingBytes = 0;
-const push = msg => { if (!pending) return; sh('git', ['-C', dir, 'add', '-A']); sh('git', ['-C', dir, 'commit', '-q', '-m', msg], { ok: true }); sh('git', ['-C', dir, 'push', '-q']); pending = 0; pendingBytes = 0; writeFileSync(STATE, JSON.stringify(state)); };
+// GitHub drops one big push with HTTP 408, so batches stay ~100 MB and a failed push is tried again (it resumes from what arrived)
+const pushRetry = () => { for (let t = 1; ; t++) { try { return sh('git', ['-C', dir, '-c', 'http.postBuffer=524288000', 'push', '-q']); } catch (e) { if (t >= 4) throw e; console.log(`\n  push yeniden deneniyor (${t})…`); spawnSync('sleep', [String(10 * t)]); } } };
+const push = msg => { if (!pending) return; sh('git', ['-C', dir, 'add', '-A']); sh('git', ['-C', dir, 'commit', '-q', '-m', msg], { ok: true }); pushRetry(); pending = 0; pendingBytes = 0; writeFileSync(STATE, JSON.stringify(state)); };
 
 // ---------- files ----------
 const probe = p => { try { return JSON.parse(sh('ffprobe', ['-v', 'quiet', '-print_format', 'json', '-show_format', p])).format; } catch { return {}; } };
@@ -147,7 +149,7 @@ for (const f of todo) {
     state.files[f.hash] = { repo: `${login}/${repo.name}`, path: rel, thumb: trel, size: storeAs ? statSync(storeAs).size : 0 };
     repoBytes += size; pending++; pendingBytes += size;
     process.stdout.write(`\r  ${k}/${todo.length} ${f.name.slice(0, 40).padEnd(40)} ${MB(repoBytes)} / 900 MB  `);
-    if (pending >= 150 || pendingBytes > 300e6) push(`nts import ${chat}`);
+    if (pending >= 150 || pendingBytes > 100e6) push(`nts import ${chat}`);
   } catch (e) { console.log(`\n  atlandı: ${f.name} (${e.message})`); }
 }
 push(`nts import ${chat}`); console.log('');
