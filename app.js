@@ -1181,7 +1181,7 @@ function tagChip(t) {
 function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
   return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
-    ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>` : ''}
+    ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>${i.dead ? `<span class="m-dead" title="Bu link artık açılmıyor">açılmıyor</span>` : ''}` : ''}
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
     ${i.prio === 'high' ? `<span class="m-prio">${ic('flag', 'sm')}Yüksek</span>` : ''}
@@ -1530,13 +1530,13 @@ function renderChrome() {
   $('#railTab').innerHTML = `<button data-fold data-tip="${act.length ? 'Süzgeç açık: ' + esc(act.map(a => a.l).join(', ')) + ' · ' : ''}Kenar çubuğunu aç ( [ )" aria-label="Kenar çubuğunu aç">${ic('chev', 'sm')}${act.length ? '<span class="rt-dot"></span>' : ''}</button>`; // 88b: only >, where < was; the palette stays
   $('#filterBtn').classList.toggle('on', S.view !== 'todo' && (act.length > 0 || f.type !== 'all' || f.star));
   const nTrash = C.trash, nRead = C.read;
-  $('#popLists').innerHTML = `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button>` + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
+  $('#popLists').innerHTML = `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-tidy>${ic('spark')}<span class="lbl">Toparla</span><span class="n">${Tidy.n || ''}</span></button>` + `<button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button>` + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   $('#popTypes').innerHTML = types.map(([t, icn, l, n]) => `<button class="side-row${typeOn(t) ? ' on' : ''}" data-type="${t}">${ic(icn)}<span class="lbl">${l}</span><span class="n">${n || ''}</span></button>`).join('')
     + `<button class="side-row${f.star ? ' on' : ''}" data-star>${ic('star')}<span class="lbl">Yıldızlı</span><span class="n">${stars || ''}</span></button>`
     + `<button class="side-row${S.view === 'todo' ? ' on' : ''}" data-todo>${ic('todo')}<span class="lbl">Yapılacaklar</span><span class="n">${todos || ''}</span></button>`
     + lists.map(([k, icn, l, n]) => `<button class="side-row${listOn(k) ? ' on' : ''}" data-list="${k}">${ic(icn)}<span class="lbl">${esc(l)}</span><span class="n">${n || ''}</span></button>`).join('')
-    + `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
+    + `<button class="side-row" data-clean>${ic('inbox')}<span class="lbl">Gelen kutusunu temizle</span><span class="n">${C.clean || ''}</span></button><button class="side-row" data-tidy>${ic('spark')}<span class="lbl">Toparla</span><span class="n">${Tidy.n || ''}</span></button><button class="side-row" data-readq>${ic('book')}<span class="lbl">Okuma listesi</span><span class="n">${nRead || ''}</span></button><button class="side-row" data-trash>${ic('trash')}<span class="lbl">Çöp kutusu</span><span class="n">${nTrash || ''}</span></button><button class="side-row" data-vault>${ic('lock')}<span class="lbl">Şifrelerim</span><span class="n"></span></button>`;
   const sv = Saved.rows(); $('#popSaved').innerHTML = sv; $('#savedLabel').hidden = !sv;
   const sr = srcRows(live, f.src); $('#popSrc').innerHTML = sr; $('#srcLabel').hidden = !sr;
   const projs = C.projs;
@@ -2876,7 +2876,7 @@ const Menu155 = {
   },
 };
 function openItem(id) {
-  const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
+  const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id); Tidy.touch(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
   if (!dlg.open || dlg.dataset.id !== id) S.tagOpen = false; // 155: the "+" panel starts closed on every newly opened item
   dlg.dataset.id = id;
@@ -2910,6 +2910,7 @@ function openItem(id) {
     <div class="d-top"><textarea class="d-title" rows="1" aria-label="Başlık" dir="auto">${esc(titleOf(i))}</textarea>
       <div class="d-meta"><span title="${esc(full)}">${shortDay(dayKey(i.ts))}</span>${src ? `<span class="d-dot" aria-hidden="true">·</span><span>${src}</span>` : ''}</div>
       ${host ? `<a class="d-dom" href="${esc(i.url)}" target="_blank" rel="noopener" title="${esc(i.url)}">${ic('ext', 'sm')}${esc(host)}<span>${esc(i.url.replace(/^https?:\/\/(www\.)?[^/]+/, ''))}</span></a>` : ''}
+      ${host && i.dead ? `<div class="d-dead">${ic('link', 'sm')}<span>Bu link artık açılmıyor${i.meta?.title ? '; başlık ve özet sende duruyor' : ''}.</span></div>` : ''}
       ${autoTitle(i) ? `<div class="d-fn" title="Başlık resimdeki yazıdan alındı; değiştirebilirsin">${ic('file', 'sm')}<span>${esc(i.fileName)}</span></div>` : ''}</div>
     <div id="explainBox">${explainHtml(i)}</div>
     ${!media && !i.summary && !i.explain?.text && i.meta?.description ? `<p class="d-desc" dir="auto">${esc(i.meta.description)}</p>` : ''}
@@ -4326,6 +4327,114 @@ const Clean = {
     if (document.querySelector('dialog[open]')) return;
     toast(`Gelen kutunda ${n} kayıt var`, 8000, 'inbox', { label: 'Temizle', fn: () => this.open() });
   },
+};
+// 107f: "Toparla" — Nts tidies itself, but always asks first: the same link/file/photo or the same note saved twice → "Birleştireyim mi?",
+// links that no longer open (the bridge checks a few a day, each link once a month; only 404/410 or a vanished site counts) → marked
+// "açılmıyor", things nobody opened for 4 months → "Arşivleyeyim mi?". Every action has "Geri al"; "Kalsın" hides that suggestion (this device).
+const Tidy = {
+  OLD: 120 * 864e5, n: 0,
+  skips() { if (!this._sk) { try { this._sk = new Set(JSON.parse(localStorage.getItem('hn-tidy-skip') || '[]')); } catch { this._sk = new Set(); } } return this._sk; },
+  skip(k) { const s = this.skips(); s.add(k); try { localStorage.setItem('hn-tidy-skip', JSON.stringify([...s].slice(-3000))); } catch { } },
+  last: i => Math.max(i.openedAt || 0, i.seenAt || 0, i.sorted || 0, i.ts || 0),
+  oldOf(i) { return !i.parent && !i.archive && !i.starred && !i.todo && !i.sticky && !i.pending && !i.project && !(i.links || []).length && now() - this.last(i) > this.OLD; },
+  scan() {
+    const sk = this.skips(), live = alive();
+    const dups = [...NtsDedup.groups(S.items, PH.m), ...NtsDedup.noteGroups(S.items)].filter(g => !sk.has('d:' + g.ids.join(',')));
+    const dead = live.filter(i => i.type === 'link' && i.dead && !i.parent && !sk.has('x:' + i.id)).sort((a, b) => b.ts - a.ts);
+    const old = live.filter(i => this.oldOf(i) && !sk.has('o:' + i.id)).sort((a, b) => this.last(a) - this.last(b));
+    this.n = dups.length + dead.length + (old.length >= 5 ? 1 : 0); // a pile of old things counts as one suggestion
+    return { dups, dead, old };
+  },
+  touch(id) { // when an item was last opened (synced, at most once a week per item)
+    const i = byId(id); if (!i || (i.openedAt && now() - i.openedAt < 7 * 864e5)) return;
+    upsert([{ ...i, openedAt: now() }], { quiet: true });
+  },
+  async check() { // a few links a run; each link once a month; this device keeps when (no sync noise)
+    if (!S.bridgeOk || this._chk || document.hidden) return; this._chk = true;
+    try {
+      let seen = {}; try { seen = JSON.parse(localStorage.getItem('hn-linkcheck') || '{}'); } catch { }
+      const due = alive().filter(i => i.type === 'link' && i.url && /^https?:/.test(i.url) && !i.parent && now() - (seen[i.id] || 0) > 30 * 864e5)
+        .sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0) || a.ts - b.ts).slice(0, 25);
+      if (!due.length) return;
+      const r = await AI.call('/check', { urls: due.map(i => i.url) }, 60000);
+      const res = due.map(i => r?.[i.url]).filter(Boolean);
+      if (res.length && res.every(x => x.status === 0)) return; // no network → no verdict
+      const upd = [];
+      for (const i of due) { const x = r?.[i.url]; if (!x) continue; seen[i.id] = now(); const cur = byId(i.id); if (!cur) continue;
+        if (x.dead && !cur.dead) upd.push({ ...cur, dead: now() }); else if (!x.dead && cur.dead && x.status) upd.push({ ...cur, dead: 0 }); }
+      const ks = Object.keys(seen); if (ks.length > 20000) for (const k of ks.sort((a, b) => seen[a] - seen[b]).slice(0, 5000)) delete seen[k];
+      try { localStorage.setItem('hn-linkcheck', JSON.stringify(seen)); } catch { }
+      if (upd.length) await upsert(upd);
+    } catch (e) { console.warn('linkcheck', e.message); } finally { this._chk = false; }
+  },
+  boot() {
+    this.check(); setInterval(() => this.check(), 30 * 60e3);
+    setTimeout(() => { // once a week, only when there is something real
+      this.scan(); const d = new Date(), wk = `${d.getFullYear()}-${Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 6048e5)}`;
+      renderChrome();
+      try { if (this.n < 3 || localStorage.getItem('hn-tidy-week') === wk) return; localStorage.setItem('hn-tidy-week', wk); } catch { return; }
+      if (document.querySelector('dialog[open]')) return;
+      toast(`Toparlanacak ${this.n} şey var`, 8000, 'spark', { label: 'Toparla', fn: () => this.open() });
+    }, 4000);
+  },
+  open() {
+    let d = $('#tidy');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'tidy'; d.className = 'drawer modal narrow tidy'; document.body.appendChild(d);
+      d.addEventListener('close', () => { if (!d._fromBack && !Back._skip && history.state?.nts === d.id) { Back._skip = true; history.back(); } d._fromBack = false; this.done(); });
+      d.addEventListener('click', e => {
+        if (e.target === d || e.target.closest('[data-x]')) return d.close();
+        if (e.target.closest('[data-tundo]')) return this.undo();
+        const b = e.target.closest('[data-ta]'); if (b) return this.act(b.dataset.ta, b.dataset.k);
+        const o = e.target.closest('[data-topen]'); if (o) { d.close(); openItem(o.dataset.topen); }
+      });
+    }
+    this.changed = false; this.last1 = null; this.draw(); Back.open(d);
+  },
+  row(i, sub, acts, k) {
+    return `<div class="td-row" data-k="${esc(k)}"><button class="td-go" data-topen="${i.id}">${hasVisual(i) ? thumbBox(i, 'thumb td-th') : `<span class="td-ic ${i.type}-c">${leadOf(i)}</span>`}
+      <span class="td-t"><b dir="auto">${esc(titleOf(i))}</b><small dir="auto">${sub}</small></span></button>
+      <span class="td-acts">${acts.map(([a, l, cls]) => `<button class="btn sm ${cls || 'ghost'}" data-ta="${a}" data-k="${esc(k)}">${l}</button>`).join('')}</span></div>`;
+  },
+  draw() {
+    const d = $('#tidy'); if (!d) return; const { dups, dead, old } = this.scan(), more = (n, l) => n > l ? `<p class="hint td-more">…ve ${n - l} tane daha</p>` : '';
+    const KIND = { link: 'aynı link', file: 'aynı dosya', photo: 'benzer foto', note: 'aynı not' };
+    const sec = (icn, h, n, body, extra = '') => n ? `<section class="td-sec"><h3>${ic(icn, 'sm')}<span>${h}</span><span class="td-n">${n}</span>${extra}</h3>${body}</section>` : '';
+    const body = sec('copy', 'Kopyalar', dups.length, dups.slice(0, 20).map(g => { const [k, ...c] = g.ids.map(byId); return k ? this.row(k, `${c.length + 1} kez · ${KIND[g.kind]} · ilk ${esc(fmtDay(dayKey(Math.min(k.ts, ...c.map(x => x.ts)))))}`, [['merge', 'Birleştir', 'primary'], ['skip', 'Kalsın']], 'd:' + g.ids.join(',')) : ''; }).join('') + more(dups.length, 20))
+      + sec('link', 'Açılmayan linkler', dead.length, dead.slice(0, 20).map(i => this.row(i, `${esc(domain(i.url))} · artık açılmıyor`, [['del', 'Sil', 'danger'], ['skip', 'Kalsın']], 'x:' + i.id)).join('') + more(dead.length, 20))
+      + sec('inbox', 'Aylardır açılmadı', old.length, old.slice(0, 20).map(i => this.row(i, `son ${esc(fmtDay(dayKey(this.last(i))))}`, [['arch', 'Arşivle'], ['skip', 'Kalsın']], 'o:' + i.id)).join('') + more(old.length, 20),
+        old.length > 1 ? `<button class="link-btn td-all" data-ta="archall" data-k="">Hepsini arşivle</button>` : '');
+    d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type">${ic('spark', 'sm')}Toparla</span><span class="sp"></span>
+      <button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
+      ${this.last1 ? `<div class="td-undo" role="status">${ic('check', 'sm')}<span>${esc(this.last1.msg)}</span><button class="btn ghost sm" data-tundo>${ic('repeat', 'sm')}Geri al</button></div>`
+        : '<p class="hint td-lead">Nts kendi bakar, sen karar verirsin. Her adım geri alınır; arşivlenenler aramada durur.</p>'}
+      ${body || `<div class="cl-empty td-empty">${ic('check', 'lg')}<b>Her şey toparlı</b><p>Kopya, açılmayan link ya da unutulmuş kayıt yok.</p><button class="btn primary" data-x>Kapat</button></div>`}</div>`;
+    hookThumbs(d);
+  },
+  async act(a, k) {
+    if (this.busy) return; this.busy = true;
+    try {
+      const { dups, dead, old } = this.scan(); let before = [], upd = [], msg = '';
+      if (a === 'skip') { this.skip(k); return this.draw(); }
+      if (a === 'merge') { const g = dups.find(g => 'd:' + g.ids.join(',') === k); const [kp, ...c] = (g?.ids || []).map(byId).filter(Boolean); if (!kp || !c.length) return;
+        before = [kp, ...c].map(x => ({ ...x })); const r = NtsDedup.merge(kp, c, now()); upd = [r.keep, ...r.gone]; msg = `${c.length} kopya birleşti`; }
+      if (a === 'del') { const i = dead.find(i => 'x:' + i.id === k); if (!i) return; before = [{ ...i }]; upd = [{ ...i, deleted: true, deletedAt: now() }]; msg = 'Çöp kutusuna gitti'; }
+      if (a === 'arch' || a === 'archall') { const l = a === 'arch' ? old.filter(i => 'o:' + i.id === k) : old; if (!l.length) return;
+        before = l.map(x => ({ ...x })); upd = l.map(i => ({ ...i, archive: true, onBoard: false, sorted: now() })); msg = `${l.length} kayıt arşivlendi`; }
+      if (!upd.length) return;
+      for (let x = 0; x < upd.length; x += 500) await upsert(upd.slice(x, x + 500), { quiet: upd.length === 1 });
+      this.changed = true; haptic(8);
+      const r = $(`#tidy .td-row[data-k="${CSS.escape(k)}"]`);
+      if (r && a !== 'archall' && !reduced()) { r.classList.add('gone'); await new Promise(res => setTimeout(res, 180)); }
+      this.last1 = { msg, before }; this.draw(); // the undo sits inside the window (a toast would be under the modal)
+    } finally { this.busy = false; }
+  },
+  async undo() {
+    const u = this.last1; if (!u || this.busy) return; this.busy = true; this.last1 = null;
+    try { for (let x = 0; x < u.before.length; x += 500) await upsert(u.before.slice(x, x + 500).map(i => ({ ...i, deleted: !!i.deleted, deletedAt: i.deletedAt, archive: !!i.archive, onBoard: i.onBoard, dupOf: i.dupOf })), { quiet: u.before.length === 1 }); }
+    finally { this.busy = false; } this.changed = true; this.draw();
+  },
+  done() { if (!this.changed) return; this.changed = false; S.items = [...S.items]; runSearch(); render(); renderChrome(); },
 };
 // ---------- finding things in years of data (60-64): year heatmap, time scrubber, day/month summaries, "on this day", sources, saved searches ----------
 const MS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -7598,6 +7707,7 @@ function wire() {
     if ('readq' in b.dataset) { Pop.close(); Read.queue(); return; }
     if ('trash' in b.dataset) { Pop.close(); Trash.open(); return; }
     if ('clean' in b.dataset) { Pop.close(); Clean.open(); return; }
+    if ('tidy' in b.dataset) { Pop.close(); Tidy.open(); return; }
     if ('tags' in b.dataset) { Pop.toggle(b); return; }
     if ('fold' in b.dataset) { Rail.fold(); return; }
     if ('paltab' in b.dataset) { Rail.pal(); return; }
@@ -7751,6 +7861,6 @@ const Boot = {
   AI.health(); setInterval(() => { if (!document.hidden) AI.health(); }, 20000);
   setTimeout(() => LinkMeta.run(), 4000); setTimeout(() => Sem.start(), 3000); /* 104f */ setInterval(() => { if (!document.hidden) LinkMeta.run(); }, 5 * 60e3);
   Sync.paint(); Sync.count(); Sync.run(); Live.start(); let tick = 0; setInterval(() => { if (!document.hidden && (Cloud.on() || ++tick % 4 === 0)) Sync.schedule(); }, 30000);
-  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Clean.nudge(), 15000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
+  AiPick.maybe(() => Tour.maybe()); setTimeout(weeklyUnseen, 6000); setTimeout(() => Clean.nudge(), 15000); setTimeout(() => Tidy.boot(), 25000); setTimeout(() => Trash.sweep(), 8000); setTimeout(() => Hues.backfill(), 12000); setTimeout(() => Inside.run(), 9000);
   if (S.items.some(i => fileKind(i) === 'pdf')) (window.requestIdleCallback || setTimeout)(() => Prev.pdfLib());
 })();

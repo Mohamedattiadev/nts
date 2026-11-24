@@ -108,4 +108,13 @@ eq('index photo far', ix.photo('ffffffffffffffff'), null);
 ix.add({ id: 'new', type: 'link', url: 'https://example.com/yeni' });
 eq('index add', ix.url('http://www.example.com/yeni/')?.id, 'new');
 
+// 107f: same notes
+const ns = [{ id: 'n1', type: 'note', text: 'Annemi ara, ekmek al!', ts: 2 }, { id: 'n2', type: 'note', text: 'annemi  ara ekmek al', ts: 1 }, { id: 'n3', type: 'note', text: 'kısa not', ts: 1 },
+  { id: 'n4', type: 'note', text: 'İSTANBUL yolculuğu planı', ts: 1 }, { id: 'n5', type: 'note', text: 'istanbul yolculugu plani', ts: 3 }, { id: 'n6', type: 'note', text: 'istanbul yolculuğu planı.', ts: 4, deleted: true },
+  { id: 'n7', type: 'note', text: 'اشتري الخبز من المخبزة', ts: 1 }, { id: 'n8', type: 'note', text: 'اشتري الخُبز من المخبزه', ts: 2 }, { id: 'n9', type: 'note', text: 'annemi ara ekmek al', ts: 1, conv: true }];
+const ng = D.noteGroups(ns);
+eq('notes: punctuation/case', ng.find(g => g.ids.includes('n1'))?.ids, ['n2', 'n1']);
+eq('notes: İ/ı ğ', ng.find(g => g.ids.includes('n4'))?.ids, ['n4', 'n5']);
+eq('notes: Arabic marks', ng.find(g => g.ids.includes('n7'))?.ids, ['n7', 'n8']);
+eq('notes: short/chat/deleted out', ng.flatMap(g => g.ids).filter(x => ['n3', 'n6', 'n9'].includes(x)), []);
 console.log(`dedup: ${ok} ok, ${bad} bad`); if (bad) process.exit(1);

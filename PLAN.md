@@ -622,6 +622,15 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             when.test.mjs (37), 4 yapılandırmada ekran görüntüsü, phone-audit toast 0 (kalan "small" gizli #boardBtn, eskiden). Sınır: uygulama
             tamamen kapalıyken telefonda zamanında bildirim yok (tarayıcıda zamanlanmış bildirim API'si yok); PC'de köprü bildiriyor.
         (f) kendiliğinden toparlama: aynı link/benzer not → "birleştireyim mi?" (geri alınır), kırık link işareti, aylardır açılmayanları arşive öner;
+            [x] (2026-11-24, A hattı, sw v122) `Tidy` (app.js, Clean'in altında), #tidy penceresi, ⋯ menüsünde "Toparla · N" (Temizle'nin altında), haftada
+            bir toast (≥3 öneri, hn-tidy-week). Üç grup: Kopyalar (dedup.js groups + YENİ noteGroups: aynı not; büyük/küçük harf, boşluk, noktalama,
+            İ/ı, ğ/ş/ç, Arapça harekeler sayılmaz, ≥12 harf, sohbet değil) → Birleştir (NtsDedup.merge, kopya çöpe) · Açılmayan linkler (köprüde YENİ
+            /check: HEAD→GET, yalnız 404/410 ya da alan adı yok = ölü; zaman aşımı/403/5xx sayılmaz; hepsi ağ hatasıysa sonuç yok sayılır; 30 dk'da
+            bir 25 link, her link ayda bir, zaman bu cihazda hn-linkcheck; `i.dead` senkron) → Sil · Aylardır açılmadı (120 gün; `i.openedAt` YENİ,
+            openItem haftada en çok bir kez yazar; yıldızlı/görev/proje/bağlı/pano notu değil) → Arşivle / Hepsini arşivle. "Kalsın" öneriyi bu cihazda
+            gizler (hn-tidy-skip). Geri al pencerenin içinde (toast modalın altında kalıyordu). Kartta "açılmıyor", kayıt penceresinde kırmızı satır.
+            Test: dedup.test 70/70 (Arapça + Türkçe), 4 yapılandırmada birleştir/geri al/hepsini arşivle/işaret, konsol 0, phone-audit 'toparla' 0.
+            Köprü yeniden başlatılınca /check çalışır (sahibin köprüsü eski sürümse link kontrolü sessizce atlanır).
         (g) ~~şablonlar~~ KALDIRILDI (sahip): toplantı notu, alışveriş listesi, seyahat planı, kitap notu ("/" menüsünde ve kutuda);
         (h) ~~günlük modu~~ — KALDIRILDI (sahip: "gerek yok, kullanıcı orada kalmıyor, notunu atıp sonra bakıyor");
         (i) ~~birlikte kullanma~~ KALDIRILDI (sahip, "hızlı at, sonra bul" fikrine uymuyor): not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;

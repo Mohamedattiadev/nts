@@ -59,6 +59,19 @@
     }
     return out;
   }
+  // 107f: the same note written twice (case, spaces, punctuation, Arabic marks and Turkish İ/ı don't count); ≥ 12 letters, not a chat
+  const noteKey = t => (t || '').replace(/[İI]/g, 'i').replace(/ı/g, 'i').normalize('NFKD').toLowerCase().replace(/[\p{M}\u0640]/gu, '')
+    .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[^\p{L}\p{N}]+/gu, '');
+  function noteGroups(items) {
+    const by = new Map(), out = [];
+    for (const i of items) {
+      if (!i || i.deleted || i.type !== 'note' || i.parent || i.conv || i.sticky || HID.has(i.type)) continue;
+      const k = noteKey(i.text); if (k.length < 12) continue;
+      let g = by.get(k); if (!g) by.set(k, g = []); g.push(i);
+    }
+    for (const [k, g] of by) if (g.length > 1) out.push({ key: 'n:' + k.slice(0, 40), kind: 'note', ids: order(g).map(i => i.id) });
+    return out;
+  }
   // which one stays: the one you saved yourself (not an archive), then the one on a board, then the one with more (tags, note, size), then the oldest
   const score = i => (i.archive ? 0 : 8) + (i.onBoard || i.pos ? 4 : 0) + (i.starred ? 2 : 0) + ((i.tags || []).length ? 1 : 0);
   const order = g => [...g].sort((a, b) => score(b) - score(a) || (b.size || 0) - (a.size || 0) || a.ts - b.ts);
@@ -114,6 +127,6 @@
       add(i, d) { if (i.type === 'link' && i.url) { const k = urlKey(i.url); if (!u.has(k)) u.set(k, i); } if (i.sha && !h.has(i.sha)) h.set(i.sha, i); if (d) p.push([d, i]); } };
   }
 
-  const api = { urlKey, keyOf, groups, merge, addSave, saveOf, savesLine, index, hamming, isImg, PH_MAX, URL_RE };
+  const api = { urlKey, keyOf, groups, noteGroups, noteKey, merge, addSave, saveOf, savesLine, index, hamming, isImg, PH_MAX, URL_RE };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.NtsDedup = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -437,6 +437,20 @@ async function meta(url) {
   } catch { return null; }
 }
 
+// 107f: does a saved link still open? dead = the site says it's gone (404/410) or the name no longer exists. A timeout, 403, 5xx = not sure → not dead
+async function linkAlive(url) {
+  try {
+    const u = new URL(url); if (!/^https?:$/.test(u.protocol)) return { dead: false };
+    const go = m => fetch(u, { method: m, redirect: 'follow', signal: AbortSignal.timeout(8000), headers: { 'user-agent': 'Mozilla/5.0 (compatible; NtsBot/1.0)' } });
+    let r = await go('HEAD'); if (r.status === 405 || r.status === 501 || r.status === 404) { r.body?.cancel?.().catch(() => {}); r = await go('GET'); }
+    r.body?.cancel?.().catch(() => {});
+    return { dead: r.status === 404 || r.status === 410, status: r.status };
+  } catch (e) {
+    const c = e.cause?.code || e.code || '';
+    return { dead: c === 'ENOTFOUND' || c === 'EAI_NONAME', status: 0, err: c || e.name };
+  }
+}
+
 // ---- readable copy of a page (no libraries: pick the main block, keep headings / paragraphs / lists / quotes) ----
 async function article(url) {
   const u = new URL(url); if (!/^https?:$/.test(u.protocol)) throw new Error('bad url');
@@ -474,7 +488,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe', '/brief', '/usage', '/usage-conf']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/check', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe', '/brief', '/usage', '/usage-conf']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -649,6 +663,10 @@ http.createServer(async (req, res) => {
     if (req.url === '/meta') {
       const out = {}; await Promise.all((body.urls || []).slice(0, 30).map(async u => { out[u] = await meta(u); }));
       return send(res, 200, out, origin);
+    }
+    if (req.url === '/check') {
+      const out = {}; await Promise.all((body.urls || []).slice(0, 30).map(async u => { out[u] = await linkAlive(u); }));
+      console.log(`check ${Object.keys(out).length} ${Date.now() - t}ms`); return send(res, 200, out, origin);
     }
     if (req.url === '/organize') {
       const r = await organize((body.items || []).slice(0, 60), body.tags || [], (body.projects || []).slice(0, 30));
