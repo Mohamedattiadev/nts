@@ -9,7 +9,7 @@ const devs = [['d', { width: 1366, height: 768 }], ['m', { width: 390, height: 8
 for (const [dev, vp] of devs) {
   const c = await b.newContext({ viewport: vp, isMobile: dev === 'm', hasTouch: dev === 'm', deviceScaleFactor: dev === 'm' ? 2 : 1 });
   await c.addInitScript(() => {
-    localStorage.setItem('hn-tour', '1'); localStorage.setItem('hn-ai', '1'); localStorage.setItem('hn-view', 'list'); localStorage.setItem('hn-mode', 'note');
+    localStorage.setItem('hn-tour', '1'); localStorage.setItem('hn-ai', '1'); localStorage.setItem('hn-view', 'list'); localStorage.setItem('hn-mode', 'note'); localStorage.setItem('hn-lcal', '0'); // 149b: takvim kapalı → zaman çizgisi görünür
     window.__lt = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => __lt.push([e.startTime, e.duration]))).observe({ type: 'longtask', buffered: true }); } catch { }
   });
   const p = await c.newPage(); const errs = [];
@@ -69,6 +69,15 @@ for (const [dev, vp] of devs) {
   if (out[dev].view) out[dev].view.ms = vt;
   // liste kaydırma
   await sc('listScroll', async () => { for (let k = 0; k < 20; k++) { await p.mouse.move(vp.width / 2, vp.height / 2); await p.mouse.wheel(0, 400); await p.waitForTimeout(50); } });
+  await p.evaluate(() => scrollTo(0, 0));
+  // 149b: zaman çizgisi sürükleme (yukarıdan aşağı ve geri; scrubDrag) + bırakınca liste o aya geçer (scrubDrop); telefonda önce kaydır ki çizgi görünsün
+  if (dev === 'm') { await p.mouse.move(vp.width / 2, vp.height / 2); await p.mouse.wheel(0, 200); await p.waitForTimeout(1200); await p.mouse.wheel(0, 50); await p.waitForTimeout(150); }
+  const sr = await p.evaluate(() => { const e = document.querySelector('.scrub'); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top, h: b.height }; });
+  if (sr) {
+    await sc('scrubDrag', async () => { await p.mouse.move(sr.x, sr.y + 4); await p.mouse.down();
+      for (let k = 0; k <= 40; k++) { await p.mouse.move(sr.x, sr.y + 4 + (k <= 25 ? k / 25 : (50 - k) / 25) * (sr.h - 8)); await p.waitForTimeout(16); } }, 100);
+    await sc('scrubDrop', async () => { await p.mouse.up(); }, 600);
+  } else out[dev].scrubDrag = 'HATA zaman çizgisi yok';
   await p.evaluate(() => scrollTo(0, 0));
   // galeri kaydırma (resimler çözülürken)
   await view('gallery'); await p.waitForTimeout(800);

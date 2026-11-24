@@ -245,7 +245,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 158a HATA galeri: önizleme kutusu hâlâ zaman çizgisinin üstünde (2026 balonu arkada kalıyor) + "Ekim 2024 ve öncesi" şeridinin arkasında yarım düğmeler (design/feedback-39.png); PLAN 158 (bd39375)
 - [x] 158b Takvim + Liste BİRLEŞSİN (sahip): ayrı Takvim sekmesi kalkar, Liste'nin üstünde katlanır ay takvimi; güne/aya dokununca liste YERİNDE o tarihe kayar (sayfa değişmez) + takvim UI'ı güzelleşir; PLAN 158 (ef1aa5d, sw v132)
 - [x] 158c emoji simge YOK: her yerde gerçek SVG (ör. sol çubukta "Bağlantılar" satırlarındaki 🔗, design/feedback-41.png); PLAN 158 (35b17a8)
-- [~B] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
+- [x] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b
 - [x] 107l parmak izi/yüzle kilit (WebAuthn) + kayıt gizleme; PLAN 107l (3419c03)
 - [x] 107j dışa aktarma: pano PDF + Obsidian/Markdown eşitleme (ec4072d)
 - [?] 107c e-posta ile gönderme + Telegram botu — sahibe servis/anahtar gerekecek, en sona sor — SORULDU (2026-11-25, A): Telegram bot token (@BotFather) + Supabase Edge Function mı köprü mü; e-posta için gelen posta servisi (Cloudflare Email Routing / Postmark / Mailgun) ve adres; sahibin cevabı bekleniyor

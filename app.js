@@ -4895,21 +4895,31 @@ const Scrub = {
   el: null, months: [], H: 0, lit: [],
   init() {
     const el = this.el = document.createElement('div'); el.className = 'scrub'; el.hidden = true; el.setAttribute('role', 'slider'); el.setAttribute('aria-label', 'Zamanda git'); el.tabIndex = 0; document.body.appendChild(el);
-    let drag = false, last = -1;
-    const fy = e => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(r.height, e.clientY - r.top)); };
+    // 149b: the strip's box is read once per gesture (no layout read per move) and moves are drawn once a frame (rAF, translate only)
+    let drag = false, last = -1, R = null, qe = null, raf = 0;
+    const box = () => (R = el.getBoundingClientRect());
+    const fy = e => { const r = R || box(); return Math.max(0, Math.min(r.height, e.clientY - r.top)); };
+    const queue = (e, follow) => { qe = [e.clientY, follow]; if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (qe) show({ clientY: qe[0] }, qe[1]); qe = null; }); };
     const at = y => Math.min(this.months.length - 1, Math.max(0, Math.floor(y / (this.H || 1) * this.months.length)));
     const show = (e, follow) => { const y = fy(e), k = at(y); if (!this.months[k]) return k;
-      const [yr, mo] = this.months[k].split('-').map(Number), b = el.querySelector('.sc-bub'); b.textContent = `${MS_TR[mo - 1]} ${yr}`;
-      b.style.translate = `0 ${(follow ? y : this.y(k)).toFixed(1)}px`; el.classList.add('drag'); this.focus(k);
-      if (follow) { el.querySelector('.sc-now').style.translate = `0 ${y.toFixed(1)}px`; if (k !== last && last >= 0) haptic(4); }
+      const b = this._bub || (this._bub = el.querySelector('.sc-bub'));
+      if (k !== this._shown) { const [yr, mo] = this.months[k].split('-').map(Number); b.firstChild ? (b.firstChild.data = `${MS_TR[mo - 1]} ${yr}`) : (b.textContent = `${MS_TR[mo - 1]} ${yr}`); this.focus(k); this._shown = k; } // text/labels only when the month changes (a text node edit, no child list change)
+      b.style.translate = `0 ${(follow ? y : this.y(k)).toFixed(1)}px`; if (!el.classList.contains('drag')) el.classList.add('drag');
+      if (follow) { (this._dot || (this._dot = el.querySelector('.sc-now'))).style.translate = `0 ${y.toFixed(1)}px`; if (k !== last && last >= 0) haptic(4); }
       last = k; return k; };
-    const go = k => { const m = this.months[k]; if (!m) return; const [y, mo] = m.split('-').map(Number); showFrom(k === 0 ? null : new Date(y, mo, 1).getTime() - 1); };
-    el.addEventListener('pointerdown', e => { drag = true; last = -1; el.setPointerCapture(e.pointerId); el.classList.add('held'); show(e, true); e.preventDefault(); });
-    el.addEventListener('pointermove', e => { if (drag) show(e, true); else if (e.pointerType === 'mouse') show(e, false); });
-    const rest = () => { el.classList.remove('drag', 'held'); this.focus(this.cur()); this.place(); };
+    const go = k => { const m = this.months[k]; if (!m) return; const [y, mo] = m.split('-').map(Number), was = this.cur(); showFrom(k === 0 ? null : new Date(y, mo, 1).getTime() - 1);
+      // the list arrives with a short spring from where the dot moved (up/down), instead of a hard cut
+      const L = S.view === 'gallery' ? $('#gallery') : $('#list'); if (!L || reduced()) return; const d = k > was ? 18 : k < was ? -18 : 0;
+      if (d) L.animate([{ translate: `0 ${d}px`, opacity: .55 }, { translate: '0 0', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.34,1.3,.5,1)' }); };
+    const grab = on => { el.classList.toggle('held', on); document.body.classList.toggle('scrubbing', on); };
+    el.addEventListener('pointerenter', box);
+    el.addEventListener('pointerdown', e => { drag = true; last = -1; this._shown = -1; box(); el.setPointerCapture(e.pointerId); grab(true); show(e, true); e.preventDefault(); });
+    el.addEventListener('pointermove', e => { if (drag) queue(e, true); else if (e.pointerType === 'mouse') queue(e, false); });
+    const rest = () => { qe = null; this._shown = -1; grab(false); el.classList.remove('drag'); this.focus(this.cur()); this.place(); };
     el.addEventListener('pointerleave', () => { if (!drag) rest(); });
-    el.addEventListener('pointerup', e => { if (!drag) return; drag = false; const k = at(fy(e)); el.classList.remove('held'); this.place(k); el.classList.remove('drag'); go(k); });
-    el.addEventListener('pointercancel', () => { drag = false; rest(); });
+    el.addEventListener('pointerup', e => { if (!drag) return; drag = false; qe = null; const k = at(fy(e)); grab(false); this.place(k); el.classList.remove('drag'); go(k); R = null; });
+    el.addEventListener('pointercancel', () => { drag = false; R = null; rest(); });
+    el.addEventListener('lostpointercapture', () => { if (drag) { drag = false; rest(); } });
     // phones: only shows while scrolling (a thumb near the edge must still scroll the list)
     const touch = matchMedia('(hover: none), (pointer: coarse)').matches; if (touch) el.classList.add('idle');
     addEventListener('scroll', () => { if (!touch || el.hidden) return; el.classList.remove('idle'); clearTimeout(this._it); this._it = setTimeout(() => el.classList.add('idle'), 1800); }, { passive: true });
@@ -4918,7 +4928,8 @@ const Scrub = {
       const n = this.months.length, cur = this.cur(), d = { ArrowDown: 1, ArrowUp: -1, PageDown: 12, PageUp: -12, Home: -n, End: n }[e.key];
       if (d == null) return; e.preventDefault(); const k = Math.max(0, Math.min(n - 1, cur + d)); if (k !== cur) { this.place(k); go(k); }
     });
-    new ResizeObserver(() => { const h = el.clientHeight; if (h && h !== this.H) { this.H = h; this.place(); } }).observe(el);
+    new ResizeObserver(() => { R = null; const h = el.clientHeight; if (h && h !== this.H) { this.H = h; this.place(); } }).observe(el);
+    addEventListener('scroll', () => { if (!drag) R = null; }, { passive: true });
   },
   y(k) { return (k + .5) / this.months.length * this.H; },
   place(k = this.cur()) { const d = this.el?.querySelector('.sc-now'); if (d && this.H) d.style.translate = `0 ${this.y(k).toFixed(1)}px`; },
@@ -4948,7 +4959,7 @@ const Scrub = {
       let h = '<div class="sc-track"></div>';
       ms.forEach((m, k) => { const yr = k === 0 || ms[k - 1].slice(0, 4) !== m.slice(0, 4), c = cnt.get(m) || 0, lv = c ? Math.ceil(c / max * 3) : 0;
         h += `<i class="sc-t l${lv}${yr ? ' yt' : ''}" style="top:${pc(k)}"></i><span class="sc-m${yr ? ' yr' : ''}" style="top:${pc(k)}">${yr ? m.slice(0, 4) : MS_TR[+m.slice(5) - 1]}</span>`; });
-      this.el.innerHTML = h + '<span class="sc-now"></span><span class="sc-bub"></span>';
+      this.el.innerHTML = h + '<span class="sc-now"></span><span class="sc-bub"></span>'; this._bub = this._dot = null; this._shown = -1;
     }
     if (!this.el.classList.contains('drag')) { this.place(cur); this.focus(cur); }
   },

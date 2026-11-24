@@ -1031,13 +1031,21 @@ Arayüz:
         Nts'e gider (Igrek bu yüzden $mod Y seçmişti). Test: tools/test/quick.test.py (sahte köprü, 14 kontrol: arama, Tab, kaydet, dosya,
         köprü kapalı → kuyruk → gönderim, taslak); ?open masaüstü + telefon konsol hatası 0. Ekran: design/156/ (Not koyu/açık uzun, Ara koyu/açık,
         Sor açık). sw v125
-- [ ] 149b. **Zaman çizgisi: imleç + akıcılık** (sahip, 2026-11-24, design/feedback-33.png, 149'dan sonra: "bunu kullanırken cursor daha uygun olsun,
+- [x] 149b. **Zaman çizgisi: imleç + akıcılık** (sahip, 2026-11-24, design/feedback-33.png, 149'dan sonra: "bunu kullanırken cursor daha uygun olsun,
         bir de daha smooth"). İmleç: şeridin üstünde `grab`/ns-resize benzeri dikey sürükleme imleci, sürüklerken `grabbing`, nokta üzerinde
         büyür (hover ölçeği), şeridin tıklanabilir alanı ≥24 px geniş (ince çizgiyi tutturmak zorunda kalınmasın), basınca sayfada metin seçilmez
         (user-select none, pointer capture), sürüklerken imleç başka öğelere geçince değişmez. Akıcılık: nokta fareyi gecikmesiz izler (rAF,
         transform; layout okuma yok), sayfa kaydırması hedefe yaylı yaklaşır (kesik kesik atlamaz), ay etiketleri (Eyl/Tem/May) noktaya yakınken
         yumuşak belirip kaybolur (opacity, titreşim yok), bırakınca aya oturma ≤180 ms. Ölç: sürüklemede uzun görev 0, 60 fps (telefon 4x ≥45);
         tools/perf.mjs'e zaman çizgisi sürükleme senaryosu ekle. reduced-motion'da anında. Masaüstü + telefon (dokunma), açık + koyu.
+        YAPILDI (2026-11-25, B hattı): imleç şeritte `grab`, basılıyken `grabbing` (body.scrubbing + pointer capture: şeritten çıkınca da
+        değişmez, metin seçilmez), nokta üzerine gelince 1,25×, tutarken 1,45×; şerit 30 px (telefon 26). Akıcılık: şeridin kutusu hareket
+        başına değil jest başına bir kez okunur, hareketler rAF ile karede bir çizilir, nokta/balon gecikmesiz izler (geçiş yok, will-change);
+        balon yazısı ve ay etiketleri yalnız ay değişince güncellenir (metin düğümü — önceki textContent her harekette body:has() yüzünden
+        tüm sayfada stil hesabı yaptırıyordu). Bırakınca aya oturma 180 ms yaylı; liste yeni aya 220 ms yaylı kayarak gelir (yön noktayla
+        aynı, reduced-motion'da yok). tools/perf.mjs: scrubDrag + scrubDrop (takvim kapalı). Ölçüm 10k kayıt: telefon 4x sürükleme
+        18 fps / 50 uzun görev → 48–55 fps / 2–5 (makine yüklü, oynak); masaüstü 57 fps, uzun görev 0. Bırakınca listenin yeniden çizimi
+        (300 satır) masaüstü 130–210 ms, telefon 4x 0,5–1,3 s — eski render maliyeti, bu maddede değişmedi. Konsol hatası 0, 4 yapılandırma.
 - [ ] 157. **Sahibin 2026-11-24 akşam ekran görüntüleri** (4 iş, a–d ayrı commit olabilir):
         a) design/feedback-34.png: Ara/liste üstünde "Tarihe git" hap düğmesi turuncu "En yeniye dön" şeridinin sağ üst köşesine biniyor ("düzelt").
            İkisi aynı satırda yan yana ya da şerit görünürken "Tarihe git" şeridin içine girsin; hiçbir genişlikte çakışma 0 (ölç), açık + koyu, telefon.

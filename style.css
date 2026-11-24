@@ -1250,7 +1250,7 @@ dialog.readpage::backdrop { background: var(--bg); }
 button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 .hc.today { box-shadow: inset 0 0 0 1.5px var(--text-2); }
 .heat-leg { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 8px; font-size: calc(11px * var(--fs, 1)); color: var(--muted); } .heat-leg span { margin: 0 3px; }
-.scrub { position: fixed; right: 2px; top: calc(110px + env(safe-area-inset-top)); bottom: calc(120px + env(safe-area-inset-bottom)); width: 30px; z-index: 22; touch-action: none; cursor: ns-resize; user-select: none; --sp: cubic-bezier(.34, 1.36, .5, 1); }
+.scrub { position: fixed; right: 2px; top: calc(110px + env(safe-area-inset-top)); bottom: calc(120px + env(safe-area-inset-bottom)); width: 30px; z-index: 22; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; --sp: cubic-bezier(.34, 1.36, .5, 1); }
 .scrub[hidden] { display: none; }
 /* 149: a soft line that fades out at both ends, a tick per month (stronger where there are more items, long for a year) */
 .sc-track { position: absolute; right: 9px; top: -6px; bottom: -6px; width: 2px; border-radius: 2px; background: linear-gradient(transparent, var(--line-2) 18px, var(--line-2) calc(100% - 18px), transparent); opacity: .7; transition: opacity .2s, transform .2s var(--ease); }
@@ -1259,12 +1259,14 @@ button.hc { cursor: pointer; } button.hc:hover, button.hc:focus-visible { outlin
 .sc-t.l1 { opacity: .4; } .sc-t.l2 { opacity: .55; width: 5px; } .sc-t.l3 { opacity: .75; width: 6px; }
 .sc-t.yt { width: 9px; height: 1.5px; opacity: .8; }
 .scrub:hover .sc-t, .scrub.drag .sc-t { width: 7px; } .scrub:hover .sc-t.yt, .scrub.drag .sc-t.yt { width: 11px; }
-.sc-m { position: absolute; right: 22px; transform: translateY(-50%); font-size: calc(10px * var(--fs, 1)); font-weight: 500; line-height: 1; color: var(--muted); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s; }
+.sc-m { position: absolute; right: 22px; transform: translateY(-50%); font-size: calc(10px * var(--fs, 1)); font-weight: 500; line-height: 1; color: var(--muted); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .22s var(--ease); }
 .sc-m.yr { font-size: calc(10.5px * var(--fs, 1)); font-weight: 650; opacity: 1; right: 24px; }
-.sc-now { position: absolute; top: 0; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 1px 4px rgb(0 0 0 / .25); margin-top: -4.5px; pointer-events: none; will-change: translate; transition: translate .42s var(--sp), scale .15s; }
-.scrub.held .sc-now { transition: translate .07s linear, scale .15s; scale: 1.3; }
-.sc-bub { position: absolute; top: 0; right: 28px; padding: 5px 9px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%); transition: opacity .12s, translate .12s var(--ease); }
-.scrub.held .sc-bub { transition: opacity .12s, translate .07s linear; }
+.sc-now { position: absolute; top: 0; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 1px 4px rgb(0 0 0 / .25); margin-top: -4.5px; pointer-events: none; will-change: translate; transition: translate .18s var(--sp), scale .15s var(--ease); }
+.scrub:hover .sc-now { scale: 1.25; }
+.scrub.held .sc-now { transition: scale .15s var(--ease); scale: 1.45; } /* 149b: follows the pointer with no lag; release snaps in 180 ms */
+.scrub.held { cursor: grabbing; } body.scrubbing { cursor: grabbing; user-select: none; -webkit-user-select: none; } /* pointer capture keeps the grabbing hand over other things */
+.sc-bub { position: absolute; top: 0; right: 28px; padding: 5px 9px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%); will-change: translate, opacity; transition: opacity .12s, translate .12s var(--ease); }
+.scrub.held .sc-bub { transition: opacity .12s; }
 .scrub.drag .sc-bub { opacity: 1; }
 .scrub.drag .sc-m:not(.yr) { opacity: 0 !important; } /* the bubble names the month while pointing */
 @media (max-width: 899px) { .sc-m { display: none; } .scrub.drag .sc-m.yr { display: block; } }
