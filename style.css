@@ -2728,3 +2728,11 @@ dialog.clean .d-body { gap: 12px; }
   .rp-all { height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .rel-chip, .rel-pop { animation: none; } }
+/* 107j: Obsidian folder page */
+.vault-dir { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; }
+.vault-dir > span { grid-column: 1 / -1; }
+.vault-dir input { min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: calc(13px * var(--fs, 1)); }
+.vault-dir .btn { min-height: 38px; }
+.vault-off { display: flex; gap: 8px; align-items: flex-start; color: var(--text-2); }
+.vault-conf { padding: 4px 2px 2px; }
+.vault-conf ul { margin: 4px 0 8px; padding-left: 18px; font-size: calc(12.5px * var(--fs, 1)); color: var(--text-2); overflow-wrap: anywhere; }

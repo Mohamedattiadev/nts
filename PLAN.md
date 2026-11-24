@@ -649,6 +649,16 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (h) ~~günlük modu~~ — KALDIRILDI (sahip: "gerek yok, kullanıcı orada kalmıyor, notunu atıp sonra bakıyor");
         (i) ~~birlikte kullanma~~ KALDIRILDI (sahip, "hızlı at, sonra bul" fikrine uymuyor): not/pano/liste paylaş (düzenleme ya da salt okuma), aile alışveriş listesi; Supabase RLS ile paylaşım tablosu;
         (j) dışa aktarma: panoyu PDF; Obsidian/Markdown klasörüyle eşitleme (köprü üzerinden, PC'de klasör);
+            [x] (2026-11-25, C hattı) yeni `export.js` (app.js'ten exportMarkdown buraya taşındı; MdOut ortak .md üretir, ön bilgiye `nts: id` eklendi).
+            Obsidian klasörü: Ayarlar → Kayıtları taşı → "Obsidian klasörüyle eşitle" (+ komut paleti): köprü yeni `bridge/vault.mjs` ile PC'de klasöre
+            yazar (varsayılan ~/Documents/Nts, sayfadan değişir; yalnız ev klasörü içi, gizli/sistem klasörü olmaz). Tek yön (Nts → klasör), klasördeki
+            `.nts-sync.json` kim-ne-zaman listesi: yalnız değişenler gider, ad değişince eski dosya taşınır, silinen kayıt silinir, ek dosya bir kez
+            gider (attachments/). Obsidian'da elle değişen dosyanın ÜSTÜNE YAZILMAZ / silinmez → "N dosya elle değiştirilmiş" listesi + "Nts'tekini yaz".
+            "Otomatik eşitle" (cihaz başına hn-vault): 20 sn'de bir, değişiklik yoksa ağ yok. Yalnız köprüye doğrudan bağlıyken (Supabase aktarımıyla
+            değil). Pano PDF: pano menüsü (logo) → "Bu panoyu PDF olarak kaydet" (+ palet): panonun kendi kodu tüm kartları/gün bantlarını/bağ çizgilerini
+            yerleştirir, kopyalanır, kamera geri döner; açık temada, panonun boyunda TEK sayfa (@page boyutu, 18000 px üstü küçültülür), yazdır
+            penceresinde "PDF olarak kaydet". 600 karttan fazlaysa yalnız görünen alan. tools/test/vault.test.mjs 21/21; Playwright (sahte köprü →
+            gerçek vault.mjs): masaüstü + telefon eşitle/çakışma/silme/PDF, konsol 0. İki yönlü (Obsidian'daki düzenleme Nts'e) YOK → sahibe soruldu.
         (k) erişilebilirlik ayarları: yazı boyutu (4 adım), yüksek kontrast, büyük dokunma modu, hareketi azalt anahtarı;
             [x] (2026-11-24, B hattı) Ayarlar → Görünüm → "Erişilebilirlik" alt sayfası (komut paletinde de): yazı boyutu 4 adım (Normal · Büyük %112 ·
             Daha büyük %125 · En büyük %140; style.css'teki tüm px yazı boyutları `calc(Npx * var(--fs, 1))`, `.plane` içinde --fs 1: pano kartları

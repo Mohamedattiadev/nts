@@ -2931,6 +2931,8 @@ const Cmd = {
       ['sync', 'cloud', 'Şimdi eşitle', 'sync now senkron', () => { Sync.run(); toast('Eşitleniyor…', 1500, 'cloud'); }],
       ['export', 'down', 'Yedeği indir', 'export backup download json', () => exportBackup()],
       ['exportmd', 'down', 'Markdown olarak dışa aktar', 'export markdown obsidian', () => exportMarkdown()],
+      ['obsidian', 'layers', 'Obsidian klasörüyle eşitle', 'obsidian vault markdown klasör folder sync eşitle', later(() => openSettings('obsidian'))],
+      ['boardpdf', 'down', 'Panoyu PDF olarak kaydet', 'pdf board pano yazdır print export', () => BoardPdf.save()],
       ['import', 'upload', 'Yedekten geri yükle…', 'import restore backup', () => $('#backupInput').click()],
       ['wa', 'chat', 'WhatsApp sohbeti içe aktar…', 'import whatsapp zip', () => $('#waInput').click()],
       ['bm', 'book', 'Yer imlerini içe aktar…', 'import bookmarks html', () => $('#bmInput').click()],
@@ -5850,6 +5852,7 @@ const Board = {
   boardMenu(anchor) { // 116: opens from the logo (top left): boards, new board, rename the current own board
     let p = $('#boardPop'); if (!p) { p = document.createElement('div'); p.id = 'boardPop'; p.className = 'pop range-pop'; p.setAttribute('role', 'menu'); p.hidden = true; document.body.appendChild(p);
       p.addEventListener('click', e => { if (e.target.closest('[data-brename]')) { p.querySelector('.ren-board').hidden = false; p.querySelector('[data-brename]').hidden = true; const i = p.querySelector('.ren-board input'); i.focus(); i.select(); return; }
+        if (e.target.closest('[data-bpdf]')) { this.closeBoardMenu(); BoardPdf.save(); return; } // 107j
         const b = e.target.closest('[data-board]'); if (!b) return; this.go(b.dataset.board); this.closeBoardMenu(); });
       p.addEventListener('submit', async e => { e.preventDefault(); const v = e.target.querySelector('input').value.trim().toLocaleLowerCase('tr').slice(0, 40); if (!v) return;
         if (e.target.classList.contains('ren-board')) { await this.renameBoard(S.board, v); this.closeBoardMenu(); return; }
@@ -5863,6 +5866,7 @@ const Board = {
       + boardNames().map(n => `<button class="side-row${cur === n ? ' on' : ''}" data-board="${esc(n)}" role="menuitemradio" aria-checked="${cur === n}">${ic('folder', 'sm')}<span class="lbl">${esc(n)}</span><span class="n">${count(n)}</span></button>`).join('')
       + `<form class="new-board"><input placeholder="+ Yeni pano (ör. ev)" aria-label="Yeni pano adı" maxlength="40"></form>`
       + (own ? `<button class="side-row" data-brename>${ic('pen', 'sm')}<span class="lbl">“${esc(S.board)}” adını değiştir</span></button><form class="new-board ren-board" hidden><input value="${esc(S.board)}" aria-label="Panonun yeni adı" maxlength="40"></form>` : '')
+      + `<button class="side-row" data-bpdf>${ic('down', 'sm')}<span class="lbl">Bu panoyu PDF olarak kaydet</span></button>`
       + `<p class="hint" style="padding:4px 9px">${aiName()} bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
     p.hidden = false; anchor.setAttribute('aria-expanded', 'true'); const r = anchor.getBoundingClientRect();
     if (r.top < innerHeight / 2) { // 146: never over the left rail (or its ">" tab): open to its right when they would meet
@@ -7435,44 +7439,7 @@ async function exportBackup() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `hizli-not-${dayKey(now())}.zip`; a.click();
   toast('Yedek indirildi ✓');
 }
-// Markdown for Obsidian & co.: one .md per item (front matter: date, type, tags, link…), files in attachments/, one zip
-async function exportMarkdown() {
-  toast('Markdown hazırlanıyor…', 60000, 'down');
-  const zip = new (await needZip())(), used = new Set(), items = alive().filter(i => i.type !== 'draw').sort((a, b) => a.ts - b.ts);
-  const slug = t => (t || 'kayit').replace(/[\\/:*?"<>|#^[\]]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'kayit';
-  const yq = v => JSON.stringify(String(v)); // YAML-safe quoted string
-  for (const i of items) {
-    const d = new Date(i.ts), day = dayKey(i.ts), base = `${day} ${slug(titleOf(i))}`;
-    let name = base, n = 2; while (used.has(name.toLocaleLowerCase('tr'))) name = `${base} ${n++}`; used.add(name.toLocaleLowerCase('tr'));
-    const fm = ['---', `title: ${yq(titleOf(i))}`, `date: ${d.toISOString()}`, `type: ${groupOf(i)}`];
-    if (i.tags?.length) fm.push(`tags: [${i.tags.map(yq).join(', ')}]`);
-    if (i.url) fm.push(`link: ${yq(i.url)}`);
-    if (i.project) fm.push(`project: ${yq(i.project)}`);
-    if (i.lists?.length) fm.push(`lists: [${i.lists.map(k => yq(listName(k))).join(', ')}]`);
-    if (i.starred) fm.push('starred: true');
-    if (i.todo) fm.push(`todo: ${i.todo.done ? 'done' : 'open'}`, ...(i.todo.due ? [`due: ${i.todo.due}`] : []));
-    if (i.source && i.source !== 'manual') fm.push(`source: ${i.source}`);
-    fm.push('---', '');
-    const body = [`# ${titleOf(i)}`, ''];
-    if (i.summary) body.push(`> ${i.summary}`, '');
-    if (i.url) body.push(`[${i.meta?.title || domain(i.url)}](${i.url})`, '');
-    if (i.text) body.push(i.text, '');
-    if (i.type === 'file') {
-      const f = await DB.get('files', i.id), fname = `${day}-${i.id}-${slug(i.fileName).replace(/ /g, '-')}`;
-      if (f?.blob) { zip.file(`attachments/${fname}`, f.blob); body.push(fileKind(i) === 'image' ? `![[${fname}]]` : `[[${fname}]]`, ''); }
-      else body.push(`*(dosya bu cihazda yok: ${i.fileName})*`, '');
-    }
-    if (i.ocr) body.push('## Resimdeki yazı', '', i.ocr, '');
-    if (i.highlights?.length) body.push('## İşaretlediklerim', '', ...i.highlights.map(h => `> ${h.text}\n`), '');
-    if (i.todo?.subs?.length) body.push('## Alt görevler', '', ...i.todo.subs.map(x => `- [${x.done ? 'x' : ' '}] ${x.t}`), '');
-    if (i.explain?.text) body.push('## ' + aiName(), '', i.explain.text, '');
-    if (i.read?.blocks?.length) body.push('## Okunur kopya', '', ...i.read.blocks.map(b => b.t === 'h' ? `### ${b.x}` : b.t === 'li' ? `- ${b.x}` : b.t === 'q' ? `> ${b.x}` : b.x).join('\n\n').split('\n'), '');
-    zip.file(`Nts/${day.slice(0, 7)}/${name}.md`, fm.concat(body).join('\n'));
-  }
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `nts-markdown-${dayKey(now())}.zip`; a.click();
-  toast(`${items.length} kayıt Markdown olarak indirildi`, 3000, 'check');
-}
+// Markdown zip + Obsidian folder sync + board PDF: export.js (107j)
 // browser bookmarks (Chrome / Firefox / Safari "export bookmarks" = Netscape HTML): each link becomes an item, folder → topic
 async function importBookmarks(file) {
   const doc = new DOMParser().parseFromString(await file.text(), 'text/html');
@@ -7868,6 +7835,7 @@ function openSettings(page = 'main') {
   const move = `${head('Kayıtları taşı', true)}
     <div class="set-sec">
       <button class="set-row" data-do="wa">${ic('chat')}<span>WhatsApp sohbetini içe aktar<small>WhatsApp'ta sohbet → ⋮ → Dışa aktar → Medya dahil. Çıkan dosyayı seç.</small></span></button>
+      <button class="set-row" data-do="obsidian">${ic('layers')}<span>Obsidian klasörüyle eşitle<small>Bilgisayarda bir klasör: her kayıt bir .md, değişince güncellenir${ObsVault.on() ? ' · açık' : ''}</small></span>${ic('chev', 'sm')}</button>
       <button class="set-row" data-do="exportmd">${ic('note')}<span>Markdown olarak indir<small>Obsidian ve benzerleri için: her kayıt bir .md, dosyalar attachments/ içinde</small></span></button>
       <button class="set-row" data-do="export">${ic('down')}<span>Yedek indir<small>Her şeyi tek dosya olarak indir${locked ? ' (şifreli)' : ''}</small></span></button>
       <button class="set-row" data-do="import">${ic('upload')}<span>Yedekten geri yükle</span></button>
@@ -7881,9 +7849,10 @@ function openSettings(page = 'main') {
       <label class="switch" title="Sol çubukta göster"><input type="checkbox" data-lshow="${k}" ${listHidden(k) ? '' : 'checked'}><span></span></label></div>`).join('')}</div>`;
   const wasOpen = m.open;
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
-  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'mig' ? Mig.page(head) : page === 'a11y' ? A11y.page(head) : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
+  m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'mig' ? Mig.page(head) : page === 'obsidian' ? ObsVault.page(head) : page === 'a11y' ? A11y.page(head) : page === 'lists' ? listsPage : page === 'dups' ? Dups.page(head) : main}</div>`;
   if (page === 'dups') Dups.run();
   if (page === 'mig') Mig.bind(m); // 107d
+  if (page === 'obsidian') ObsVault.bind(m); // 107j
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
   if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
     const msg = m.querySelector('#tokMsg'); if (!msg || !u) return;
@@ -7920,12 +7889,13 @@ function openSettings(page = 'main') {
     else if (d === 'cmdk') { m.close(); setTimeout(() => Cmd.open(), 250); }
     else if (d === 'morning') { m.close(); Remind.ask(); setTimeout(() => Morning.open(), 250); }
     else if (d === 'keys') { m.close(); setTimeout(() => Native.keysOpen(), 250); }
-    else if (d === 'back') openSettings(page === 'mig' ? 'move' : 'main');
+    else if (d === 'back') openSettings(page === 'mig' || page === 'obsidian' ? 'move' : 'main');
     else if (d === 'import') $('#backupInput').click();
     else if (d === 'bookmarks') $('#bmInput').click();
     else if (d === 'export') { m.close(); exportBackup(); }
     else if (d === 'wipe') { m.close(); setTimeout(() => Wipe.open(), 250); }
     else if (d === 'exportmd') { m.close(); exportMarkdown(); }
+    else if (d === 'obsidian') openSettings('obsidian');
     else if (d === 'organize') { m.close(); if (await AI.health()) { AI.process(); toast('' + aiName() + ' düzenliyor', 2000, 'spark'); } else toast(claudeOff(), 3000, 'cpu'); }
     else if (d === 'tags') { m.close(); AI.cleanTags(); }
     else if (d === 'light' || d === 'dark') { setTheme(d); openSettings(); }

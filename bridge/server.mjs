@@ -10,6 +10,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join, dirname, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { logUsage, fromClaude, fromGemini, estimate, usageSummary, checkCap, hash, cget, cput, noiseOf, sameKey, tesseract } from './thrift.mjs';
+import { vaultStatus, vaultWrite, checkDir } from './vault.mjs';
 
 const CONF_DIR = join(homedir(), '.config', 'hizli-note');
 const CONF_FILE = join(CONF_DIR, 'bridge.json');
@@ -540,7 +541,7 @@ function send(res, code, body, origin) {
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const API = /^\/(health|meta|article|organize|ask|tags|ocr|inbox|new-repo|config|snapshot|gh-token|import-items|usage)(\/|$)/;
+const API = /^\/(health|meta|article|organize|ask|tags|ocr|inbox|new-repo|config|snapshot|gh-token|import-items|usage|vault)(\/|$)/;
 function serveStatic(req, res) {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   const file = join(APP_DIR, p === '/' ? 'index.html' : p);
@@ -637,6 +638,9 @@ http.createServer(async (req, res) => {
       const cap = Math.max(0, Math.round(Number(body.cap) || 0)); conf.dailyTokens = cap; writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 });
       return send(res, 200, { ok: true, cap }, origin);
     }
+    if (req.url === '/vault' && req.method === 'GET') return send(res, 200, vaultStatus(conf), origin); // 107j: Obsidian/Markdown folder
+    if (req.url === '/vault' && req.method === 'POST') { const r = vaultWrite(conf, body); console.log(`vault +${r.written} -${r.removed} !${r.conflicts.length}`); return send(res, 200, r, origin); }
+    if (req.url === '/vault-conf' && req.method === 'POST') { if (body.dir === null) delete conf.vault; else conf.vault = checkDir(body.dir); writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 }); return send(res, 200, vaultStatus(conf), origin); }
     if (req.url === '/inbox' && req.method === 'GET') return send(res, 200, readInbox(), origin);
     if (req.url === '/inbox' && req.method === 'POST') { const e = addInbox(body); console.log(`inbox +1 (${e.files.length} dosya)`); return send(res, 200, { ok: true, id: e.id }, origin); }
     if (req.url === '/inbox/ack') { ackInbox(body.ids || []); return send(res, 200, { ok: true }, origin); }
