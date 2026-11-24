@@ -1221,15 +1221,16 @@ function renderList(items, append = false) {
     const add = shown.slice(el._shown), prev = shown[el._shown - 1];
     $('#more')?.remove(); el.insertAdjacentHTML('beforeend', rows(add, prev ? dayKey(prev.ts) : '', null) + more());
   } else {
-    const head = S.listFrom ? `<div class="l-from">${ic('clock', 'sm')}<span>${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button></div>` : '';
-    el.innerHTML = Folders.head() + topBtns() + head + Folders.html(items) + otdHtml() + rows(shown, '', null) + more();
+    // 157a: while "… ve öncesi" shows, the "Tarihe git" pill sits INSIDE that sticky strip (it used to float over its corner)
+    const head = S.listFrom ? `<div class="l-from">${ic('clock', 'sm')}<span class="l-from-t">${fromLabel(S.listFrom)} ve öncesi</span><button class="link-btn" data-lnow>En yeniye dön</button>${topBtns('in-from')}</div>` : topBtns();
+    el.innerHTML = Folders.head() + head + Folders.html(items) + otdHtml() + rows(shown, '', null) + more();
   }
   el._shown = shown.length; el._items = items; el._start = start;
   hookThumbs(el);
   const m = $('#more');
   if (m) new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); S.limit += 300; render(); } }, { rootMargin: '600px' }).observe(m);
 }
-const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
+const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git" aria-label="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
 // "Tarihe git": every month that has items, newest first, with counts; picking one shows the list from there
 function monthJump(anchor) {
   const by = new Map(); visible().forEach(i => { const k = dayKey(i.ts).slice(0, 7); by.set(k, (by.get(k) || 0) + 1); });

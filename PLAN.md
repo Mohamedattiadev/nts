@@ -1004,6 +1004,10 @@ Arayüz:
 - [ ] 157. **Sahibin 2026-11-24 akşam ekran görüntüleri** (4 iş, a–d ayrı commit olabilir):
         a) design/feedback-34.png: Ara/liste üstünde "Tarihe git" hap düğmesi turuncu "En yeniye dön" şeridinin sağ üst köşesine biniyor ("düzelt").
            İkisi aynı satırda yan yana ya da şerit görünürken "Tarihe git" şeridin içine girsin; hiçbir genişlikte çakışma 0 (ölç), açık + koyu, telefon.
+           [x] a YAPILDI (2026-11-24, B hattı): "… ve öncesi" şeridi varken Sabitle/Tarihe git hapları şeridin İÇİNDE, sonunda; şerit yapışkan satır
+           (top 62 px, opak zemin: accent-soft + bg), uzun etiket "…" ile kısalır; ≤420 px'te Tarihe git yalnız saat simgesi 44×44 (aria-label),
+           şeridin baştaki saat simgesi gizli. Ölçüm 1366/1024/768/390/320 × açık/koyu × üst/kaydırılmış: çakışma 0, yan taşma 0;
+           phone-audit "tarihten" ekranı 0 (yalnız eski boardBtn 2×2 gizli). Görüntüler design/157a/. sw v124
         b) design/feedback-36.png: kutudaki "+" ve mikrofon düğmeleri kare-yuvarlak; sahip: "yuvarlak olsun bence" → tam daire (border-radius 50%),
            aynı boy (≥40 px, telefonda 44), kutunun yuvarlak köşesiyle eş merkezli hizada; gönder düğmesi de aynı aile.
         c) design/feedback-35.png (Takvim, Kasım 2026): "2026'dayken önceki yıllara daha hızlı, daha büyük ölçekte gitmek istesem" → takvime

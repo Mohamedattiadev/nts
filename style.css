@@ -1123,6 +1123,11 @@ dialog.readpage::backdrop { background: var(--bg); }
 .l-jump:hover { color: var(--text); }
 .l-from { clear: right; display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 8px 0 10px; border-radius: 10px; background: var(--accent-soft); color: var(--text-2); font-size: calc(13px * var(--fs, 1)); }
 .l-from .link-btn { margin-left: auto; white-space: nowrap; }
+/* 157a: the strip is the sticky row; its own pills sit at its end, never over it */
+.l-from { position: sticky; top: calc(62px + env(safe-area-inset-top)); z-index: 3; padding: 6px 6px 6px 12px; background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--bg); }
+.l-from-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.l-from > .l-top.in-from { position: static; float: none; margin: 0; flex: none; }
+@media (max-width: 420px) { .l-from > svg { display: none; } .l-from > .l-top.in-from .l-jump { padding: 0; width: 44px; justify-content: center; } .l-from > .l-top.in-from .l-jump span { display: none; } }
 .jump-pop { width: 300px; }
 .jm { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 0 4px 6px; }
 .jm-b { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 0; border-radius: 8px; font-size: calc(12.5px * var(--fs, 1)); color: var(--text); }
