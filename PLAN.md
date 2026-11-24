@@ -641,6 +641,23 @@ Arayüz:
         etiketi (Ayarlar'daki ad ya da Google adı, yoksa "Sen"), ana renkte; Ayarlar → Pano imleci "Nts" seçiliyken masaüstünde panoda; gerçek fareyi
         gecikmesiz izler (yalnız etiket yaylı gelir), sürüklerken/çizerken küçük durum ("taşıyor", kalem simgesi); düğme ve yazı alanlarında sistem
         imlecine döner; performans: tek rAF, transform, 60 fps, 10k kartta da. reduced-motion'da hareketsiz. Ekran görüntüsü + kısa GIF/video kareleri.
+- [ ] 145. **Panodaki zengin kartlar panoda çalışsın** (sahip, 2026-11-24: "tahtada pdf, voice vb. zengin şeyler vardı ya, o tahtanın üzerinde direkt
+        çalıştırabiliyor olayım; tıkladığımda açılsın, kullanılabiliyor olsun; bir de üzerinde bir düğme olsun, basınca popup'ta açılıyor, ya da sağ
+        tık menüden"). a) Tek tık kartı yerinde etkinleştirir (106a'daki YouTube/Spotify/harita gibi ama hepsi): PDF → kartta sayfa çevrilir (pdf.js,
+        ‹ › + sayfa no, tekerlek kartın içinde kaydırır), ses/sesli not (95a) → oynat/duraklat + dalga çizgisi + konum, video dosyası → oynar, resim →
+        yakınlaşır, onay listesi/tablo/kod → kartta kullanılır, link → önizleme. Sürükleme ile karışmasın: basılı tutup çekmek taşır, bırakmadan tık
+        açar; kart dışına tık/Esc kapatır; aynı anda tek oynayan medya. b) Kartın üst köşesinde, üzerine gelince (telefonda seçiliyken) küçük "büyüt"
+        düğmesi → kayıt penceresinde/popup'ta açar; sağ tık / uzun bas menüsünde "Pencerede aç". c) Uzakta (küçük ölçekte) kart etkinleşmez, önce
+        yakınlaştırır. Telefon önce, 4 yapılandırma ekran görüntüsü, phone-audit 0, 10k kartta akıcı (yalnız etkin kart canlı).
+- [ ] 123-1. **Kasa çarkı uygulamada** (sahip seçimi 2026-11-24, design/dial-choices.json): tarih çarkı t-B Üç kadran, yeri p-filter (süzgeçte tarih
+        seçimi). Sahip notu: "halen o güzel his yok; bizim UI'a uygun olması lazım; smooth; ← → ile hareket edebiliyor olması lazım". Yani: bugünkü
+        Nts kimliği (style.css değişkenleri, yeni kimlik YOK), savurma + yaylı oturma 60 fps, tık sesi/titreşim isteğe bağlı, ← → kadran içinde değer,
+        Tab kadranlar arası, ↑ ↓ de çalışır, tekerlek; reduced-motion; telefon önce.
+- [ ] 119-0b. **zoomout örneği yeni tur** (sahip seçimi 2026-11-24, design/zoomout-choices.json): A Kalem seçildi ama "UI hâlâ istediğim gibi değil,
+        çok kötü, upgrade et, daha iyi daha görünümlü olsun". A'nın ruhunu (elle çizilmiş kesik küme sınırı + kavisli oklar) koruyup 3 çok daha
+        güzel varyant: daha temiz çizgi, daha iyi başlık tipografisi, kümelere sakin renk zemini, okların ucu ve etiketleri; bugünkü Nts görünümü.
+        Ok nedenleri (etiket / elle bağ / proje / yapay zekâ): sahip "en uygun neyse" dedi → sen en iyisini seç (öneri: elle bağ hep, proje ve
+        etiket kalın-ince ayrımla, yapay zekâ benzerliği varsayılan kapalı) ve sayfada gerekçesini yaz. [?] yap, sahip seçsin, sonra 119.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da

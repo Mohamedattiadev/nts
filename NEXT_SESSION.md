@@ -98,10 +98,12 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner (b15e567)
 - [x] 116 logo = pano seçici (sağ alttan taşı) (fbfa07f)
 - [x] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş) (15ef8b5)
+- [x] 119-0 sahip seçti: A Kalem ama "çok kötü, upgrade et" → 119-0b (design/zoomout-choices.json)
 - [?] 119 ÇOK ÖNEMLİ uzaklaşınca kesik çizgili kümeler + oklar (önce design/zoomout.html, sahip seçer) — ÖRNEK HAZIR: design/zoomout.html (A Kalem · B Balon · C Ada + ok nedenleri), sahibin seçimi bekleniyor (767ba37)
 - [x] 120 yapay zekâ imleci (Figma gibi, ad + logo rengi) (5e5578d)
 - [x] 121 cam görünüm ayarı (sahip 2026-11-23: öne alınmasın, sırası gelince) + turun sonunda Düz/Cam seçimi (d1198ca)
 - [x] 122 turda Google ile giriş / Misafir seçimi (f73e1f5)
+- [x] 123-0 sahip seçti: t-B Üç kadran + süzgeçte (design/dial-choices.json) → 123-1
 - [?] 123 kasa çarkı tarih/etiket seçici (önce design/dial.html, sahibe sor) — ÖRNEK HAZIR: design/dial.html (tarih: A Kasa · B Üç kadran · C Bavul kilidi; etiket: A Tam halka · B Alt yay; nerede kullanılsın), sahibin seçimi bekleniyor (ab7efb3)
 - [x] 124 tanıtım sayfası (site/) + README düğmesi (e1eaf25)
 - [x] 94e+94f açılış hızı (lazy modüller, ölçüm) + Badging / window-controls-overlay (9b353df)
@@ -112,6 +114,9 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [x] 95c+95d okuma listesinde "3 gün sonra tekrar" + resimde tarih → "göreve çevir?" (7955949)
 - [~B] 95b sabah özeti bildirimi (Remind/SW bildirimi; Claude özeti köprüden)
 - [ ] 144 imleçler daha canlı (sahip 2026-11-24: "Claude imleci güzel ama daha animasyonlu, daha hareketli olmalı; ona benzer bir tane de benim olsun"): PLAN 144
+- [ ] 145 panodaki zengin kartlar panoda ÇALIŞSIN: tıkla → yerinde açılır/oynar (PDF sayfa çevir, ses/sesli not oynat, video, harita, onay listesi…) + kartta "büyüt" düğmesi → açılır pencerede (sağ tık menüsünde de "Pencerede aç"); PLAN 145
+- [ ] 123-1 kasa çarkı tarih seçici: sahip B Üç kadran + süzgeçte kullanılsın; "o güzel his yok" → bugünkü Nts arayüzüne uygun, çok yumuşak, ← → (ve ↑ ↓) ile hareket; PLAN 123-1
+- [ ] 119-0b design/zoomout.html YENİ TUR: sahip A Kalem seçti ama "çok kötü, daha iyi daha görünümlü olsun" → A ailesinden 3 çok daha güzel varyant (bugünkü Nts görünümü, Locus kalitesi); ok nedenleri sahip "en uygun neyse" → sen seç, gerekçesiyle göster; [?] yap, sahip seçsin; PLAN 119-0b
 - [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
