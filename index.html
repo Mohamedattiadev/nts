@@ -48,6 +48,9 @@
     <button class="bpick" id="boardBtn" title="Hangi pano" aria-haspopup="menu" aria-label="Pano seç"><span class="mark"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"/><path class="mk-l" d="M34 38h30M34 52h18"/><circle class="mk-d" cx="79" cy="21" r="10"/></svg></span><span class="bp-name" id="boardName">Genel</span><svg class="i sm bp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <button class="chip m-only" id="filterBtn" title="Filtre"><span id="filterLbl">Tümü</span><svg class="i sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
   </div>
+  <!-- 157d: a project board: items that name the project but aren't on it -->
+  <div class="rel-chip" id="relChip" hidden><button class="rc-go" aria-haspopup="dialog" aria-expanded="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/></svg><span class="rc-n"></span></button><button class="rc-x" aria-label="Bu öneriyi gizle" title="Gizle"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="rel-pop" id="relPop" role="dialog" aria-label="İlgili kayıtlar" hidden></div>
   <!-- desktop: small vertical toolbar, left middle -->
   <nav class="rail d-only" id="rail" aria-label="Filtre"></nav>
   <div class="rail-tab d-only" id="railTab" hidden></div>

@@ -1049,6 +1049,11 @@ Arayüz:
            çipi → liste (etiket eşleşmesi + başlık/metin/URL'de proje adı geçenler, tr/ar katlama + varsa sem.js anlam benzerliği ✦) → "Hepsini
            ekle" / tek tek ekle, Geri al. Eklenen kayıt i.project değil i.boards'a girer (başka projeyi bozmasın). İsteğe bağlı: yapay zekâ
            organize ederken proje adıyla eşleşen kayda proje önerisi (148 token kurallarıyla, toplu).
+           [x] d YAPILDI (2026-11-25, B hattı): proje panosunda "N ilgili kayıt" çipi (masaüstü: pano seçicinin altı; telefon: alt
+           solda pano araçlarıyla aynı satır, 320 px'te "N ilgili") → liste: etiket / başlıkta / içinde geçiyor (#, boşluk, nokta, tire
+           katlanır: "Poultry Care", "poultrycareai" bulunur) + sem.js hazırsa anlamca yakın ✦; satır başına "+" ve "Hepsini ekle", Geri al
+           toast. Eklenen kayıt i.boards'a girer, i.project'e dokunulmaz. × gizler (o sayı aşılırsa yine görünür). Ölçüm 1366 × açık/koyu,
+           390 × açık/koyu, 320: başka sabit öğeyle çakışma 0, konsol hatası 0. Görüntüler design/157d/. Yapay zekâ proje önerisi yapılmadı (isteğe bağlıydı). sw v128
 - [x] 156b. **Hızlı kutu yükseltme** (sahip, 2026-11-24, 156'yı görünce: "çok güzel görünmedi sanki; Win+Shift+S'i eskiye geri al; bunun UI'ı daha iyi
         olsun; kesin çalışıyor mu kontrol et; açılınca eski yazdığım notları da görmem lazım; upgrade it; şimdilik onu F7 yap, sonra değişecek —
         summary terminalde notlarım var"). YAPILDI (ana oturum): binds.conf'ta `$mod SHIFT, S` yine sum-toggle.sh (TODOS), kutu `, F7`'de,

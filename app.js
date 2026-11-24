@@ -1776,6 +1776,97 @@ const BoardHint = {
 const unfilterBtn = () => `<button class="btn secondary" data-do="unfilter">${ic('x', 'sm')}Süzgeci kaldır</button>`;
 
 let renderQueued = false;
+// 157d: a project board shows only the items tied to the project (i.project / i.boards). Items that name it (a #tag, the title, the text,
+// the address, the chat) but were never put there are offered by a chip under the board picker: "N ilgili kayıt" → a list, add one or all
+// (Geri al). An added item goes to i.boards, never i.project, so another project is never touched. With the meaning search on, the
+// items close in meaning to the project's name come too (✦). Worked out once per (items, board), after the board is drawn.
+const Rel = {
+  key: null, list: [], sem: null, semKey: null,
+  fit: s => norm(s).replace(/[\s._#-]+/g, ''),
+  calc() {
+    const name = S.board, k = norm(name).trim(), kj = this.fit(name);
+    if (kj.length < 3) return [];
+    const out = [];
+    for (const i of S.items) {
+      if (i.deleted || HIDDEN.has(i.type) || i.sticky || i.parent || inBoard(i)) continue;
+      let why = (i.tags || []).some(t => this.fit(t) === kj) ? 'tag' : '';
+      if (!why) { const h = S.idx.get(i.id)?.h ?? norm(rawText(i));
+        if (h.includes(k) || (h.includes(kj.slice(0, 4)) && h.replace(/[\s._#-]+/g, '').includes(kj))) why = this.fit(titleOf(i)).includes(kj) ? 'title' : 'text'; }
+      if (why) out.push({ i, why });
+    }
+    const r = { tag: 0, title: 1, text: 2 };
+    return out.sort((a, b) => r[a.why] - r[b.why] || b.i.ts - a.i.ts);
+  },
+  // the meaning search (sem.js) asked with the board's name; its own number so a search running in the box keeps its answer
+  askSem(name) {
+    if (!Sem.w || Sem.st !== 'ready' || this.semKey === name) return;
+    this.semKey = name; const n = -(Sem._rn = (Sem._rn || 0) + 1);
+    (Sem._lk ||= new Map()).set(n, list => { if (S.board !== name) return; this.sem = (list || []).filter(x => x[1] >= SEM_NEXT).slice(0, SEM_MAX).map(x => x[0]); this.key = null; this.update(); });
+    Sem.w.postMessage({ t: 'query', n, q: name, k: 40 });
+  },
+  items() {
+    if (onMain() || S.view !== 'board') return [];
+    const key = S.items.length + '|' + S.board + '|' + (this.sem || []).join(',');
+    if (this.key !== key || this._of !== S.items) {
+      this.key = key; this._of = S.items; this.list = this.calc();
+      const have = new Set(this.list.map(x => x.i.id));
+      for (const id of this.sem || []) { const i = byId(id); if (i && !have.has(id) && !i.deleted && !HIDDEN.has(i.type) && !i.parent && !inBoard(i)) this.list.push({ i, why: 'sem' }); }
+    }
+    return this.list;
+  },
+  shut: () => { try { return +localStorage.getItem('hn-relx-' + bfold(S.board)) || 0; } catch { return 0; } },
+  update() {
+    const c = $('#relChip'); if (!c) return;
+    if (this._b !== S.board) { this._b = S.board; this.sem = null; this.semKey = null; this.key = null; this.close(); }
+    const on = S.view === 'board' && !onMain() && document.body.classList.contains('board-view');
+    if (!on) { c.hidden = true; this.close(); return; }
+    clearTimeout(this._t); // counted when the board is still; 10k items ~10–30 ms
+    this._t = setTimeout(() => {
+      this.askSem(S.board);
+      const n = this.items().length, shown = n > 0 && n > this.shut();
+      c.hidden = !shown; if (!shown) { this.close(); return; }
+      c.querySelector('.rc-n').textContent = innerWidth < 380 ? `${n} ilgili` : `${n} ilgili kayıt`; // 320 px: the board tools share the row
+      c.querySelector('.rc-go').ariaLabel = `Bu projeyle ilgili ${n} kayıt daha var: göster`;
+      if (!$('#relPop').hidden) this.paint();
+    }, 120);
+  },
+  WHY: { tag: ['hash', 'etiket'], title: ['note', 'başlıkta'], text: ['search', 'içinde geçiyor'], sem: ['spark', 'anlamca yakın'] },
+  paint() {
+    const p = $('#relPop'), l = this.items(), max = 60;
+    p.innerHTML = `<div class="rp-top"><div><b>${esc(S.board)}</b> ile ilgili</div><div class="rp-sub">${l.length} kayıt bu panoda değil. Eklenen kayıt başka projeden çıkmaz.</div></div>
+      <div class="rp-list">${l.slice(0, max).map(({ i, why }) => `<div class="rp-row" data-id="${esc(i.id)}"><button class="rp-open" data-ropen title="Aç"><span class="b-ico ${i.type}-c">${ic(i.conv ? 'chat' : fileKind(i) === 'text' ? 'note' : fileKind(i), 'sm')}</span><span class="rp-t" dir="auto">${esc(titleOf(i).slice(0, 90))}</span><span class="rp-why">${ic(this.WHY[why][0], 'sm')}${this.WHY[why][1]} · ${shortDay(dayKey(i.ts))}</span></button><button class="rp-add" data-radd aria-label="Panoya ekle" title="Panoya ekle">${ic('plus', 'sm')}</button></div>`).join('')}</div>
+      <div class="rp-foot">${l.length > max ? `<span class="rp-more">İlk ${max} gösteriliyor</span>` : ''}<button class="btn primary rp-all" data-rall>${ic('plus', 'sm')}Hepsini ekle (${l.length})</button></div>`;
+  },
+  open() {
+    const p = $('#relPop'), c = $('#relChip'); this.paint(); p.hidden = false; c.querySelector('.rc-go').setAttribute('aria-expanded', 'true');
+    const r = c.getBoundingClientRect(); // desktop: under the chip; phone: the chip sits low, so the list opens above it
+    if (innerWidth >= 900) { p.style.top = (r.bottom + 8) + 'px'; p.style.bottom = ''; p.style.left = r.left + 'px'; }
+    else { p.style.top = 'auto'; p.style.bottom = (innerHeight - r.top + 8) + 'px'; p.style.left = ''; }
+  },
+  close() { const p = $('#relPop'); if (p && !p.hidden) { p.hidden = true; $('#relChip .rc-go')?.setAttribute('aria-expanded', 'false'); } },
+  async add(list) {
+    const name = S.board, before = new Map(list.map(i => [i.id, i.boards]));
+    await upsert(list.map(i => ({ ...i, boards: [...new Set([...(i.boards || []), name])] })));
+    toast(list.length === 1 ? `“${titleOf(list[0]).slice(0, 40)}” panoya kondu` : `${list.length} kayıt “${name}” panosuna kondu`, 5000, 'board', { label: 'Geri al', fn: async () => {
+      await upsert([...before.keys()].map(byId).filter(Boolean).map(i => ({ ...i, boards: before.get(i.id) || [] })));
+    } });
+  },
+  init() {
+    const c = $('#relChip'), p = $('#relPop');
+    c.addEventListener('click', e => {
+      if (e.target.closest('.rc-x')) { try { localStorage.setItem('hn-relx-' + bfold(S.board), String(this.items().length)); } catch { } c.hidden = true; this.close(); toast('Gizlendi. Yeni ilgili kayıt gelirse yine görünür.', 2600, 'check'); return; }
+      p.hidden ? this.open() : this.close();
+    });
+    p.addEventListener('click', async e => {
+      const row = e.target.closest('.rp-row'), i = row && byId(row.dataset.id);
+      if (e.target.closest('[data-radd]') && i) { row.classList.add('gone'); await this.add([i]); return; }
+      if (e.target.closest('[data-ropen]') && i) { openItem(i.id); return; }
+      if (e.target.closest('[data-rall]')) { const l = this.items().map(x => x.i); this.close(); if (l.length) await this.add(l); }
+    });
+    document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#relPop,#relChip')) this.close(); }, true);
+    addEventListener('keydown', e => { if (e.key === 'Escape' && !p.hidden && !document.querySelector('dialog[open]')) { e.stopPropagation(); this.close(); c.querySelector('.rc-go').focus(); } }, true);
+  },
+};
 function render(force) {
   if (force) { S._vkey = S._lkey = null; chromeCounts.c = null; }
   if (renderQueued) return; renderQueued = true;
@@ -1836,7 +1927,7 @@ function renderNow() {
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' || S.view === 'cal' ? [] : items);
     if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
-    Badge.set(); Sample.bar();
+    Badge.set(); Sample.bar(); Rel.update();
 }
 
 // ---------- data changes ----------
@@ -2321,6 +2412,7 @@ const Sem = {
     else if (d.t === 'indexed') { this.done = d.done; this.left = d.left; if (!d.left) AIF.ask(); }
     else if (d.t === 'folders') { AIF.got(d.list); return; }
     else if (d.t === 'like') { const f = this._lk?.get(d.n); if (f) { this._lk.delete(d.n); f(d.list); } return; }
+    else if (d.t === 'hits' && d.n < 0) { const f = this._lk?.get(d.n); if (f) { this._lk.delete(d.n); f(d.list); } return; } // 157d: Rel's own question
     else if (d.t === 'hits') { if (d.n === this.n) { this.hits = { q: d.q, list: d.list }; if (S.q.trim() && findMode()) { runSearch(); render(); } } return; }
     else if (d.t === 'error') { console.warn('Sem', d.m); if (this.st === 'load') this.st = 'err'; }
     this.ui();
@@ -8027,7 +8119,7 @@ function wire() {
   ViewHide.init();
   Underlap.init();
   try { S.sortPrio = !!localStorage.getItem('hn-sortprio'); } catch { }
-  Ctx.init(); OnBoard.init(); Sel.init(); Peek.init(); Read.init(); Remind.init(); Morning.init();
+  Ctx.init(); OnBoard.init(); Sel.init(); Rel.init(); Peek.init(); Read.init(); Remind.init(); Morning.init();
   Todo.init();
   Pop.init();
   for (const id of ['#list', '#gallery', '#topics', '#empty']) $(id).addEventListener('click', e => {
