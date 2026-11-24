@@ -891,6 +891,15 @@ Arayüz:
         çıkmıyor). Üzerine gelince kâğıtlar sırayla yukarı çıkar, kapak -14° açılır. Yavaş telefon / saydamlığı azalt (data-gslow): blur yok,
         düz kapak alçak (%46) → kâğıtlar yine görünür. Diğer stiller (E/A/B/C) değişmedi. Ekran görüntüleri design/131-2/ (önce/sonra,
         telefon koyu, hover, yavaş); konsol hatası 0; phone-audit liste: çakışma/taşma 0 (tek "small" #boardBtn 2×2, önceden var). sw v116
+- [ ] 153. **Panoda sağ tıkla zaman aralığı** (sahip, 2026-11-24, design/feedback-30.png — "Poultrycare" panosu %28'de, yalnız 4 kart: "sağ click'e
+        basıp göstersin: son 30 gün, 3 ay, 6 ay, 1 sene, tüm"; önceki soru: WhatsApp arşivinin 1455 kaydı panoda görünmüyor, PLAN 52/53 kuralı).
+        Panonun boş yerine sağ tık (telefonda uzun bas; 139 kutu seçimiyle karışmasın: basılı tut + kıpırdamadan bırak) → bağlam menüsü,
+        en üstte "Göster" bölümü: Son 30 gün · Son 3 ay · Son 6 ay · Son 1 yıl · Tümü (seçili olan ✓) ve altında "Arşivi de göster (WhatsApp,
+        yer imleri · N kayıt)" aç/kapa. Her pano için ayrı hatırlanır (hn-range-<pano>); proje panoları da bu menüyü kullanır (şu an hepsi
+        gösteriliyorsa varsayılan Tümü kalır). Mevcut üst zaman seçici (53) varsa bununla aynı durumu kullansın, ikisi tutarlı; seçim değişince
+        kartlar FLIP ile gelir, yeni gelenler görünür alana sığdırılır (Hepsini gör). Seçili aralık zoom kutusunun yanında küçük çip ("6 ay ×")
+        olarak durur. Çok kart (1000+) gelince 147 ölçütleri: uzakta hafif kart, 60 fps. Panoda gizli kayıt varsa boş ekranda "N kayıt bu aralığın
+        dışında · Tümünü göster". Klavye: menü ↑↓ Enter Esc. Masaüstü + telefon, açık + koyu, ekran görüntüsü.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
