@@ -9,6 +9,7 @@ import { execFile } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
 import { join, dirname, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { logUsage, fromClaude, fromGemini, estimate, usageSummary, checkCap, hash, cget, cput, noiseOf, sameKey, tesseract } from './thrift.mjs';
 
 const CONF_DIR = join(homedir(), '.config', 'hizli-note');
 const CONF_FILE = join(CONF_DIR, 'bridge.json');
@@ -25,6 +26,7 @@ function loadConfig() {
   conf.askModel ??= 'sonnet';
   conf.organizeModel ??= 'haiku';
   conf.ai ??= 'claude'; // 87: which CLI answers (claude | codex | gemini), chosen in the app
+  conf.dailyTokens ??= 1000000; // 148: background AI jobs wait for tomorrow past this (0 = no cap); set in the app's settings
   writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 });
   return conf;
 }
@@ -78,10 +80,15 @@ async function haveAIs() {
   haveCache = { at: Date.now(), v }; return v;
 }
 let chain = Promise.resolve();
-function runClaude(opts) { return conf.ai === 'codex' || conf.ai === 'gemini' ? runOther(conf.ai, opts) : runClaudeCli(opts); }
+// 148: every call is counted (~/.local/share/nts/usage.jsonl); background jobs stop at the daily cap
+function runClaude(opts) {
+  checkCap(opts.kind, conf.dailyTokens);
+  return conf.ai === 'codex' || conf.ai === 'gemini' ? runOther(conf.ai, opts) : runClaudeCli(opts);
+}
+const retry = async opts => { try { return await runClaude(opts); } catch (e) { if (e.code === 'limit') throw e; return await runClaude(opts); } };
 // Codex / Gemini have no loose-schema flag like claude --json-schema: the schema goes into the prompt and the JSON is cut out of the reply
 const pickJson = t => { const s = String(t).replace(/^```(?:json)?\s*|\s*```$/g, '').trim(); try { return JSON.parse(s); } catch { } const a = s.indexOf('{'), b = s.lastIndexOf('}'); return JSON.parse(s.slice(a, b + 1)); };
-function runOther(ai, { prompt, system, schema, readDir }) {
+function runOther(ai, { prompt, system, schema, readDir, kind, n }) {
   const job = chain.then(() => new Promise((resolve, reject) => {
     const full = `${system}\n\n${schema ? `Reply with ONLY one JSON object (no prose, no code fence) that matches this JSON schema:\n${JSON.stringify(schema)}\n\n` : ''}${prompt}`;
     const imgs = readDir ? [...new Set(prompt.match(new RegExp(WORK_DIR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/[\\w.-]+', 'g')) || [])] : [];
@@ -99,7 +106,8 @@ function runOther(ai, { prompt, system, schema, readDir }) {
       try {
         let text = out;
         if (ai === 'codex') { text = existsSync(outFile) ? readFileSync(outFile, 'utf8') : ''; try { unlinkSync(outFile); } catch { } }
-        else { const j = JSON.parse(out); if (j.error) throw new Error(j.error.message || 'gemini error'); text = j.response ?? ''; }
+        else { const j = JSON.parse(out); if (j.error) throw new Error(j.error.message || 'gemini error'); text = j.response ?? ''; const u = fromGemini(j); if (u.in || u.out) logUsage({ kind, ai, n, ...u }); }
+        if (ai === 'codex') logUsage({ kind, ai, n, in: estimate(full) + imgs.length * 1600, out: estimate(text), est: true });
         if (!text.trim()) throw new Error('empty');
         resolve(schema ? pickJson(text) : text.trim());
       } catch { reject(new Error(`${ai} exit ${code}: ${(err || out).slice(-400)}`)); }
@@ -109,7 +117,7 @@ function runOther(ai, { prompt, system, schema, readDir }) {
   chain = job.catch(() => {});
   return job;
 }
-function runClaudeCli({ prompt, system, schema, model, readDir }) {
+function runClaudeCli({ prompt, system, schema, model, readDir, kind, n }) {
   const job = chain.then(() => new Promise((resolve, reject) => {
     const args = ['-p', '--model', model, '--output-format', 'json', '--tools', readDir ? 'Read' : '',
       ...(readDir ? ['--allowedTools', `Read(${readDir}/**)`, '--max-turns', '12'] : []),
@@ -126,6 +134,7 @@ function runClaudeCli({ prompt, system, schema, model, readDir }) {
       clearTimeout(timer);
       try {
         const j = JSON.parse(out);
+        logUsage({ kind, ai: 'claude', model, n, ...fromClaude(j) });
         if (j.is_error) return reject(new Error(j.result || 'claude error'));
         resolve(schema ? (j.structured_output ?? JSON.parse(j.result)) : j.result);
       } catch { reject(new Error(`claude exit ${code}: ${(err || out).slice(0, 400)}`)); }
@@ -137,13 +146,36 @@ function runClaudeCli({ prompt, system, schema, model, readDir }) {
 }
 
 const localTime = ts => new Date(ts).toLocaleString('sv-SE', { hour12: false }).slice(0, 16); // PC's own timezone
-const compact = items => items.map(i => ({
+// 148: organize only needs the start of a long text to title and tag it (L = shorter limits)
+const LONG = { text: 1500, content: 3000, ocr: 1500 }, SHORT = { text: 900, content: 1500, ocr: 800 };
+const compact = (items, L = LONG) => items.map(i => ({
   id: i.id, date: i.ts ? localTime(i.ts) : undefined, type: i.type,
-  title: i.title || undefined, text: (i.text || '').slice(0, 1500) || undefined, url: i.url || undefined,
-  file: i.fileName || undefined, content: i.content ? i.content.slice(0, 3000) : undefined, image: i._imgPath || undefined, ocr: i.ocr ? i.ocr.slice(0, 1500) : undefined,
-  tags: i.tags?.length ? i.tags : undefined, summary: i.summary || undefined,
+  title: i.title || undefined, text: (i.text || '').slice(0, L.text) || undefined, url: i.url || undefined,
+  file: i.fileName || undefined, content: i.content ? i.content.slice(0, L.content) : undefined, image: i._imgPath || undefined, ocr: i.ocr ? i.ocr.slice(0, L.ocr) : undefined,
+  tags: i.tags?.length ? i.tags : undefined, summary: L === LONG && i.summary || undefined,
   page: i.meta ? [i.meta.title, i.meta.description].filter(Boolean).join(' — ').slice(0, 400) : undefined,
 }));
+
+// 148: the same question on the same items the same day → the answer from before, no call
+async function once(tag, parts, opts) {
+  const k = hash(tag, conf.ai, opts.model, ...parts), hit = cget(k);
+  if (hit) { logUsage({ kind: opts.kind, local: true, n: 1, saved: estimate(opts.prompt) }); return hit; }
+  const r = await runClaude(opts); cput(k, r); return r;
+}
+// groups whose content is unchanged come from the cache by content; the rest go in one call; answers keep the asked keys
+async function perGroup(tag, groups, contentOf, valueOf, run) {
+  const out = [], send = [], keys = new Map(); let saved = 0;
+  for (const g of groups) {
+    const k = hash(tag, conf.ai, contentOf(g)), hit = cget(k);
+    if (hit !== undefined) { out.push({ ...hit, key: g.key }); saved += estimate(JSON.stringify(contentOf(g))); }
+    else { keys.set(g.key, k); send.push(g); }
+  }
+  if (out.length) logUsage({ kind: tag === 'sum' ? 'summaries' : 'folders', local: true, n: out.length, saved });
+  if (!send.length) return { items: out };
+  const r = await run(send);
+  for (const x of r.items || []) { const k = keys.get(x.key); if (k && valueOf(x)) { const { key, ...keep } = x; cput(k, keep); } }
+  return { ...r, items: [...out, ...(r.items || [])] };
+}
 
 const ORGANIZE_SCHEMA = {
   type: 'object', required: ['items'],
@@ -168,10 +200,34 @@ const ORGANIZE_SCHEMA = {
   },
 };
 
+// 148: what reaches the AI is only what needs it: noise is answered here, a result seen before comes from the cache,
+// the same content twice in a batch goes once, text-heavy images go as tesseract text instead of a picture
 async function organize(items, existingTags, projects = []) {
+  const out = [], send = [], firstOf = new Map(), twins = [], keys = new Map(), tess = new Map(); let saved = 0;
+  const orgKey = i => hash('org', conf.ai, conf.organizeModel, i.type, i.url || '', i.text || '', i.title || '', i.fileName || '', (i.content || '').slice(0, 1500), i.ocr || '', i.image ? hash(i.image) : '', i.ts ? localTime(i.ts).slice(0, 10) : '');
+  for (const i of items) {
+    const quiet = noiseOf(i); if (quiet) { out.push(quiet); saved += estimate(JSON.stringify(compact([i], SHORT))); continue; }
+    const k = orgKey(i), hit = cget(k);
+    if (hit) { out.push({ ...hit, id: i.id }); saved += estimate(JSON.stringify(compact([i], SHORT))) + (i.image ? 1600 : 0); continue; }
+    const s = sameKey(i);
+    if (s && firstOf.has(s)) { twins.push([i.id, firstOf.get(s), k]); saved += estimate(JSON.stringify(compact([i], SHORT))); continue; }
+    if (s) firstOf.set(s, i.id);
+    keys.set(i.id, k); send.push(i);
+  }
+  const local = items.length - send.length;
+  if (local) logUsage({ kind: 'organize', local: true, n: local, saved });
+  if (!send.length) return { items: [...out, ...twins.map(([id, from]) => ({ ...out.find(x => x.id === from), id }))] };
+  for (const i of send) if (i.archive && i.text) i.text = i.text.slice(0, 500); // an old chat archive: the gist is enough for a title and tags
   // images come as small base64 JPEGs; write them where the read-only Read tool may look
-  for (const i of items) if (i.image) { const p = join(WORK_DIR, `img-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
-  const hasImg = items.some(i => i._imgPath);
+  for (const i of send) if (i.image) {
+    const p = join(WORK_DIR, `img-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); delete i.image;
+    const text = await tesseract(p).catch(() => null);
+    if (text) { tess.set(i.id, text); i.ocr = text; try { unlinkSync(p); } catch { } } // a screenshot / receipt / page: its text is enough
+    else i._imgPath = p;
+  }
+  if (tess.size) logUsage({ kind: 'organize', local: true, n: 0, saved: tess.size * 1600 });
+  const hasImg = send.some(i => i._imgPath);
+  items = send;
   const system = 'You organize a person\'s saved notes, links and files (things they sent to themselves). ' +
     'For each item give a short title, a one-sentence summary and 1-3 lowercase Turkish topic tags. ' +
     'TAG RULES: keep the whole tag set small and reusable, like folders. ALWAYS reuse an existing tag when it fits, even loosely; create a new tag only for a clearly new topic. ' +
@@ -184,10 +240,18 @@ async function organize(items, existingTags, projects = []) {
   const full = existingTags.length >= 25 ? `\nThe tag set is full (${existingTags.length}). Do NOT invent new tags: pick only from the existing ones.` : '';
   const now = new Date(), day = now.toLocaleDateString('en-US', { weekday: 'long' });
   const proj = projects.length ? `\nExisting projects: ${projects.join(', ')}` : '';
-  const prompt = `Now: ${localTime(now)} (${day})\nExisting tags: ${existingTags.join(', ') || '(none)'}${full}${proj}\n\nItems:\n${JSON.stringify(compact(items))}`;
-  const opts = { prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel, readDir: hasImg ? WORK_DIR : null };
-  try { return await runClaude(opts); } catch { return await runClaude(opts); }
+  const prompt = `Now: ${localTime(now)} (${day})\nExisting tags: ${existingTags.join(', ') || '(none)'}${full}${proj}\n\nItems:\n${JSON.stringify(compact(items, SHORT))}`;
+  const opts = { prompt, system, schema: ORGANIZE_SCHEMA, model: conf.organizeModel, readDir: hasImg ? WORK_DIR : null, kind: 'organize', n: items.length };
+  let r;
+  try { r = await retry(opts); }
   finally { for (const i of items) if (i._imgPath) try { unlinkSync(i._imgPath); } catch { } }
+  const got = r.items || [];
+  for (const x of got) {
+    if (tess.has(x.id) && !String(x.ocr || '').trim()) x.ocr = tess.get(x.id);
+    const k = keys.get(x.id); if (k) { const { id, related, ...keep } = x; cput(k, keep); }
+  }
+  const all = [...out, ...got];
+  return { ...r, items: [...all, ...twins.map(([id, from, k]) => { const x = all.find(y => y.id === from); if (!x) return null; const { id: _, related, ...keep } = x; cput(k, keep); return { ...keep, id }; }).filter(Boolean)] };
 }
 
 // text inside images (photos, screenshots, scanned PDF pages) + 130b content labels (what is seen) for search, for items organized before this existed
@@ -195,11 +259,25 @@ const OCR_SCHEMA = { type: 'object', required: ['items'], properties: { items: {
   properties: { id: { type: 'string' }, text: { type: 'string', description: 'all readable text in the image, verbatim, reading order, max ~1500 chars; empty string if none' },
     labels: { type: 'array', items: { type: 'string' }, description: '3-6 short lowercase Turkish words for what is SEEN in it, for search: main objects, colours, style (e.g. kedi, deniz, mavi, siyah-beyaz, logo, ekran-görüntüsü, el-yazısı, grafik); no sentences' } } } } } };
 async function ocr(items) {
-  for (const i of items) { const p = join(WORK_DIR, `ocr-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); i._imgPath = p; delete i.image; }
+  // 148: the same picture is read once (cache); tesseract reads text-heavy ones here, only photos go to the AI (for "labels")
+  const done = [], send = [], keys = new Map(); let saved = 0;
+  for (const i of items) {
+    const k = hash('ocr', conf.ai, i.image || ''), hit = cget(k);
+    if (hit) { done.push({ ...hit, id: i.id }); saved += 1700; continue; }
+    const p = join(WORK_DIR, `ocr-${String(i.id).replace(/\W/g, '')}.jpg`); writeFileSync(p, Buffer.from(i.image, 'base64')); delete i.image;
+    const text = await tesseract(p).catch(() => null);
+    if (text) { const x = { text, labels: ['yazı'] }; cput(k, x); done.push({ ...x, id: i.id }); saved += 1700; try { unlinkSync(p); } catch { } continue; }
+    i._imgPath = p; keys.set(i.id, k); send.push(i);
+  }
+  if (done.length) logUsage({ kind: 'ocr', local: true, n: done.length, saved });
+  if (!send.length) return { items: done };
   const system = 'You read text in images. For each item, open its "image" file with the Read tool and copy the readable text verbatim (any language), in reading order; empty string if there is no text. Do not describe the image in "text"; put 3-6 short lowercase Turkish words for what is seen (objects, colours, style) in "labels". Output only per schema.';
-  const prompt = `Items:\n${JSON.stringify(items.map(i => ({ id: i.id, image: i._imgPath })))}`;
-  try { return await runClaude({ prompt, system, schema: OCR_SCHEMA, model: conf.organizeModel, readDir: WORK_DIR }); }
-  finally { for (const i of items) try { unlinkSync(i._imgPath); } catch { } }
+  const prompt = `Items:\n${JSON.stringify(send.map(i => ({ id: i.id, image: i._imgPath })))}`;
+  try {
+    const r = await runClaude({ prompt, system, schema: OCR_SCHEMA, model: conf.organizeModel, readDir: WORK_DIR, kind: 'ocr', n: send.length });
+    for (const x of r.items || []) { const k = keys.get(x.id); if (k) { const { id, ...keep } = x; cput(k, keep); } }
+    return { ...r, items: [...done, ...(r.items || [])] };
+  } finally { for (const i of send) try { unlinkSync(i._imgPath); } catch { } }
 }
 
 // 95a: voice notes → text on this computer (whisper.cpp, no cloud): ffmpeg makes 16 kHz mono wav, whisper-cli in the mic language (tr/en/ar)
@@ -228,7 +306,7 @@ async function cleanTags(tags) {
   const system = 'You clean up the tag list of a personal notes app. Merge synonyms, plurals, spelling variants and near-duplicates into one tag; ' +
     'fold tiny niche tags into a broader existing tag; drop tags that only describe the item type or are meaningless (dosya, link, not, resim, görsel, pdf, belge, referans, diğer, genel, kişisel, liste). ' +
     'ALWAYS keep project, product, company and person names as their own tags (e.g. poultrycare). Aim for at most ~15 tags total, lowercase Turkish single words. Return a mapping for EVERY input tag (to = itself if unchanged, empty to drop).';
-  return runClaude({ prompt: `Tags with counts:\n${tags.map(([t, n]) => `${t} (${n})`).join('\n')}`, system, schema: TAGS_SCHEMA, model: conf.askModel });
+  return runClaude({ prompt: `Tags with counts:\n${tags.map(([t, n]) => `${t} (${n})`).join('\n')}`, system, schema: TAGS_SCHEMA, model: conf.organizeModel, kind: 'tags', n: tags.length });
 }
 
 // 106e: the answer may carry a few allowed parts (OpenUI idea, no library): the app draws only these types, anything else becomes plain text
@@ -260,7 +338,7 @@ async function ask(question, items) {
     'Start with a plain sentence. Add a part only when it really helps (found items → records, amounts → table, dates → timeline, things to do → checklist, numbers over time → chart); usually none or one. ' +
     'Never invent numbers, ratings, prices or advice that are not in the items. No emojis, no sales talk.';
   const prompt = `Now: ${localTime(Date.now())}\nQuestion: ${question}\n\nItems:\n${JSON.stringify(compact(items))}`;
-  return runClaude({ prompt, system, schema: ASK_SCHEMA, model: conf.askModel });
+  return once('ask', [question, compact(items), localTime(Date.now()).slice(0, 10)], { prompt, system, schema: ASK_SCHEMA, model: conf.askModel, kind: 'ask', n: items.length });
 }
 
 // 93: "poultrycare için pano hazırla" → the AI picks the fitting items and puts them in titled groups; only ids + group names come back
@@ -278,7 +356,7 @@ async function boardPlan(request, items, boards) {
     text: (i.text || '').slice(0, 300) || undefined, url: i.url || undefined, file: i.fileName || undefined, tags: i.tags?.length ? i.tags : undefined,
     project: i.project || undefined, summary: i.summary ? i.summary.slice(0, 200) : undefined, todo: i.todo ? (i.todo.done ? 'done' : 'open') : undefined }));
   const prompt = `Now: ${localTime(Date.now())}\nRequest: ${request}\nExisting boards: ${boards.join(', ') || '(none)'}\n\nItems:\n${JSON.stringify(lite)}`;
-  return runClaude({ prompt, system, schema: PLAN_SCHEMA, model: conf.askModel });
+  return once('plan', [request, lite, boards, localTime(Date.now()).slice(0, 10)], { prompt, system, schema: PLAN_SCHEMA, model: conf.askModel, kind: 'board-plan', n: items.length });
 }
 
 // 95b: the morning brief — one or two plain sentences on what was saved yesterday (+ a nudge for today's tasks)
@@ -288,28 +366,35 @@ async function brief(saved, tasks) {
     'In 1-2 short sentences say what yesterday was mostly about (themes, not a list of every item); if there are tasks for today, end with the most important one. ' +
     'Write in the language most items are written in (Turkish when unsure). No greeting (the card already says good morning), no emojis, no sales talk, never describe your own process. Output only per schema.';
   const prompt = `Yesterday saved:\n${JSON.stringify(saved.map(i => ({ type: i.type, title: String(i.title || '').slice(0, 100), tags: i.tags?.length ? i.tags : undefined })))}\n\nToday's tasks:\n${JSON.stringify(tasks.map(t => ({ text: String(t.text || '').slice(0, 100), late: !!t.late })))}`;
-  return runClaude({ prompt, system, schema: BRIEF_SCHEMA, model: conf.organizeModel });
+  return runClaude({ prompt, system, schema: BRIEF_SCHEMA, model: conf.organizeModel, kind: 'brief', n: saved.length });
 }
 
 // one line per day / month for the list's day headers and the board's month grid (61)
 const SUM_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'line'],
   properties: { key: { type: 'string' }, line: { type: 'string', description: 'one short line, max ~90 characters, in Turkish' } } } } } };
-async function summaries(groups) {
+async function summaries(all) {
+  // 148: a day / month whose items did not change keeps its line (cache); only changed groups are sent
+  return perGroup('sum', all, g => (g.items || []).slice(0, 40).map(i => [i.type, i.title, (i.text || '').slice(0, 200), i.tags, i.chat]), x => x.line, groups => summaries0(groups));
+}
+async function summaries0(groups) {
   const system = 'You write one-line summaries of a person\'s day or month from the things they saved to themselves (notes, links, files, chats). ' +
     'For each group write ONE short, plain Turkish line (max ~90 characters) naming the main things, like a diary index: "poultrycare demo, 3 fatura, annemle konuşma". ' +
     'No dates and no total item count (both are shown already), no "bu gün"/"bugün", no full sentences about yourself, no emojis. Group similar items ("4 link: yapay zeka"). Output only per schema.';
   const prompt = `Groups:\n${JSON.stringify(groups.map(g => ({ key: g.key, items: (g.items || []).slice(0, 40).map(i => ({ type: i.type, title: (i.title || '').slice(0, 120) || undefined, text: (i.text || '').slice(0, 200) || undefined, tags: i.tags?.length ? i.tags : undefined, chat: i.chat || undefined })) })))}`;
-  return runClaude({ prompt, system, schema: SUM_SCHEMA, model: conf.organizeModel });
+  return runClaude({ prompt, system, schema: SUM_SCHEMA, model: conf.organizeModel, kind: 'summaries', n: groups.length });
 }
 // 131b: a short name for each group of items the phone/PC put together by meaning ("Ev tadilatı", "Logo fikirleri")
 const FOLD_SCHEMA = { type: 'object', required: ['items'], properties: { items: { type: 'array', items: { type: 'object', required: ['key', 'name'],
   properties: { key: { type: 'string' }, name: { type: 'string', description: '1-3 words, max ~24 characters' } } } } } };
-async function folderNames(groups) {
+async function folderNames(all) {
+  return perGroup('fold', all, g => (g.items || []).slice(0, 14).map(i => [i.type, i.title, (i.tags || []).slice(0, 4)]), x => x.name, groups => folderNames0(groups));
+}
+async function folderNames0(groups) {
   const system = 'You name folders. Each group is a set of things one person saved (notes, links, files, chats) that are close in meaning. ' +
     'Give each group ONE short folder name, 1-3 words, max ~24 characters, naming what they have in common, like "Ev tadilatı", "Logo fikirleri", "Faturalar". ' +
     'Use the language most of the items are written in (Turkish when unsure). No emojis, no quotes, no "Klasör", no numbers. Different groups get different names. Output only per schema.';
   const prompt = `Groups:\n${JSON.stringify(groups.map(g => ({ key: g.key, items: (g.items || []).slice(0, 14).map(i => ({ type: i.type, title: (i.title || '').slice(0, 100) || undefined, tags: i.tags?.length ? i.tags.slice(0, 4) : undefined })) })))}`;
-  return runClaude({ prompt, system, schema: FOLD_SCHEMA, model: conf.organizeModel });
+  return runClaude({ prompt, system, schema: FOLD_SCHEMA, model: conf.organizeModel, kind: 'folders', n: groups.length });
 }
 
 // ---- link metadata ----
@@ -389,7 +474,7 @@ async function article(url) {
 // ---- relay (74): a phone without Tailscale reaches this bridge through Supabase Realtime (broadcast: nothing is stored).
 // Every message is AES-GCM sealed with a key made from the bridge token, so Supabase never sees the content, and only a
 // device that knows the token (the owner's own, via the synced 'bridge' record) can ask anything; others get no answer.
-const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe', '/brief']);
+const RELAY_PATHS = new Set(['/health', '/ai-conf', '/ask', '/organize', '/article', '/meta', '/ocr', '/tags', '/summaries', '/folders', '/board-plan', '/transcribe', '/brief', '/usage', '/usage-conf']);
 const RELAY_CHUNK = 180000;
 const relay = { ws: null, ref: 0, hb: null, retry: 0, key: null, keyFor: null, parts: new Map(), topic: '' };
 async function relayKey() {
@@ -441,7 +526,7 @@ function send(res, code, body, origin) {
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const API = /^\/(health|meta|article|organize|ask|tags|ocr|inbox|new-repo|config|snapshot|gh-token|import-items)(\/|$)/;
+const API = /^\/(health|meta|article|organize|ask|tags|ocr|inbox|new-repo|config|snapshot|gh-token|import-items|usage)(\/|$)/;
 function serveStatic(req, res) {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   const file = join(APP_DIR, p === '/' ? 'index.html' : p);
@@ -533,6 +618,11 @@ http.createServer(async (req, res) => {
       if (ai !== conf.ai) { conf.ai = ai; writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 }); console.log(`ai → ${ai}`); }
       return send(res, 200, { ok: true, ai, installed: !!have[ai] }, origin);
     }
+    if (req.url === '/usage') return send(res, 200, { ...usageSummary(), cap: conf.dailyTokens }, origin); // 148
+    if (req.url === '/usage-conf' && req.method === 'POST') {
+      const cap = Math.max(0, Math.round(Number(body.cap) || 0)); conf.dailyTokens = cap; writeFileSync(CONF_FILE, JSON.stringify(conf, null, 2), { mode: 0o600 });
+      return send(res, 200, { ok: true, cap }, origin);
+    }
     if (req.url === '/inbox' && req.method === 'GET') return send(res, 200, readInbox(), origin);
     if (req.url === '/inbox' && req.method === 'POST') { const e = addInbox(body); console.log(`inbox +1 (${e.files.length} dosya)`); return send(res, 200, { ok: true, id: e.id }, origin); }
     if (req.url === '/inbox/ack') { ackInbox(body.ids || []); return send(res, 200, { ok: true }, origin); }
@@ -561,7 +651,7 @@ http.createServer(async (req, res) => {
       return send(res, 200, out, origin);
     }
     if (req.url === '/organize') {
-      const r = await organize((body.items || []).slice(0, 40), body.tags || [], (body.projects || []).slice(0, 30));
+      const r = await organize((body.items || []).slice(0, 60), body.tags || [], (body.projects || []).slice(0, 30));
       console.log(`organize ${body.items?.length} items ${Date.now() - t}ms`);
       return send(res, 200, r, origin);
     }
@@ -588,6 +678,7 @@ http.createServer(async (req, res) => {
     }
     send(res, 404, { error: 'not found' }, origin);
   } catch (e) {
+    if (e.code === 'limit') { console.log('günlük token sınırı doldu, arka plan işleri yarına'); return send(res, 429, { error: 'limit', until: e.until }, origin); }
     console.error(e.message);
     send(res, 500, { error: e.message }, origin);
   }

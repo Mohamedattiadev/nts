@@ -96,6 +96,7 @@ function toast(msg, ms = 2600, icon = '', action = null) {
   t.style.animation = 'none'; t.offsetHeight; t.style.animation = '';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms);
 }
+const kTok = n => n >= 1e6 ? (n / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' milyon' : n >= 1000 ? Math.round(n / 1000).toLocaleString('tr-TR') + ' bin' : String(Math.round(n)); // 148
 const domain = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 // Intl formatters are slow to build: make them once, and remember day labels (thousands of rows ask for the same few days)
@@ -5386,17 +5387,25 @@ const AI = {
     } catch (e) { console.warn('ocr image', e); return null; }
   },
   async pullImports() { // items made by "nts import" on the PC (files already in the GitHub repos)
-    if (this._imp) return; this._imp = true;
+    if (this._imp) return; this._imp = true; let total = 0;
     try {
       for (let round = 0; round < 40; round++) {
         const list = await this.call('/import-items', null, 30000); if (!list.length) break;
-        const add = list.filter(i => !byId(i.id));
-        if (add.length) await upsert(add);
+        const add = list.filter(i => !byId(i.id)); total += add.filter(i => i.pending).length;
+        if (add.length) { if (total >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } await upsert(add); }
         await this.call('/import-items/ack', { ids: list.map(i => i.id) });
         toast(`İçe aktarılanlar alınıyor… ${add.length} kayıt`, 2500, 'inbox');
       }
+      if (S.settings.importHold) this.holdAsk();
     } catch (e) { console.warn('imports', e); } finally { this._imp = false; }
   },
+  // 148: a big import is organized only after a yes: "~N token tutar, başlatayım mı?" (also in Settings until started)
+  held() { return S.settings.importHold ? S.items.filter(i => i.pending && !i.deleted && i.archive) : []; },
+  estTok(list) { return list.reduce((n, i) => n + 70 + Math.ceil(((i.archive ? (i.text || '').slice(0, 500) : (i.text || '').slice(0, 900)).length + (i.title || '').length + (i.url || '').length) / 3.6), 0) + Math.ceil(list.length / 60) * 2000; },
+  holdAsk() { const h = this.held(); if (!h.length) return this.holdGo();
+    toast(`${h.length} içe aktarılan kayıt bekliyor · düzenlemek ~${kTok(this.estTok(h))} token tutar`, 20000, 'spark', { label: 'Başlat', fn: () => this.holdGo() }); },
+  async holdGo() { if (!S.settings.importHold) return; S.settings.importHold = false; await DB.put('kv', S.settings, 'settings'); this.kick(); },
+  async usage() { try { return S.bridgeOk ? await this.call('/usage', null, 8000) : null; } catch { return null; } },
   async ocrBackfill() { // images saved before text reading existed: a few at a time, newest first, only when idle
     if (this._ocr || S.aiBusy || !S.bridgeOk) return; this._ocr = true;
     try {
@@ -5469,8 +5478,8 @@ const AI = {
     this._inb = false;
   },
   async process() {
-    if (S.aiBusy || !S.bridgeOk) return;
-    const pend = S.items.filter(i => i.pending && !i.deleted).sort((a, b) => b.ts - a.ts);
+    if (S.aiBusy || !S.bridgeOk || Date.now() < (this._limitTill || 0)) return;
+    const hold = S.settings.importHold, pend = S.items.filter(i => i.pending && !i.deleted && !(hold && i.archive)).sort((a, b) => b.ts - a.ts);
     if (!pend.length) return;
     S.aiBusy = true; this.dot();
     try {
@@ -5479,7 +5488,12 @@ const AI = {
         const m = await this.call('/meta', { urls: needMeta.map(i => i.url) }, 30000);
         await upsert(needMeta.map(i => ({ ...byId(i.id), meta: m[i.url] || { title: '' } })), { sync: false });
       }
-      let batch = S.items.filter(i => i.pending && !i.deleted).sort((a, b) => b.ts - a.ts).slice(0, 25);
+      // 148: up to 60 a call (one system prompt for many), at most 6 pictures (each picture is ~1.6k tokens and a tool turn)
+      let batch = [], pics = 0;
+      for (const i of S.items.filter(i => i.pending && !i.deleted && !(hold && i.archive)).sort((a, b) => b.ts - a.ts)) {
+        if (batch.length >= 60) break; const k = fileKind(i), pic = k === 'image' || (k === 'pdf' && (i.content == null || i.content.length < 40));
+        if (pic && pics >= 6) continue; if (pic) pics++; batch.push(i);
+      }
       batch = await Promise.all(batch.map(async i => { // let Claude see inside files
         const k = fileKind(i);
         try {
@@ -5510,8 +5524,12 @@ const AI = {
           ...(i.userLists ? {} : { lists: (x.lists || []).filter(k => LISTS.some(l => l[0] === k)), project: x.project ? x.project.toLowerCase().trim() : undefined }) };
       }));
       S.aiBusy = false; this.dot(); setTimeout(() => AICur.tour(batch.map(b => b.id), 'düzenledi'), 350); setTimeout(() => DateAsk.after(batch.filter(b => b.image).map(b => b.id)), 1500); // 120: after the board redrew
-      if (S.items.some(i => i.pending && !i.deleted)) this.kick();
-    } catch (e) { console.warn('AI', e); S.aiBusy = false; this.dot(); this.health(); }
+      if (S.items.some(i => i.pending && !i.deleted && !(S.settings.importHold && i.archive))) this.kick();
+    } catch (e) {
+      S.aiBusy = false; this.dot();
+      if (e.message === 'limit') { this._limitTill = Date.now() + 30 * 60e3; if (!this._limitSaid) { this._limitSaid = true; toast('Bugünkü yapay zekâ sınırı doldu · kalanlar yarın düzenlenir (Ayarlar)', 6000, 'spark'); } return; } // 148
+      console.warn('AI', e); this.health();
+    }
   },
   pick(q, extra = []) {
     const toks = tokens(q), live = alive();
@@ -6303,8 +6321,9 @@ async function importWhatsApp(file) {
     toast(`İçeri alınıyor… ${Math.min(k + 200, out.length)}/${out.length}`, 60000);
   }
   const nConv = out.filter(i => !i.parent).length;
-  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
-  Sync.schedule(); AI.kick();
+  if (nConv >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } // 148: a big chat waits for a yes
+  toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk && !S.settings.importHold ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
+  Sync.schedule(); if (S.settings.importHold) setTimeout(() => AI.holdAsk(), 5200); else AI.kick();
 }
 const byIdIn = (list, id) => list.find(x => x.id === id);
 function mimeOf(n) {
@@ -6641,7 +6660,7 @@ const BRIDGE_CMD = 'systemctl --user start hizli-note-bridge';
 // one plain sentence for "Claude is off", depending on the device
 const claudeOff = () => onPhone() ? 'Bilgisayar kapalı ya da köprü çalışmıyor.' : '' + aiName() + ' bağlı değil: bilgisayardaki Nts köprüsü kapalı. Ayarlar → ' + aiName() + '.';
 function claudeBlock() {
-  const n = S.items.filter(i => i.pending && !i.deleted).length;
+  const n = S.items.filter(i => i.pending && !i.deleted && !(S.settings.importHold && i.archive)).length; // 148: held imports are not "in the queue"
   if (S.bridgeOk) return `<div class="set-row static">${ic('cpu')}<span><span class="dot ok"></span>${aiName()} bağlı<small>${n ? `${n} kayıt sırada, arka planda düzenleniyor` : 'Kayıtları düzenler, sorularına cevap verir (kutuda Tab)'}${S.via === 'relay' ? ' · bilgisayar üzerinden, şifreli' : ''}</small></span></div>`
     + (BridgeLink.local() && Cloud.on() ? '<p class="hint">Telefonda aynı Google hesabıyla gir: bilgisayar açıkken ' + aiName() + ' telefonda da çalışır, ek kurulum yok.</p>'
       : BridgeLink.local() && !Cloud.on() ? '<p class="hint">Telefonun da bağlanması için burada Google ile gir; telefon aynı hesapla girince ' + aiName() + ' kendiliğinden bağlanır.</p>' : '');
@@ -6687,6 +6706,8 @@ function openSettings(page = 'main') {
     </div>
     <div class="set-sec"><h4>Yapay zekâ</h4>
       <button class="set-row" data-do="aipick">${ic('spark')}<span>Kullanılan: ${aiName()}<small>Claude, Codex ya da Gemini: kayıtları düzenleyen ve soruları cevaplayan</small></span>${ic('chev', 'sm')}</button>
+      <div class="set-line tok-line"><span>Token harcaması<small id="tokMsg">${S.bridgeOk ? 'ölçülüyor…' : 'Köprü kapalıyken ölçülmez'}</small></span><div class="seg sm" role="group" aria-label="Günlük sınır">${[[200000, '200 bin'], [1000000, '1 milyon'], [0, 'Sınırsız']].map(([v, l]) => `<button data-tokcap="${v}" aria-pressed="false">${l}</button>`).join('')}</div></div>
+      ${AI.held().length ? `<button class="set-row" data-do="imphold">${ic('spark')}<span>${AI.held().length} içe aktarılan kayıt bekliyor<small>Düzenlemek ~${kTok(AI.estTok(AI.held()))} token tutar · başlat</small></span>${ic('chev', 'sm')}</button>` : ''}
       <button class="set-row" data-do="sem">${ic('search')}<span>Anlamsal arama: ${Sem.on() ? 'açık' : 'kapalı'}<small id="semMsg">${esc(Sem.say())}</small></span></button>
       <div id="claudeBox">${claudeBlock()}</div>
     </div>
@@ -6730,6 +6751,11 @@ function openSettings(page = 'main') {
   if (wasOpen) saveSettings(); // keep what was typed before redrawing
   m.innerHTML = `<div class="d-body" tabindex="-1">${page === 'move' ? move : page === 'lists' ? listsPage : main}</div>`;
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
+  if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
+    const msg = m.querySelector('#tokMsg'); if (!msg || !u) return;
+    msg.textContent = `Bu ay ~${kTok(u.month)} · bugün ~${kTok(u.today)}${u.saved ? ` · ~${kTok(u.saved)} tasarruf` : ''}${u.cap ? ` · günlük sınır ${kTok(u.cap)}` : ''}`;
+    m.querySelectorAll('[data-tokcap]').forEach(b => { const on = +b.dataset.tokcap === (u.cap || 0); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  });
   const ma = m.querySelector('#mornAt'); if (ma) ma.onchange = () => { if (/^\d\d:\d\d$/.test(ma.value)) Morning.set(ma.value).then(() => { Remind.ask(); openSettings(); }); }; // 95b
   const pick = m.querySelector('#accentPick'); if (pick) { pick.oninput = () => setAccent(pick.value); pick.onchange = () => openSettings(); }
   m.querySelectorAll('[data-lname]').forEach(el => el.onchange = () => setList(el.dataset.lname, { name: el.value.trim() || undefined }));
@@ -6741,12 +6767,14 @@ function openSettings(page = 'main') {
     const lk = e.target.closest('[data-look]'); if (lk) { Glass.set(lk.dataset.look === '1'); return openSettings(); }
     if (e.target.closest('[data-morn="off"]')) { Morning.set('').then(openSettings); return; } // 95b
     const mc = e.target.closest('[data-mycur]'); if (mc) { S.settings.myCursor = mc.dataset.mycur === '1'; DB.put('kv', S.settings, 'settings').then(() => { AICur.mine(); openSettings(); }); return; }
+    const tc = e.target.closest('[data-tokcap]'); if (tc) { try { await AI.call('/usage-conf', { cap: +tc.dataset.tokcap }, 8000); AI._limitTill = 0; AI._limitSaid = false; AI.kick(); } catch { toast(claudeOff(), 3000, 'cpu'); } return openSettings(); } // 148
     const fs = e.target.closest('[data-fstyle]'); if (fs) { Folders.set(c => c.style = fs.dataset.fstyle).then(openSettings); return; }
     if (e.target.closest('[data-fregroup]')) { AIF.ask(true); toast('Klasörler yeniden gruplanıyor…', 2500, 'spark'); return; }
     if (e.target.closest('[data-fshow]')) { Folders.set(c => c.hide = []).then(openSettings); return; }
     if (!d) return;
     if (d === 'wa') $('#waInput').click();
     else if (d === 'move') openSettings('move');
+    else if (d === 'imphold') { await AI.holdGo(); toast(`${aiName()} içe aktarılanları düzenliyor`, 2500, 'spark'); openSettings(); } // 148
     else if (d === 'lists') openSettings('lists');
     else if (d === 'aipick') { m.close(); setTimeout(() => AiPick.open(() => openSettings()), 250); }
     else if (d === 'tour') { m.close(); setTimeout(() => Tour.start(), 250); }

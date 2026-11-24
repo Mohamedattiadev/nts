@@ -711,7 +711,21 @@ Arayüz:
         DOM, büyük resimlerin ana iş parçacığında çözülmesi, IndexedDB/senkronun ana iş parçacığını kilitlemesi, transform/opacity dışı animasyon,
         box-shadow/backdrop-filter maliyeti. En kötü 5 noktayı düzelt, önce/sonra tablosu PLAN'a; hedef: etkileşimde uzun görev yok, pano 60 fps
         (telefon 4x'te ≥45), görünüm değişimi <100 ms. tools/perf.mjs olarak kalsın (pwa-large-data-performance skill'ine yaz).
-- [ ] 148. **Yapay zekâ (Claude/Codex/Gemini) az token harcasın** (sahip, 2026-11-24: "az token harcaması gerek, düşünsene çok şey olursa"). Önce ölç:
+- [x] 148. (2026-11-24, A hattı: ÖLÇÜM — köprü her çağrıyı ~/.local/share/nts/usage.jsonl'a yazar (claude -p json usage: giriş, önbellek yazma/okuma,
+        çıkış; Gemini stats; Codex tahmini, est:true); "token" = giriş + önbellek yazma + çıkış + önbellek okuma/10. GET /usage (bugün, bu ay, tür
+        başına, tasarruf), Ayarlar → Yapay zekâ → "Token harcaması: Bu ay ~N · bugün ~M · ~T tasarruf" + günlük sınır (200 bin / 1 milyon / Sınırsız,
+        varsayılan 1 milyon, POST /usage-conf). KESME (bridge/thrift.mjs): WhatsApp gürültüsü ("ok", emoji, "<Medya dahil edilmedi>", "Bu mesaj
+        silindi", tr/en/ar) hiç gönderilmez; aynı içerik bir kez (toplu içinde ikizler, sonra disk önbelleği ai-cache.json, 6000 kayıt: organize,
+        ocr, ask, board-plan aynı gün, summaries/folders grup başına); yazılı resimler önce tesseract (≥12 gerçek sözcük) → resim yerine metin gider,
+        /ocr'de yapay zekâ yalnız fotoğraflara; organize kısa alanlar (metin 900, arşiv sohbeti 500, PDF 1500, ocr 800); uygulama çağrı başına 60
+        kayıt (eskiden 25), en çok 6 resim; etiket temizliği haiku. Sınır: arka plan işleri (organize, ocr, özet, klasör, sabah, etiket) aşınca 429
+        → uygulama 30 dk bekler, bir kez "kalanlar yarın" der; Sor ve pano hazırla yine çalışır. Büyük içe aktarma (≥100 kayıt, nts import ya da
+        uygulamadaki WhatsApp): importHold, "N kayıt bekliyor · ~T token tutar [Başlat]" + Ayarlar'da aynı satır. ÖNCE/SONRA (tools/tokbench.mjs:
+        sahte claude gerçek istem boylarından usage verir, model çağrılmaz; 2604a46 → bu iş): 1000 WhatsApp kaydı 40 çağrı / 140.993 → 17 / 83.195
+        (-%41); 20 resim (10 yazılı) 44.743 → 26.675 (-%40); aynı arşiv 2. kez 140.515 → 0 (-%100). tools/test/thrift.test.mjs 44/44.
+        Ekran görüntüsü 4 yapılandırma, konsol hatası 0, phone-audit ayarlar 0. Not: tesseract'ta yalnız eng var → `sudo pacman -S tesseract-data-tur
+        tesseract-data-ara` Türkçe/Arapça yazıyı da yerelde okutur. Köprü yeniden başlatılmalı.)
+        ESKİ METİN: **Yapay zekâ (Claude/Codex/Gemini) az token harcasın** (sahip, 2026-11-24: "az token harcaması gerek, düşünsene çok şey olursa"). Önce ölç:
         köprüdeki her çağrı türü (organize, ocr, ask, brief, folders, board-plan, transcribe) için çağrı başına giriş/çıkış token'ı (claude -p json
         usage) → ~/.local/share/nts/usage.jsonl + Ayarlar'da "Bu ay ~N token" satırı. Sonra kes: yerelde yapılabileni gönderme (anlamsız WhatsApp
         kayıtları, kopyalar, kısa notlar; OCR önce tesseract, yapay zekâ yalnız gerekirse), aynı içeriği tekrar gönderme (hash önbelleği), toplu gönder
