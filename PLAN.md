@@ -747,6 +747,11 @@ Arayüz:
         başlık, not ilk satırı, tür rengi), sayı satırı sade ("122" büyük + küçük "kayıt"), açık + koyu, telefonda 2 sütun, üzerine gelince ve açılış
         animasyonu. Bugünkü Nts kimliği (style.css değişkenleri; yeni kimlik yok, 143-0 reddedildi), Locus kalitesi, AI slop yok (106s ölçütleri).
         ✓/✗ + not + indir → folders-choices-3.json; [?] yap, sahip seçsin; sonra seçilen stil uygulamaya.
+- [ ] 149. **Zaman çizgisi daha yumuşak + aylar** (sahip, 2026-11-24, design/feedback-26.png: sağdaki dikey yıl şeridi 2023–2026 ve turuncu nokta:
+        "bu line da daha smooth; bir de '-' olsun, ayları gösteren"). Her ay için ince yatay çentik (yıl çentiği daha uzun/kalın), noktaya yakın
+        ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin
+        (yoğunluk). Sürükleme/tekerlek/dokunmada nokta yaylı ve akıcı kayar (rAF, transform), sayfa da yumuşak kayar, aya oturur (snap) + hafif
+        titreşim; sürüklerken yanında "Mart 2025" balonu. Klavye ↑↓ ay, PgUp/PgDn yıl. reduced-motion'da anında. Telefon önce, açık + koyu.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
