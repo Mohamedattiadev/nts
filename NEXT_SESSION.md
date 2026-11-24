@@ -231,7 +231,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2 (7b66a20; sw v116)
 - [x] 107m ilk açılışta örnek verilerle dene + tek tıkla sil (ced3eaa)
 - [x] 155-0 ÖNCE design/item.html: kayıt penceresi sade (design/feedback-32.png) — ÖRNEK HAZIR: design/item.html (A Belge · B Kart + kenar çubuğu · C Önizleme önce + ortak kurallar; 4 kayıt × masaüstü/telefon); sahip "en uygun seçeneği yap" → A Belge, 155'te uygulanır (2322215)
-- [~A] 155 kayıt penceresi: sahip "en uygun seçeneği yap" (örnek turu beklemeden) → design/item.html'deki A "Belge" yönünü (yoksa PLAN 155'teki A tarifini) uygula; 155-0'ı [x] yap; PLAN 155 — örnekteki A + "Ortak" bölümündeki kurallar referans
+- [x] 155 kayıt penceresi: sahip "en uygun seçeneği yap" (örnek turu beklemeden) → design/item.html'deki A "Belge" yönünü (yoksa PLAN 155'teki A tarifini) uygula; 155-0'ı [x] yap; PLAN 155 — örnekteki A + "Ortak" bölümündeki kurallar referans (sw v120)
 - [x] 153 panoda boş yere sağ tık (telefonda uzun bas) → zaman aralığı: Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + "Arşivi de göster" (WhatsApp vb.); PLAN 153 (5b10942; sw v119)
 - [~B] 154 HATA zengin kartlar kesik (design/feedback-31.png: WhatsApp balonlarında yazı satırın ortasından kesiliyor) → "full gözüksün"; PLAN 154
 - [ ] 107f kendiliğinden toparlama (birleştir?, kırık link, arşiv önerisi)

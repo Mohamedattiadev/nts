@@ -107,6 +107,7 @@ const memoDay = fn => { const m = new Map(); let today = ''; return key => { con
 const shortDay = memoDay(key => { const t = fmtDay(key); if (t === 'Bugün' || t === 'Dün') return t; const [y, m, d] = key.split('-').map(Number); return (y !== new Date().getFullYear() ? F_SDY : F_SD).format(new Date(y, m - 1, d)); });
 const fmtTime = ts => F_TIME.format(ts);
 const fmtDay = memoDay(fmtDay0);
+const F_WD = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }); // 155
 const F_DLW = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }), F_DMY = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); // 147c
 const fmtDay0d = key => { const [y, m, d] = key.split('-').map(Number); return F_DLW.format(new Date(y, m - 1, d)); }; // 92: the date behind "Bugün" / "Dün"
 function fmtDay0(key) {
@@ -2762,12 +2763,16 @@ const Back = {
 };
 
 // ---------- detail drawer ----------
+// 155 (A "Belge"): the summary is plain text with a small ✦, no coloured box
 function explainHtml(i) {
-  if (S.explaining.has(i.id)) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">${aiName()} inceliyor…</div><div class="skel" style="width:92%"></div><div class="skel" style="width:70%"></div></div></div>`;
-  if (i.explain?.text) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">${aiOf()} açıklaması</div>${esc(i.explain.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div></div>`;
-  if (i.summary) return `<div class="callout">${ic('spark')}<div class="c-b"><div class="c-t">Özet</div>${esc(i.summary)}</div></div>`;
+  if (S.explaining.has(i.id)) return `<div class="d-ai" aria-busy="true">${ic('spark', 'sm')}<div class="c-b"><span class="d-ai-l">${aiName()} inceliyor…</span><div class="skel" style="width:92%"></div><div class="skel" style="width:70%"></div></div></div>`;
+  if (i.explain?.text) return `<div class="d-ai" title="${esc(aiOf())} açıklaması">${ic('spark', 'sm')}<div class="c-b" dir="auto">${esc(i.explain.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div></div>`;
+  if (i.summary) return `<div class="d-ai" title="Özet">${ic('spark', 'sm')}<div class="c-b" dir="auto">${esc(i.summary)}</div></div>`;
   return '';
 }
+// 155: where the item came from, in words ("WhatsApp'tan"); a WhatsApp file name (20261120-WA0008) is never shown as a chat name
+const srcLabel = i => ({ whatsapp: "WhatsApp'tan", pc: 'Bilgisayardan', web: 'Tarayıcıdan', share: 'Paylaşımdan', note: '' })[i.source] ?? (i.type === 'note' && !i.source ? 'Elle yazıldı' : '');
+const chatName = i => i.chat && !/^(?:IMG|VID|AUD|PTT|DOC|STK)?-?\d{8}-WA\d+/i.test(i.chat) && !/^WA\d+/i.test(i.chat) ? i.chat : '';
 // one "Etiketle" row: what the item already has as small chips, the rest (colour, priority, task, lists) folds open
 function tagRowHtml(i) {
   const col = COLORS.find(([c]) => c === i.color), pr = PRIOS.find(([v]) => v && v === i.prio), d = i.todo?.due && dueInfo(i.todo.due);
@@ -2775,8 +2780,8 @@ function tagRowHtml(i) {
     pr && `<span class="tchip">${ic('flag', 'sm')}${pr[1]} öncelik</span>`,
     i.todo && `<span class="tchip${i.todo.done ? ' done' : ''}">${ic('todo', 'sm')}Görev${i.todo.done ? ' · bitti' : i.todo.doing ? ' · yapılıyor' : d ? ' · ' + esc(d.label) : ''}</span>`,
     ...(i.lists || []).filter(k => LISTS.some(l => l[0] === k)).map(k => `<span class="tchip">${ic(LISTS.find(l => l[0] === k)[1], 'sm')}${esc(listName(k))}</span>`)].filter(Boolean);
-  const open = S.tagOpen;
-  return `<div class="d-tagrow"><button class="lchip${open ? ' on' : ''}" data-act="tagfold" aria-expanded="${!!open}">${ic('layers', 'sm')}Etiketle${ic('chev', 'sm fold')}</button>${chips.join('')}</div>
+  const open = S.tagOpen; // 155: "#etiket" words + one "+"; the "+" opens the input and the rest (colour, priority, task, boards, lists)
+  return `<div class="d-tags">${(i.tags || []).map(t => `<span class="d-tg" dir="auto">${esc(t)}<button data-untag="${esc(t)}" title="Kaldır" aria-label="${esc(t)} etiketini kaldır">${ic('x', 'sm')}</button></span>`).join('')}${(i.vtags || []).map(t => `<span class="d-tg ai" title="${aiName()} resme bakıp buldu; aramada bulunur">${esc(t)}</span>`).join('')}${chips.join('')}${open ? '<input class="tag-in" placeholder="etiket" aria-label="Yeni etiket" enterkeyhint="done" autocomplete="off">' : ''}<button class="d-addtag${open ? ' on' : ''}" data-act="tagfold" aria-expanded="${!!open}" aria-label="${open ? 'Etiket panelini kapat' : 'Etiket ekle'}" title="${open ? 'Kapat' : 'Etiket, renk, öncelik, görev, liste'}">${ic(open ? 'x' : 'plus', 'sm')}</button></div>
     ${open ? `<div class="d-tagpanel">
       <div class="tp-row"><span class="tp-l">Renk</span><div class="mark-dots">${COLORS.map(([c, n]) => `<button class="cdot c-${c}${i.color === c ? ' on' : ''}" data-setcolor="${c}" title="${n}" aria-label="${n}"></button>`).join('')}</div></div>
       <div class="tp-row"><span class="tp-l">Öncelik</span><div class="seg sm prio">${PRIOS.map(([v, n]) => `<button class="${(i.prio || '') === v ? 'on' : ''}" data-setprio="${v}">${n}</button>`).join('')}</div></div>
@@ -2834,9 +2839,23 @@ async function noteImage(i, f) { // 106b: a picture in a note is its own file it
   Object.assign(it, { parent: i.id, archive: true, createdAt: now(), dev: deviceNow() });
   const saved = await saveItems([it]); await upsert(saved); AI.kick(); return 'nts:' + it.id;
 }
+// 155: the item window's "⋯" menu (Paylaş · Kopyala · Aç · Panoya koy · Sil); on the phone it rises from the bottom
+const Menu155 = {
+  toggle(dlg) { const m = dlg.querySelector('.d-menu'); m.hidden ? this.open(dlg) : this.close(dlg); },
+  open(dlg) { const m = dlg.querySelector('.d-menu'), b = dlg.querySelector('[data-act="more"]'); m.hidden = false; b.setAttribute('aria-expanded', 'true'); m.querySelector('.side-row')?.focus({ preventScroll: true }); },
+  close(dlg, refocus = true) { const m = dlg.querySelector('.d-menu'), b = dlg.querySelector('[data-act="more"]'); if (!m || m.hidden) return; m.hidden = true; b?.setAttribute('aria-expanded', 'false'); if (refocus) b?.focus({ preventScroll: true }); },
+  key(dlg, e) {
+    const bs = [...dlg.querySelectorAll('.d-menu .side-row')], k = bs.indexOf(document.activeElement);
+    const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? -1 : null;
+    if (to !== null) { e.preventDefault(); bs.at(to % bs.length)?.focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(dlg); }
+    else if (e.key === 'Tab') this.close(dlg, false);
+  },
+};
 function openItem(id) {
   const i = byId(id); if (!i) return; Peek.hide?.(); markSeen(i); Opens.bump(id);
   const dlg = $('#sheet'), k = fileKind(i), rel = relatedOf(i);
+  if (!dlg.open || dlg.dataset.id !== id) S.tagOpen = false; // 155: the "+" panel starts closed on every newly opened item
   dlg.dataset.id = id;
   const yt = ytId(i), emb = !yt && Rich.embed(i), media = yt || emb || i.type === 'file' || (i.type === 'link' && i.meta?.image); // 106a: Vimeo / Spotify / map play here too
   dlg.classList.toggle('wide', !!media);
@@ -2844,51 +2863,47 @@ function openItem(id) {
         ${i.meta?.image && !ytId(i) ? `<img src="${esc(i.meta.image)}" referrerpolicy="no-referrer" alt="" onerror="this.remove()">` : ''}
         <div class="lc-b">${i.meta?.title ? `<div class="lc-t">${esc(i.meta.title)}</div>` : ''}${i.meta?.description ? `<div class="lc-d">${esc(i.meta.description)}</div>` : ''}
         <div class="lc-u">${ic('ext', 'sm')}${esc(i.url)}</div></div></a>` : '';
+  const onB = !i.archive || i.onBoard || i.pos, chatN = chatName(i), src = srcLabel(i), isNote = i.type === 'note';
+  const full = `${F_DMY.format(i.ts)} ${F_WD.format(i.ts)}, ${fmtTime(i.ts)}`, host = i.type === 'link' && domain(i.url);
   dlg.innerHTML = `<div class="d-body" tabindex="-1">
-    <div class="d-head"><span class="type ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}${i.conv ? 'Sohbet' : KIND_LABEL[k]}</span><span>·</span><span>${fmtDay(dayKey(i.ts))}, ${fmtTime(i.ts)}</span>
-      ${i.source === 'whatsapp' ? '<span>· WhatsApp</span>' : i.source === 'pc' ? '<span>· Bilgisayar</span>' : i.source === 'web' ? '<span>· Tarayıcı</span>' : i.source === 'share' ? '<span>· Paylaşım</span>' : ''}
-      <span class="sp"></span>
-      <div class="d-acts d-only">
-        <button class="btn ghost sm" data-act="share" title="Başka bir uygulamaya ya da kişiye gönder">${ic('share', 'sm')}Paylaş</button>
-        <button class="icon-btn" data-act="copy" title="Kopyala">${ic('copy')}</button>
-        ${i.type === 'link' ? `<a class="icon-btn" href="${esc(i.url)}" target="_blank" rel="noopener" title="Aç">${ic('ext')}</a>` : ''}
-        ${i.type === 'file' ? `<button class="icon-btn" data-act="download" title="İndir">${ic('down')}</button>` : ''}
-        <button class="icon-btn danger" data-act="del" title="Sil">${ic('trash')}</button><span class="d-sep"></span></div>
-      <button class="icon-btn" data-act="star" title="Yıldızla">${ic('star', i.starred ? 'fill star-on' : '')}</button><button class="icon-btn" data-act="close" title="Kapat">${ic('x')}</button></div>
+    <div class="d-head"><span class="type ${i.type}-c">${ic(i.conv ? 'chat' : k === 'text' ? 'note' : k, 'sm')}${i.conv ? 'Sohbet' : KIND_LABEL[k]}</span><span class="sp"></span>
+      <button class="icon-btn" data-act="star" title="${i.starred ? 'Yıldızı kaldır' : 'Yıldızla'}" aria-pressed="${!!i.starred}">${ic('star', i.starred ? 'fill star-on' : '')}</button>
+      <button class="icon-btn" data-act="more" title="Diğer işlemler" aria-label="Diğer işlemler" aria-haspopup="menu" aria-expanded="false">${ic('dots')}</button>
+      <button class="icon-btn" data-act="close" title="Kapat (Esc)" aria-label="Kapat">${ic('x')}</button>
+      <div class="d-menu pop" role="menu" aria-label="Kayıt işlemleri" hidden>
+        <button class="side-row" role="menuitem" data-act="share">${ic('share', 'sm')}<span class="lbl">Paylaş</span></button>
+        <button class="side-row" role="menuitem" data-act="copy">${ic('copy', 'sm')}<span class="lbl">Kopyala</span></button>
+        ${i.type === 'link' ? `<a class="side-row" role="menuitem" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('ext', 'sm')}<span class="lbl">Tarayıcıda aç</span></a>` : ''}
+        ${i.type === 'file' ? `<button class="side-row" role="menuitem" data-act="download">${ic('down', 'sm')}<span class="lbl">İndir</span></button>` : ''}
+        ${onB ? '' : `<button class="side-row" role="menuitem" data-act="toboard">${ic('board', 'sm')}<span class="lbl">Panoya koy</span></button>`}
+        <button class="side-row" role="menuitem" data-act="explain">${ic('spark', 'sm')}<span class="lbl">${aiName()} anlatsın</span></button>
+        <hr><button class="side-row danger" role="menuitem" data-act="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button></div></div>
     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${emb ? `<div class="d-emb ${emb.k}" style="${emb.k === 'vimeo' ? 'aspect-ratio:16/9' : `height:${emb.k === 'spotify' ? emb.h : 320}px`}"><iframe src="${esc(emb.src.replace(/[?&]autoplay=1/, ''))}" title="${emb.label}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${media ? lcard : ''}
     ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     ${media ? '</div><div class="d-info">' : ''}
-    <textarea class="d-title" rows="1" aria-label="Başlık">${esc(titleOf(i))}</textarea>
-    ${autoTitle(i) ? `<div class="d-fn" title="Başlık resimdeki yazıdan alındı; değiştirebilirsin">${ic('file', 'sm')}<span>${esc(i.fileName)}</span></div>` : ''}
+    <div class="d-top"><textarea class="d-title" rows="1" aria-label="Başlık" dir="auto">${esc(titleOf(i))}</textarea>
+      <div class="d-meta"><span title="${esc(full)}">${shortDay(dayKey(i.ts))}</span>${src ? `<span class="d-dot" aria-hidden="true">·</span><span>${src}</span>` : ''}</div>
+      ${host ? `<a class="d-dom" href="${esc(i.url)}" target="_blank" rel="noopener" title="${esc(i.url)}">${ic('ext', 'sm')}${esc(host)}<span>${esc(i.url.replace(/^https?:\/\/(www\.)?[^/]+/, ''))}</span></a>` : ''}
+      ${autoTitle(i) ? `<div class="d-fn" title="Başlık resimdeki yazıdan alındı; değiştirebilirsin">${ic('file', 'sm')}<span>${esc(i.fileName)}</span></div>` : ''}</div>
     <div id="explainBox">${explainHtml(i)}</div>
+    ${!media && !i.summary && !i.explain?.text && i.meta?.description ? `<p class="d-desc" dir="auto">${esc(i.meta.description)}</p>` : ''}
     ${i.conv ? convHtml(i) : ''}
     ${window.NtsDedup?.savesLine(i) ? `<div class="d-saves" title="${esc(i.saves.map(x => F_DMY.format(x.ts) + (x.src === 'whatsapp' ? ' · WhatsApp' + (x.chat ? ': ' + x.chat : '') : '')).join('\n'))}">${ic('copy', 'sm')}<span>${esc(NtsDedup.savesLine(i))}</span></div>` : ''}
-    ${i.archive && !i.onBoard && !i.pos ? `<div class="d-arch">${ic('inbox', 'sm')}<span>Arşivde${i.chat ? ` · WhatsApp: ${esc(i.chat)}` : ''}. Listede, galeride ve aramada var, panoda yok.</span><button class="btn secondary sm" data-act="toboard">${ic('board', 'sm')}Panoya koy</button></div>` : ''}
     ${i.ocr ? `<details class="d-ocr"><summary>${ic('text', 'sm')}${fileKind(i) === 'pdf' ? 'Sayfadaki yazı' : 'Resimdeki yazı'}<button class="link-btn" data-act="copyocr">Kopyala</button></summary><pre>${esc(i.ocr)}</pre></details>` : ''}
     ${DateAsk.html(i)}
-    ${i.vtags?.length ? `<div class="d-vtags" title="${aiName()} resme bakıp buldu; aramada bulunur">${ic('spark', 'sm')}<span>Resimde:</span>${i.vtags.map(t => `<span class="tchip">${esc(t)}</span>`).join('')}</div>` : ''}
-    ${media ? '' : lcard}
-    <div class="field-label">Not</div>
-    <div class="d-text" data-ed></div>
-    <div class="tags-edit">${(i.tags || []).map(t => `<span class="tagpill">${esc(t)}<button data-untag="${esc(t)}" title="Kaldır">${ic('x', 'sm')}</button></span>`).join('')}
-      <input class="tag-in" placeholder="+ konu" enterkeyhint="done"></div>
+    <div class="d-text" data-ed${isNote || i.text ? '' : ' hidden'}></div>
+    ${isNote || i.text ? '' : `<button class="d-addnote" data-act="addnote">${ic('plus', 'sm')}<span>Not ekle…</span></button>`}
     ${tagRowHtml(i)}
     ${rel.length ? `<div class="field-label">Bağlantılı · ${rel.length}</div><div class="rel-chips">${rel.slice(0, 12).map(r => { const rk = fileKind(r);
       return `<button class="rel-chip" data-rel="${r.id}" title="${esc(titleOf(r))}"><span class="${r.type}-c">${ic(rk === 'text' ? 'note' : rk, 'sm')}</span><span class="t">${esc(titleOf(r))}</span></button>`; }).join('')}</div>` : ''}
-    ${Read.readable(i) ? `<button class="btn secondary wide" data-act="read">${ic('book', 'sm')}${i.type !== 'link' ? 'Okuma sayfasında aç' : i.read ? `Oku · ${Reader.minutes(i)} dk` : 'Okunur kopyasını al ve oku'}</button>` : ''}
+    ${Read.readable(i) ? `<button class="d-quiet" data-act="read">${ic('book', 'sm')}<span>${i.type !== 'link' ? 'Okuma sayfasında aç' : i.read ? `Oku · ${Reader.minutes(i)} dk` : 'Okunur kopyasını al ve oku'}</span></button>` : ''}
     ${(i.highlights || []).length ? `<div class="field-label">İşaretlediklerin · ${i.highlights.length}</div><div class="hl-list">${i.highlights.map(h => `<blockquote>${esc(h.text)}</blockquote>`).join('')}</div>` : ''}
-    <button class="btn ai wide" data-act="explain">${ic('spark', 'sm')}${i.explain ? '' + aiName() + ': yeniden anlat' : '' + aiName() + ' anlatsın: bu ne, neyle bağlantılı?'}</button>
+    <hr class="d-hr"><p class="d-arch">${ic(onB ? 'board' : 'inbox', 'sm')}${chatN ? `<span dir="auto">${esc(chatN)} sohbetinden</span><span class="d-dot" aria-hidden="true">·</span>` : ''}<span>${onB ? 'Panoda' : 'Arşivde'}</span>${onB ? '' : `<span class="d-dot" aria-hidden="true">·</span><button class="d-tob" data-act="toboard" title="Listede, galeride ve aramada var; panoda da görünsün">Panoya koy</button>`}</p>
     <div id="simBox" class="sim"></div>
     </div>${media ? '</div>' : ''}
-    <div class="d-foot m-only-b">
-      <button class="fbtn" data-act="share">${ic('share')}<span>Paylaş</span></button>
-      <button class="fbtn" data-act="copy">${ic('copy')}<span>Kopyala</span></button>
-      ${i.type === 'link' ? `<a class="fbtn" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('ext')}<span>Aç</span></a>` : ''}
-      ${i.type === 'file' ? `<button class="fbtn" data-act="download">${ic('down')}<span>İndir</span></button>` : ''}
-      <button class="fbtn danger" data-act="del">${ic('trash')}<span>Sil</span></button></div>
   </div>`;
   simFill(i, dlg.querySelector('#simBox'));
   hookThumbs(dlg);
@@ -2905,13 +2920,16 @@ function openItem(id) {
     const ch = {};
     if (title && ta.value !== ti0 && title !== titleOf(cur)) { ch.title = title; ch.userTitle = true; }
     if (text !== ed0 && text !== (cur.text || '')) ch.text = text;
-    const nt = dlg.querySelector('.tag-in').value.trim().replace(/^#/, '').toLowerCase();
+    const nt = (dlg.querySelector('.tag-in')?.value || '').trim().replace(/^#/, '').toLowerCase();
     if (nt) ch.tags = [...new Set([...(cur.tags || []), nt])];
     if (Object.keys(ch).length) await upsert([{ ...cur, ...ch }]);
   };
   dlg._commit = commit;
   dlg.onclick = async e => {
-    const act = e.target.closest('[data-act]')?.dataset.act, row = e.target.closest('.item');
+    const act = e.target.closest('[data-act]')?.dataset.act, row = e.target.closest('.item'), menu = dlg.querySelector('.d-menu');
+    if (act === 'more') return Menu155.toggle(dlg);
+    if (menu && !menu.hidden) { Menu155.close(dlg, act ? false : true); if (!act && !e.target.closest('a')) return; }
+    if (act === 'addnote') { e.target.closest('[data-act]').remove(); const h = dlg.querySelector('[data-ed]'); h.hidden = false; ned.focus(); return; }
     if (e.target === dlg || act === 'close') { await commit(); Morph.close(dlg); }
     else if (act === 'star') { await commit(); await toggleStar(i.id); openItem(i.id); }
     else if (act === 'del') { Morph.close(dlg); await removeItem(i); }
@@ -2926,7 +2944,7 @@ function openItem(id) {
     else if (act === 'datetodo') { await commit(); await DateAsk.make(i.id); openItem(i.id); }
     else if (act === 'datenot') { await commit(); await upsert([{ ...byId(i.id), noDateAsk: true }]); openItem(i.id); }
     else if (act === 'copyocr') { e.preventDefault(); copyText(byId(i.id).ocr || ''); }
-    else if (act === 'tagfold') { await commit(); S.tagOpen = !S.tagOpen; openItem(i.id); }
+    else if (act === 'tagfold') { await commit(); S.tagOpen = !S.tagOpen; S.tagFocus = S.tagOpen; openItem(i.id); }
     else if (act === 'mktodo') { await commit(); const c = byId(i.id); await upsert([{ ...c, noTodo: false, todo: { text: titleOf(c), done: false, user: true } }]); openItem(i.id); }
     else if (act === 'untodo') { await commit(); await upsert([{ ...byId(i.id), todo: null, noTodo: true }]); openItem(i.id); }
     else if (e.target.closest('[data-setcolor]')) { await commit(); const c = e.target.closest('[data-setcolor]').dataset.setcolor, cur = byId(i.id); await upsert([{ ...cur, color: cur.color === c ? undefined : c }]); openItem(i.id); }
@@ -2938,8 +2956,10 @@ function openItem(id) {
   };
   dlg.querySelector('[data-tdone]')?.addEventListener('change', async () => { await commit(); await Todo.toggle(i.id); openItem(i.id); });
   dlg.querySelector('.t-due-in')?.addEventListener('change', async e => { await commit(); const c = byId(i.id); await upsert([{ ...c, todo: { ...c.todo, due: validDue(e.target.value) || undefined, user: true } }]); });
-  dlg.querySelector('.tag-in').onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await commit(); openItem(i.id); } };
-  dlg.oncancel = e => { commit(); e.preventDefault(); Morph.close(dlg); };
+  const tin = dlg.querySelector('.tag-in');
+  if (tin) { tin.onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await commit(); openItem(i.id); requestAnimationFrame(() => $('#sheet .tag-in')?.focus()); } }; if (S.tagFocus) { S.tagFocus = false; requestAnimationFrame(() => tin.focus({ preventScroll: true })); } }
+  dlg.querySelector('.d-menu').addEventListener('keydown', e => Menu155.key(dlg, e));
+  dlg.oncancel = e => { e.preventDefault(); if (!dlg.querySelector('.d-menu')?.hidden) return Menu155.close(dlg); commit(); Morph.close(dlg); };
   Morph.revive(dlg); const was = dlg.open; Back.open(dlg); if (!was) Morph.open(dlg, id);
   requestAnimationFrame(fit);
   if (i.type === 'file') showPreview(i);

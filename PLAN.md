@@ -924,7 +924,16 @@ Arayüz:
         line-clamp ya da ölçülmüş yükseklik; Board.est tahmini gerçekle ≤4 px (106a kuralı) — kart büyüyünce komşular itilmesin (tidy/FLIP).
         Bütün zengin tipleri tek tek tara (Playwright: her parçada scrollHeight > clientHeight olan ve yarım satır kesen öğe sayısı = 0), açık +
         koyu, %28–%200 yakınlık, telefon; önce/sonra ekran görüntüsü.
-- [ ] 155. **Kayıt penceresi sade** (sahip, 2026-11-24, design/feedback-32.png: "çok karışık, kalabalık, daha iyi bir şey yap pls"; link kaydı
+- [x] 155. (2026-11-24, A hattı: A "Belge" uygulandı, bütün kayıt türleri. Üstte yalnız tür + yıldız · ⋯ · kapat; ⋯ menüsü Paylaş/Kopyala/
+        Tarayıcıda aç (link)/İndir (dosya)/Panoya koy (arşivdeyse)/"Claude anlatsın"/Sil (ayrı, kırmızı), ok tuşları + Esc (önce menü kapanır),
+        telefonda alttan 48 px satırlar; telefon alt çubuğu (d-foot) kalktı. Başlık altında tek gri satır "27 Tem · WhatsApp'tan" (tam tarih +
+        gün + saat üstüne gelince), link için tıklanır alan adı + yol. Özet/açıklama düz metin + küçük ✦ (turuncu kutu yok). Not boşken tek satır
+        "Not ekle…" → düzenleyici açılır. Etiketler "#etiket" sözcükleri (× üstüne gelince; telefonda 44 px), resim etiketleri soluk ✦, tek "+"
+        → giriş + renk/öncelik/görev/pano/liste paneli ("Etiketle" düğmesi kalktı, panel her yeni kayıtta kapalı). Arşiv kutusu yerine en altta
+        tek satır "Mehmet Usta sohbetinden · Arşivde · Panoya koy" / "Panoda"; WhatsApp dosya adı (20261120-WA0008) sohbet adı sayılmaz.
+        "Okunur kopya" sakin satır, büyük Claude düğmesi ⋯ menüsüne. 1366×768 + 390×844 × açık/koyu: konsol hatası 0, yatay taşma 0, not/etiket/
+        Panoya koy/Esc çalışıyor; phone-audit kayit-* 4 boyut × 2 tema: 0. Ekran görüntüleri design/155/.)
+        ESKİ METİN: **Kayıt penceresi sade** (sahip, 2026-11-24, design/feedback-32.png: "çok karışık, kalabalık, daha iyi bir şey yap pls"; link kaydı
         "PoultryCare Google Play test linki"). Görüntüdeki kalabalık: üst satırda tür + 2 satıra kırılan tarih + "· WhatsApp" dağınık, 6 düğme yan
         yana (Paylaş, kopyala, dışarı aç, sil kırmızı, yıldız, kapat), turuncu zeminli "Özet" kutusu bağırıyor, "Arşivde · WhatsApp: 20261120-WA0008…"
         kutusu (dosya adı anlamsız), ayrı URL kutusu, "NOT" başlığı + boş büyük düzenleyici kutusu, etiket çipleri + "+ konu" + ayrı "Etiketle"
