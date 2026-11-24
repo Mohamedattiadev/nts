@@ -1437,7 +1437,7 @@ function render(force) {
     if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
     for (const v of ['list', 'board', 'gallery', 'topics', 'todo']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
-    { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; bp.setAttribute('aria-expanded', 'false'); const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; } // 116: outside the board the logo is just the logo
+    { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; bp.setAttribute('aria-expanded', String(!!pp && !pp.hidden)); } // 146: a redraw keeps the open list's state (the tip checks it) // 116: outside the board the logo is just the logo
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
     $('#boardTools').hidden = none || S.view !== 'board';
     $('#pal').hidden = none || S.view !== 'board' || !S.palOpen; // desktop: slides out of the rail; phone: opens from the pen button (98)
@@ -2277,7 +2277,7 @@ const Native = {
       tip.style.left = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 6)) + 'px'; tip.style.top = (below ? r.bottom + 7 : r.top - h - 7) + 'px';
       tip.dataset.side = below ? 'b' : 't'; tip.style.translate = ''; tip.style.setProperty('--ax', Math.round(r.left + r.width / 2 - tip.offsetLeft) + 'px'); requestAnimationFrame(() => tip.classList.add('in')); };
     const hide = () => { clearTimeout(timer); if (!tip.hidden) lastHide = performance.now(); cur = null; tip.hidden = true; tip.classList.remove('in'); };
-    const show = (el, fast) => { clearTimeout(timer); cur = el; const go = () => { if (cur === el && el.isConnected && el.dataset.ti) place(el); };
+    const show = (el, fast) => { clearTimeout(timer); cur = el; const go = () => { if (cur === el && el.isConnected && el.dataset.ti && el.getAttribute('aria-expanded') !== 'true') place(el); }; // 146: no tip over its own open list
       fast || performance.now() - lastHide < 300 ? go() : (timer = setTimeout(go, 450)); };
     document.addEventListener('pointerover', e => {
       const el = e.target.closest?.('[title],[data-ti]'); if (el?.hasAttribute('title')) adopt(el);
@@ -4895,7 +4895,12 @@ const Board = {
       + (own ? `<button class="side-row" data-brename>${ic('pen', 'sm')}<span class="lbl">“${esc(S.board)}” adını değiştir</span></button><form class="new-board ren-board" hidden><input value="${esc(S.board)}" aria-label="Panonun yeni adı" maxlength="40"></form>` : '')
       + `<p class="hint" style="padding:4px 9px">${aiName()} bir kaydı bir projeye koyunca o projenin panosunda da görünür.</p>`;
     p.hidden = false; anchor.setAttribute('aria-expanded', 'true'); const r = anchor.getBoundingClientRect();
-    if (r.top < innerHeight / 2) { p.style.left = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)) + 'px'; p.style.top = (r.bottom + 8) + 'px'; }
+    if (r.top < innerHeight / 2) { // 146: never over the left rail (or its ">" tab): open to its right when they would meet
+      let x = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)); const y = r.bottom + 8;
+      for (const el of document.querySelectorAll('.rail, .rail-tab')) { const b = el.getBoundingClientRect(), cs = getComputedStyle(el);
+        if (!b.width || cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) continue;
+        if (b.left < x + p.offsetWidth && b.right > x && b.top < y + p.offsetHeight && b.bottom > y) x = Math.max(x, b.right + 8); }
+      p.style.left = Math.min(x, innerWidth - p.offsetWidth - 8) + 'px'; p.style.top = y + 'px'; }
     else { p.style.left = Math.max(8, r.right - p.offsetWidth) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 8) + 'px'; }
     p.classList.remove('bp-in'); void p.offsetWidth; p.classList.add('bp-in');
   },

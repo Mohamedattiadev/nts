@@ -667,11 +667,15 @@ Arayüz:
         (fareyle üstüne gelince; telefonda seçili/canlıyken; 36 px dokunma) → kayıt penceresi; sağ tık / uzun bas menüsünde panoda "Pencerede aç".
         Uzakta (%55 altı) tık önce karta yaklaşır. Notlar/linkler eskisi gibi pencereyi açar; onay kutuları 106b'deki gibi kartta. Test:
         scratchpad t145.mjs (4 yapılandırma, PDF/ses/video/resim, dışarı tık, köşe düğmesi, menü), konsol hatası yok.
-- [ ] 146. **Pano seçici listesi sol çubuğun üstüne binmesin** (sahip, 2026-11-24, design/feedback-24.png: "o kart soldaki menü üzerinde olmamalı sanki").
+- [x] 146. **Pano seçici listesi sol çubuğun üstüne binmesin** (sahip, 2026-11-24, design/feedback-24.png: "o kart soldaki menü üzerinde olmamalı sanki").
         Panoda logo + "Genel ⌄" açılınca Panolar listesi sol çubuğun (filtre/simge sütunu) üstünü kapatıyor; ayrıca açıkken düğmenin ipucu
         ("Pano: Genel — değiştir") listenin "PANOLAR" başlığının üstüne düşüyor. Düzelt: liste sol çubuğun SAĞINDAN açılsın (çubuk kapalıyken
         logonun altından, ama hiçbir yüzen parçayla çakışmasın), liste açıkken ipucu gösterilmesin. Masaüstü (çubuk açık/kapalı) + telefon,
         açık + koyu; phone-audit + çakışma ölçümü 0.
+        YAPILDI (2026-11-24, A): boardMenu liste kutusunu görünür .rail / .rail-tab ile kesişirse onların sağına (+8 px) kaydırır (çubuk açık:
+        x 18→68; kapalıyken logonun altında, ">" sekmesine değmez); Native.tips aria-expanded="true" düğmede ipucu göstermez; render artık
+        #boardBtn aria-expanded'i açık listeye göre korur (eskiden her çizimde false yapıyordu, ipucu geri geliyordu). Test scratchpad t146.mjs
+        (d/m × açık/koyu, çubuk açık/kapalı): çakışma 0, açıkken ipucu yok, kapalıyken ipucu var; phone-audit board 0; konsol hatası yok.
 - [ ] 123-1. **Kasa çarkı uygulamada** (sahip seçimi 2026-11-24, design/dial-choices.json): tarih çarkı t-B Üç kadran, yeri p-filter (süzgeçte tarih
         seçimi). Sahip notu: "halen o güzel his yok; bizim UI'a uygun olması lazım; smooth; ← → ile hareket edebiliyor olması lazım". Yani: bugünkü
         Nts kimliği (style.css değişkenleri, yeni kimlik YOK), savurma + yaylı oturma 60 fps, tık sesi/titreşim isteğe bağlı, ← → kadran içinde değer,
