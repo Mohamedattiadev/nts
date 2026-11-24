@@ -1070,12 +1070,15 @@ Arayüz:
            ayrılmış sütunun SOLUNDA biter; balon hiçbir zaman başka yüzeyin arkasında kalmaz (z-index + yer); şerit ve düğmeler ayrı satır ya da
            şeridin içinde. Ölç: liste/galeri/takvim × 1366, 1920, 1024, 390 × sürüklerken/değilken, bütün yüzen öğeler arasında kesişme = 0
            (tools/overlap.mjs kalsın, her arayüz işinde koşulsun).
-        b) design/feedback-40.png (Takvim, Kasım 2026): "UI geliştir takvimin, pls, uygulamada" — bugünkü: koyu kutucuklar, kahverengi zemin
-           yoğunluk, küçük resimler kesik, yazılı günlerde iki satır gri metin, 30. gün kutunun altında kalıyor (alt kutu biniyor), boş
-           günler büyük gri kutu. Yap: daha sakin ızgara (ince çizgiler, kutu değil), bugün accent halka, hafta sonu hafif ton, gün başına en
-           çok 3 öğe: küçük resim şeridi (kesiksiz, yuvarlak, tam kare) ya da tür simgesi + başlık, "+N"; yoğunluk zemin yerine gün numarasının
-           altında ince nokta/çubuk; ay başlığı büyük + ‹ › + "Bugün"; son satır kutunun altında kalmasın (alt boşluk = kutu yüksekliği);
-           günün üstüne gelince hafif kalkma, tıkla → o günün listesi yan panelde. Telefonda hafta görünümü + aşağı kaydırınca ay. Açık + koyu.
+        b) design/feedback-40.png (Takvim, Kasım 2026): "UI geliştir takvimin" + KARAR (sahip, aynı akşam): "takvim ile listeyi birleştirelim
+           bence, çünkü takvimden bir ayı açınca beni listeye alıyor". Yap: görünüm seçicide Takvim sekmesi KALKAR (Pano · Liste · Galeri);
+           Liste'nin en üstünde katlanabilir ay takvimi (varsayılan açık masaüstünde, telefonda tek satır hafta şeridi, aşağı çekince ay).
+           Takvim ile liste aynı durumda: güne dokun → liste o güne YERİNDE kayar (sayfa değişmez, gün başlığı kısa vurgu), liste kaydıkça
+           takvimde o gün/ay işaretlenir; ‹ › ay değiştirir ve listeyi o aya götürür; başlığa dokun → 157c'deki yıl/yıllar katmanı (aynı kod,
+           taşınır). Sağdaki zaman çizgisi (149) liste için kalır mı? → takvim açıkken çizgi gizlenir, takvim katlanınca çizgi döner (iki tarih
+           aracı aynı anda yok). Takvim görünümü: kutu değil ince ızgara, bugün accent halka, hafta sonu hafif ton, günde en çok 3 küçük resim
+           (kesiksiz kare) ya da tür simgesi + "+N", yoğunluk gün numarasının altında ince nokta/çubuk (kahverengi zemin yok), boş gün sade.
+           Eski ?view=calendar / kayıtlı hn-view 'calendar' → Liste + takvim açık (kırık bağlantı yok). Açık + koyu, 1366/1920/390, phone-audit 0.
         c) design/feedback-41.png: sol çubukta "BAĞLANTI…" bölümündeki satırlarda (Mac…, Hom…, Nix…) simge emoji 🔗. Sahip: "gerçek ikon SVG olsun,
            emoji olmasın". Bütün uygulamayı tara: arayüzde simge olarak kullanılan her emoji (veriden gelen liste/klasör/kaynak simgeleri dahil,
            ör. smart list/folder/source ikon alanı) → ic('…') SVG; kullanıcının kendi yazdığı metindeki emojiye dokunma. Tarayıcı emoji fontuna
