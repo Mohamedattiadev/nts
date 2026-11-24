@@ -758,6 +758,17 @@ Arayüz:
         sıraya koy, ertesi gün devam); büyük içe aktarmada önce "~N token tutar, başlatayım mı?". Önce/sonra: 1000 kayıtlık WhatsApp arşivinde toplam token.
         EK (sahip, 2026-11-24: "çok hızlı olsun abi bütün app"): yalnız 5 nokta değil, BÜTÜN uygulama — her ekran ve her etkileşim ölçülsün;
         biten noktalardan sonra kalanlar yeni maddeler olarak sıraya (147b, 147c…) eklensin.
+- [x] 147c. (2026-11-24, B hattı) **Bütün uygulama ölçüldü**: tools/perf.mjs'e 12 yeni senaryo (Yapılacaklar, ⋯/süzgeç penceresi,
+        Tarihe git, Ara + Enter ile açma, Sor, okuma sayfası, Ayarlar, Şifrelerim, Çöp, pano seçici, WhatsApp içe aktarma 1000 mesaj, senkron
+        gelirken 300 kayıt); ONLY=todo,trash… ile yalnız seçilenler. En kötüler düzeltildi: (1) Yapılacaklar bütün açık görevleri (yüzlerce,
+        WhatsApp'tan) tek seferde çiziyordu → ilk 120 + "N görev daha göster" (+400); (2) Çöp aynı → ilk 100 + "N kayıt daha göster";
+        (3) Tarihe git ısı haritası her gün için toLocaleDateString (365 kez yeni Intl) → bir kez kurulan F_DLW biçimleyici (fmtDay0d de);
+        (4) WhatsApp içe aktarma her 200 kayıtta upsert → 10k liste her partide yeniden çiziliyordu → dosyalar partiyle yazılır, liste sonda
+        BİR kez birleşip çizilir; grup etiketi F_DMY. Telefon 4x, eski/yeni dönüşümlü 2 tur (uzun görev toplamı ms, en uzun ms):
+          Yapılacaklar 5010/1990 → 2060/505 · Tarihe git 1670/925 → 670/375 · İçe aktarma 5240/1180 → 1090/480 · Çöp (400 kayıt) 1240/500 → 270/105
+        KALAN (147d): her pencere (showModal) arkadaki 10k satırlık liste yüzünden telefonda 300–1300 ms (Çöp, okuma, Ayarlar, kayıt) —
+        açılınca arka plan inert/top-layer stil yeniden hesabı; Ara'da yazma + Enter telefonda ~5 sn toplam (147b ile ortak, FLIP getBoundingClientRect);
+        pano seçici, Sor, Şifrelerim, senkron gelişi < 350 ms, sorun yok.
 - [ ] 131-1. **Klasör kartı: D Dosya, cam** (sahip, 2026-11-24, design/folders.html'de D seçti, design/folders-choices-3.json: "bu fena değil ama cam
         olsun, şeffaf yani, ama aynı renkler anladın"). 131-0c yeni tur İPTAL, doğrudan uygula: D Dosya stili (gerçek klasör biçimi) uygulamada
         varsayılan; zemini buzlu cam (backdrop-filter blur + yarı saydam), klasörün kendi rengi (etiket/tür rengi) aynen kalır, cam altında

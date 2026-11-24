@@ -56,10 +56,11 @@ for (const [dev, vp] of devs) {
     const agg = new Map(); for (const [id, us] of dt) { const f = by.get(id).callFrame; if (/^\((idle|program|root)\)$/.test(f.functionName)) continue; const key = (f.functionName || '(anon)') + (f.url ? ' ' + f.url.split('/').pop() + ':' + (f.lineNumber + 1) : caller(id)); agg.set(key, (agg.get(key) || 0) + us); }
     return [...agg].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, us]) => k + ' ' + Math.round(us / 1000));
   };
-  const sc = async (name, fn, wait = 400) => { try { if (prof) await cdp.send('Profiler.start'); await p.evaluate(() => __m.start()); await fn(); await p.waitForTimeout(wait); out[dev][name] = await p.evaluate(() => __m.stop()); if (prof) out[dev][name].top = top((await cdp.send('Profiler.stop')).profile); } catch (e) { out[dev][name] = 'HATA ' + e.message.split('\n')[0]; await p.evaluate(() => __m.stop()).catch(() => { }); } };
+  const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null; // 147c: ONLY=todo,trash … yalnız bunlar
+  const sc = async (name, fn, wait = 400) => { if (ONLY && !ONLY.includes(name)) return; try { if (prof) await cdp.send('Profiler.start'); await p.evaluate(() => __m.start()); await fn(); await p.waitForTimeout(wait); out[dev][name] = await p.evaluate(() => __m.stop()); if (prof) out[dev][name].top = top((await cdp.send('Profiler.stop')).profile); } catch (e) { out[dev][name] = 'HATA ' + e.message.split('\n')[0]; await p.evaluate(() => __m.stop()).catch(() => { }); } };
   const view = async v => { const r = await p.evaluate(async v => { const a = performance.now(); setView(v); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); return Math.round(performance.now() - a); }, v); return r; };
   const vt = {}; await sc('view', async () => { for (const v of ['board', 'gallery', 'list', 'board', 'list']) { const ms = await view(v); vt[v] = Math.max(vt[v] || 0, ms); await p.waitForTimeout(500); } });
-  out[dev].view.ms = vt;
+  if (out[dev].view) out[dev].view.ms = vt;
   // liste kaydırma
   await sc('listScroll', async () => { for (let k = 0; k < 20; k++) { await p.mouse.move(vp.width / 2, vp.height / 2); await p.mouse.wheel(0, 400); await p.waitForTimeout(50); } });
   await p.evaluate(() => scrollTo(0, 0));
@@ -86,6 +87,32 @@ for (const [dev, vp] of devs) {
   await sc('itemOpen', async () => { for (let k = 0; k < 3; k++) { await p.locator('#list .item').nth(k + 1).click(); await p.waitForTimeout(600); await p.keyboard.press('Escape'); await p.waitForTimeout(600); } });
   // sol çubuk aç/kapa (masaüstü: [ tuşu; telefon: süzgeç düğmesi)
   await sc('rail', async () => { for (let k = 0; k < 4; k++) { if (dev === 'd') await p.keyboard.press('BracketLeft'); else { await p.locator('#filterBtn').click(); await p.waitForTimeout(500); await p.keyboard.press('Escape'); } await p.waitForTimeout(500); } });
+  // 147c: ölçülmemiş ekranlar (her biri aç → çizilene kadar → kapat)
+  const esc = async () => { await p.keyboard.press('Escape'); await p.waitForTimeout(400); };
+  const paint = () => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await sc('todo', async () => { for (let k = 0; k < 2; k++) { await view('todo'); await p.waitForTimeout(500); await view('list'); await p.waitForTimeout(500); } });
+  await sc('more', async () => { for (let k = 0; k < 2; k++) { if (dev === 'm') await p.locator('#filterBtn').click(); else await p.locator('#rail [data-tags]').first().click(); await p.waitForTimeout(500); await esc(); } });
+  await sc('jump', async () => { for (let k = 0; k < 2; k++) { await p.evaluate(() => monthJump($('#filterBtn') || document.body)); await paint(); await p.waitForTimeout(400); await esc(); } });
+  await sc('findEnter', async () => { await p.evaluate(() => setMode('find')); await p.click('#input'); await p.keyboard.type('kitap', { delay: 120 }); await p.waitForTimeout(400); await p.keyboard.press('Enter'); await p.waitForTimeout(700); await esc(); });
+  await p.evaluate(() => { const i = $('#input'); i.value = ''; i.dispatchEvent(new Event('input')); setMode('note'); i.blur(); }); await esc();
+  await sc('ask', async () => { await p.evaluate(() => setMode('ask')); await p.click('#input'); await p.keyboard.type('market ne zaman', { delay: 60 }); await p.keyboard.press('Enter'); await p.waitForTimeout(1500); }, 600);
+  await p.evaluate(() => { const i = $('#input'); i.value = ''; i.dispatchEvent(new Event('input')); setMode('note'); i.blur(); }); await esc(); await esc();
+  await sc('reader', async () => { for (const id of ['p6', 'p13']) { await p.evaluate(id => Read.open(id), id); await p.waitForTimeout(700); await esc(); } });
+  await sc('settings', async () => { for (const pg of ['main', 'lists', 'main']) { await p.evaluate(pg => openSettings(pg), pg); await paint(); await p.waitForTimeout(500); } await esc(); });
+  await sc('vault', async () => { for (let k = 0; k < 2; k++) { await p.evaluate(() => Vault.open()); await p.waitForTimeout(500); await esc(); } });
+  if (!ONLY || ONLY.includes('trash')) { await p.evaluate(() => upsert(S.items.filter(i => i.type === 'note').slice(0, 400).map(i => ({ ...i, deleted: true, deletedAt: Date.now() - 864e5 })), { sync: false })); await p.waitForTimeout(800); }
+  await sc('trash', async () => { for (let k = 0; k < 2; k++) { await p.evaluate(() => Trash.open()); await p.waitForTimeout(600); await esc(); } });
+  if (!ONLY || ONLY.includes('boardPick')) { await view('board'); await p.waitForTimeout(1200); } // pano seçici yalnız panoda görünür
+  await sc('boardPick', async () => { for (let k = 0; k < 2; k++) { await p.locator('#boardBtn').click(); await p.waitForTimeout(500); await esc(); } });
+  if (!ONLY || ONLY.includes('boardPick')) { await view('list'); await p.waitForTimeout(600); }
+  await sc('import', async () => { // WhatsApp .txt, 1000 mesaj (zip yok: aynı ayrıştırma + kayıt yolu)
+    await p.evaluate(async () => { const t0 = Date.UTC(2025, 0, 1), L = []; for (let k = 0; k < 1000; k++) { const d = new Date(t0 + k * 47 * 60e3), z = n => String(n).padStart(2, '0'); L.push(`${z(d.getDate())}.${z(d.getMonth() + 1)}.${d.getFullYear()} ${z(d.getHours())}:${z(d.getMinutes())} - Ali: mesaj ${k} ${k % 5 ? 'market' : 'https://ornek.com/' + k}`); }
+      await importWhatsApp(new File([L.join('\n')], 'WhatsApp Chat with Perf.txt', { type: 'text/plain' })); });
+  }, 1200);
+  await sc('syncIn', async () => { // 300 kayıt başka cihazdan değişmiş gelir (Cloud.pull'un sonu)
+    await p.evaluate(async () => { const all = S.items.filter(i => i.type === 'note' && !i.deleted).slice(500, 800).map(i => ({ ...i, text: i.text + ' (öteki cihaz)', updatedAt: Date.now() + 1000 }));
+      const changed = GH.merge(all, { dirty: new Set(), base: {} }); if (changed.length) { await DB.putMany('items', changed); runSearch(); render(); } });
+  }, 800);
   out[dev].dom = await p.evaluate(() => document.querySelectorAll('*').length);
   out[dev].errs = errs.slice(0, 5);
   await c.close();

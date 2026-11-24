@@ -1052,6 +1052,7 @@ dialog.readpage::backdrop { background: var(--bg); }
 .t-add-due { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
 .t-add-due[hidden] { display: none; }
 .t-group { margin-bottom: 14px; }
+.t-more { display: flex; margin: 4px auto 14px; min-height: 44px; } /* 147c: "N daha göster" (Yapılacaklar, Çöp) */
 .t-gh { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; padding: 0 6px 6px; }
 .t-gh span { color: var(--muted); font-weight: 600; }
 .t-group.late .t-gh { color: var(--danger); } .t-group.today .t-gh { color: var(--accent); }

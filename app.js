@@ -105,7 +105,8 @@ const memoDay = fn => { const m = new Map(); let today = ''; return key => { con
 const shortDay = memoDay(key => { const t = fmtDay(key); if (t === 'Bugün' || t === 'Dün') return t; const [y, m, d] = key.split('-').map(Number); return (y !== new Date().getFullYear() ? F_SDY : F_SD).format(new Date(y, m - 1, d)); });
 const fmtTime = ts => F_TIME.format(ts);
 const fmtDay = memoDay(fmtDay0);
-const fmtDay0d = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }); }; // 92: the date behind "Bugün" / "Dün"
+const F_DLW = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }), F_DMY = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); // 147c
+const fmtDay0d = key => { const [y, m, d] = key.split('-').map(Number); return F_DLW.format(new Date(y, m - 1, d)); }; // 92: the date behind "Bugün" / "Dün"
 function fmtDay0(key) {
   const today = dayKey(now()), yest = dayKey(now() - 864e5);
   if (key === today) return 'Bugün'; if (key === yest) return 'Dün';
@@ -1644,18 +1645,19 @@ const Trash = {
         const r = e.target.closest('[data-restore]'), k = e.target.closest('[data-kill]');
         if (r) { const i = byId(r.dataset.restore); await upsert([{ ...i, deleted: false, deletedAt: undefined }]); toast('Geri getirildi', 1800, 'check'); return this.draw(); }
         if (k) { await this.purge([byId(k.dataset.kill)]); return this.draw(); }
+        if (e.target.closest('[data-tmore]')) { this.lim += 300; return this.draw(); }
         if (e.target.closest('[data-empty]')) { const all = this.list(); if (!all.length) return; if (e.target.closest('[data-empty]').dataset.sure !== '1') { const b = e.target.closest('[data-empty]'); b.dataset.sure = '1'; b.textContent = `Emin misin? ${all.length} kayıt kalıcı silinir`; return; } await this.purge(all); toast('Çöp kutusu boşaldı', 2000, 'trash'); this.draw(); }
       });
     }
-    this.draw(); Back.open(d);
+    this.lim = 100; this.draw(); Back.open(d); // 147c: a big trash (hundreds after a cleanup) draws 100 rows, the rest on request
   },
   draw() {
-    const d = $('#trash'), all = this.list(), left = i => Math.max(1, this.DAYS - Math.floor((now() - i.deletedAt) / 864e5));
+    const d = $('#trash'), all = this.list(), lim = this.lim || 100, left = i => Math.max(1, this.DAYS - Math.floor((now() - i.deletedAt) / 864e5));
     d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type">${ic('trash', 'sm')}Çöp kutusu</span><span class="sp"></span><button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
       <p class="hint">Silinenler ${this.DAYS} gün burada durur, sonra kendiliğinden kalıcı silinir.</p>
-      ${all.length ? `<div class="v-list">${all.map(i => { const k = i.type === 'draw' ? 'pen' : fileKind(i); return `<div class="v-row"><span class="v-av ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span>
+      ${all.length ? `<div class="v-list">${all.slice(0, lim).map(i => { const k = i.type === 'draw' ? 'pen' : fileKind(i); return `<div class="v-row"><span class="v-av ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span>
           <span class="v-t" style="flex:1"><b>${esc(i.type === 'draw' ? 'Çizim' : titleOf(i))}</b><small>${fmtDay(dayKey(i.deletedAt))} silindi · ${left(i)} gün kaldı</small></span>
-          <button class="btn secondary sm" data-restore="${i.id}">Geri getir</button><button class="icon-btn sm danger" data-kill="${i.id}" title="Kalıcı sil" aria-label="Kalıcı sil">${ic('x', 'sm')}</button></div>`; }).join('')}</div>
+          <button class="btn secondary sm" data-restore="${i.id}">Geri getir</button><button class="icon-btn sm danger" data-kill="${i.id}" title="Kalıcı sil" aria-label="Kalıcı sil">${ic('x', 'sm')}</button></div>`; }).join('')}</div>${all.length > lim ? `<button class="btn secondary sm t-more" data-tmore>${all.length - lim} kayıt daha göster</button>` : ''}
         <div class="row" style="justify-content:flex-end"><button class="btn danger" data-empty>Çöpü boşalt</button></div>`
         : `<p class="hint v-empty">Çöp kutusu boş.</p>`}</div>`;
   },
@@ -4074,7 +4076,7 @@ const Heat = {
     for (let n = 0; n < days; n++) {
       const d = new Date(y, 0, 1 + n), key = dayKey(d.getTime()), c = by.get(key) || 0; total += c;
       if (d.getDate() === 1) months += `<span style="grid-column:${Math.floor((n + off) / 7) + 1}">${MS_TR[d.getMonth()]}</span>`;
-      cells += c ? `<button class="hc l${lv(c)}${key === today ? ' today' : ''}" data-hday="${key}" title="${d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })} · ${c} kayıt${Summ.day(key) ? '\n' + esc(Summ.day(key)) : ''}" aria-label="${d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}, ${c} kayıt"></button>` : `<i class="hc${key === today ? ' today' : ''}${key > today ? ' fut' : ''}"></i>`;
+      cells += c ? `<button class="hc l${lv(c)}${key === today ? ' today' : ''}" data-hday="${key}" title="${F_DLW.format(d)} · ${c} kayıt${Summ.day(key) ? '\n' + esc(Summ.day(key)) : ''}" aria-label="${d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}, ${c} kayıt"></button>` : `<i class="hc${key === today ? ' today' : ''}${key > today ? ' fut' : ''}"></i>`;
     }
     return `<div class="heat"><div class="heat-top"><div class="heat-ys">${years.slice(0, 6).map(v => `<button class="${v === y ? 'on' : ''}" data-hyear="${v}">${v}</button>`).join('')}</div><span class="muted">${total} kayıt</span></div>
       <div class="heat-scroll"><div class="heat-ms">${months}</div><div class="heat-g">${cells}</div></div>
@@ -4509,12 +4511,13 @@ const Todo = {
     const done = S.items.filter(i => i.todo?.done && !i.deleted).sort((a, b) => (b.todo.doneAt || 0) - (a.todo.doneAt || 0)).slice(0, 50);
     const by = new Map(this.GROUPS.map(([g]) => [g, []])); open.forEach(i => by.get(this.group(i)).push(i));
     const focus = document.activeElement?.matches?.('.t-add input') ? document.activeElement.value : null;
-    let n = 0;
+    let n = 0; const lim = this.lim || 120; // 147c: hundreds of open tasks (WhatsApp import) → draw the first 120, the rest on request
     el.innerHTML = `<div class="todo-head"><h2>Yapılacaklar</h2><span class="n">${open.length}</span><span class="sp"></span>
         ${by.get('late').length ? `<span class="t-due late">${by.get('late').length} gecikmiş</span>` : ''}</div>
       <form class="t-add"><span class="t-add-ic">${ic('plus', 'sm')}</span><input placeholder="${innerWidth < 600 ? 'Görev ekle… (yarın 10:30 dişçi)' : 'Görev ekle… (ör. yarın 10:30 dişçi, cuma rapor)'}" enterkeyhint="done" aria-label="Görev ekle"><span class="t-add-due" hidden></span></form>
-      ${open.length ? this.GROUPS.filter(([g]) => by.get(g).length).map(([g, l]) => `<div class="t-group ${g}"><div class="t-gh">${l}<span>${by.get(g).length}</span></div>
-          <div class="todo-list">${by.get(g).map(i => this.row(i, ++n)).join('')}</div></div>`).join('')
+      ${open.length ? this.GROUPS.filter(([g]) => by.get(g).length).map(([g, l]) => n >= lim ? '' : `<div class="t-group ${g}"><div class="t-gh">${l}<span>${by.get(g).length}</span></div>
+          <div class="todo-list">${by.get(g).slice(0, Math.max(0, lim - n)).map(i => this.row(i, ++n)).join('')}</div></div>`).join('')
+          + (open.length > lim ? `<button class="btn secondary sm t-more" data-tmore>${open.length - lim} görev daha göster</button>` : '')
         : emptyHtml('todo', 'Yapılacak bir şey yok', 'Yukarıya bir görev yaz ya da ana kutuya <b>- süt al</b> gibi satırlar gir. ' + aiName() + ' da "yarın 10:30 diş randevusu" gibi notları kendisi görev yapar.')}
       ${done.length ? `<details class="todo-done"${this.showDone ? ' open' : ''}><summary>${ic('chev', 'sm')}Bitenler · ${done.length}<span class="sp"></span><button class="link-btn" data-tclear>Bitenleri temizle</button></summary><div class="todo-list">${done.map((i, k) => this.row(i, k + 1)).join('')}</div></details>` : ''}`;
     if (focus != null) { const inp = el.querySelector('.t-add input'); inp.value = focus; inp.focus(); this.preview(inp); }
@@ -4552,6 +4555,7 @@ const Todo = {
     const el = $('#todo');
     el.addEventListener('click', async e => {
       const g = k => e.target.closest(`[${k}]`);
+      if (g('data-tmore')) { this.lim = (this.lim || 120) + 400; return this.render(); }
       if (g('data-tclear')) { e.preventDefault(); const ds = S.items.filter(i => i.todo?.done && !i.deleted); await upsert(ds.map(i => ({ ...i, todo: null, noTodo: true }))); return toast(`${ds.length} biten görev listeden kaldırıldı`, 3000, 'check'); }
       if (e.target.closest('.todo-done summary')) { this.showDone = !e.target.closest('details').open; return; }
       const item = e.target.closest('[data-tid]'); if (!item) return; const id = item.dataset.tid;
@@ -6426,7 +6430,7 @@ async function importWhatsApp(file) {
       } else log.push({ ts: m.ts, who: m.who, text });
     }
     const photos = kids.filter(k => fileKind(k) === 'image'), who = [...new Set(g.map(m => m.who))];
-    const label = new Date(g[0].ts).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const label = F_DMY.format(g[0].ts);
     const text = log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${byIdIn(kids, l.att)?.fileName}] ` : '') + l.text).join('\n').trim();
     if (g.length === 1 && !kids.length) { // a lone message stays a plain note/link
       const [it] = itemsFromInput({ text: g[0].text }); if (!it) continue;
@@ -6437,11 +6441,12 @@ async function importWhatsApp(file) {
     out.push(...kids);
   }
   if (!out.length) return toast('Hepsi zaten içeride ✓');
+  const all = []; // 147c: files are written 200 at a time (progress shows), the list is merged and redrawn ONCE at the end
   for (let k = 0; k < out.length; k += 200) {
-    const saved = await saveItems(out.slice(k, k + 200));
-    await upsert(saved.map(i => i.parent ? { ...i, pending: false } : i), { sync: false }); // Claude organizes the conversation, not each photo
-    toast(`İçeri alınıyor… ${Math.min(k + 200, out.length)}/${out.length}`, 60000);
+    all.push(...await saveItems(out.slice(k, k + 200)));
+    if (out.length > 200) toast(`İçeri alınıyor… ${Math.min(k + 200, out.length)}/${out.length}`, 60000);
   }
+  await upsert(all.map(i => i.parent ? { ...i, pending: false } : i), { sync: false }); // Claude organizes the conversation, not each photo
   const nConv = out.filter(i => !i.parent).length;
   if (nConv >= 100 && !S.settings.importHold) { S.settings.importHold = true; await DB.put('kv', S.settings, 'settings'); } // 148: a big chat waits for a yes
   toast(`${live.length} mesaj → ${nConv} kayıt içeri alındı (Arşiv)${S.bridgeOk && !S.settings.importHold ? ' · ' + aiName() + ' düzenliyor' : ''}`, 5000, 'check');
