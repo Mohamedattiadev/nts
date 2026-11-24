@@ -2488,3 +2488,27 @@ dialog.clean .d-body { gap: 12px; }
 [aria-checked="true"] > .a11y-sw::after { transform: translateX(16px); background: var(--accent-text); }
 .a11y-prev { margin: 4px 0 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: calc(14.5px * var(--fs, 1)); }
 .a11y-prev small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+
+/* 153: board time range — the chip by the zoom box ("6 ay ×") and the menu (clock button / right click on empty space) */
+.board-tools .tool.range.set { color: var(--accent); background: var(--accent-soft); }
+.board-tools .tool.range.set:has(+ .range-x:not([hidden])) { border-radius: 0; }
+.board-tools .tool.range-x { width: 24px; height: 30px; margin-left: -2px; padding: 0; color: var(--muted); border-radius: 0 7px 7px 0; background: var(--accent-soft); }
+.board-tools .tool.range-x:hover { color: var(--text); }
+.board-tools .tool.range-x .i { width: 13px; height: 13px; }
+.range-pop { width: 248px; }
+.range-pop .side-row:focus-visible, .range-pop .rp-y:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.range-pop .rp-years { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 6px 2px; }
+.range-pop .rp-y { height: 28px; padding: 0 10px; border-radius: 14px; font-size: calc(12px * var(--fs, 1)); font-weight: 550; color: var(--text-2); background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.range-pop .rp-y:hover { color: var(--text); } .range-pop .rp-y.on { background: var(--accent-soft); color: var(--accent); }
+.range-pop .rp-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+.range-pop .rp-arch { height: auto; min-height: 44px; padding-block: 6px; }
+.range-pop .rp-arch .lbl { white-space: normal; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; min-width: 0; }
+.range-pop .rp-arch small { font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 450; }
+.range-pop .rp-arch .switch { margin-left: auto; pointer-events: none; }
+.range-pop .rp-hint { padding: 6px 9px 4px; }
+@media (max-width: 899px) {
+  .range-pop .side-row, .range-pop .rp-y { min-height: 44px; }
+  .board-tools .tool.range-x { width: 44px; height: 44px; margin: 0 6px; border-radius: 22px; } /* 44 px and 8 px apart (101) */
+  .board-tools .tool.range.set:has(+ .range-x:not([hidden])) { border-radius: 7px; }
+  .board-tools .tool.range.set span { display: inline; }
+}

@@ -443,22 +443,36 @@ const onBoard = i => onMain() ? true : inBoard(i) || !!posOf(i);
 const boardNames = () => { const b = byId('boards'), own = b && !b.deleted ? b.names || [] : [], seen = new Map();
   for (const n of [...S.items.filter(i => i.project && !i.deleted).map(i => i.project), ...own]) { const k = bfold(n); if (k && !seen.has(k)) seen.set(k, n); }
   return [...seen.values()].sort((a, b) => a.localeCompare(b, 'tr')); };
-// board time range: 'week' | '30' (default) | 'month' | 'y2024' … | 'all'
+// board time range: '30' (main default) | '90' | '180' | '365' | 'y2024' … | 'all' (project default); 'week' / 'month' still read.
+// 153: each board keeps its own (hn-range-<board>) and the main board can also show the imported archive (hn-arch-main)
 const RANGES = () => { const ys = [...new Set(S.items.filter(i => !i.deleted).map(i => new Date(i.ts).getFullYear()))].sort((a, b) => b - a);
-  return [['week', 'Bu hafta'], ['30', 'Son 30 gün'], ['month', 'Bu ay'], ...ys.map(y => ['y' + y, String(y)]), ['all', 'Tümü']]; };
-function rangeStart(r = S.boardRange || '30') {
+  return [['30', 'Son 30 gün'], ['90', 'Son 3 ay'], ['180', 'Son 6 ay'], ['365', 'Son 1 yıl'], ['all', 'Tümü'], ...ys.map(y => ['y' + y, String(y)])]; };
+const RSHORT = { '30': '30 gün', '90': '3 ay', '180': '6 ay', '365': '1 yıl', all: 'Tümü', week: 'Bu hafta', month: 'Bu ay' };
+const Range = {
+  c: {},
+  key: () => onMain() ? 'main' : S.board,
+  ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { } return null; },
+  get() { const k = this.key(); return this.c[k] ??= this.ls('hn-range-' + k) || (k === 'main' ? this.ls('hn-range') || '30' : 'all'); },
+  arch() { const k = 'a|' + this.key(); return this.c[k] ??= this.ls('hn-arch-' + this.key()) === '1'; },
+  def() { return onMain() ? '30' : 'all'; },
+  set(v) { const k = this.key(); this.c[k] = v; this.ls('hn-range-' + k, v); this.changed(); },
+  setArch(on) { const k = this.key(); this.c['a|' + k] = on; this.ls('hn-arch-' + k, on ? '1' : '0'); this.changed(); },
+  changed() { S.cam = null; render(); if (S.view === 'board' && !reduced()) $('#plane')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' }); }, // the camera fits the new set (Hepsini gör), the cards fade in
+};
+function rangeStart(r = Range.get()) {
   const d = new Date(); d.setHours(0, 0, 0, 0);
   if (r === 'week') { d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return [d.getTime(), Infinity]; }
   if (r === 'month') { d.setDate(1); return [d.getTime(), Infinity]; }
-  if (r === '30') return [now() - 30 * 864e5, Infinity];
+  if (/^\d+$/.test(r)) return [now() - +r * 864e5, Infinity];
   if (r[0] === 'y') { const y = +r.slice(1); return [new Date(y, 0, 1).getTime(), new Date(y + 1, 0, 1).getTime()]; }
   return [-Infinity, Infinity];
 }
-let _rs; const inRange = ts => { const [a, b] = _rs || (_rs = rangeStart()); return ts >= a && ts < b; };
-const rangeLabel = () => (RANGES().find(r => r[0] === (S.boardRange || '30')) || [0, 'Son 30 gün'])[1];
+let _rs; const inRange = ts => { const r = Range.get(); if (r === 'all') return true; if (_rs?.[0] !== r) _rs = [r, ...rangeStart(r)]; return ts >= _rs[1] && ts < _rs[2]; };
+const rangeLabel = () => (RANGES().find(r => r[0] === Range.get()) || [0, RSHORT[Range.get()] || 'Son 30 gün'])[1];
+const rangeShort = () => RSHORT[Range.get()] || rangeLabel();
 let _vis = {};
 function visible(keepAll = false) { // same list, same filter → same answer (render runs often)
-  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.boardRange, S.board, S.folder, S.folder?.startsWith('ai:') ? AIF.ver : ''].map(String).join('|') + (keepAll ? 'k' : '');
+  const f = S.filter, key = [S.items, JSON.stringify(f), S.sortPrio, keepAll || S.searchOn, keepAll || S.hits, S.view, S.view === 'board' ? Range.get() + Range.arch() : '', S.board, S.folder, S.folder?.startsWith('ai:') ? AIF.ver : ''].map(String).join('|') + (keepAll ? 'k' : '');
   if (_vis.items === S.items && _vis.hits === S.hits && _vis.key === key) return _vis.out;
   const out = visible0(keepAll); _vis = { items: S.items, hits: S.hits, key, out }; return out;
 }
@@ -478,9 +492,9 @@ function visible0(keepAll) {
     && (!i.parent || ((S.view === 'gallery' || (S.searchOn && S.hits?.has(i.id))) && !byId(i.parent)?.deleted))
     // imported archives (WhatsApp, bookmarks) don't fill the board; a card you put there or moved stays
     && (S.view !== 'board' || onBoard(i))
-    && (S.view !== 'board' || !onMain() || !i.archive || i.pos || i.onBoard)
-    // the main board is a workspace: the chosen time range, plus whatever you put or moved there (a project board shows all of its cards)
-    && (S.view !== 'board' || !onMain() || i.pos || i.onBoard || i.sticky || inRange(i.ts))
+    && (S.view !== 'board' || !onMain() || !i.archive || i.pos || i.onBoard || Range.arch())
+    // a board is a workspace: its time range (153: every board has its own; a project board starts with Tümü), plus whatever you put or moved there
+    && (S.view !== 'board' || posOf(i) || i.onBoard || i.sticky || inRange(i.ts))
   ).sort((a, b) => (S.sortPrio ? prioRank(a) - prioRank(b) : 0) || (S.searchOn && S.qx?.sort === 'old' ? a.ts - b.ts : b.ts - a.ts));
 }
 const prioRank = i => i.prio === 'high' ? 0 : i.prio === 'low' ? 2 : 1;
@@ -1558,7 +1572,8 @@ const BoardHint = {
     e.addEventListener('click', ev => { const b = ev.target.closest('[data-bh]'); if (!b) return; const a = b.dataset.bh;
       if (a === 'main') return Board.go('main');
       if (a === 'unfilter') { if (S.folder) Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); S.cam = null; return render(); }
-      if (a === 'all') { S.boardRange = 'all'; _rs = null; try { localStorage.setItem('hn-range', 'all'); } catch { } S.cam = null; return render(); }
+      if (a === 'all') return Range.set('all');
+      if (a === 'arch') return Range.setArch(true);
       if (a === 'fit') Board.fit(); });
     return e;
   },
@@ -1570,7 +1585,10 @@ const BoardHint = {
     if (!mine.length) return { k: 'none', t: `“${esc(name)}” panosunda kart yok`, p: onMain() ? 'Kutuya yaz ya da bir dosya bırak: kart buraya gelir.' : `Kaydı aç → <b>Panolar</b> → “${esc(name)}”, ya da listede seç → <b>Panoya koy</b>.`, a: back };
     const f = filtered() ? mine.filter(i => (F.type === 'all' || groupOf(i) === F.type) && (!F.tag || (i.tags || []).includes(F.tag)) && (!F.star || i.starred) && (!F.list || inList(i, F.list)) && (!F.color || i.color === F.color) && (!F.src || srcMatch(i, F.src))).length : mine.length;
     if (f < mine.length) return { k: 'filter', t: `${mine.length - f} kart süzgeçte gizli`, p: `“${esc(name)}” panosunda ${mine.length} kart var; seçili süzgeç hepsini saklıyor.`, a: btn('unfilter', 'x', 'Süzgeci kaldır', true) + back };
-    if (onMain()) return { k: 'range', t: `${esc(rangeLabel())} içinde kart yok`, p: 'Arşivden gelenler (WhatsApp, yer imleri) panoyu doldurmaz; zaman aralığını genişlet.', a: btn('all', 'clock', 'Tümü', true) };
+    // 153: what the range / the archive switch hides, with the way out
+    const ar = onMain() && !Range.arch() ? mine.filter(i => i.archive && !i.pos && !i.onBoard).length : 0;
+    if (Range.get() !== 'all' || ar) return { k: 'range', t: `${mine.length.toLocaleString('tr')} kayıt ${Range.get() !== 'all' ? 'bu aralığın dışında' : 'arşivde'}`, p: `${esc(rangeLabel())} içinde kart yok${ar ? ` · ${ar.toLocaleString('tr')} tanesi arşivden (WhatsApp, yer imleri)` : ''}. Boş yere sağ tıkla (telefonda basılı tut) ve aralığı seç.`,
+      a: (Range.get() !== 'all' ? btn('all', 'clock', 'Tümünü göster', true) : '') + (ar ? btn('arch', 'inbox', 'Arşivi de göster', Range.get() !== 'all') : '') + back };
     return { k: 'none', t: `“${esc(name)}” panosunda kart yok`, p: '', a: back };
   },
   update() {
@@ -1595,7 +1613,7 @@ function renderNow() {
     if (!renderQueued) return; renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.boardRange || '') + (S.board || '') + (S.view === 'cal' ? Cal.month() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.view === 'board' ? Range.get() + Range.arch() : '') + (S.board || '') + (S.view === 'cal' ? Cal.month() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
     const pv = S._vview, viewOnly = !!S._vkey && pv !== S.view && pv !== 'todo' && S.view !== 'todo' && vkey.every((x, k) => k === 6 || x === S._vkey[k]); S._vview = S.view;
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
@@ -2733,9 +2751,9 @@ const Cmd = {
 const Back = {
   open(dlg) { hideHits(); if (!dlg.open) { dlg.showModal(); history.pushState({ nts: dlg.id }, ''); } dlg.querySelector('.d-body')?.focus({ preventScroll: true }); },
   init() {
-    addEventListener('popstate', () => { if (this._skip) { this._skip = false; return; } for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); const j = $('#jumpPop'); if (j) j.hidden = true; });
+    addEventListener('popstate', () => { if (this._skip) { this._skip = false; return; } for (const d of document.querySelectorAll('dialog[open]')) { d._fromBack = true; d.close(); } if (!$('#answer').hidden) closeAnswer(); Pop.close(); for (const id of ['#jumpPop', '#rangePop']) { const j = $(id); if (j) j.hidden = true; } });
     // 101: menus and the AI answer are not dialogs but get a history entry too, so Android's back closes them instead of leaving the app
-    const LAYERS = new Set(['filterPop', 'jumpPop', 'answer']);
+    const LAYERS = new Set(['filterPop', 'jumpPop', 'rangePop', 'answer']);
     new MutationObserver(ms => { for (const m of ms) { const id = m.target.id; if (!LAYERS.has(id)) continue;
       if (!m.target.hidden) { if (history.state?.nts !== id) history.pushState({ nts: id }, ''); }
       else if (history.state?.nts === id) { Back._skip = true; history.back(); } } }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
@@ -5252,7 +5270,9 @@ const Board = {
     let x0 = 0, y0 = 0;
     if (placed.length) { let mx = -Infinity, my = Infinity; for (const i of placed) { const p = posOf(i); mx = Math.max(mx, p.x + this.COLW); my = Math.min(my, p.y); } x0 = mx + this.GAP * 1.5; y0 = my; }
     this.M = new Map(); this.heads = []; this.mounted = new Map(); this.mountedHeads = new Map(); this.mountedMonths = new Map(); this.y0 = y0;
-    const rb = $('#rangeBtn'); if (rb) { rb.innerHTML = `${ic('clock', 'sm')}<span>${rangeLabel()}</span>`; rb.hidden = !onMain(); }
+    const rb = $('#rangeBtn'); if (rb) { const lab = rangeShort() + (onMain() && Range.arch() ? ' + arşiv' : ''), off = Range.get() !== Range.def() || (onMain() && Range.arch()); // 153: the chosen range is a chip by the zoom box ("6 ay ×")
+      rb.innerHTML = `${ic('clock', 'sm')}<span>${lab}</span>`; rb.ariaLabel = `Panoda göster: ${rangeLabel()}${onMain() && Range.arch() ? ', arşiv dahil' : ''}`; rb.hidden = false; rb.classList.toggle('set', off);
+      const rx = $('#rangeX'); rx.hidden = !off; rx.title = `${RSHORT[Range.def()]} aralığına dön`; }
     const bn = $('#boardName'), bnm = onMain() ? 'Genel' : S.board; if (bn) { bn.textContent = bnm; const bp = $('#boardBtn'); bp.title = bp.ariaLabel = `Pano: ${bnm} — değiştir`; bp.classList.toggle('bp-other', !onMain()); } // 116: the logo is the board picker (151: not 'sub' — that is the 2-line clamped subtitle class and stacked logo/name/⌄)
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : i.w || 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
@@ -5469,14 +5489,30 @@ const Board = {
     await upsert(ch); this.go(to); toast(`Pano adı: ${to}`, 2500, 'check');
   },
   go(name) { S.board = name === 'main' ? null : name; try { localStorage.setItem('hn-board', S.board || ''); } catch { } S.cam = null; render(); },
-  rangeMenu(anchor) {
-    let p = $('#rangePop'); if (!p) { p = document.createElement('div'); p.id = 'rangePop'; p.className = 'pop range-pop'; document.body.appendChild(p);
-      p.addEventListener('click', e => { const b = e.target.closest('[data-range]'); if (!b) return; S.boardRange = b.dataset.range; _rs = null; try { localStorage.setItem('hn-range', S.boardRange); } catch { } p.hidden = true; S.cam = null; render(); });
-      document.addEventListener('pointerdown', e => { if (!e.target.closest('#rangePop,#rangeBtn')) p.hidden = true; }); }
-    const cur = S.boardRange || '30';
-    p.innerHTML = `<div class="side-label">Panoda göster</div>` + RANGES().map(([v, l]) => `<button class="side-row${v === cur ? ' on' : ''}" data-range="${v}">${ic(v === 'all' ? 'layers' : 'clock', 'sm')}<span class="lbl">${l}</span>${v === cur ? ic('check', 'sm') : ''}</button>`).join('')
-      + `<p class="hint" style="padding:6px 9px 4px">Panoya koyduğun ya da taşıdığın kartlar her zaman görünür.</p>`;
-    p.hidden = false; const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, r.right - p.offsetWidth) + 'px'; p.style.top = Math.max(8, r.top - p.offsetHeight - 8) + 'px';
+  // 153: one menu for the clock button and for a right click (phone: hold still, then lift) on the board's empty space:
+  // Göster → Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü (+ years), and on Genel "Arşivi de göster" (WhatsApp, yer imleri · N kayıt)
+  rangeMenu(anchor, x, y) {
+    let p = $('#rangePop'); if (!p) { p = document.createElement('div'); p.id = 'rangePop'; p.className = 'pop range-pop'; p.hidden = true; p.setAttribute('role', 'menu'); p.setAttribute('aria-label', 'Panoda göster'); document.body.appendChild(p);
+      const close = (back = true) => { p.hidden = true; if (back && p._from?.isConnected) p._from.focus({ preventScroll: true }); };
+      p.addEventListener('click', e => { const b = e.target.closest('[data-range],[data-rarch]'); if (!b || performance.now() - p._at < 350) return; close(false); // the lifting finger's own click does not pick
+        if (b.dataset.range) { if (b.dataset.range !== Range.get()) Range.set(b.dataset.range); } else Range.setArch(!Range.arch()); });
+      p.addEventListener('keydown', e => { const bs = [...p.querySelectorAll('button')], k = bs.indexOf(document.activeElement);
+        const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? (k < 0 ? -1 : k - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? -1 : e.key === 'Tab' ? k + (e.shiftKey ? -1 : 1) : null;
+        if (to !== null) { e.preventDefault(); bs.at(to % bs.length)?.focus(); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } });
+      document.addEventListener('pointerdown', e => { if (!p.hidden && !e.target.closest('#rangePop,#rangeBtn')) close(false); });
+      addEventListener('resize', () => close(false)); }
+    const cur = Range.get(), main = onMain(), arch = Range.arch(), row = (v, l) => `<button class="side-row${v === cur ? ' on' : ''}" role="menuitemradio" aria-checked="${v === cur}" data-range="${v}">${ic(v === 'all' ? 'layers' : 'clock', 'sm')}<span class="lbl">${l}</span>${v === cur ? ic('check', 'sm') : ''}</button>`;
+    const all = RANGES(), base = all.filter(r => r[0][0] !== 'y'), ys = all.filter(r => r[0][0] === 'y');
+    const na = main ? alive().filter(i => i.archive && !i.parent && !i.pos && !i.onBoard && !HIDDEN.has(i.type) && inRange(i.ts)).length : 0;
+    p.innerHTML = `<div class="side-label">Göster</div>` + base.map(r => row(...r)).join('')
+      + (ys.length > 1 ? `<div class="rp-years">${ys.map(([v, l]) => `<button class="rp-y${v === cur ? ' on' : ''}" role="menuitemradio" aria-checked="${v === cur}" data-range="${v}">${l}</button>`).join('')}</div>` : '')
+      + (main ? `<div class="rp-sep"></div><button class="side-row rp-arch" role="menuitemcheckbox" aria-checked="${arch}" data-rarch>${ic('inbox', 'sm')}<span class="lbl">Arşivi de göster<small>${na.toLocaleString('tr')} kayıt · WhatsApp, yer imleri</small></span><span class="switch" aria-hidden="true"><input type="checkbox" tabindex="-1"${arch ? ' checked' : ''}><span></span></span></button>` : '')
+      + `<p class="hint rp-hint">Panoya koyduğun ya da taşıdığın kartlar her zaman görünür.</p>`;
+    p._from = anchor; p._at = performance.now(); p.hidden = false;
+    const W = innerWidth, H = innerHeight, pw = p.offsetWidth, ph = p.offsetHeight;
+    if (x != null) { p.style.left = Math.max(8, Math.min(W - pw - 8, x)) + 'px'; p.style.top = Math.max(8, Math.min(H - ph - 8, y + ph > H - 8 ? y - ph : y)) + 'px'; }
+    else { const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, Math.min(W - pw - 8, r.right - pw)) + 'px'; p.style.top = (r.top - ph - 8 >= 8 ? r.top - ph - 8 : Math.min(H - ph - 8, r.bottom + 8)) + 'px'; }
+    (p.querySelector('.on') || p.querySelector('button'))?.focus({ preventScroll: true });
   },
   minK() { // far enough to see every month of the range on one screen
     const b = $('#board'), w = this.months?.length ? this.months.at(-1).x2 - this.months[0].x : 0;
@@ -5491,7 +5527,7 @@ const Board = {
     for (const m of this.M.values()) if (m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + Math.min(m.h, 400) > v.y1) return true;
     return false;
   },
-  id: () => (S.board || 'main') + '|' + (onMain() ? S.boardRange || '30' : ''), // 150: the board on screen (a fit for another board's cards is never used)
+  id: () => (S.board || 'main') + '|' + Range.get() + Range.arch(), // 150: the board on screen (a fit for another board's cards is never used)
   fit(anim = true) {
     if (this._key && this._key[6] !== this.id()) return; // the cards in M belong to the board we just left: the redraw fits
     const ms = [...(this.M?.values() || [])], b = $('#board');
@@ -5503,7 +5539,7 @@ const Board = {
     const phone = innerWidth < 900;
     let k = phone ? 1 : Math.max(.35, Math.min(1, W / (x2 - x1), H / (y2 - y1))); // 98 phone: full size, the days scroll sideways from the newest
     if (phone && (x2 - x1) <= W) k = Math.max(.7, Math.min(1, W / (x2 - x1)));
-    if (!phone && (x2 - x1) * k > W * 3 && (S.boardRange === 'all' || S.boardRange?.[0] === 'y')) k = Math.max(this.minK(), Math.min(this.FAR * .9, W / (x2 - x1))); // a long range: months on one screen
+    if (!phone && (x2 - x1) * k > W * 3 && (Range.get() === 'all' || +Range.get() >= 180 || Range.get()[0] === 'y')) k = Math.max(this.minK(), Math.min(this.FAR * .9, W / (x2 - x1))); // a long range: months on one screen
     // if it doesn't fit even small, start at the newest (right) end
     const x = (x2 - x1) * k <= W ? (b.clientWidth - (x2 - x1) * k) / 2 - x1 * k : b.clientWidth - 24 - x2 * k;
     S.cam = { k, x, y: top - y1 * k };
@@ -5655,6 +5691,7 @@ const Board = {
     this.drop = async (d, e) => {
       if (d.lp) clearTimeout(d.lp);
       if (d.ink) return Ink.end(d, e);
+      if (d.box && !d.moved && e.pointerType !== 'mouse' && e.type === 'pointerup' && !d.mods) { if (d.raf) cancelAnimationFrame(d.raf); d.boxEl?.remove(); return this.rangeMenu($('#rangeBtn'), e.clientX, e.clientY); } // 153: held still and lifted → the range menu; held and dragged → the selection box (139)
       if (d.box) return this.boxEnd(d);
       if (d.grp) return this.groupDrop(d, (e.clientX - d.sx) / S.cam.k, (e.clientY - d.sy) / S.cam.k);
       if (!d.card && !d.moved && !d.grab && e.type === 'pointerup' && !d.mods && Link.sel.size && !S.linkFrom) return Link.end(); // a click on empty space lets the selection go
@@ -5699,9 +5736,12 @@ const Board = {
     $('#zoomPct').onclick = () => { if (!S.cam) this.fit(false); if (S.cam) this.zoomTo(1); };
     $('#fitBtn').onclick = () => this.fit();
     $('#rangeBtn').onclick = e => this.rangeMenu(e.currentTarget);
+    $('#rangeX').innerHTML = ic('x', 'sm'); $('#rangeX').onclick = () => { const k = Range.key(); Range.c['a|' + k] = false; Range.ls('hn-arch-' + k, '0'); Range.set(Range.def()); };
+    // 153: right click on the board's empty space opens the same menu where the mouse is (a long press on the phone: see drop)
+    b.addEventListener('contextmenu', e => { if (e.target.closest('.bcard,#months,.st-body,input,textarea')) return; e.preventDefault();
+      if (e.pointerType === 'touch' || e.sourceCapabilities?.firesTouchEvents) return; this.rangeMenu($('#rangeBtn'), e.clientX, e.clientY); });
     $('#boardBtn').onclick = e => this.boardMenu(e.currentTarget);
     try { S.board = localStorage.getItem('hn-board') || null; } catch { }
-    try { S.boardRange = localStorage.getItem('hn-range') || '30'; } catch { S.boardRange = '30'; }
     addEventListener('resize', () => { if (S.view === 'board' && !Ink.cur && !$('#board').hidden && !this.anyVisible()) this.fit(false); });
     $('#tidyBtn').onclick = () => this.tidy();
     $('#months').addEventListener('click', e => { const t = e.target.closest('[data-month]'); if (t) this.zoomMonth(t.dataset.month); });

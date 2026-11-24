@@ -899,7 +899,7 @@ Arayüz:
         çıkmıyor). Üzerine gelince kâğıtlar sırayla yukarı çıkar, kapak -14° açılır. Yavaş telefon / saydamlığı azalt (data-gslow): blur yok,
         düz kapak alçak (%46) → kâğıtlar yine görünür. Diğer stiller (E/A/B/C) değişmedi. Ekran görüntüleri design/131-2/ (önce/sonra,
         telefon koyu, hover, yavaş); konsol hatası 0; phone-audit liste: çakışma/taşma 0 (tek "small" #boardBtn 2×2, önceden var). sw v116
-- [ ] 153. **Panoda sağ tıkla zaman aralığı** (sahip, 2026-11-24, design/feedback-30.png — "Poultrycare" panosu %28'de, yalnız 4 kart: "sağ click'e
+- [x] 153. **Panoda sağ tıkla zaman aralığı** (sahip, 2026-11-24, design/feedback-30.png — "Poultrycare" panosu %28'de, yalnız 4 kart: "sağ click'e
         basıp göstersin: son 30 gün, 3 ay, 6 ay, 1 sene, tüm"; önceki soru: WhatsApp arşivinin 1455 kaydı panoda görünmüyor, PLAN 52/53 kuralı).
         Panonun boş yerine sağ tık (telefonda uzun bas; 139 kutu seçimiyle karışmasın: basılı tut + kıpırdamadan bırak) → bağlam menüsü,
         en üstte "Göster" bölümü: Son 30 gün · Son 3 ay · Son 6 ay · Son 1 yıl · Tümü (seçili olan ✓) ve altında "Arşivi de göster (WhatsApp,
@@ -908,6 +908,14 @@ Arayüz:
         kartlar FLIP ile gelir, yeni gelenler görünür alana sığdırılır (Hepsini gör). Seçili aralık zoom kutusunun yanında küçük çip ("6 ay ×")
         olarak durur. Çok kart (1000+) gelince 147 ölçütleri: uzakta hafif kart, 60 fps. Panoda gizli kayıt varsa boş ekranda "N kayıt bu aralığın
         dışında · Tümünü göster". Klavye: menü ↑↓ Enter Esc. Masaüstü + telefon, açık + koyu, ekran görüntüsü.
+        YAPILDI (2026-11-24, B hattı): `Range` (app.js) — her pano kendi aralığı (hn-range-<pano>; Genel eski hn-range'i okur, varsayılan
+        30 gün; proje panosu Tümü) + Genel'de "Arşivi de göster" (hn-arch-main). Menü: saat düğmesi ve boş yere sağ tık aynı menü (Göster:
+        Son 30 gün · 3 ay · 6 ay · 1 yıl · Tümü + yıl çipleri, ✓; arşiv anahtarı "N kayıt · WhatsApp, yer imleri"); telefonda basılı tut +
+        kıpırdamadan bırak → menü, basılı tut + sürükle → 139 seçim kutusu; parmağın kendi click'i 350 ms yutulur. ↑↓ Home End Tab Enter Esc,
+        Android geri tuşu kapatır (Back LAYERS). Seçim değişince kamera hepsini sığdırır, kartlar 200 ms belirir (reduced-motion: yok).
+        Zoom kutusunda çip "6 ay ×" (× = panonun varsayılanına dön; telefonda 44 px ayrı düğme). Boş pano: "N kayıt bu aralığın dışında ·
+        M tanesi arşivden" + Tümünü göster / Arşivi de göster. Playwright 4 yapılandırma: konsol hatası 0; phone-audit 'aralik' ekranları
+        (skill'e eklendi) yeni sorun 0 (360 px'teki hud çakışması eski). Not: 6 ay ve üstü masaüstünde ay kutuları görünümüne uzaklaşır (eski kural).
 - [ ] 154. **Zengin kartlar tam görünsün** (sahip, 2026-11-24, design/feedback-31.png: pano kartı "Kanatlı projesi: bütçe ve yapılacaklar", WhatsApp
         balonları; 1. balonun 3. satırı yarım piksel kesik ("Salmonella, Newcastle" yarısı görünüyor), 3. balon da öyle: "UI'lar, rich'ler tam
         değil, full gözüksün"). Kural: pano kartında hiçbir zengin parça (WhatsApp balonu, not mini belgesi, onay listesi, kod, tablo, link
