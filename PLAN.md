@@ -864,6 +864,13 @@ Arayüz:
         kayıt açma, var olana "WhatsApp'ta da var" bağı ekle; (c) nts import ve uygulamadaki içe aktarma ikisi de bu kuralı kullansın (ortak işlev),
         deneme raporunda "Zaten Nts'te: N link, M foto"; (d) var olan kopyalar için Ayarlar → "Kopyaları birleştir" (önce liste + sayı, tek dokunuş,
         Geri al), etiket/not/pano yerleri birleşir, hiçbir şey silinmez (çöpe). Birim testleri (URL katlama tr/en/ar karakterli linkler dahil).
+- [ ] 131-2. **Cam klasörün içi görünsün** (sahip, 2026-11-24, 131-1'i görünce: "güzel de sorunu şu: cam ama şeyler gözükmüyor içinden").
+        Şeffaf plastik dosya gibi: klasörün içindeki ilk 3–5 kayıt (gerçek foto küçük resimleri, notun ilk satırları kâğıt gibi, link kartı
+        favicon + başlık) cam ön kapağın ARKASINDA, biraz yukarı taşmış ve hafif eğik kâğıtlar olarak dursun; cam ön yüz bunların üstünde
+        hafif bulanık (blur ~4–6 px, yüksek saydamlık) ki içerik net seçilsin — şu an bulanıklık/opaklık içeriği tamamen kapatıyor. Klasör
+        rengi camda ince ton olarak kalır, başlık ve sayı camın üstünde okunur (AA). Üzerine gelince kâğıtlar biraz daha dışarı çıkar. Resimsiz
+        klasörde boş simge yok (131-1 kuralı). Yavaş telefonda / saydamlığı azalt'ta blur kapalı ama içerik yine görünür. Açık + koyu, telefon
+        2 sütun, ekran görüntüsü önce/sonra.
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
