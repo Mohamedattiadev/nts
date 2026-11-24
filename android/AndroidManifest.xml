@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 96: tiny helper, no launcher icon. Select text anywhere → ⋮ → "Nts'e kaydet" → opens the installed Nts (PWA) at ?do=new&text=… -->
+<!-- 96: tiny helper, no launcher icon. Select text anywhere → ⋮ → "Nts'e kaydet" → opens the installed Nts (PWA) at ?do=new&text=…
+     107b: plus a home-screen widget (NtsWidget): new note, voice note, search, to-dos → the same Nts links -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.github.mohamedattiadev.nts.save"
-    android:versionCode="1" android:versionName="1.0">
+    android:versionCode="2" android:versionName="1.1">
     <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="35" />
     <application android:label="@string/save_label" android:icon="@mipmap/ic_launcher" android:allowBackup="false">
         <activity
@@ -18,5 +19,9 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        <receiver android:name="io.github.mohamedattiadev.nts.NtsWidget" android:exported="false" android:label="@string/widget_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info" />
+        </receiver>
     </application>
 </manifest>

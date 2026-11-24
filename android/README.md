@@ -7,6 +7,9 @@ kaydeder ve "Kaydedildi · Aç" der. Ayrı bir uygulama simgesi yoktur, veriler 
 Neden PWA'nın kendisi değil: Android seçim menüsüne yalnız `ACTION_PROCESS_TEXT` alan yerel uygulamalar girebilir.
 Paylaş → Nts yolu (share_target) zaten PWA'nın kendisinde var.
 
+**Ana ekran widget'ı (107b):** ana ekranda boş yere uzun bas → Widget'lar → Nts. Düğmeler: Yeni not · Sesli not (kayıt hemen başlar) ·
+Ara · Yapılacaklar; logo Nts'i açar. Hepsi aynı Nts linklerini açar (`?do=new`, `?do=voice`, `?do=find`, `?view=todo`).
+
 Kurulum: `nts-kaydet.apk`'yı telefona at, aç, "bilinmeyen kaynak" iznini ver, kur. Nts önce PWA olarak kurulu olmalı
 (Chrome → Ana ekrana ekle / Yükle); değilse link Chrome'da açılır ve yine kaydeder.
 

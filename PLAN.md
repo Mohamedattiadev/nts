@@ -600,6 +600,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             kapanınca tek çizim. Giriş: ⋯ menüsü (telefon + masaüstü) "Gelen kutusunu temizle · N"; günde bir toast (≥5 kayıt, hn-clean-day).
             Sakla/Görev/Arşiv `sorted` damgası koyar. phone-audit 'temizle' ekranı eklendi: 0.
         (b) Android ana ekran widget'ı (96'daki TWA paketiyle): yeni not, sesli not, son kayıtlar;
+            [x] (2026-11-24, A hattı) 96'daki yardımcı APK'ya (TWA değil, `android/`) `NtsWidget` (AppWidgetProvider, RemoteViews, kütüphane yok):
+            4×1 (yatay uzar), Nts logosu (Nts'i açar) + Yeni not (?do=new → kutu odaklı) · Sesli not (YENİ ?do=voice → Not modu + kayıt hemen
+            başlar, bitirmek için mikrofona dokun) · Ara (?do=find) · Yapılacaklar (?view=todo); renkler Nts tokenları, telefonun açık/koyu
+            temasına uyar (values-night), seçicide önizleme görseli; APK versionCode 2 (~50 KB, ~/.nts-android/nts-kaydet.apk). haptic() artık
+            dokunuş olmadan titreşim çağırmıyor (widget'tan açılışta konsol hatası). Test: 4 yapılandırmada 4 link × koşul = 16/16, konsol 0.
+            "Son kayıtlar" widget'ta YOK: veriler PWA'nın IndexedDB'sinde, yerel APK okuyamaz (bulut girişi/anahtar gerekir) → sahibe soruldu.
+            CİHAZ TESTİ sahipte (emülatör yok).
         (c) her yerden gönderme: e-posta adresine yazılan Nts'e (Supabase Edge Function + gelen e-posta servisi) ve Telegram botu
             (köprüde ya da Edge Function'da; sadece sahibin hesabı, gizli anahtar);
         (d) başka uygulamalardan taşıma: Google Keep (Takeout JSON), Apple Notes (HTML dışa aktarım), Notion (Markdown zip), Evernote (.enex),

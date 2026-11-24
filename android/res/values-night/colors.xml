@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 107b: Nts dark tokens (style.css :root) -->
+<resources>
+    <color name="w_bg">#F5151519</color>
+    <color name="w_btn">#FF24242A</color>
+    <color name="w_text">#EDEDF2</color>
+    <color name="w_icon">#FF9A4D</color>
+</resources>

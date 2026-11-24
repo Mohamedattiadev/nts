@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_label">Nts\'e kaydet</string>
+    <string name="widget_label">Nts</string>
+    <string name="widget_desc">Yeni not, sesli not, ara, yapılacaklar</string>
+    <string name="w_open">Nts\'i aç</string>
+    <string name="w_new">Yeni not</string>
+    <string name="w_voice">Sesli not</string>
+    <string name="w_find">Ara</string>
+    <string name="w_todo">Yapılacaklar</string>
 </resources>

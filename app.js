@@ -2346,7 +2346,7 @@ function autoGrow() { const t = $('#input'); t.style.height = 'auto'; t.style.he
 
 // ---------- 94: native feel - the item window grows out of the tapped card and shrinks back; short haptic ticks ----------
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const haptic = (ms = 8) => { try { if (matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(ms); } catch { } };
+const haptic = (ms = 8) => { try { if (matchMedia('(pointer: coarse)').matches && navigator.userActivation?.hasBeenActive !== false) navigator.vibrate?.(ms); } catch { } }; // 107b: opened from the widget (?do=voice) there is no tap yet → Chrome blocks vibrate with a console error
 // ---------- 142: signature motion (owner's picks, design/motion-choices.json). transform / opacity only; reduced motion → none ----------
 const Motion = {
   off: () => reduced() || !document.body.animate,
@@ -7555,6 +7555,7 @@ const Boot = {
     else if (d === 'new') setTimeout(() => $('#input').focus(), 300);
     if (d === 'vault') setTimeout(() => Vault.open(), 300);
     if (d === 'find') setTimeout(() => { setMode('find'); $('#input').focus(); }, 300); // 141: "Ara" home-screen shortcut
+    if (d === 'voice') setTimeout(() => { setMode('note'); if (Voice.can()) Voice.start(); else $('#input').focus(); }, 400); // 107b: Android widget "Sesli not" → recording starts, tap the mic to finish
     if (v || d) history.replaceState(null, '', location.pathname);
   }
   if (new URLSearchParams(location.search).has('shared')) { toast('Kaydedildi', 2000, 'check'); history.replaceState(null, '', location.pathname); }

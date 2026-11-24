@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 107b: logo (opens Nts) + 4 actions; colours follow the phone's light/dark theme (values-night) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="horizontal" android:gravity="center_vertical"
+    android:background="@drawable/widget_bg" android:padding="6dp">
+    <ImageView android:id="@+id/w_logo" android:layout_width="44dp" android:layout_height="44dp"
+        android:padding="6dp" android:src="@mipmap/ic_launcher" android:contentDescription="@string/w_open"
+        android:background="@drawable/widget_btn" />
+    <LinearLayout android:id="@+id/w_new" style="@style/WBtn" android:contentDescription="@string/w_new">
+        <ImageView style="@style/WIcon" android:src="@drawable/w_note" />
+        <TextView style="@style/WText" android:text="@string/w_new" /></LinearLayout>
+    <LinearLayout android:id="@+id/w_voice" style="@style/WBtn" android:contentDescription="@string/w_voice">
+        <ImageView style="@style/WIcon" android:src="@drawable/w_mic" />
+        <TextView style="@style/WText" android:text="@string/w_voice" /></LinearLayout>
+    <LinearLayout android:id="@+id/w_find" style="@style/WBtn" android:contentDescription="@string/w_find">
+        <ImageView style="@style/WIcon" android:src="@drawable/w_find" />
+        <TextView style="@style/WText" android:text="@string/w_find" /></LinearLayout>
+    <LinearLayout android:id="@+id/w_todo" style="@style/WBtn" android:contentDescription="@string/w_todo">
+        <ImageView style="@style/WIcon" android:src="@drawable/w_todo" />
+        <TextView style="@style/WText" android:text="@string/w_todo" /></LinearLayout>
+</LinearLayout>
