@@ -225,7 +225,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 99b Takvim görünümü (df966c0; sw v112)
 - [x] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100) (4339f14; sw v110)
 - [x] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce) (48fa45e; sw v111)
-- [ ] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
+- [~B] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri
 - [ ] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
 - [ ] 107b Android ana ekran widget'ı (96'dan sonra)
 - [ ] 107m ilk açılışta örnek verilerle dene + tek tıkla sil
