@@ -916,7 +916,7 @@ Arayüz:
         Zoom kutusunda çip "6 ay ×" (× = panonun varsayılanına dön; telefonda 44 px ayrı düğme). Boş pano: "N kayıt bu aralığın dışında ·
         M tanesi arşivden" + Tümünü göster / Arşivi de göster. Playwright 4 yapılandırma: konsol hatası 0; phone-audit 'aralik' ekranları
         (skill'e eklendi) yeni sorun 0 (360 px'teki hud çakışması eski). Not: 6 ay ve üstü masaüstünde ay kutuları görünümüne uzaklaşır (eski kural).
-- [ ] 154. **Zengin kartlar tam görünsün** (sahip, 2026-11-24, design/feedback-31.png: pano kartı "Kanatlı projesi: bütçe ve yapılacaklar", WhatsApp
+- [x] 154. **Zengin kartlar tam görünsün** (sahip, 2026-11-24, design/feedback-31.png: pano kartı "Kanatlı projesi: bütçe ve yapılacaklar", WhatsApp
         balonları; 1. balonun 3. satırı yarım piksel kesik ("Salmonella, Newcastle" yarısı görünüyor), 3. balon da öyle: "UI'lar, rich'ler tam
         değil, full gözüksün"). Kural: pano kartında hiçbir zengin parça (WhatsApp balonu, not mini belgesi, onay listesi, kod, tablo, link
         önizlemesi, PDF, ses) yazıyı satırın ortasından kesmesin. Balonlar mesajın TAMAMINI göstersin (kısa mesajlar zaten tam; çok uzun
@@ -924,6 +924,14 @@ Arayüz:
         line-clamp ya da ölçülmüş yükseklik; Board.est tahmini gerçekle ≤4 px (106a kuralı) — kart büyüyünce komşular itilmesin (tidy/FLIP).
         Bütün zengin tipleri tek tek tara (Playwright: her parçada scrollHeight > clientHeight olan ve yarım satır kesen öğe sayısı = 0), açık +
         koyu, %28–%200 yakınlık, telefon; önce/sonra ekran görüntüsü.
+        YAPILDI (B, 2026-11-24): neden: balon `-webkit-line-clamp: 2` + dolgu (padding) → 3. satırın üstü alt dolguda görünüyordu.
+        Balon artık mesajın TAMAMI (son 3 mesaj, 90 harf kesmesi yok, satır sonları korunur); 8 satırı geçen mesaj kırpmayı dolgusuz iç
+        yazıda (.t.cl) yapar → tam satırda "…", altında "devamı" (dokununca kartta açılır, "daha az" ile kapanır; Rich.more). Board.est:
+        Rich.bubN balon satırlarını tuvalde ölçer (tarayıcı gibi boşlukta sar, uzun sözcüğü böl) → WhatsApp kartlarında tahmin/gerçek ≤4 px.
+        Kod dosyası .r-code 148 → 144 px (8 tam satır; 9. satırın yarısı görünüyordu). Tarama (Playwright, her kartta her metin satırının
+        kırpan ataları içinde yarım kalıp kalmadığı): balonlar, not belgesi, onay listesi, tablo/grafik, kod, CSV, link, YouTube, resim, ses,
+        PDF; açık + koyu, masaüstü + telefon, %28/%40/%100/%200 → önce 5 kesik satır, sonra 0; "devamı" sonrası 0; konsol hatası 0.
+        Not: YouTube kartı (tahmin 15 px fazla, boşluk kalır) ve resimli kart (5 px) eski, kesik yok.
 - [x] 155. (2026-11-24, A hattı: A "Belge" uygulandı, bütün kayıt türleri. Üstte yalnız tür + yıldız · ⋯ · kapat; ⋯ menüsü Paylaş/Kopyala/
         Tarayıcıda aç (link)/İndir (dosya)/Panoya koy (arşivdeyse)/"Claude anlatsın"/Sil (ayrı, kırmızı), ok tuşları + Esc (önce menü kapanır),
         telefonda alttan 48 px satırlar; telefon alt çubuğu (d-foot) kalktı. Başlık altında tek gri satır "27 Tem · WhatsApp'tan" (tam tarih +

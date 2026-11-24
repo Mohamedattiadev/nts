@@ -868,6 +868,24 @@ const leadOf = i => hasVisual(i) ? thumbBox(i) : `<div class="ico ${i.type}">${i
 // small document whose boxes tick without opening it, a code file shows its first lines coloured. Nothing made up: no picture → plain + icon.
 const Rich = {
   on: new Set(), // ids whose player was started (kept across board redraws)
+  more: new Set(), // 154: WhatsApp talks opened past their first lines on the card
+  BUB: 8, BUBMAX: 1500, // a bubble shows up to 8 lines, then "devamı"
+  chatLog: i => i.conv.log.filter(l => l.text).slice(-3),
+  // 154: how many lines a bubble's text takes on a 240 px card, wrapped like the browser (greedy at spaces, a long word broken
+  // anywhere), measured on a canvas so Board.est knows the card's height without the DOM. Bubble text box: (214 × .86) − 18 px.
+  bubN(s) {
+    const c = this._bc ||= new Map(), k = s.length > 200 ? s.slice(0, 200) + s.length : s; if (c.has(k)) return c.get(k);
+    const g = this._g ||= document.createElement('canvas').getContext('2d'), W = 214 * .86 - 18;
+    g.font = '400 12.5px ' + getComputedStyle(document.body).fontFamily;
+    let n = 0;
+    for (const para of s.slice(0, this.BUBMAX).split('\n')) { n++; let x = 0;
+      for (const t of para.match(/\S+\s*|\s+/g) || []) { const w = g.measureText(t.trimEnd()).width;
+        if (x > 0 && x + w > W) { n++; x = 0; }
+        if (w > W) { n += Math.floor(w / W); x = w % W; } else x += w;
+        x += t.length > t.trimEnd().length ? g.measureText(t.slice(t.trimEnd().length)).width : 0; } }
+    if (document.fonts?.status === 'loaded') { if (c.size > 4000) c.clear(); c.set(k, n); }
+    return n;
+  },
   embed(i) {
     if (i.type !== 'link') return null;
     const yt = ytId(i); if (yt) return { k: 'yt', src: `https://www.youtube-nocookie.com/embed/${yt}?autoplay=1`, h: 135, label: 'YouTube' };
@@ -895,8 +913,9 @@ const Rich = {
   // replaces the grey sub line when the item has a better shape for it
   body(i) {
     if (i.conv?.log?.length) {
-      const first = i.conv.who[0], many = i.conv.who.length > 2, log = i.conv.log.filter(l => l.text).slice(-3);
-      return log.length ? `<div class="r-chat">${log.map(l => `<div class="r-b${l.who === first ? '' : ' me'}" dir="auto">${many && l.who !== first ? `<b>${esc(l.who)}</b>` : ''}${esc(l.text.slice(0, 90))}</div>`).join('')}</div>` : '';
+      const first = i.conv.who[0], many = i.conv.who.length > 2, log = this.chatLog(i), open = this.more.has(i.id);
+      return log.length ? `<div class="r-chat">${log.map(l => { const lng = this.bubN(l.text) > this.BUB; // 154: whole messages; a long one ends on a full line with "devamı"
+        return `<div class="r-b${l.who === first ? '' : ' me'}">${many && l.who !== first ? `<b dir="auto">${esc(l.who)}</b>` : ''}<span class="t${lng && !open ? ' cl' : ''}" dir="auto">${esc(l.text.slice(0, this.BUBMAX))}</span>${lng ? `<button class="r-bm" data-rich="more" aria-expanded="${open}">${open ? 'daha az' : 'devamı'}</button>` : ''}</div>`; }).join('')}</div>` : '';
     }
     const dd = this.due(i); if (dd) return this.cdHtml(i, dd); // 106d
     const pg = this.prog(i); if (pg) return this.progHtml(i, pg);
@@ -927,7 +946,10 @@ const Rich = {
   // heights for Board.est (rough, like the rest): the picture/player box, and the body when it replaces the sub line (null = it does not)
   embH(i) { const e = this.embed(i); return !e ? 0 : this.on.has(i.id) ? e.h - (hasVisual(i) ? 132 : 0) : hasVisual(i) ? 0 : 132; },
   bodyH(i) {
-    if (i.conv?.log?.length) return 8 + i.conv.log.filter(l => l.text).slice(-3).reduce((h, l) => h + 4 + (Math.min(90, l.text.length) > 28 ? 44 : 27), 0);
+    if (i.conv?.log?.length) { const log = this.chatLog(i); if (!log.length) return null;
+      const many = i.conv.who.length > 2, first = i.conv.who[0], open = this.more.has(i.id), LH = 16.875;
+      return Math.round(8 + 4 * (log.length - 1) + log.reduce((h, l) => { const n = this.bubN(l.text);
+        return h + 10 + (many && l.who !== first ? 14.85 : 0) + Math.min(n, open ? 1e9 : this.BUB) * LH + (n > this.BUB ? 24 : 0); }, 0)); }
     const dd = this.due(i); if (dd) return dd.at - now() < 864e5 ? 63 : 54; // 106d
     if (this.prog(i)) return matchMedia('(pointer: coarse)').matches ? 57 : 50;
     if (this.isDoc(i)) {
@@ -937,13 +959,14 @@ const Rich = {
       if (!ls.length) return null;
       return 6 + ls.slice(0, 6).reduce((h, l) => h + 1 + (l === ch ? this.CH : /^\s*(?:[-*+]\s*)?\[( |x|X)\]\s/.test(l) ? row : /^#{1,3}\s/.test(l) ? 21 : 18), 0) + (ls.length > 6 ? 20 : 0);
     }
-    return this.code(i) ? 156 : this.csv(i) ? this.CH : null;
+    return this.code(i) ? 152 : this.csv(i) ? this.CH : null;
   },
   // a tap inside a card: true when it was meant for a rich part (play, tick), so the card does not open
   tap(card, t) {
     const b = t?.closest?.('[data-rich]'); if (!b || !card.contains(b)) return false;
     const i = byId(card.dataset.id); if (!i) return true;
     if (b.dataset.rich === 'play') { this.on.add(i.id); const box = b.closest('.r-emb'); box.outerHTML = this.html(i); haptic(8); S.items = [...S.items]; render(); return true; } // the card grows: the board lays out again
+    if (b.dataset.rich === 'more') { this.more.has(i.id) ? this.more.delete(i.id) : this.more.add(i.id); haptic(6); S.items = [...S.items]; render(); return true; } // 154: the card grows, the board lays out again
     if (b.dataset.rich === 'tick') {
       const n = +b.dataset.ln, lines = (i.text || '').split('\n'); if (!/\[( |x|X)\]/.test(lines[n] || '')) return true;
       const on = !b.classList.contains('on'); lines[n] = lines[n].replace(/\[( |x|X)\]/, on ? '[x]' : '[ ]');
