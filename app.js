@@ -1625,7 +1625,7 @@ function renderNow() {
     $('#empty').hidden = !none || S.view === 'todo';
     if (S.view === 'todo') Todo.render();
     else if (none) $('#empty').innerHTML = emptyHtml('inbox', 'Kendine not at', 'WhatsApp\'ta kendine attığın gibi: kutuya yaz ya da link, resim, dosya yapıştır. Kutunun solunda üç mod var: <b>Not</b> kaydeder, <b>Ara</b> yazdıkça bulur, <b>Sor</b> ' + aiTo() + ' sorar (<b>Tab</b> ile değişir).',
-      `<button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
+      `<button class="btn primary" data-do="sample">${ic('spark', 'sm')}Örnek verilerle dene</button><button class="btn secondary" data-do="wa">${ic('chat', 'sm')}WhatsApp'tan içe aktar</button><button class="btn secondary" data-do="settings">${ic('settings', 'sm')}Ayarlar</button>`);
     // 147b: back to the list from another view with nothing else changed → the rows drawn last time are still right (10k items, phone: ~0.3 s saved)
     else if (S.view === 'list' && !live && !onlyMore && S._lkey && vkey.every((x, k) => x === S._lkey[k]) && $('#list').firstElementChild) { }
     else if (S.view === 'list') items.length ? renderList(items, onlyMore) : ($('#list').innerHTML = live ? emptyHtml('search', 'Bulunamadı', 'Başka bir kelime dene ya da <b>Tab</b> ile ' + aiTo() + ' sor.') : !S.q && filtered() ? emptyHtml('filter', 'Bu süzgeçte kayıt yok', 'Süzgeci kaldır ya da kutuya yeni bir şey yaz.', unfilterBtn()) : emptyHtml('search', 'Benzer kayıt yok', 'Enter\'a basarsan bunu yeni not olarak kaydeder. ' + aiTo() + ' sormak için <b>Tab</b>\'a bas.'));
@@ -1644,7 +1644,7 @@ function renderNow() {
     Flip.play(fr, fb);
     Scrub.draw(none || S.view === 'todo' || S.view === 'cal' ? [] : items);
     if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
-    Badge.set();
+    Badge.set(); Sample.bar();
 }
 
 // ---------- data changes ----------
@@ -1729,6 +1729,70 @@ async function undoDelete() {
   const u = S.undo; if (!u) return; S.undo = null;
   await upsert([{ ...u, deleted: false, deletedAt: undefined }]); toast('Geri alındı', 1800, 'check');
 }
+// 107m: first run → "Örnek verilerle dene": a dozen sample items (notes, links, tasks, a picture, two linked cards) marked `sample`,
+// spread over the last three days so every view has something to show; a strip on top says so and deletes them all in one tap
+// (tombstones, like the trash's "delete for good": signed-in devices drop them too). Nothing is sent to the AI (pending: false).
+const Sample = {
+  _of: null, _n: 0,
+  n() { if (this._of !== S.items) { this._of = S.items; this._n = S.items.reduce((n, i) => n + (i.sample && !i.deleted ? 1 : 0), 0); } return this._n; },
+  async pic() { // a small drawn "photo" (sunset over hills): the gallery and image search have something real to show
+    try {
+      const c = new OffscreenCanvas(640, 420), g = c.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, 420);
+      sky.addColorStop(0, '#2b4c7e'); sky.addColorStop(.55, '#f08a5d'); sky.addColorStop(1, '#f9d56e'); g.fillStyle = sky; g.fillRect(0, 0, 640, 420);
+      g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(420, 250, 56, 0, 7); g.fill();
+      g.fillStyle = '#3d5a40'; g.beginPath(); g.moveTo(0, 330); g.quadraticCurveTo(160, 230, 330, 320); g.quadraticCurveTo(480, 390, 640, 300); g.lineTo(640, 420); g.lineTo(0, 420); g.fill();
+      g.fillStyle = '#2a3f2c'; g.beginPath(); g.moveTo(0, 380); g.quadraticCurveTo(250, 320, 640, 400); g.lineTo(640, 420); g.lineTo(0, 420); g.fill();
+      const b = await c.convertToBlob({ type: 'image/png' }); return new File([b], 'kapadokya-gun-batimi.png', { type: 'image/png' });
+    } catch { return null; }
+  },
+  async add() {
+    if (this.busy || this.n()) return; this.busy = true;
+    try {
+      const t = now(), h = 36e5, day = k => dayKey(t + k * 864e5), id = () => newId(), [a, b] = [id(), id()];
+      const L = (url, title, description, x) => ({ type: 'link', url, text: '', meta: { title, description }, ...x });
+      const T = (text, x = {}) => ({ type: 'note', text, todo: { text, done: false, user: true, ...x } });
+      const list = [
+        { type: 'note', text: 'Kendine not at: yaz, Enter. Link, resim, dosya da olur.\nBu bir örnek; üstteki şeritten hepsini tek dokunuşla silersin.', starred: true, ts: t - .02 * h },
+        T('Süt, ekmek, yumurta al', { due: day(0) }),
+        T('Diş randevusu için ara', { due: day(1) }),
+        { ...T('Elektrik faturasını öde'), todo: { text: 'Elektrik faturasını öde', done: true, doneAt: t - 2 * h, user: true } },
+        L('https://tr.wikipedia.org/wiki/Pomodoro_tekni%C4%9Fi', 'Pomodoro Tekniği — Vikipedi', '25 dakika çalış, 5 dakika ara ver: dikkat dağılmadan iş bitirmenin basit yolu.', { tags: ['verimlilik'], ts: t - 5 * h }),
+        { id: a, type: 'note', text: 'Toplantı notları\n- bütçe onaylandı\n- sunum cuma\n- Ayşe tasarımı gönderecek', tags: ['iş'], color: 'blue', links: [b], ts: t - 7 * h },
+        { id: b, type: 'note', text: 'Sunum taslağı: sorun → çözüm → demo (10 dk)', tags: ['iş'], ts: t - 6.5 * h },
+        { type: 'note', text: 'Kitap önerisi: Küçük Prens — bu yaz tekrar oku', tags: ['kitap'], color: 'yellow', ts: t - 26 * h },
+        { type: 'note', text: 'Tatil fikri: Kapadokya, balon turu sabah 5\'te. Ekim en iyi ay.', tags: ['seyahat'], color: 'green', ts: t - 27 * h },
+        L('https://developer.mozilla.org/tr/docs/Web/Progressive_web_apps', 'Progresif web uygulamaları — MDN', 'Telefona kurulan, çevrimdışı çalışan web uygulamaları.', { tags: ['iş'], ts: t - 29 * h }),
+        L('https://tr.wikipedia.org/wiki/Mercimek_%C3%A7orbas%C4%B1', 'Mercimek çorbası — Vikipedi', 'Kırmızı mercimek, soğan, havuç; üstüne nane ve pul biber.', { tags: ['yemek'], ts: t - 50 * h }),
+        { type: 'note', text: '"Basit tut." — bugünün notu', ts: t - 52 * h },
+      ];
+      const img = await this.pic();
+      if (img) list.push({ type: 'file', fileName: img.name, mime: img.type, size: img.size, text: 'Kapadokya, gün batımı', tags: ['seyahat'], _blob: img, ts: t - 28 * h });
+      const made = list.map((x, k) => ({ id: id(), ts: t - k * 60e3, group: id(), source: 'manual', tags: [], ...x, createdAt: t, sample: true, dev: deviceNow() }));
+      const saved = (await saveItems(made)).map(i => ({ ...i, pending: false }));
+      await upsert(saved, { sync: false });
+      haptic(); toast(`${saved.length} örnek kayıt eklendi`, 3000, 'mark');
+    } catch (e) { console.warn('sample', e); toast('Örnekler eklenemedi: ' + e.message, 4000, 'x'); }
+    finally { this.busy = false; }
+  },
+  async clear() {
+    const list = S.items.filter(i => i.sample && !i.deleted); if (!list.length) return;
+    await Trash.purge(list); haptic(14); toast('Örnekler silindi', 2400, 'check');
+  },
+  bar() { // the strip on top while samples are there
+    const n = this.n(); let el = $('#sampleBar'); document.body.classList.toggle('has-sample', !!n);
+    if (!n) { if (el) el.hidden = true; return; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'sampleBar'; el.setAttribute('role', 'status');
+      el.addEventListener('click', e => { if (e.target.closest('[data-sdel]')) this.clear(); });
+    }
+    const home = innerWidth >= 900 ? $('.hud-l') : document.body; // desktop: in the top bar next to the board name; phone: above the box
+    if (el.parentNode !== home) home.appendChild(el);
+    const txt = `<span>${ic('spark', 'sm')}${n} örnek kayıt</span><button class="btn secondary" data-sdel>${ic('trash', 'sm')}Örnekleri sil</button>`;
+    if (el._t !== txt) el.innerHTML = el._t = txt;
+    el.hidden = false;
+  },
+};
+
 const Trash = {
   DAYS: 30,
   list: () => S.items.filter(i => i.deleted && !i.purged && i.deletedAt && i.type !== 'vault' && i.type !== 'bridge').sort((a, b) => b.deletedAt - a.deletedAt),
@@ -7448,7 +7512,7 @@ function wire() {
     const od = e.target.closest('[data-otd]'); if (od) return showFrom(dayEnd(od.dataset.otd));
     if (e.target.closest('[data-otdx]')) { try { localStorage.setItem('hn-otd-hide', dayKey(now())); } catch { } return render(true); }
     if (e.target.closest('[data-lnow]')) { S.listFrom = null; S.limit = 300; render(); return scrollTo(0, 0); }
-    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'unfilter') { if (S.folder) return Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); return render(); } if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
+    const dd = e.target.closest('[data-do]'); if (dd) { if (dd.dataset.do === 'unfilter') { if (S.folder) return Folders.close(); Object.assign(S.filter, { type: 'all', tag: null, star: false, list: null, color: null, src: null }); return render(); } if (dd.dataset.do === 'sample') return Sample.add(); if (dd.dataset.do === 'wa') $('#waInput').click(); else openSettings(); return; }
     const th = e.target.closest('.topic-head');
     if (th) { const t = th.dataset.tag; S.filter.tag = t === '(etiketsiz)' ? null : t; setView('list'); scrollTo(0, 0); return; }
     const it = e.target.closest('[data-id]'); if (it) openItem(it.dataset.id);

@@ -2441,3 +2441,20 @@ dialog.clean .d-body { gap: 12px; }
   .c-th .c-pic svg { width: 12px; height: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .c-day, .c-btn { transition: none; } }
+/* 107m: sample items are on → a small strip deletes them all: desktop in the top bar after the board name, phone above the box */
+#sampleBar { display: flex; align-items: center; gap: 10px; padding: 0 2px 0 10px; height: 36px; border-radius: 10px; font-size: 13px; color: var(--text-2); white-space: nowrap;
+  background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); animation: fade .3s var(--ease); }
+#sampleBar[hidden] { display: none; }
+#sampleBar > span { display: inline-flex; align-items: center; gap: 6px; }
+#sampleBar > span .i { color: var(--accent); }
+#sampleBar .btn { height: 30px; padding: 0 10px; font-size: 13px; border-radius: 8px; }
+@media (max-width: 1199px) { .hud-l #sampleBar > span { display: none; } .hud-l #sampleBar { padding-left: 2px; } }
+@media (max-width: 899px) {
+  body > #sampleBar { position: fixed; z-index: 24; left: 50%; transform: translateX(-50%); bottom: calc(var(--dock-h, 60px) + 18px + env(safe-area-inset-bottom)); height: 52px; padding: 0 4px 0 14px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / .06), 0 6px 20px rgb(0 0 0 / .1); }
+  body > #sampleBar .btn { height: 44px; padding: 0 14px; }
+  body.has-sample .toast { bottom: calc(var(--dock-h, 60px) + 80px + env(safe-area-inset-bottom)); }
+  body.has-sample .board-tools { bottom: calc(var(--dock-h, 60px) + 80px + env(safe-area-inset-bottom)); }
+  body.has-sample .board-tools.pal { bottom: calc(var(--dock-h, 60px) + 130px + env(safe-area-inset-bottom)); }
+  body.has-sample #list, body.has-sample #gallery { padding-bottom: 70px; }
+}

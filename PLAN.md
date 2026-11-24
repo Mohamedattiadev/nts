@@ -629,6 +629,13 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
         (k) erişilebilirlik ayarları: yazı boyutu (4 adım), yüksek kontrast, büyük dokunma modu, hareketi azalt anahtarı;
         (l) parmak izi/yüzle kilit açma (WebAuthn, mevcut uygulama kilidinin anahtarını sarar) + tek tek kayıtları gizle/kilitle;
         (m) ilk açılışta "örnek verilerle dene" (30 sn), sonra tek tıkla örnekleri sil.
+            [x] (2026-11-24, A hattı, sw v117) boş ekranda birincil düğme "Örnek verilerle dene" → `Sample` (app.js, Trash'in üstünde) 13 kayıt
+            yazar (`sample: true`, son 3 güne yayılı): yıldızlı karşılama notu, 3 görev (bugün, yarın, biri bitmiş), 3 link (meta hazır, ağ
+            gerekmez), birbirine bağlı iki iş notu (i.links), renkli/etiketli notlar ve OffscreenCanvas ile çizilen bir gün batımı resmi (galeri
+            ve resim araması boş kalmasın). `pending: false` → yapay zekâya gitmez. Örnek varken şerit: masaüstünde üst çubukta pano adının yanında
+            ("13 örnek kayıt · Örnekleri sil", <1200 px yalnız düğme), telefonda kutunun üstünde (44 px düğme; toast ve pano araçları yukarı
+            kayar). "Örnekleri sil" = Trash.purge (mezar taşı, dosyası da gider; girişliyse öteki cihazdan da kalkar), kullanıcının kendi
+            kayıtlarına dokunmaz. Test: 4 yapılandırmada boş → ekle → pano/liste/galeri/yapılacaklar → sil → boş ekran, konsol 0.
 
 - [x] 108. (2026-11-23, B hattı, v47: her bağ ayrı yol, karşılıklı en yakın kenarlardan dik çıkan eğri — farklı sütunda hep yan kenardan (aradaki kartların içinden inmez), üst üsteyse ortak genişliğin ortasından; çizgiler kartların altında, normalde silik (%16); fareyle üstüne gelince / telefonda dokununca o kartın bağları accent renkli, kalın, uçlarda nokta, ötekiler daha da sönük; telefonda pencere açılırken gelen sahte fare olayı yok sayılır, pencere kapanınca bağlar yanık kalır; %40 altında çizgi yok, kartta "🔗 N" rozeti; wires() yalnız takılı (görünen) kartlar, değişmeyen SVG yeniden yazılmaz. 4 yapılandırmada ekran görüntüsü, phone-audit board 0.) **Bağlı kartlar arasındaki çizgiler kötü** (sahip, ekran görüntüleri): şu an dar boşlukta dik iniyor, kartların arkasından/üstünden
         geçiyor, birbirine karışıyor. Çözüm: en yakın kenarlardan çıkan yumuşak eğri (bezier), kart gövdesini delmez (aradaki kartın kenarından
