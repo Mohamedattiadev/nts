@@ -120,7 +120,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
 - [?] 119-0b design/zoomout.html YENİ TUR: sahip A Kalem seçti ama "çok kötü, daha iyi daha görünümlü olsun" → A ailesinden 3 çok daha güzel varyant (bugünkü Nts görünümü, Locus kalitesi); ok nedenleri sahip "en uygun neyse" → sen seç, gerekçesiyle göster; [?] yap, sahip seçsin; PLAN 119-0b — ÖRNEK HAZIR: design/zoomout.html 2. tur (A1 Çerçeve · A2 Fosfor · A3 Mürekkep + ok kuralları önerisi), sahibin seçimi bekleniyor (45cd9b1)
 - [~B] 147 ÇOK ÖNEMLİ akıcılık (sahip 2026-11-24: "neden çok smooth değil, yavaş application?"): ÖNCE ÖLÇ, sonra düzelt; PLAN 147
 - [x] 148 ÇOK ÖNEMLİ yapay zekâ az token harcasın (çok kayıt olunca): ölç + kes; PLAN 148 (00f90e8; sw v99; 1000 WhatsApp -%41, resim -%40, tekrar -%100; köprü restart gerek)
-- [ ] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
+- [~A] 95g tarayıcı eklentisi (Chrome/Brave MV3: sağ tık → Nts'e gönder, köprünün /inbox ucuna; extension/ klasörü)
 
 KURALLAR (sahip):
 - 3 DİL: kullanıcı Arapça + İngilizce + Türkçe yazar; her giriş/gösterim dir="auto", arama üç dilde (Arapça normalleştirme, Türkçe İ/ı) — PLAN 104 notu.
