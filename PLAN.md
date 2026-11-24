@@ -921,6 +921,12 @@ Arayüz:
         sahip seçsin, sonra 155 seçilen yönü uygular (masaüstü + telefon, bütün kayıt türleri, phone-audit 0).
         KARAR (sahip, 2026-11-24): "en uygun seçeneği yap" — seçim beklenmez; A "Belge" uygulanır (en sade, bugünkü kimliğe en yakın, telefonda
         alt sayfaya doğal geçer). B/C yalnız örnek sayfada kalır.
+        155-0 ÖRNEK HAZIR (2026-11-24, A hattı): design/item.html — "Şimdi" (feedback-32 + 6 kalabalık nedeni), A Belge (kutusuz, başlık + tek gri
+        satır + alan adı, ✦ düz özet, "Not ekle…", #etiket +, tek satır arşiv), B Kart + kenar çubuğu (820 px, sağda Tarih/Kaynak/Adres/Dosya/
+        Etiketler/Pano; telefonda "Bilgiler" açılır satırı), C Önizleme önce (link kapağı/sohbet balonları/foto/not kâğıdı üstte, buzlu 3 düğme).
+        4 kayıt (PoultryCare linki, Mehmet Usta sohbeti, Kümes 3 fanı fotosu, haftalık plan notu) × masaüstü/telefon alt sayfa, açık+koyu;
+        ⋯ menüsü (Paylaş/Kopyala/Tarayıcıda aç/Panoya koy/Sil, telefonda alttan), yıldız, not, etiket, Panoya koy çalışıyor. Ortak kurallar ayrıca
+        ✓/✗. Playwright 4 yapılandırma: konsol hatası 0, yatay taşma 0. Sahip kararı yukarıda: A uygulanır (155).
 - [x] 121. (2026-11-24, B hattı: Glass — cihaz başına hn-glass; html[data-glass]. Yüzen yüzeyler (kutu, sol çubuk, ">" sekmesi, pano araçları,
         görünüm seçici, çipler, pano seçici, açılır menüler, önizleme, tur kartı, alt pencereler) buzlu cam: blur 24 px + saturate 1.8, üstte ince
         ışık çizgisi, açık kenar. AA: arkadaki en fazla %24 (açık) / %20 (koyu) geçer, camda text-2 bir ton güçlü → arkada saf siyah/beyaz olsa da
