@@ -226,7 +226,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [x] 100 Yapılacaklar basit liste kalır + isteğe bağlı küçük "Yapılıyor" etiketi (3 sütun YOK, sahip küçülttü; PLAN 100) (4339f14; sw v110)
 - [x] 107a "Gelen kutusunu temizle" kaydırmalı kartlar (telefon önce) (48fa45e; sw v111)
 - [x] 107e doğal dille hatırlatma + bildirimde ertele düğmeleri (1a99172; sw v113)
-- [~B] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt)
+- [x] 107k erişilebilirlik ayarları (yazı boyutu, yüksek kontrast, büyük dokunma, hareketi azalt) (8a9d36e)
 - [x] 107b Android ana ekran widget'ı (96'dan sonra) (6ff00db; sw v115)
 - [x] 131-2 cam klasör kartı: "cam ama şeyler gözükmüyor içinden" → içindeki kayıtlar (foto, not, link) camın ARKASINDAN görünsün; PLAN 131-2 (7b66a20; sw v116)
 - [x] 107m ilk açılışta örnek verilerle dene + tek tıkla sil (ced3eaa)
