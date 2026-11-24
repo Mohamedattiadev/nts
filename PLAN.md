@@ -751,6 +751,9 @@ Arayüz:
         ve fareyle üzerine gelince ay adları (Oca, Şub…; dile göre) belirir, uzaktakiler soluk; kayıt olan aylarda çentik biraz daha belirgin
         (yoğunluk). Sürükleme/tekerlek/dokunmada nokta yaylı ve akıcı kayar (rAF, transform), sayfa da yumuşak kayar, aya oturur (snap) + hafif
         titreşim; sürüklerken yanında "Mart 2025" balonu. Klavye ↑↓ ay, PgUp/PgDn yıl. reduced-motion'da anında. Telefon önce, açık + koyu.
+        EK (sahip, 2026-11-24, design/feedback-29.png: "birbirlerinin üzerinde olmasın o kart ve line"): galeri/listedeki sağ önizleme kutusu
+        ("Bir kartın üzerine gel, burada büyük görünür") zaman çizgisinin yıl yazılarını (2026, 2025) kapatıyor. Önizleme zaman çizgisinin SOLUNDA
+        bitsin (çizgi + yazıları için yer ayır), hiçbir genişlikte çakışma olmasın; 1366×768, 1920, dar pencere, telefon; çakışma ölçümü 0.
 - [ ] 150. **"Finential" panosu boş görünüyor** (sahip, 2026-11-24, design/feedback-28.png, masaüstü koyu, yakınlık %54: pano seçicide "Finential",
         ekranda tek kart yok; sahip: "bütün notları göstermiyor"). Önce sebebi KANITLA (tahminle düzeltme): proje panosu visible0'da onBoard(i)
         (i.project === S.board || boards || posBy) ile süzülüyor. Adaylar: (a) kartlar var ama kamera (S.cam, hn-cam) başka yerde → pano açılınca
