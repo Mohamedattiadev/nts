@@ -214,7 +214,7 @@ BİLGİ (önceki oturum, 2026-11-21): 56–65, 74, 76–85 bitti (son commit 572
 `#ink` innerHTML'ini baştan kuruyor (titremenin sebebi). Sol çubuk: Rail.fold / #railTab (index.html), palet #pal.
 Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supabase CLI yok, sahibin girişi lazım), gerçek "GitHub'ı bağla"
 (uygulamada sahip yapar), gerçek WhatsApp sohbet zip'i (Downloads'taki zip sohbet değil, sadece 3 foto), 3/3a/3b + 74 gerçek cihaz testi (sahip yapacak).
-- [~A] 99a galeri gerçekten görsel (masonry, yazısız) + 130c galeri↔pano aynı kartlarla uçarak geçiş
+- [x] 99a galeri gerçekten görsel (masonry, yazısız) + 130c galeri↔pano aynı kartlarla uçarak geçiş (78bdc99; sw v102)
 - [ ] 152 kopya yok (sahip: "bütün linkler veya fotolar zipten tekrarlanmasın"): aynı link/foto/dosya bir kez; içe aktarmada ve uygulamada; PLAN 152
 - [ ] 150 HATA (sahip, design/feedback-28.png): "Finential" panosu BOMBOŞ, "bütün notları göstermiyor" → önce sebebi kanıtla, düzelt; PLAN 150
 - [ ] 151 HATA (sahip, design/feedback-27.png): sol üstteki logo/pano seçici kutusu çirkin (simge üstte, ad altta, ⌄ en altta, uzun ad kesik) → tek satır; PLAN 151
