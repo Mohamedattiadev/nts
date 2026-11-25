@@ -779,6 +779,16 @@ Arayüz:
         Bugünkü Nts değişkenleriyle (yeni kimlik yok), reduced-motion'da animasyonsuz atlar, render her çizimde yayı baştan kurmaz (liste aynıysa).
         Test scratchpad t123.mjs (4 yapılandırma): klavye, tekerlek, savurma tam sayıya oturur, düğme + ortaya dokunma, yeniden açınca ortada,
         pencere içinde taşma 0, telefonda düğme 44 px; konsol hatası yok.
+        2. TUR [?] (sahip 2026-11-25, design/dial-choices-2.json: tarih d-A ✓ "daha güzel olsun", d-B ✗; konu t-B ✓ "ama daha güzel olsun"; yer
+        p-goto ✓ + p-filter ✓; p-phone "sence?"). ÖRNEK HAZIR (2026-11-25, B): design/dial2.html — uygulamanın küçük penceresi içinde ("Tarihe git" /
+        "Konular"), her etiket her karede açıdan yerleşir (yay istenen adımda, uçlarda solar, seçili değer büyür, hafif yaylı oturma).
+        Tarih: A1 Saat kadranı (kutusuz, ince çizgili 3 halka, uzaktakiler solar, ortada haftanın günü + "3 gün önce") · A2 Yarım kadran (yalnız
+        üst yarı, büyük yazı, konu yayıyla aynı aile, telefonda alttan pencereye uygun) · A3 Kayıt izli kasa (A1 + gün/ay/yıl altında kayıt
+        yoğunluğu noktası, kaydı olmayan gün soluk, ortada "N kayıt"). Konu: B1 Sakin yay (sayı altta) · B2 Sayaç yay (kayıt sayısı kadar çubuk)
+        · B3 Renkli yay (konuya sabit renk, pencere + düğme o rengi alır). p-phone kararım: çark her yerde, yerleşim cihaza göre (telefonda alttan
+        pencere + başparmak, masaüstünde küçük pencere + tekerlek/klavye + yazarak gitme kutusu); gerekçe sayfada. ✓/✗ → dial-choices-3.json.
+        Test (scratchpad t-dial2.mjs, 1366×768 + 390×844 × açık/koyu): yatay taşma 0, pencere taşması 0, konsol hatası 0, klavye ← gün değişir,
+        konu düğmesi süzer/kaldırır. Görüntüler design/123-1/. Seçimden sonra: seçilen tarih kasasını "Tarihe git"e, konu yayını TagArc'ın yerine koy.
 - [?] 119-0b. **zoomout örneği yeni tur** (sahip seçimi 2026-11-24, design/zoomout-choices.json): A Kalem seçildi ama "UI hâlâ istediğim gibi değil,
         çok kötü, upgrade et, daha iyi daha görünümlü olsun". A'nın ruhunu (elle çizilmiş kesik küme sınırı + kavisli oklar) koruyup 3 çok daha
         güzel varyant: daha temiz çizgi, daha iyi başlık tipografisi, kümelere sakin renk zemini, okların ucu ve etiketleri; bugünkü Nts görünümü.
