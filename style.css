@@ -2814,3 +2814,7 @@ dialog.clean .d-body { gap: 12px; }
 .day-band.topic .col-head .l, .day-band.topic .col-head .s { color: var(--tc, var(--text)); }
 #layoutBtn[aria-pressed="true"] { color: var(--accent); }
 #board.zc-on .day-band.topic .col-head { opacity: 0; } /* the cluster title says it already */
+/* 163: where the records live */
+.acct-cnt { display: block; margin-top: 2px; } .acct-cnt b { font-weight: 650; color: var(--text); } .acct-cnt b.low { color: var(--danger); }
+.acct-warn { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--hit) 12%, transparent); color: var(--text); }
+.acct-warn svg { flex: none; margin-top: 2px; color: var(--hit); }

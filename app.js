@@ -6959,6 +6959,11 @@ const Cloud = {
     }
     return this.s.access_token;
   },
+  // 163: how many live records the cloud holds for this account (one HEAD request, nothing downloaded)
+  async count() {
+    try { const r = await fetch(SB.url + '/rest/v1/nts_items?select=id&data->>deleted=is.null', { method: 'HEAD', headers: { apikey: SB.key, authorization: 'Bearer ' + await this.token(), prefer: 'count=exact', range: '0-0' } });
+      const cr = r.headers.get('content-range'); return cr ? +cr.split('/')[1] : null; } catch { return null; }
+  },
   async req(path, opt = {}) {
     const ka = this._ka && typeof opt.body === 'string' && opt.body.length < 60000;
     const r = await fetch(SB.url + path, { ...opt, ...(ka ? { keepalive: true } : {}), headers: { apikey: SB.key, authorization: 'Bearer ' + await this.token(), ...(opt.headers || {}) } });
@@ -7839,9 +7844,9 @@ function openSettings(page = 'main') {
   const cur = document.documentElement.dataset.accent || 'orange', dark = document.documentElement.dataset.theme === 'dark';
   const main = `${head(`${ic('settings', 'sm')}Ayarlar`)}
     <div class="set-sec"><h4>Hesap</h4>
-      ${Cloud.on() ? `<div class="set-row static">${ic('cloud')}<span>${esc(Cloud.email())}<small id="syncMsg">${esc(S.syncMsg || 'Telefon ve bilgisayar aynı kayıtları görür')}</small></span></div>
+      ${Cloud.on() ? `<div class="set-row static">${ic('cloud')}<span>${esc(Cloud.email())}<small id="syncMsg">${esc(S.syncMsg || 'Telefon ve bilgisayar aynı kayıtları görür')}</small><small class="acct-cnt">Bu tarayıcıda ${alive().length} kayıt · bulutta <b id="cloudCnt">…</b> · ${esc(location.host)}</small></span></div>
         <div class="acct-btns"><button class="btn secondary" data-do="sync">${ic('cloud', 'sm')}Şimdi senkronla</button>${lockBtn}<button class="btn danger" data-do="signout">Çıkış yap</button></div>`
-      : `<p class="hint">Telefonda ve bilgisayarda aynı Google hesabıyla gir, kayıtlar ikisinde de görünsün.${locked ? ' Şifre açık olduğu için sunucuya şifreli gider.' : ''}</p><div class="acct-btns">${gBtn}${lockBtn}</div>`}
+      : `<p class="hint acct-warn">${ic('cloud', 'sm')}<span><b>Kayıtların yalnız bu tarayıcıda</b> (${alive().length} kayıt, ${esc(location.host)}). Başka bir tarayıcı profili ya da adres bunları görmez; kaybolmasın diye Google ile gir.</span></p><p class="hint">Telefonda ve bilgisayarda aynı Google hesabıyla gir, kayıtlar ikisinde de görünsün.${locked ? ' Şifre açık olduğu için sunucuya şifreli gider.' : ''}</p><div class="acct-btns">${gBtn}${lockBtn}</div>`}
       ${lockHtml}
       ${(() => { const l = Repo.link(), pc = BridgeLink.local();
         return l ? `<div class="set-row static">${ic('folder')}<span>Dosyalar: GitHub · ${esc(l.login)}<small>${(l.repos || []).map(r => esc(r.split('/')[1])).join(', ') || 'ilk dosyada repo açılır'}${S.repoKB ? ` · ${Math.round(S.repoKB / 1024)} MB / 900 MB` : ''}. Dolunca yenisi kendiliğinden açılır.</small></span></div>`
@@ -7911,6 +7916,8 @@ function openSettings(page = 'main') {
   if (page === 'dups') Dups.run();
   if (page === 'mig') Mig.bind(m); // 107d
   if (page === 'obsidian') ObsVault.bind(m); // 107j
+  if (page === 'main' && Cloud.on()) Cloud.count().then(n => { const e = m.querySelector('#cloudCnt'); if (!e) return; e.textContent = n == null ? '?' : n + ' kayıt'; // 163
+    const here = alive().length; if (n != null && n + 3 < here) { e.classList.add('low'); e.title = 'Bazı kayıtlar henüz buluta gitmedi: Şimdi senkronla'; } });
   const setList = (k, ch) => { st.lists = { ...(st.lists || {}) }; st.lists[k] = { ...(st.lists[k] || {}), ...ch }; DB.put('kv', S.settings, 'settings'); render(); };
   if (page === 'main') AI.usage().then(u => { // 148: this month's AI spend, measured by the bridge
     const msg = m.querySelector('#tokMsg'); if (!msg || !u) return;
