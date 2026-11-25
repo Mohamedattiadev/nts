@@ -94,7 +94,7 @@ SIRA (sadece [ ] olanlar, sırayla; [~] başka oturumda, atla):
   yap), E Ayraç (etiket sekmesini sahip çok beğendi); varsayılanı E, ayarda seçilebilir
 - [x] 131b (c3819ba) otomatik klasörlere yapay zekâ: 104f gömmeleriyle kümeleme, köprü kümeye kısa ad verir, yeni kayıt en yakın klasöre; birleştir, "bu kayıt buraya ait değil"; 10k kayıtta ölçüm (PLAN 131 notu)
 - [x] 110 senkron sadeleşsin (tek durum noktası) + iki cihaz testi (a78ded9)
-- [~] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen)
+- [x] 114 liste/galeri kartlarında etiket + simge (decfec6, kısmen) → kalanı 114b (f2e1815)
 - [x] 115 görünüm seçici 10 sn sonra gizlenir, yaklaşınca iner (b15e567)
 - [x] 116 logo = pano seçici (sağ alttan taşı) (fbfa07f)
 - [x] 117 yüzen arayüz altındaki kartı kapatmasın (saydamlaş) (15ef8b5)
@@ -262,7 +262,7 @@ Sahibe sorulacaklar (bekliyor): 25 link-preview yayını ve nts_heavy SQL (Supab
 - [~C] 165 rich UI (sahip 2026-11-25: "rich ui olabilecek şeyleri yap"): geri gelen WhatsApp kayıtlarında ve diğerlerinde 106 zengin önizlemeleri (sohbet balonları, link kartı, video, harita, liste, tablo) her yerde devreye girsin — önce hangi kayıt türünün düz göründüğünü ölç (gerçek veride), sonra eksik olanları ekle; design/rich-ui-choices-2.json seçimleri
 - [x] 119-3 pano iki düzen (sahip 2026-11-25: "uzaklaşınca kümeler çok az, dağınık; dağınık ve düz iki mod yapalım mı?"): Zaman (bugünkü, günler) · Konu (kartlar konu bloklarında, her konu tek büyük küme, başlık = konu adı); düğme zoom kutusunun yanında, cihaz başına hatırlanır (78eb0f8)
 - [~C] 119-2 uzaklaşınca kümeler cilası (119-1 sonrası, sahibin gerçek verisinde bak): bitişik günlerde aynı konu uzun tek kümeye dönüyor mu (gerekirse gün başına küme), ok sayısı/okunurluğu, başlıkların gün başlıklarıyla çakışması, telefonda 4× yavaş CPU ölçümü, phone-audit 0, açık + koyu ekran görüntüsü; sahip ne derse
-- [~C] 114b liste/galeri kartlarında kalan: kaynak simgesi (WhatsApp / telefon / PC / eklenti), listede uzun yazı "…" yerine sonda solarak biter (panodaki gibi)
+- [x] 114b liste/galeri kartlarında kalan: kaynak simgesi (WhatsApp / telefon / PC / eklenti), listede uzun yazı "…" yerine sonda solarak biter (panodaki gibi) (f2e1815)
 - [ ] 164 köprüyü güncelle (sahip işi, hatırlatma): ana klasörde git pull + köprüyü yeniden başlat → 107j Obsidian klasörü ve 160 az yazılı foto etiketleri ancak o zaman çalışır; sonra bir fotoğrafla "çanta" aramasını birlikte dene
 - [x] 162 Liste satırında foto küçük (56 px, sahip ekran görüntüsü: ekran görüntüsünün içi anlaşılmıyor) → 159 gibi: resim kayıtlarında daha büyük önizleme (ör. 96–120 px, oranlı), keskin (BoardPic.mid), telefon + masaüstü (cc42d5c)
 - [x] 149b zaman çizgisi kullanırken imleç uygun olsun + daha akıcı (design/feedback-33.png); PLAN 149b (b774de9, sw v134)
