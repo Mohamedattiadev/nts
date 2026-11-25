@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// nts import whatsapp.zip [--yes] [--videos=keep|thumb]
+// nts import whatsapp.zip [--yes] [--videos=keep|thumb] [--requeue]
 // A big WhatsApp export (1 GB+, videos included) on the PC: first a dry-run report, then with --yes the real import.
 // - messages close together (same day, < 30 min) become one conversation item; photos/files live inside it (same ids as the app)
 // - every file once (sha1); 152: what is already in Nts (same link in any spelling, same file bytes; from the app's snapshot) is not
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const CONF = join(homedir(), '.config', 'hizli-note'), DATA = join(homedir(), '.local', 'share', 'nts');
 const STATE = join(DATA, 'import-state.json'), QUEUE = join(CONF, 'import-queue.json'), ORIG = join(DATA, 'originals'), REPOS = join(DATA, 'repos');
 const LIMIT = (+process.env.NTS_REPO_MB || 900) * 1024 * 1024, MAX_FILE = (+process.env.NTS_MAX_MB || 95) * 1024 * 1024; // env overrides only for tests
-const args = process.argv.slice(2).filter((a, k) => !(k === 0 && a === 'import')), zipPath = args.find(a => !a.startsWith('--')), yes = args.includes('--yes');
+const args = process.argv.slice(2).filter((a, k) => !(k === 0 && a === 'import')), zipPath = args.find(a => !a.startsWith('--')), yes = args.includes('--yes'), requeue = args.includes('--requeue'); // 163: --requeue = put already-imported items in the queue again (they were taken by a window that lost them); files are not uploaded again
 const videoMode = (args.find(a => a.startsWith('--videos=')) || '--videos=keep').split('=')[1];
 const MB = n => (n / 1048576).toFixed(n > 1048576 * 10 ? 0 : 1) + ' MB';
 const sh = (cmd, a, opt = {}) => { const r = spawnSync(cmd, a, { encoding: 'utf8', maxBuffer: 1e8, ...opt }); if (r.status !== 0 && !opt.ok) throw new Error(`${cmd} ${a.slice(0, 3).join(' ')}: ${(r.stderr || '').slice(-400)}`); return (r.stdout || '').trim(); };
@@ -168,7 +168,7 @@ push(`nts import ${chat}`); console.log('');
 // ---------- items (ids match the app's own WhatsApp import, so nothing doubles) ----------
 const items = [], saves = [];
 for (const g of groups) {
-  const id = 'wa' + fnv(chat + g[0].ts + g[0].text.slice(0, 60)); if (state.items[id]) continue;
+  const id = 'wa' + fnv(chat + g[0].ts + g[0].text.slice(0, 60)); if (state.items[id] && !requeue) continue;
   const log = [], kids = [], have = [];
   for (const m of g) {
     let att = null, text = m.text;
