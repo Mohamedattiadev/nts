@@ -1790,7 +1790,7 @@ const BoardHint = {
   },
   update() {
     const e = $('#boardHint') || (S.view === 'board' ? this.el() : null); if (!e) return;
-    const on = S.view === 'board' && !$('#board').hidden && !$('#board').classList.contains('months') && !(Board.mounted?.size) && !OnBoard.el?.isConnected;
+    const on = S.view === 'board' && !$('#board').hidden && !$('#board').classList.contains('months') && !(Board.mounted?.size) && !OnBoard.el?.isConnected && !(BoardLite.on() && Board.anyVisible()); // 168: painted cards count too
     if (!on) { if (!e.hidden) e.hidden = true; return; }
     const w = this.why(), key = w.k + w.t + w.a; e.dataset.k = w.k;
     if (e._key !== key) { e._key = key; e.innerHTML = `<div class="bh-ic">${ic(w.k === 'filter' ? 'eye' : w.k === 'out' ? 'fit' : w.k === 'range' ? 'clock' : 'board', 'sm')}</div><div class="bh-t"><b>${w.t}</b>${w.p ? `<span>${w.p}</span>` : ''}</div>${w.a ? `<div class="bh-a">${w.a}</div>` : ''}`; }
@@ -5823,15 +5823,16 @@ const Board = {
       if (mg.hidden && !reduced()) { // 166: the month tiles grow out of where you zoomed, quickly (no jump)
         const r = $('#board').getBoundingClientRect(), z = this._zp || [r.width / 2, r.height / 2];
         mg.style.transformOrigin = `${z[0]}px ${z[1]}px`; mg.animate([{ opacity: 0, transform: 'scale(1.12)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
-      mg.hidden = false; BoardHint.update(); return;
+      mg.hidden = false; BoardLite.draw(); BoardHint.update(); return;
     }
     if (!mg.hidden && !reduced()) { const z = this._zp; plane.style.transformOrigin = ''; $('#board').animate([{ opacity: .35, filter: 'blur(2px)' }, { opacity: 1, filter: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); } // 166: back to the cards, softly
     mg.hidden = true;
     for (const [k, el] of this.mountedMonths || []) { el.remove(); this.mountedMonths.delete(k); }
     const inside = m => m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + m.h > v.y1;
+    const lite = BoardLite.on(); // 168: far out, the cards are painted on one canvas instead
     for (const [id, m] of this.M) {
       const el = this.mounted.get(id);
-      if (inside(m)) { if (!el && OnBoard.id === id && OnBoard.el?.isConnected) { Object.assign(OnBoard.el.style, { left: m.x + 'px', top: m.y + 'px' }); this.mounted.set(id, OnBoard.el); }
+      if (!lite && inside(m)) { if (!el && OnBoard.id === id && OnBoard.el?.isConnected) { Object.assign(OnBoard.el.style, { left: m.x + 'px', top: m.y + 'px' }); this.mounted.set(id, OnBoard.el); }
         else if (!el) { const c = this.card(m.i); if (m.auto) { c.classList.add('auto'); c.style.height = m.h + 'px'; } if (now() - (m.i.createdAt || 0) < 1500) c.classList.add('born'); c.style.left = m.x + 'px'; c.style.top = m.y + 'px'; frag.appendChild(c); this.mounted.set(id, c); fresh.push(c); } }
       else if (el && !el.classList.contains('dragging') && !(OnBoard.id === id && OnBoard.el?.isConnected) && !el.querySelector('[contenteditable="true"],[contenteditable="plaintext-only"]')) { el.remove(); this.mounted.delete(id); }
     }
@@ -5851,7 +5852,7 @@ const Board = {
       if (plane.classList.contains('moving')) (this._fq ||= []).push(...fresh); else this.fades(fresh); }
     this.fitHeads();
     this.wires();
-    ZC.cull();
+    ZC.cull(); BoardLite.draw();
     BoardHint.update();
   },
   // 92b: a day head is never cut. Full label if it fits its band on screen, else the short one ("20 Kas 3"), else it stands vertically in the band

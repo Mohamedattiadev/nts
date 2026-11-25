@@ -27,7 +27,7 @@ const ZC = {
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const b of grid.get((cx + dx) + ',' + (cy + dy)) || []) if (!seen.has(b) && this.topic(b.i) === t && near(a, b)) { seen.add(b); q.push(b); } }
       if (mem.length < 3) continue; // two cards are not a cluster: from far away they only crowd the board
       const bb = { x: Infinity, y: Infinity, r: -Infinity, b: -Infinity }; let last = 0;
-      for (const a of mem) { bb.x = Math.min(bb.x, a.x); bb.y = Math.min(bb.y, a.y); bb.r = Math.max(bb.r, a.x + a.w); bb.b = Math.max(bb.b, a.y + a.h); last = Math.max(last, a.i.ts); }
+      for (const a of mem) { bb.x = Math.min(bb.x, a.x); bb.y = Math.min(bb.y, a.y); bb.r = Math.max(bb.r, a.x + a.w); bb.b = Math.max(bb.b, a.y + a.h + 24); /* 167: real cards run a bit taller than the estimate */ last = Math.max(last, a.i.ts); }
       const id = t + '|' + Math.round(bb.x) + '|' + Math.round(bb.y), c = { id, t, mem, bb, last, cx: (bb.x + bb.r) / 2, cy: (bb.y + bb.b) / 2, seed: this.seedOf(id) };
       this.list.push(c); for (const a of mem) this.byCard.set(a.i.id, c);
     }
@@ -60,12 +60,12 @@ const ZC = {
   },
   rnd: s => () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646,
   outline(c) {
-    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), kind = (Board.mode() === 'time' ? ['blob', 'oval', 'tilt', 'blob'] : ['bubble', 'blob', 'oval', 'tilt', 'blob', 'bubble'])[c.seed % (Board.mode() === 'time' ? 4 : 6)]; // day layout: no bubble tail (the title sits under the shape)
+    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), kind = c.mem.length >= 10 ? 'tilt' : (Board.mode() === 'time' ? ['blob', 'oval', 'tilt', 'blob'] : ['bubble', 'blob', 'oval', 'tilt', 'blob', 'bubble'])[c.seed % (Board.mode() === 'time' ? 4 : 6)]; // day layout: no bubble tail (the title sits under the shape)
     if (kind === 'bubble') { const r = 18 + R() * 14, { x, y, w, h } = b, t = Math.min(74, w * .4);
       return `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + t} L${x + 34},${y + h + 34} L${x + 44},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`; }
-    if (kind === 'oval') { const rx = b.w / 2 * 1.13, ry = b.h / 2 * 1.16, Q = []; for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283; Q.push([c.cx + rx * Math.cos(a), c.cy + ry * Math.sin(a)]); } return this.smooth(this.wob(Q, c.seed, 6, 120)); }
+    if (kind === 'oval') { const rx = b.w / 2 * 1.42, ry = b.h / 2 * 1.42, Q = []; for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283; Q.push([c.cx + rx * Math.cos(a), c.cy + ry * Math.sin(a)]); } return this.smooth(this.wob(Q, c.seed, 6, 120)); }
     if (kind === 'blob') return this.smooth(this.wob(this.blob(c, P + 6), c.seed, 7 + R() * 5, 90));
-    const j = () => (R() - .5) * 22; return `M${b.x + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + b.h + j()} L${b.x + j()},${b.y + b.h + j()} Z`;
+    const j = () => (R() - .5) * Math.min(22, 6 + c.mem.length); return `M${b.x + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + b.h + j()} L${b.x + j()},${b.y + b.h + j()} Z`;
   },
   wob(P, seed, amp, wave) { const R = this.rnd(seed), p1 = R() * 6.28, p2 = R() * 6.28, p3 = R() * 6.28; let s = 0;
     return P.map((p, i) => { if (i) s += Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]); const t = s / wave;
@@ -84,10 +84,11 @@ const ZC = {
   ago(ts) { const d = Math.round((new Date(dayKey(now())) - new Date(dayKey(ts))) / 864e5); return d <= 0 ? 'bugün' : d === 1 ? 'dün' : d + ' gün önce'; },
   draw(c) {
     const L = this.layer(), col = tagCol(c.t), d = this.outline(c), g = this.sv('g', { class: 'zc-c' });
-    const w = this.rc.path(d, { fill: 'F', fillStyle: 'solid', stroke: 'none', roughness: 1.3, seed: c.seed + 3 }); w.setAttribute('transform', 'translate(8 7)'); w.classList.add('zc-wash');
-    const e = this.rc.path(d, { stroke: 'S', strokeWidth: 7, roughness: 1.6, seed: c.seed + 9, disableMultiStroke: true }); e.setAttribute('transform', 'translate(8 7)'); e.classList.add('zc-wash');
+    // 167: the watercolour is two soft washes slightly off each other (the paper-grain filter cost ~25 ms a frame on a big board)
+    const w = this.rc.path(d, { fill: 'F', fillStyle: 'solid', stroke: 'none', roughness: 1.3, seed: c.seed + 3 }); w.setAttribute('transform', 'translate(8 7)');
+    const w2 = this.rc.path(d, { fill: 'F', fillStyle: 'solid', stroke: 'none', roughness: 2, seed: c.seed + 9 }); w2.setAttribute('transform', 'translate(-5 4)');
     const ln = this.rc.path(d, { stroke: 'S', strokeWidth: 2.4, roughness: 1, bowing: .6, disableMultiStroke: true, seed: c.seed }); ln.classList.add('zc-line');
-    g.append(this.paint(w, 'fill', `color-mix(in srgb, ${col} 15%, transparent)`), this.paint(e, 'stroke', `color-mix(in srgb, ${col} 22%, transparent)`), this.paint(ln, 'stroke', col));
+    g.append(this.paint(w, 'fill', `color-mix(in srgb, ${col} 13%, transparent)`), this.paint(w2, 'fill', `color-mix(in srgb, ${col} 8%, transparent)`), this.paint(ln, 'stroke', col));
     L.gS.append(g);
     const l = document.createElement('button'); l.type = 'button'; l.className = 'zc-l'; l.dataset.zc = c.id; l.style.left = c.bb.x - this.PAD + 6 + 'px'; const below = Board.mode() === 'time'; if (below) l.classList.add('below'); l.style.top = (below ? c.bb.b + this.PAD + 12 : c.bb.y - this.PAD - 12) + 'px'; // day layout: under the shape, clear of the day heads l.style.setProperty('--c', col);
     const name = c.t.charAt(0).toLocaleUpperCase('tr') + c.t.slice(1);
@@ -115,6 +116,7 @@ const ZC = {
     const L = this._L, far = k < Board.FAR, o = far ? 0 : Math.max(0, Math.min(1, (this.ON - k) / (this.ON - this.FULL)));
     if (!L) { if (o > 0 && this.list.length) this.cull(); return; }
     L.svg.style.opacity = L.lb.style.opacity = o; L.svg.style.display = L.lb.style.display = o ? '' : 'none';
+    if (!this._zk || Math.abs(k - this._zk) / k > .2) { this._zk = k; L.svg.style.setProperty('--zik', (1 / k).toFixed(3)); } // 167
     L.lb.style.setProperty('--zls', (Math.max(.68, Math.min(1, k / .36)) / k).toFixed(4)); L.lb.style.pointerEvents = o > .5 ? '' : 'none';
     $('#board')?.classList.toggle('zc-on', o > .35);
   },

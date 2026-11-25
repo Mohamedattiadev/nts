@@ -2783,9 +2783,7 @@ dialog.clean .d-body { gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .tarc-win, .tarc-ptr, .tarc-go { transition: none; } }
 /* 119-1: watercolour clusters when zoomed out (zoomclusters.js) */
 .zc-svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; z-index: 0; }
-.zc-svg path { vector-effect: non-scaling-stroke; }
-.zc-wash { filter: url(#zcwc); }
-.plane.moving .zc-wash { filter: none; } /* the grain is redrawn at every zoom step otherwise */
+.zc-svg { --zik: 1; } .zc-line path { stroke-width: calc(2.4px * var(--zik)); } .zc-arw path { stroke-width: calc(2.5px * var(--zik)); } /* 167: no non-scaling-stroke (re-tessellated every frame) */
 .zc-arw path { fill: none; stroke: color-mix(in srgb, var(--text) 78%, transparent); stroke-linecap: round; }
 .zc-lbls { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 3; --zls: 1; }
 .zc-l { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0; border: 0; background: none; cursor: pointer; white-space: nowrap;
@@ -2827,3 +2825,4 @@ dialog.clean .d-body { gap: 12px; }
 .m-src svg { width: 12px; height: 12px; }
 .zc-l.below { transform-origin: 0 0; transform: scale(var(--zls)); }
 .day-band.topic::before { display: none; } /* 119-5: islands, no day lines */
+.board-lite { position: absolute; left: 0; top: 0; pointer-events: none; } /* 168: far-out board painted as one picture */
