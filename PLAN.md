@@ -1194,6 +1194,16 @@ Site:
         yapay zekâ imleçleri (120); şimdilik uygulama yalnız web olduğu için "Uygulamayı aç" bağlantısı; GitHub README'ye düğmeyle eklenir
         (github-readme skill). Ayrı klasör `site/`, Pages'te `/nts/site/` ya da kök.
 
+- [?] 161. **Liste üstündeki ay takvimi kötü** (sahip, 2026-11-25: "bu sanki olmadı, bu tasarım alt alta? daha iyi olması lazım"; takvim ekranın
+        yarısını kaplıyor, liste altta, günlerde yalnız küçük nokta/kare). ÖRNEK HAZIR (2026-11-25, A hattı): design/calendar2.html — 4 canlı
+        mini uygulama, hepsinde liste ekranın çoğunu alır, güne dokun → liste o güne kayar + başlık vurgusu, liste kayınca takvim izler,
+        Masaüstü/Telefon düğmesi: A Şerit (tek sıra hafta ≈ 90 px, başlığa dokun → ay listenin ÜSTÜNE açılır, fotoğraflı günler) · B Yan sütun
+        (masaüstünde 248 px sol sütun: ay + bu ayın türleri + 2026'nın 12 ayı; telefonda tek satır ay grafiği, parmakla gez-bırak) · C Fotoğraflı
+        ay (gün kutusunda o günün fotoğrafı, liste kayınca tek haftaya katlanır) · D Yarım yıl ısı haritası (26 hafta, 15 px kareler).
+        Yoğunluk rengi nötr mürekkep (kahverengi/turuncu zemin yok), accent yalnız bugün. Önerim: telefonda A + masaüstünde B (r-mix).
+        Test: 1366 + 390 × açık/koyu, her örnekte 15 Kas'a dokun → liste orada, 4000 px kaydır → takvim aynı günde; konsol hatası 0, yatay taşma 0.
+        Görüntüler design/161/. Sahibin seçimi bekleniyor (calendar-choices.json).
+
 ## U. Sahibin 9. geri bildirimi + Locus incelemesi (2026-11-23, ekran görüntüleri sohbette)
 - [x] 125. (2026-11-23: telefonda kutunun yazısı 4 px aşağıdaydı → textarea 44 px, +/gönder ile aynı orta çizgi; masaüstü zaten tam ortada, ölçüldü) Kutu tam ortada mı?
 - [x] 126. (2026-11-23: kök neden kanıtlandı: sürüklerken gelen senkron Board.render ile tüm kartları silip yeniden kuruyordu, elde tutulan kart DOM'dan kopuyor, bırakınca offsetLeft 0 → x=0'a kaydediliyordu. Board.busy (kart taşıma, kalem, yazı boyutu) sürerken Board.render isteği Board.pending'e girer, bırakınca bir kez uygulanır; kopmuş kart asla kaydedilmez. İki cihaz testi: eski kod left 0, yeni kod kart elde, doğru yere (300,270) düştü, telefonun notu bırakınca geldi) **Taşırken kart başka yere kaçıyor (HATA, önce bu)**: sahip panoda kartı tutup taşırken kart birden en sola gitti ve sayfa

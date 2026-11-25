@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nts · Liste + takvim (161)</title>
+<style>
+/* 161: list + calendar samples (owner: the month on top of the list takes half the screen). Today's Nts look only (tokens + chrome copied from zoomout7.html). */
+:root, [data-theme="dark"] {
+  --bg: #0c0c0e; --surface: #151519; --surface-2: #1c1c21; --surface-3: #24242a; --line: #24242a; --line-2: #31313a;
+  --text: #ededf2; --text-2: #a3a3ad; --muted: #8a8a95;
+  --accent: #ff9a4d; --accent-soft: rgb(255 154 77 / .14); --accent-text: #0c0c0e;
+  --hit: #f5c451; --hit-soft: rgb(245 196 81 / .15); --danger: #f87171; --ok: #4ade80;
+  --t-link: #7cc4ff; --t-note: #b9a3ff; --t-file: #7ddba5; --t-img: #f0a6ff;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / .35);
+  --shadow-lift: 0 22px 44px rgb(0 0 0 / .5), 0 6px 14px rgb(0 0 0 / .35);
+  --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.4, .5, 1);
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #fafaf9; --surface: #ffffff; --surface-2: #f4f4f1; --surface-3: #ebebe7; --line: #e8e8e4; --line-2: #d8d8d2;
+  --text: #18181b; --text-2: #55555e; --muted: #6b6b74;
+  --accent: #c2410c; --accent-soft: rgb(194 65 12 / .09); --accent-text: #fff;
+  --hit: #c98f00; --hit-soft: rgb(217 154 0 / .13); --danger: #dc2626; --ok: #16a34a;
+  --t-link: #0b78c2; --t-note: #7048d6; --t-file: #148a4d; --t-img: #a3329f;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / .05);
+  --shadow-lift: 0 22px 44px rgb(0 0 0 / .16), 0 6px 14px rgb(0 0 0 / .08);
+  color-scheme: only light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 14.5px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  padding: 0 max(16px, env(safe-area-inset-right)) 110px max(16px, env(safe-area-inset-left)); }
+.wrap { max-width: 1160px; margin: 0 auto; }
+button, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ui { user-select: none; -webkit-user-select: none; }
+kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 5px; border-radius: 5px; background: var(--surface-3); color: var(--text-2); border: 1px solid var(--line-2); }
+
+/* page chrome (the app's own .mark, .seg, .chip) */
+.top { position: sticky; top: 0; z-index: 30; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left))); padding: calc(env(safe-area-inset-top) + 10px) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s; }
+.top.stuck { border-bottom-color: var(--line); }
+.top .in { max-width: 1160px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+.mark { width: 38px; height: 38px; border-radius: 11px; background: var(--surface); display: grid; place-items: center; flex: none; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+.mark svg { width: 22px; height: 22px; display: block; overflow: visible; }
+.mk-b { fill: none; stroke: var(--text); stroke-width: 8; stroke-linejoin: round; }
+.mk-l { stroke: var(--accent); stroke-width: 8; stroke-linecap: round; }
+.mk-d { fill: var(--accent); stroke: var(--surface); stroke-width: 4; }
+[data-theme="dark"] .mark { background: var(--surface-2); border-color: #3a3a45; }
+[data-theme="dark"] .mk-d { stroke: var(--surface-2); }
+.seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); position: relative; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.seg::-webkit-scrollbar { display: none; }
+.seg a { flex: 1 0 auto; position: relative; z-index: 1; color: var(--text-2); font-size: 13px; font-weight: 550; padding: 0 12px; min-height: 34px; display: grid; place-items: center; border-radius: 7px; white-space: nowrap; text-decoration: none; transition: color .15s; }
+.seg [aria-current="true"] { color: var(--text); }
+.seg .thumb { position: absolute; z-index: 0; top: 3px; bottom: 3px; left: 0; width: 0; border-radius: 7px; background: var(--surface-3); transition: transform .28s var(--ease), width .28s var(--ease); }
+.chip { height: 32px; padding: 0 10px; border-radius: 9px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 550; color: var(--text-2); white-space: nowrap;
+  border: 1px solid var(--line); background: var(--surface); transition: color .15s, border-color .15s, background .15s, transform .15s var(--ease); }
+.chip:hover { color: var(--text); border-color: var(--line-2); }
+.chip.icon { width: 38px; height: 38px; padding: 0; justify-content: center; }
+.chip.pri { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chip[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
+.chip:active { transform: scale(.97); }
+.tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 7px; font-size: 11.5px; font-weight: 600; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+
+h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; margin: 22px 0 6px; }
+.lead { color: var(--text-2); margin: 0 0 6px; max-width: 80ch; }
+section.grp { margin: 40px 0 10px; scroll-margin-top: 80px; }
+section.grp > h2 { font-size: 20px; letter-spacing: -.015em; margin: 0 0 2px; font-weight: 700; }
+section.grp > p { color: var(--muted); margin: 0 0 12px; font-size: 13.5px; max-width: 84ch; }
+.row { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.ex { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; min-width: 0; }
+.ex > h4 { margin: 2px 2px 4px; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ex > h4 .l { font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 7px; }
+.ex > .how { margin: 0 2px 10px; font-size: 12.5px; color: var(--muted); }
+.demo { position: relative; min-width: 0; height: 230px; border-radius: 12px; overflow: hidden; background-color: var(--bg); touch-action: pan-y;
+  background-image: radial-gradient(var(--line-2) 1px, transparent 1.3px); background-size: 24px 24px; background-position: 12px 12px; }
+.demo .hint { position: absolute; left: 10px; bottom: 8px; font-size: 11.5px; color: var(--muted); pointer-events: none; }
+.demo .again { position: absolute; right: 8px; bottom: 8px; z-index: 5; height: 30px; font-size: 12px; }
+.pick { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.pick .yn { display: flex; gap: 2px; padding: 3px; background: var(--surface-2); border-radius: 10px; }
+.pick .yn button { min-height: 38px; min-width: 88px; border-radius: 7px; color: var(--text-2); font-weight: 600; font-size: 13.5px; transition: background .18s, color .18s, transform .12s; }
+.pick .yn button:active { transform: scale(.96); }
+.pick .yn button[aria-pressed="true"].yes { background: var(--ok); color: #fff; }
+.pick .yn button[aria-pressed="true"].no { background: var(--danger); color: #fff; }
+.pick textarea { flex: 1 1 100%; min-height: 42px; resize: vertical; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 13.5px; padding: 10px 12px; }
+.bar-send { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; z-index: 30;
+  padding: 10px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+.bar-send span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bar-send .chip { height: 40px; padding: 0 16px; }
+
+/* ---------- 161: calendar + list samples. Each sample is one live mini app: tap a day → the list scrolls there in place; scroll the list → the calendar follows. ---------- */
+.stage-tg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface-2); margin-left: auto; }
+.stage-tg button { min-height: 32px; padding: 0 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.stage-tg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+@media (max-width: 760px) { .stage-tg { display: none; } }
+.stage { display: flex; justify-content: center; padding: 14px; border-radius: 12px; background: var(--surface-2); }
+.app { --tint: var(--accent); position: relative; width: 100%; height: 560px; display: flex; flex-direction: column; overflow: hidden; container-type: inline-size;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm); transition: width .3s var(--ease), height .3s var(--ease), border-radius .3s; }
+.stage.phone .app { width: 375px; height: 700px; border-radius: 30px; }
+@media (max-width: 760px) { .stage { padding: 0; background: none; } .app { width: 100%; height: 640px; border-radius: 22px; } }
+.a-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; flex: none; }
+.a-top .mark { width: 32px; height: 32px; border-radius: 9px; }
+.a-top .mark svg { width: 18px; height: 18px; }
+.vseg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); margin: 0 auto; }
+.vseg span { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; height: 28px; border-radius: 7px; font-size: 12.5px; font-weight: 550; color: var(--text-2); }
+.vseg span.on { background: var(--surface-3); color: var(--text); }
+.vseg svg.i { width: 14px; height: 14px; }
+.a-top .sp { width: 32px; }
+.a-body { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.a-main { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+
+/* list (same in every sample) */
+.lst { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 90px; scrollbar-width: thin; }
+.lst .dh { position: sticky; top: 0; z-index: 2; display: flex; align-items: baseline; gap: 8px; padding: 12px 4px 6px; background: var(--bg); font-size: 13px; font-weight: 700; }
+.lst .dh small { color: var(--muted); font-weight: 550; font-size: 12px; }
+.lst .dh.today b { color: var(--accent); }
+.lst .dh.flash { animation: flash 1s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-soft); } 100% { background: var(--bg); } }
+.lst .r { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); margin-bottom: 6px; min-height: 52px; }
+.lst .r .ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--surface-2); }
+.lst .r .ic svg.i { width: 16px; height: 16px; }
+.lst .r.k-link .ic { color: var(--t-link); } .lst .r.k-note .ic { color: var(--t-note); } .lst .r.k-file .ic { color: var(--t-file); }
+.lst .r .ph { width: 72px; height: 50px; border-radius: 8px; flex: none; }
+.lst .r .tx { min-width: 0; flex: 1; }
+.lst .r .t { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lst .r .m { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a-box { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 6; height: 46px; border-radius: 23px; background: var(--surface); border: 1px solid var(--line-2); box-shadow: var(--shadow-lift);
+  display: flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--muted); font-size: 13.5px; max-width: 560px; margin: 0 auto; }
+.a-box i { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-style: normal; color: var(--text-2); }
+.a-box svg.i { width: 15px; height: 15px; }
+@container (min-width: 600px) { .lst { padding-left: max(12px, calc(50% - 360px)); padding-right: max(12px, calc(50% - 360px)); } }
+
+/* shared bits */
+.cbtn { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--line); background: var(--surface); flex: none; transition: transform .12s, background .15s; }
+.cbtn:active { transform: scale(.94); }
+.cbtn svg.i { width: 15px; height: 15px; }
+.ttl { font-size: 15px; font-weight: 700; letter-spacing: -.01em; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 6px; border-radius: 8px; }
+.ttl small { color: var(--muted); font-weight: 550; font-size: 12px; margin-left: 4px; }
+.ttl .cv { width: 14px; height: 14px; transition: transform .22s var(--ease); }
+.ttl[aria-expanded="true"] .cv { transform: rotate(180deg); }
+.today-b { height: 32px; padding: 0 10px; border-radius: 9px; font-size: 12.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); flex: none; }
+/* heat: 0 none · 1 light · 2 mid · 3 strong. Neutral ink, never an orange/brown fill (the owner rejected the brown cells); accent is only today + chosen */
+.h1 { --h: color-mix(in srgb, var(--text) 7%, transparent); } .h2 { --h: color-mix(in srgb, var(--text) 15%, transparent); } .h3 { --h: color-mix(in srgb, var(--text) 27%, transparent); }
+/* a fake "photo" (no network): a warm gradient per item */
+.ph { background: linear-gradient(135deg, hsl(var(--hu) 70% 72%), hsl(calc(var(--hu) + 40) 55% 48%) 60%, hsl(calc(var(--hu) + 90) 35% 32%)); }
+
+/* month grid used by A (dropdown), B (side), C (photo month) */
+.mg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.mg .wd { font-size: 10.5px; font-weight: 700; color: var(--muted); text-align: center; padding: 2px 0 4px; letter-spacing: .03em; }
+.mg .c { position: relative; aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--h, transparent); transition: background .15s, transform .12s; }
+.mg .c.o { visibility: hidden; }
+.mg .c.e { color: var(--muted); font-weight: 500; }
+.mg .c.fu { color: var(--line-2); }
+.mg .c.td { box-shadow: inset 0 0 0 2px var(--accent); }
+.mg .c[aria-current="true"] { background: var(--text); color: var(--bg); }
+.mg .c:active { transform: scale(.92); }
+
+/* ===== A · week strip + month that drops over the list ===== */
+.A-h { display: flex; align-items: center; gap: 6px; padding: 2px 12px 4px; flex: none; }
+.A-h .grow { flex: 1; }
+.A-strip { position: relative; display: flex; gap: 4px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 2px 0 10px; margin: 0 12px; flex: none; border-bottom: 1px solid var(--line); }
+.A-strip::-webkit-scrollbar { display: none; }
+.A-d { flex: 0 0 calc((100cqw - 24px - 24px) / 7); scroll-snap-align: start; height: 62px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--h, transparent); transition: background .18s, color .18s, transform .12s; }
+@container (min-width: 600px) { .A-d { flex-basis: 52px; } }
+.A-d .w { font-size: 10.5px; font-weight: 700; color: var(--muted); letter-spacing: .03em; }
+.A-d .n { font-size: 16px; font-weight: 700; }
+.A-d .k { font-size: 10.5px; color: var(--text-2); font-weight: 600; min-height: 13px; }
+.A-d.e .n { color: var(--muted); font-weight: 500; }
+.A-d.mo { box-shadow: inset 2px 0 0 var(--line-2); }
+.A-d.td .n { color: var(--accent); }
+.A-d[aria-current="true"] { background: var(--text); }
+.A-d[aria-current="true"] .n, .A-d[aria-current="true"] .w, .A-d[aria-current="true"] .k { color: var(--bg); }
+.A-d:active { transform: scale(.94); }
+.A-sheet { position: absolute; left: 8px; right: 8px; top: 0; z-index: 8; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lift); padding: 10px 12px 12px;
+  transform-origin: 50% 0; transform: translateY(-8px) scale(.98); opacity: 0; pointer-events: none; transition: transform .22s var(--ease), opacity .18s; max-width: 380px; }
+@container (min-width: 600px) { .A-sheet { left: max(8px, calc(50% - 360px)); } }
+.A-sheet.on { transform: none; opacity: 1; pointer-events: auto; }
+.A-sheet .sh { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.A-sheet .sh b { flex: 1; font-size: 14.5px; }
+.A-sheet .c.hp { background: none; } .A-sheet .c .pc { position: absolute; inset: 0; border-radius: 8px; }
+.A-sheet .c span { position: relative; }
+.A-sheet .c.hp { color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / .45); }
+.A-scrim { position: absolute; inset: 0; z-index: 7; background: rgb(0 0 0 / .18); opacity: 0; pointer-events: none; transition: opacity .18s; }
+.A-scrim.on { opacity: 1; pointer-events: auto; }
+
+/* ===== B · narrow side calendar (desktop) / month histogram (phone) ===== */
+.B-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.B-side { display: none; }
+@container (min-width: 600px) {
+  .B-wrap { flex-direction: row; }
+  .B-side { display: flex; flex-direction: column; gap: 14px; width: 248px; flex: none; padding: 6px 14px 14px; border-right: 1px solid var(--line); overflow-y: auto; }
+  .B-bar { display: none !important; }
+  .B-wrap .lst { padding-left: 18px; padding-right: 18px; }
+}
+.B-side .sh { display: flex; align-items: center; gap: 4px; }
+.B-side .sh b { flex: 1; font-size: 14px; }
+.B-side .mg .c { border-radius: 7px; font-size: 12px; }
+.B-sum { font-size: 12.5px; color: var(--text-2); display: grid; gap: 6px; }
+.B-sum .ln { display: grid; grid-template-columns: 52px 1fr 22px; align-items: center; gap: 8px; }
+.B-sum .ln i { height: 6px; border-radius: 3px; background: currentColor; opacity: .8; }
+.B-sum .ln span:last-child { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.B-yr { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.B-yr button { height: 34px; border-radius: 7px; font-size: 11px; font-weight: 600; color: var(--text-2); background: var(--h, var(--surface-2)); }
+.B-yr button[aria-current="true"] { box-shadow: inset 0 0 0 2px var(--text); color: var(--text); }
+.B-lbl { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.B-bar { flex: none; padding: 0 12px 8px; border-bottom: 1px solid var(--line); }
+.B-bar .sh { display: flex; align-items: center; gap: 6px; }
+.B-bar .sh .grow { flex: 1; }
+.B-hist { display: flex; align-items: flex-end; gap: 2px; height: 46px; padding-top: 4px; touch-action: pan-y; }
+.B-hist button { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; min-width: 0; }
+.B-hist button i { width: 100%; max-width: 9px; border-radius: 3px 3px 1px 1px; background: color-mix(in srgb, var(--text) 32%, transparent); height: var(--v); min-height: 3px; transition: background .15s; }
+.B-hist button.e i { background: var(--line-2); }
+.B-hist button.fu i { background: transparent; box-shadow: inset 0 -2px 0 var(--line); }
+.B-hist button.td i { background: var(--accent); }
+.B-hist button[aria-current="true"] i { background: var(--text); }
+.B-ax { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); padding: 3px 0 0; font-variant-numeric: tabular-nums; }
+.B-tip { position: absolute; z-index: 4; transform: translate(-50%, -100%); padding: 3px 8px; border-radius: 7px; background: var(--text); color: var(--bg); font-size: 11.5px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; }
+.B-tip.on { opacity: 1; }
+.B-more { overflow: hidden; height: 0; transition: height .25s var(--ease); }
+.B-more .mg { padding-top: 8px; }
+
+/* ===== C · photo month that folds to one week as the list scrolls ===== */
+.C-cal { flex: none; padding: 0 12px 8px; border-bottom: 1px solid var(--line); }
+@container (min-width: 600px) { .C-cal { padding-left: max(12px, calc(50% - 360px)); padding-right: max(12px, calc(50% - 360px)); } }
+.C-h { display: flex; align-items: center; gap: 6px; padding-bottom: 4px; }
+.C-h .grow { flex: 1; }
+.C-win { overflow: hidden; transition: height .26s var(--ease); }
+.C-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; transition: transform .26s var(--ease); }
+.C-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; font-size: 10.5px; font-weight: 700; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.C-c { position: relative; height: 44px; border-radius: 8px; overflow: hidden; background: var(--h, var(--surface-2)); transition: transform .12s; }
+@container (min-width: 600px) { .C-c { height: 50px; } }
+.C-c.o { visibility: hidden; }
+.C-c.e { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.C-c.fu { background: transparent; }
+.C-c .ph { position: absolute; inset: 0; }
+.C-c .n { position: absolute; left: 4px; top: 3px; font-size: 11.5px; font-weight: 700; line-height: 1; padding: 2px 4px; border-radius: 5px; }
+.C-c.hp .n { color: #fff; background: rgb(0 0 0 / .32); }
+.C-c.e .n, .C-c.fu .n { color: var(--muted); font-weight: 500; }
+.C-c .q { position: absolute; right: 4px; bottom: 3px; font-size: 10.5px; font-weight: 700; color: var(--text-2); }
+.C-c.hp .q { color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / .5); }
+.C-c.td { box-shadow: inset 0 0 0 2px var(--accent); }
+.C-c[aria-current="true"] { outline: 2.5px solid var(--text); outline-offset: -2.5px; }
+.C-c:active { transform: scale(.95); }
+.C-grip { display: block; margin: 6px auto 0; width: 44px; height: 18px; position: relative; }
+.C-grip::before { content: ""; position: absolute; left: 10px; right: 10px; top: 7px; height: 4px; border-radius: 2px; background: var(--line-2); }
+
+/* ===== D · half-year heat strip ===== */
+.D-cal { flex: none; padding: 0 12px 10px; border-bottom: 1px solid var(--line); }
+.D-h { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
+.D-h .grow { flex: 1; }
+.D-lg { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); }
+.D-lg i { width: 11px; height: 11px; border-radius: 3px; background: var(--h, var(--surface-3)); }
+.D-sc { display: flex; gap: 6px; }
+.D-dn { display: grid; grid-template-rows: 14px repeat(7, var(--cs)); gap: 3px; font-size: 10px; color: var(--muted); flex: none; }
+.D-dn span { line-height: var(--cs); }
+.D-scroll { position: relative; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.D-scroll::-webkit-scrollbar { display: none; }
+.D-grid { --cs: 15px; display: grid; grid-auto-flow: column; grid-template-rows: 14px repeat(7, var(--cs)); grid-auto-columns: var(--cs); gap: 3px; width: max-content; }
+@container (min-width: 600px) { .D-grid, .D-sc { --cs: 17px; } }
+.D-sc { --cs: 15px; }
+.D-m { grid-row: 1; font-size: 10.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.D-c { border-radius: 4px; background: var(--h, var(--surface-3)); transition: transform .12s; }
+.D-c.fu, .D-c.pad { background: transparent; }
+.D-c.td { box-shadow: 0 0 0 2px var(--accent); }
+.D-c[aria-current="true"] { box-shadow: 0 0 0 2px var(--text); }
+.D-c:active { transform: scale(.85); }
+.D-now { font-size: 12.5px; color: var(--text-2); }
+.D-now b { color: var(--text); }
+
+/* recommendation card */
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.rec ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13.5px; }
+.rec li { margin: 3px 0; }
+.cmp { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+.cmp th, .cmp td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp th { color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .03em; }
+.cmp td:first-child { font-weight: 600; white-space: nowrap; }
+.cmpw { overflow-x: auto; }
+.a-main { min-width: 0; } .B-bar { position: relative; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="note" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></symbol>
+  <symbol id="pdf" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h4"/></symbol>
+  <symbol id="board" viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="7" rx="1.5"/><rect x="14" y="14" width="8" height="7" rx="1.5"/><path d="M10 6.5h3a2 2 0 0 1 2 2V14"/></symbol>
+  <symbol id="half" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
+  <symbol id="dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="slow" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+<template id="logo"><svg viewBox="4.5 -4.5 100 100" aria-hidden="true"><path class="mk-b" d="M30 22h40a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H48L32 80V68h-2a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"/><path class="mk-l l1" d="M34 38h30"/><path class="mk-l l2" d="M34 52h18"/><circle class="mk-d" cx="79" cy="21" r="10"/></svg></template>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cl" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="cr" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="cd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></symbol>
+</svg>
+<div class="wrap">
+  <header class="top ui" id="top"><div class="in">
+    <span class="mark" data-logo aria-hidden="true"></span>
+    <nav class="seg" id="toc" aria-label="Bölümler"><span class="thumb"></span>
+      <a href="#sA">A Şerit</a><a href="#sB">B Yan sütun</a><a href="#sC">C Fotoğraflı ay</a><a href="#sD">D Yarım yıl</a><a href="#sR">Önerim</a></nav>
+    <button class="chip icon" id="rm" aria-pressed="false" aria-label="Hareketi azalt (önizleme)" title="Hareketi azalt"><svg class="i"><use href="#slow"/></svg></button>
+    <button class="chip icon" id="theme" aria-label="Açık / koyu tema" title="Açık / koyu tema"><svg class="i"><use href="#half"/></svg></button>
+  </div></header>
+
+  <h1>Liste + takvim · yeni yönler</h1>
+  <p class="lead">Şimdiki takvim ekranın yarısını kaplıyor, liste altta kalıyor, günlerde yalnız küçük noktalar var. Burada dört farklı yol var; hepsinde <b>liste ekranın çoğunu alıyor</b>.
+    Her örnek canlı: <b>güne dokun → liste o güne kayar</b>, <b>listeyi kaydır → takvim izler</b>. Masaüstü / Telefon düğmesiyle iki boyutu da gör. ✓ / ✗ ver, not yaz, en altta <b>Seçimlerimi indir</b>.</p>
+
+  <section class="grp" id="sA"><h2>A · İnce hafta şeridi, ay açılır</h2><p>Üstte yalnız bir sıra gün (≈ 90 px). Her günde sayı ve yoğunluk rengi. Başlığa dokununca ay, listenin <b>üstüne</b> açılır (listeyi aşağı itmez), gün seçince kapanır. iPhone Takvim / Google Takvim gibi.</p>
+    <div class="ex" data-id="c-A"><h4><span class="l">A</span>Şerit + açılır ay<span class="stage-tg ui"><button aria-pressed="false" data-st="desk">Masaüstü</button><button aria-pressed="true" data-st="phone">Telefon</button></span></h4>
+      <p class="how">Şeridi yana kaydır = geçmiş günler. “Kasım 2026 ⌄”e dokun = bütün ay.</p><div class="stage phone"><div class="app" data-v="A"></div></div></div>
+  </section>
+
+  <section class="grp" id="sB"><h2>B · Masaüstünde dar yan takvim, telefonda ay grafiği</h2><p>Masaüstünde takvim solda dar bir sütun (248 px): ay, bu ayın türleri, yılın 12 ayı. Liste sağda tam boy. Telefonda tek satır <b>ay grafiği</b>: her gün bir çubuk, boyu o günün kayıt sayısı; parmağını üstünde gezdir, bırak → o gün.</p>
+    <div class="ex" data-id="c-B"><h4><span class="l">B</span>Yan sütun / ay grafiği<span class="stage-tg ui"><button aria-pressed="true" data-st="desk">Masaüstü</button><button aria-pressed="false" data-st="phone">Telefon</button></span></h4>
+      <p class="how">Telefonda “Kasım ⌄” = grafiğin altında ay ızgarası açılır / kapanır.</p><div class="stage"><div class="app" data-v="B"></div></div></div>
+  </section>
+
+  <section class="grp" id="sC"><h2>C · Fotoğraflı ay, kaydırınca tek haftaya iner</h2><p>Gün kutusunda o günün <b>fotoğrafı</b> (yoksa kayıt sayısı kadar renk). Listeyi kaydırmaya başlayınca ay, içinde olduğun <b>tek haftaya katlanır</b>; en üste dönünce ay geri açılır. Ay hep görünür ama yer kaplamaz.</p>
+    <div class="ex" data-id="c-C"><h4><span class="l">C</span>Fotoğraflı ay + katlanma<span class="stage-tg ui"><button aria-pressed="false" data-st="desk">Masaüstü</button><button aria-pressed="true" data-st="phone">Telefon</button></span></h4>
+      <p class="how">Listeyi kaydır → ay katlanır. Alttaki tutamağa dokun → aç / kapa.</p><div class="stage phone"><div class="app" data-v="C"></div></div></div>
+  </section>
+
+  <section class="grp" id="sD"><h2>D · Yarım yılın ısı haritası</h2><p>GitHub katkı tablosu gibi: son 26 haftanın her günü küçük bir kare, rengi o günün kayıt sayısı. Tek bakışta “hangi haftalar yoğundu” görünür; ≈ 150 px. Yana kaydır = daha eski.</p>
+    <div class="ex" data-id="c-D"><h4><span class="l">D</span>Isı haritası<span class="stage-tg ui"><button aria-pressed="false" data-st="desk">Masaüstü</button><button aria-pressed="true" data-st="phone">Telefon</button></span></h4>
+      <p class="how">Kareye dokun → liste o güne. Yazı: hangi gündesin, kaç kayıt.</p><div class="stage phone"><div class="app" data-v="D"></div></div></div>
+  </section>
+
+  <section class="grp" id="sR"><h2>Benim önerim</h2>
+    <div class="rec"><b>Telefonda A (şerit), masaüstünde B (yan sütun).</b>
+      <ul>
+        <li>Telefonda ekran dar ve dikey: liste en değerli şey. A yalnız ≈ 90 px alıyor ve parmakla en kolay kullanılan biçim (herkes iPhone/Google Takvim'den tanıyor).</li>
+        <li>Masaüstünde yana yer bol: B takvimi listenin yanına koyuyor, ikisi aynı anda tam görünüyor, hiçbiri öbürünü itmiyor.</li>
+        <li>C güzel ama katlanma hareketi her kaydırmada göze girer; D bir “özet” olarak iyi, gün seçmek için küçük kareler parmağa zor (15 px).</li>
+        <li>İsterseniz D'nin ısı haritası B'nin yan sütununa “yıl” bölümü olarak eklenebilir.</li>
+      </ul>
+      <div class="cmpw"><table class="cmp"><tr><th></th><th>Telefonda yer</th><th>Gün seçmek</th><th>Bir bakışta</th></tr>
+        <tr><td>A Şerit</td><td>≈ 90 px</td><td>çok kolay (52 px)</td><td>1 hafta</td></tr>
+        <tr><td>B Yan / grafik</td><td>≈ 80 px</td><td>kolay (sürükle-bırak)</td><td>1 ay</td></tr>
+        <tr><td>C Fotoğraflı ay</td><td>≈ 330 → 80 px</td><td>kolay (44 px)</td><td>1 ay, fotoğraflı</td></tr>
+        <tr><td>D Isı haritası</td><td>≈ 150 px</td><td>zor (15 px)</td><td>6 ay</td></tr></table></div>
+    </div>
+    <div class="row4" style="margin-top:14px">
+      <div class="ex" data-id="r-mix"><h4>Telefonda A + masaüstünde B olur mu?</h4><p class="how">✗ verirsen notta hangisini istediğini yaz (ör. “her yerde C”).</p></div>
+    </div>
+  </section>
+</div>
+<div class="bar-send ui"><span id="cnt">0 seçim</span><button class="chip pri" id="dlb"><svg class="i"><use href="#dl"/></svg>Seçimlerimi indir</button><button class="chip" id="cp"><svg class="i"><use href="#copy"/></svg><span>Kopyala</span></button></div>
+<script>
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const buzz = (ms = 8) => { try { navigator.vibrate?.(ms); } catch {} };
+const use = n => `<svg class="i"><use href="#${n}"/></svg>`;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const root = document.documentElement, qp = new URLSearchParams(location.search);
+const OSRM = matchMedia('(prefers-reduced-motion: reduce)');
+const RM = () => OSRM.matches || root.classList.contains('rm');
+const SB = () => RM() ? 'auto' : 'smooth';
+
+// ---------- theme / reduced motion / logo / section nav ----------
+root.dataset.theme = qp.get('theme') || store.get('nts-cal2-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+$('#theme').onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; store.set('nts-cal2-theme', root.dataset.theme); };
+if (qp.get('rm') === '1') root.classList.add('rm');
+$('#rm').setAttribute('aria-pressed', String(RM()));
+$('#rm').onclick = () => { root.classList.toggle('rm'); $('#rm').setAttribute('aria-pressed', String(RM())); };
+$$('[data-logo]').forEach(m => m.append($('#logo').content.firstElementChild.cloneNode(true)));
+const top_ = $('#top'), toc = $('#toc'), links = $$('a', toc); let curSec = '';
+const setSec = id => { if (id === curSec) return; curSec = id; links.forEach(a => a.setAttribute('aria-current', String(a.hash === '#' + id)));
+  const a = $('[aria-current="true"]', toc), th = $('.thumb', toc); th.style.width = a.offsetWidth + 'px'; th.style.transform = `translateX(${a.offsetLeft}px)`;
+  toc.scrollTo({ left: a.offsetLeft - 40, behavior: SB() }); };
+addEventListener('scroll', () => { top_.classList.toggle('stuck', scrollY > 20); let cur = 'sA'; for (const s of $$('section.grp')) if (s.getBoundingClientRect().top < 120) cur = s.id; setSec(cur); }, { passive: true });
+addEventListener('resize', () => { const c = curSec; curSec = ''; setSec(c || 'sA'); }); setSec('sA');
+
+// ---------- fake data: half a year of items, today = Wed 25 Nov 2026 ----------
+const MON = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const MS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const WD = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'], WDL = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+const TODAY = new Date(2026, 10, 25), DAY = 864e5;
+const key = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const parse = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const wdi = d => (d.getDay() + 6) % 7; // Monday = 0
+const TK = key(TODAY), START = add(TODAY, -181);
+let seed = 7; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const pick = a => a[Math.floor(rnd() * a.length)];
+const POOL = {
+  link: [['github.com', 'PR #212 incelemesi'], ['youtube.com', 'Semantic zoom anlatımı'], ['figma.com', 'Freeform incelemesi'], ['medium.com', 'Not alma sistemleri'], ['linear.app', 'Sprint 48 panosu'], ['maps.google', 'Teyzemin yeni adresi'], ['arxiv.org', 'Gömme modelleri üzerine'], ['trendyol.com', 'Koşu ayakkabısı']],
+  note: ['Pazartesi toplantı notları', 'Süt, ekmek, yumurta al', 'Annemi ara, doğum günü', 'Pano yakınlaştırma fikri', 'Arama dili kuralları', 'Kitap önerisi: Sapiens', 'Bayram planı', 'Müşteriye dönülecekler', 'Hafta sonu yapılacaklar'],
+  file: ['Teklif v3.pdf', 'Kira sözleşmesi.pdf', 'Fatura Ekim.pdf', 'Sunum taslağı.key', 'Bilgi mimarisi, böl. 4.pdf'],
+  img: ['Ekran görüntüsü', 'Annemin doğum günü', 'Logo taslağı', 'Fatura fotoğrafı', 'Deniz kenarı', 'Tahta notları', 'Market fişi'],
+};
+const DAYS = new Map(); // key → items[] (newest first)
+for (let d = TODAY; d >= START; d = add(d, -1)) {
+  const r = rnd(), we = wdi(d) >= 5; let n = r < (we ? .42 : .2) ? 0 : r < .55 ? 1 + Math.floor(rnd() * 2) : r < .85 ? 3 + Math.floor(rnd() * 2) : 5 + Math.floor(rnd() * 4);
+  if (key(d) === TK) n = 4;
+  const items = []; let mins = key(d) === TK ? 15 * 60 + 40 : 22 * 60;
+  for (let i = 0; i < n; i++) {
+    const q = rnd(), k = q < .3 ? 'link' : q < .65 ? 'note' : q < .77 ? 'file' : 'img';
+    mins -= 20 + Math.floor(rnd() * 120); if (mins < 7 * 60) mins = 7 * 60 + n - i;
+    const tm = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    if (k === 'link') { const [s, t] = pick(POOL.link); items.push({ k, t, m: `${s} · ${tm}` }); }
+    else if (k === 'img') items.push({ k, t: pick(POOL.img), m: `Resim · ${tm}`, hu: Math.floor(rnd() * 360) });
+    else items.push({ k, t: pick(POOL[k]), m: `${k === 'file' ? 'Dosya' : 'Not'} · ${tm}` });
+  }
+  DAYS.set(key(d), items);
+}
+const cnt = k => DAYS.get(k)?.length || 0;
+const heat = n => n >= 5 ? 'h3' : n >= 3 ? 'h2' : n ? 'h1' : '';
+const photo = k => DAYS.get(k)?.find(i => i.k === 'img');
+const future = d => d > TODAY;
+const monthTotal = (y, m) => { let s = 0; for (let d = new Date(y, m, 1); d.getMonth() === m; d = add(d, 1)) s += cnt(key(d)); return s; };
+const dayLabel = k => { const d = parse(k); return k === TK ? 'Bugün' : k === key(add(TODAY, -1)) ? 'Dün' : `${WDL[wdi(d)]}, ${d.getDate()} ${MON[d.getMonth()]}`; };
+const KIC = { link: 'link', note: 'note', file: 'pdf' };
+// a key that has items: k itself, else the nearest older day, else the newest day
+const resolve = k => { if (cnt(k)) return k; for (let d = parse(k); d >= START; d = add(d, -1)) if (cnt(key(d))) return key(d); for (const [kk, v] of DAYS) if (v.length) return kk; return TK; };
+const lastInMonth = (y, m) => { const e = new Date(y, m + 1, 0); return resolve(key(e > TODAY ? TODAY : e)); };
+
+// month grid (A sheet, B side + phone, shared): only weeks of that month, Monday first
+const monthGrid = (y, m, { photos = false } = {}) => {
+  const f = new Date(y, m, 1), out = WD.map(w => `<span class="wd">${w}</span>`);
+  for (let i = 0; i < wdi(f); i++) out.push('<span class="c o"></span>');
+  for (let d = f; d.getMonth() === m; d = add(d, 1)) { const k = key(d), n = cnt(k), ph = photos && photo(k);
+    const cls = ['c', heat(n), n ? '' : future(d) ? 'fu' : 'e', k === TK ? 'td' : '', ph ? 'hp' : ''].filter(Boolean).join(' ');
+    out.push(`<button class="${cls}" data-k="${k}" aria-label="${d.getDate()} ${MON[m]}, ${n} kayıt"${future(d) || d < START ? ' disabled' : ''}>${ph ? `<i class="pc ph" style="--hu:${ph.hu}"></i>` : ''}<span>${d.getDate()}</span></button>`); }
+  return out.join('');
+};
+
+// ---------- one mini app per sample ----------
+function make(app) {
+  const v = app.dataset.v;
+  app.innerHTML = `<div class="a-top ui"><span class="mark" data-logo aria-hidden="true"></span><div class="vseg"><span>${use('board')}Pano</span><span class="on">${use('list')}Liste</span><span>${use('grid')}Galeri</span></div><span class="sp"></span></div>
+    <div class="a-body"></div><div class="a-box ui"><i>${use('plus')}</i><span style="flex:1">Not yaz…</span><i>${use('mic')}</i></div>`;
+  $('[data-logo]', app).append($('#logo').content.firstElementChild.cloneNode(true));
+  const body = $('.a-body', app);
+  const lst = document.createElement('div'); lst.className = 'lst'; lst.style.position = 'relative';
+  const parts = [];
+  for (const [k, items] of DAYS) { if (!items.length) continue;
+    parts.push(`<i class="anc" data-k="${k}"></i><div class="dh ui${k === TK ? ' today' : ''}" data-k="${k}"><b>${dayLabel(k)}</b><small>${items.length} kayıt</small></div>`);
+    for (const it of items) parts.push(`<div class="r k-${it.k}">${it.k === 'img' ? `<i class="ph" style="--hu:${it.hu}"></i>` : `<span class="ic">${use(KIC[it.k])}</span>`}<div class="tx"><div class="t">${it.t}</div><div class="m">${it.m}</div></div></div>`); }
+  lst.innerHTML = parts.join('');
+  const anc = $$('.anc', lst);
+  const ctx = { app, lst, lock: 0, cur: TK, v: null };
+  ctx.go = (k0, { flash = true } = {}) => { const k = resolve(k0), a = $(`.anc[data-k="${k}"]`, lst); if (!a) return;
+    ctx.cur = k; ctx.v.mark(k, true); clearTimeout(ctx.lock); ctx.lock = setTimeout(() => ctx.lock = 0, RM() ? 60 : 700);
+    lst.scrollTo({ top: a.offsetTop, behavior: SB() }); buzz();
+    if (flash) { const h = a.nextElementSibling; h.classList.remove('flash'); void h.offsetWidth; h.classList.add('flash'); } };
+  let raf = 0;
+  lst.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; ctx.v.scrolled?.(lst.scrollTop);
+    if (ctx.lock) return; const y = lst.scrollTop + 6; let lo = 0, hi = anc.length - 1, b = 0;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (anc[mid].offsetTop <= y) { b = mid; lo = mid + 1; } else hi = mid - 1; }
+    const k = anc[b].dataset.k; if (k !== ctx.cur) { ctx.cur = k; ctx.v.mark(k, false); } }); }, { passive: true });
+  ctx.v = V[v](ctx, body);
+  ctx.v.mark(TK, false);
+  new ResizeObserver(() => ctx.v.mark(ctx.cur, false)).observe(app);
+  return ctx;
+}
+
+const V = {};
+// A · week strip + month sheet over the list
+V.A = (ctx, body) => {
+  const first = add(START, -wdi(START)), last = add(TODAY, 6 - wdi(TODAY)), ds = [];
+  for (let d = first; d <= last; d = add(d, 1)) { const k = key(d), n = cnt(k);
+    const cls = ['A-d', heat(n), n ? '' : 'e', k === TK ? 'td' : '', d.getDate() === 1 ? 'mo' : ''].filter(Boolean).join(' ');
+    ds.push(`<button class="${cls}" data-k="${k}" aria-label="${dayLabel(k)}, ${n} kayıt"${future(d) || d < START ? ' disabled' : ''}><span class="w">${d.getDate() === 1 ? MS[d.getMonth()] : WD[wdi(d)]}</span><span class="n">${d.getDate()}</span><span class="k">${n || ''}</span></button>`); }
+  body.innerHTML = `<div class="A-h ui"><button class="ttl" aria-expanded="false"><span class="mt"></span>${use('cd').replace('class="i"', 'class="i cv"')}</button><span class="grow"></span>
+      <button class="cbtn" data-w="-7" aria-label="Önceki hafta">${use('cl')}</button><button class="cbtn" data-w="7" aria-label="Sonraki hafta">${use('cr')}</button><button class="today-b">Bugün</button></div>
+    <div class="A-strip ui">${ds.join('')}</div><div class="a-main"><div class="A-scrim"></div><div class="A-sheet ui" role="dialog" aria-label="Ay"><div class="sh"><b></b>
+      <button class="cbtn" data-m="-1" aria-label="Önceki ay">${use('cl')}</button><button class="cbtn" data-m="1" aria-label="Sonraki ay">${use('cr')}</button></div><div class="mg"></div></div></div>`;
+  $('.a-main', body).append(ctx.lst);
+  const strip = $('.A-strip', body), ttl = $('.ttl', body), sheet = $('.A-sheet', body), scrim = $('.A-scrim', body);
+  let sm = null;
+  const showMonth = (y, m) => { sm = [y, m]; $('.sh b', sheet).textContent = `${MON[m]} ${y}`; $('.mg', sheet).innerHTML = monthGrid(y, m, { photos: true });
+    const c = $(`.c[data-k="${ctx.cur}"]`, sheet); c?.setAttribute('aria-current', 'true');
+    $('[data-m="1"]', sheet).disabled = y === TODAY.getFullYear() && m === TODAY.getMonth(); $('[data-m="-1"]', sheet).disabled = new Date(y, m, 1) <= START; };
+  const open = on => { sheet.classList.toggle('on', on); scrim.classList.toggle('on', on); ttl.setAttribute('aria-expanded', String(on)); if (on) { const d = parse(ctx.cur); showMonth(d.getFullYear(), d.getMonth()); } };
+  ttl.onclick = () => open(!sheet.classList.contains('on'));
+  scrim.onclick = () => open(false);
+  sheet.onclick = e => { const m = e.target.closest('[data-m]'); if (m) { const d = new Date(sm[0], sm[1] + +m.dataset.m, 1); showMonth(d.getFullYear(), d.getMonth()); return; }
+    const c = e.target.closest('.c[data-k]'); if (c) { open(false); ctx.go(c.dataset.k); } };
+  strip.onclick = e => { const b = e.target.closest('.A-d'); if (b) ctx.go(b.dataset.k); };
+  $$('[data-w]', body).forEach(b => b.onclick = () => { const t = add(parse(ctx.cur), +b.dataset.w); ctx.go(key(t > TODAY ? TODAY : t < START ? START : t)); });
+  $('.today-b', body).onclick = () => ctx.go(TK);
+  app_keys(ctx, body);
+  return { mark(k) { const d = parse(k); $('.mt', ttl).textContent = `${MON[d.getMonth()]} ${d.getFullYear()}`;
+    $$('.A-d[aria-current]', strip).forEach(e => e.removeAttribute('aria-current')); const b = $(`.A-d[data-k="${k}"]`, strip); if (!b) return; b.setAttribute('aria-current', 'true');
+    // keep the chosen day's whole week in view (Monday at the left edge)
+    const mon = $(`.A-d[data-k="${key(add(d, -wdi(d)))}"]`, strip) || b, x = mon.offsetLeft, w = strip.clientWidth;
+    if (b.offsetLeft < strip.scrollLeft || b.offsetLeft + b.offsetWidth > strip.scrollLeft + w) strip.scrollTo({ left: x, behavior: SB() }); } };
+};
+
+// B · narrow side column (wide) / month histogram (phone)
+V.B = (ctx, body) => {
+  body.innerHTML = `<div class="B-wrap"><aside class="B-side ui"><div class="sh"><b class="mt"></b><button class="cbtn" data-m="-1" aria-label="Önceki ay">${use('cl')}</button><button class="cbtn" data-m="1" aria-label="Sonraki ay">${use('cr')}</button></div>
+      <div class="mg sg"></div><div><div class="B-lbl">Bu ay</div><div class="B-sum" style="margin-top:8px"></div></div><div><div class="B-lbl" style="margin-bottom:8px">2026</div><div class="B-yr"></div></div></aside>
+    <div class="a-main"><div class="B-bar ui"><div class="sh"><button class="ttl" aria-expanded="false"><span class="mt"></span>${use('cd').replace('class="i"', 'class="i cv"')}</button><small class="tot" style="color:var(--muted);font-size:12px"></small><span class="grow"></span>
+      <button class="cbtn" data-m="-1" aria-label="Önceki ay">${use('cl')}</button><button class="cbtn" data-m="1" aria-label="Sonraki ay">${use('cr')}</button></div>
+      <div class="B-hist" role="slider" aria-label="Gün" tabindex="0"></div><div class="B-ax"></div><div class="B-more"><div class="mg"></div></div><span class="B-tip"></span></div></div></div>`;
+  $('.a-main', body).append(ctx.lst);
+  const side = $('.B-side', body), bar = $('.B-bar', body), hist = $('.B-hist', bar), more = $('.B-more', bar), tip = $('.B-tip', bar), ttl = $('.ttl', bar);
+  let sm = '';
+  const render = (y, m) => { sm = `${y}-${m}`;
+    $$('.mt', body).forEach(e => e.textContent = `${MON[m]} ${y}`); $('.tot', bar).textContent = `${monthTotal(y, m)} kayıt`;
+    $('.sg', side).innerHTML = monthGrid(y, m); $('.mg', more).innerHTML = monthGrid(y, m);
+    const dim = new Date(y, m + 1, 0).getDate(), hs = []; let mx = 1; for (let i = 1; i <= dim; i++) mx = Math.max(mx, cnt(key(new Date(y, m, i))));
+    for (let i = 1; i <= dim; i++) { const d = new Date(y, m, i), k = key(d), n = cnt(k);
+      hs.push(`<button class="${[n ? '' : future(d) ? 'fu' : 'e', k === TK ? 'td' : ''].join(' ')}" data-k="${k}" tabindex="-1" aria-label="${i} ${MON[m]}, ${n} kayıt" style="--v:${Math.round(n / mx * 100)}%"><i></i></button>`); }
+    hist.innerHTML = hs.join(''); $('.B-ax', bar).innerHTML = `<span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span>`;
+    // this month by kind
+    const by = { link: 0, note: 0, file: 0, img: 0 }; for (let d = new Date(y, m, 1); d.getMonth() === m; d = add(d, 1)) for (const it of DAYS.get(key(d)) || []) by[it.k]++;
+    const bm = Math.max(1, ...Object.values(by)), NM = { link: ['Bağlantı', 'var(--t-link)'], note: ['Not', 'var(--t-note)'], file: ['Dosya', 'var(--t-file)'], img: ['Resim', 'var(--t-img)'] };
+    $('.B-sum', side).innerHTML = Object.entries(by).map(([k, n]) => `<div class="ln" style="color:${NM[k][1]}"><span style="color:var(--text-2)">${NM[k][0]}</span><i style="width:${Math.max(4, n / bm * 100)}%"></i><span>${n}</span></div>`).join('');
+    const mt = MON.map((_, i) => monthTotal(2026, i)), mm = Math.max(...mt);
+    $('.B-yr', side).innerHTML = MS.map((s, i) => `<button class="${mt[i] ? heat(Math.ceil(mt[i] / mm * 6)) : ''}" data-y="${i}"${mt[i] ? '' : ' disabled'}${i === m && y === 2026 ? ' aria-current="true"' : ''} aria-label="${MON[i]}, ${mt[i]} kayıt">${s}</button>`).join('');
+    $$('[data-m="1"]', body).forEach(b => b.disabled = y === TODAY.getFullYear() && m === TODAY.getMonth());
+    $$('[data-m="-1"]', body).forEach(b => b.disabled = new Date(y, m, 1) <= START);
+    if (ttl.getAttribute('aria-expanded') === 'true') more.style.height = $('.mg', more).offsetHeight + 8 + 'px'; };
+  body.onclick = e => { const m = e.target.closest('[data-m]'); if (m) { const d = parse(ctx.cur), t = new Date(d.getFullYear(), d.getMonth() + +m.dataset.m, 1); ctx.go(lastInMonth(t.getFullYear(), t.getMonth())); return; }
+    const yb = e.target.closest('[data-y]'); if (yb) { ctx.go(lastInMonth(2026, +yb.dataset.y)); return; }
+    const c = e.target.closest('.mg .c[data-k]'); if (c) ctx.go(c.dataset.k); };
+  ttl.onclick = () => { const on = ttl.getAttribute('aria-expanded') !== 'true'; ttl.setAttribute('aria-expanded', String(on)); more.style.height = on ? $('.mg', more).offsetHeight + 8 + 'px' : '0px'; };
+  // scrub the histogram: finger moves → bubble shows the day, lift → go
+  let drag = null;
+  const at = x => { const bs = $$('button', hist), r = hist.getBoundingClientRect(); return bs[clamp(Math.floor((x - r.left) / r.width * bs.length), 0, bs.length - 1)]; };
+  const show = b => { const br = b.getBoundingClientRect(), pr = bar.getBoundingClientRect(), d = parse(b.dataset.k);
+    tip.textContent = `${d.getDate()} ${MS[d.getMonth()]} · ${cnt(b.dataset.k)} kayıt`; tip.style.left = clamp(br.left - pr.left + br.width / 2, 50, pr.width - 50) + 'px'; tip.style.top = br.top - pr.top + 2 + 'px'; tip.classList.add('on');
+    $$('button[aria-current]', hist).forEach(e => e.removeAttribute('aria-current')); b.setAttribute('aria-current', 'true'); };
+  hist.addEventListener('pointerdown', e => { const b = at(e.clientX); if (!b || b.classList.contains('fu')) return; drag = b; hist.setPointerCapture(e.pointerId); show(b); });
+  hist.addEventListener('pointermove', e => { if (!drag) return; const b = at(e.clientX); if (b && b !== drag && !b.classList.contains('fu')) { drag = b; show(b); buzz(4); } });
+  const end = () => { if (!drag) return; const k = drag.dataset.k; drag = null; tip.classList.remove('on'); ctx.go(k); };
+  hist.addEventListener('pointerup', end); hist.addEventListener('pointercancel', () => { drag = null; tip.classList.remove('on'); });
+  hist.addEventListener('keydown', e => { const dlt = { ArrowLeft: -1, ArrowRight: 1 }[e.key]; if (!dlt) return; e.preventDefault(); const t = add(parse(ctx.cur), dlt); if (t <= TODAY && t >= START) ctx.go(key(t), { flash: false }); });
+  app_keys(ctx, body);
+  return { mark(k) { const d = parse(k); if (sm !== `${d.getFullYear()}-${d.getMonth()}`) render(d.getFullYear(), d.getMonth());
+    $$('[aria-current="true"]', body).forEach(e => { if (!e.closest('.B-yr')) e.removeAttribute('aria-current'); });
+    $$(`[data-k="${k}"]`, side).concat($$(`[data-k="${k}"]`, bar)).forEach(e => e.setAttribute('aria-current', 'true')); } };
+};
+
+// C · photo month folding to one week while the list scrolls
+V.C = (ctx, body) => {
+  body.innerHTML = `<div class="C-cal ui"><div class="C-h"><span class="ttl"><span class="mt"></span><small class="tot"></small></span><span class="grow"></span>
+      <button class="cbtn" data-m="-1" aria-label="Önceki ay">${use('cl')}</button><button class="cbtn" data-m="1" aria-label="Sonraki ay">${use('cr')}</button><button class="today-b">Bugün</button></div>
+    <div class="C-wd">${WD.map(w => `<span>${w}</span>`).join('')}</div><div class="C-win"><div class="C-g"></div></div><button class="C-grip" aria-label="Ayı aç / kapa" aria-expanded="true"></button></div><div class="a-main"></div>`;
+  $('.a-main', body).append(ctx.lst);
+  const win = $('.C-win', body), g = $('.C-g', body), grip = $('.C-grip', body);
+  let sm = '', col = false, wasTop = true;
+  const render = (y, m) => { sm = `${y}-${m}`; $('.mt', body).textContent = `${MON[m]} ${y}`; $('.tot', body).textContent = `${monthTotal(y, m)} kayıt`;
+    const f = new Date(y, m, 1), out = []; for (let i = 0; i < wdi(f); i++) out.push('<span class="C-c o"></span>');
+    for (let d = f; d.getMonth() === m; d = add(d, 1)) { const k = key(d), n = cnt(k), ph = photo(k);
+      out.push(`<button class="${['C-c', ph ? 'hp' : heat(n), n ? '' : future(d) ? 'fu' : 'e', k === TK ? 'td' : ''].filter(Boolean).join(' ')}" data-k="${k}" aria-label="${d.getDate()} ${MON[m]}, ${n} kayıt"${future(d) || d < START ? ' disabled' : ''}>${ph ? `<i class="ph" style="--hu:${ph.hu}"></i>` : ''}<span class="n">${d.getDate()}</span>${n ? `<span class="q">${n}</span>` : ''}</button>`); }
+    g.innerHTML = out.join('');
+    $('[data-m="1"]', body).disabled = y === TODAY.getFullYear() && m === TODAY.getMonth(); $('[data-m="-1"]', body).disabled = new Date(y, m, 1) <= START; };
+  const fold = () => { const c = $(`.C-c[data-k="${ctx.cur}"]`, g) || $('.C-c:not(.o)', g), rh = c.offsetHeight + 3;
+    const row = Math.floor([...g.children].indexOf(c) / 7);
+    win.style.height = col ? c.offsetHeight + 'px' : g.scrollHeight + 'px'; g.style.transform = col ? `translateY(${-row * rh}px)` : ''; grip.setAttribute('aria-expanded', String(!col)); };
+  grip.onclick = () => { col = !col; fold(); buzz(); };
+  body.onclick = e => { const m = e.target.closest('[data-m]'); if (m) { const d = parse(ctx.cur), t = new Date(d.getFullYear(), d.getMonth() + +m.dataset.m, 1); ctx.go(lastInMonth(t.getFullYear(), t.getMonth())); return; }
+    if (e.target.closest('.today-b')) { ctx.go(TK); return; }
+    const c = e.target.closest('.C-c[data-k]'); if (c) ctx.go(c.dataset.k); };
+  app_keys(ctx, body);
+  return {
+    mark(k) { const d = parse(k); if (sm !== `${d.getFullYear()}-${d.getMonth()}`) render(d.getFullYear(), d.getMonth());
+      $$('[aria-current]', g).forEach(e => e.removeAttribute('aria-current')); $(`[data-k="${k}"]`, g)?.setAttribute('aria-current', 'true'); fold(); },
+    scrolled(y) { const top = y < 8; if (top !== wasTop) { wasTop = top; col = !top; fold(); } } };
+};
+
+// D · half-year heat strip
+V.D = (ctx, body) => {
+  const first = add(START, -wdi(START)), last = add(TODAY, 6 - wdi(TODAY)), cells = [];
+  for (let w = first; w <= last; w = add(w, 7)) {
+    let lab = ''; for (let i = 0; i < 7; i++) { const d = add(w, i); if (d.getDate() === 1 || (+w === +first && i === 0)) lab = MS[d.getMonth()]; }
+    cells.push(`<span class="D-m">${lab}</span>`);
+    for (let i = 0; i < 7; i++) { const d = add(w, i), k = key(d), n = cnt(k), out = d < START || future(d);
+      cells.push(`<button class="D-c ${out ? (d < START ? 'pad' : 'fu') : heat(n)}${k === TK ? ' td' : ''}" data-k="${k}"${out ? ' disabled tabindex="-1"' : ''} aria-label="${dayLabel(k)}, ${n} kayıt"></button>`); } }
+  body.innerHTML = `<div class="D-cal ui"><div class="D-h"><span class="D-now"></span><span class="grow"></span><span class="D-lg">Az<i></i><i class="h1"></i><i class="h2"></i><i class="h3"></i>Çok</span></div>
+    <div class="D-sc"><div class="D-dn"><span></span>${WD.map((w, i) => `<span>${i % 2 ? '' : w}</span>`).join('')}</div><div class="D-scroll"><div class="D-grid">${cells.join('')}</div></div></div></div><div class="a-main"></div>`;
+  $('.a-main', body).append(ctx.lst);
+  const sc = $('.D-scroll', body);
+  requestAnimationFrame(() => sc.scrollLeft = sc.scrollWidth);
+  body.onclick = e => { const c = e.target.closest('.D-c[data-k]'); if (c && !c.disabled) ctx.go(c.dataset.k); };
+  app_keys(ctx, body);
+  return { mark(k) { const d = parse(k); $('.D-now', body).innerHTML = `<b>${dayLabel(k)}</b>${k === TK || k === key(add(TODAY, -1)) ? `, ${d.getDate()} ${MON[d.getMonth()]}` : ''} · ${cnt(k)} kayıt`;
+    $$('[aria-current]', sc).forEach(e => e.removeAttribute('aria-current')); const c = $(`[data-k="${k}"]`, sc); if (!c) return; c.setAttribute('aria-current', 'true');
+    const x = c.offsetLeft, w = sc.clientWidth; if (x < sc.scrollLeft + 10 || x > sc.scrollLeft + w - 30) sc.scrollTo({ left: x - w / 2, behavior: SB() }); } };
+};
+
+// keyboard inside a sample: ← → day, PgUp/PgDn month (only when focus is in that sample)
+function app_keys(ctx) { ctx.app.addEventListener('keydown', e => { if (e.target.closest('.B-hist')) return;
+  const d = parse(ctx.cur); let t = null;
+  if (e.key === 'ArrowLeft' && e.target.closest('.A-d,.D-c,.C-c,.c')) t = add(d, -1); else if (e.key === 'ArrowRight' && e.target.closest('.A-d,.D-c,.C-c,.c')) t = add(d, 1);
+  else if (e.key === 'PageUp') t = new Date(d.getFullYear(), d.getMonth() - 1, 1); else if (e.key === 'PageDown') t = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  if (!t || t > TODAY || t < START) return; e.preventDefault(); ctx.go(key(t), { flash: false }); $(`[data-k="${ctx.cur}"]:not(.dh):not(.anc)`, ctx.app)?.focus({ preventScroll: true }); }); }
+
+const APPS = $$('.app').map(make);
+
+// desktop / phone stage toggle
+$$('.stage-tg').forEach(tg => tg.onclick = e => { const b = e.target.closest('button'); if (!b) return; const st = tg.closest('.ex').querySelector('.stage');
+  st.classList.toggle('phone', b.dataset.st === 'phone'); $$('button', tg).forEach(x => x.setAttribute('aria-pressed', String(x === b))); buzz(); });
+
+// ---------- ✓ / ✗ + note ----------
+const K = 'nts-cal2-picks'; let picks; try { picks = JSON.parse(store.get(K) || '{}'); } catch { picks = {}; }
+const save = () => { store.set(K, JSON.stringify(picks)); $('#cnt').textContent = Object.values(picks).filter(p => p.v).length + ' / ' + $$('.ex').length + ' seçim'; };
+$$('.ex').forEach(ex => { const id = ex.dataset.id, p = picks[id] || (picks[id] = { v: '', note: '' });
+  const box = document.createElement('div'); box.className = 'pick ui';
+  box.innerHTML = `<div class="yn" role="group" aria-label="Karar: ${id}"><button class="yes" aria-pressed="false">✓ Olur</button><button class="no" aria-pressed="false">✗ Olmaz</button></div><textarea rows="1" placeholder="Not (isteğe bağlı)" aria-label="Not: ${id}"></textarea>`;
+  ex.append(box); const ta = $('textarea', box); ta.value = p.note;
+  const paint = () => { $('.yes', box).setAttribute('aria-pressed', String(p.v === 'y')); $('.no', box).setAttribute('aria-pressed', String(p.v === 'n')); };
+  $('.yn', box).onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = b.classList.contains('yes') ? 'y' : 'n'; p.v = p.v === v ? '' : v; buzz(); paint(); save(); };
+  ta.oninput = () => { p.note = ta.value; save(); }; paint(); });
+save();
+const out = () => JSON.stringify({ madde: '161', tarih: new Date().toISOString(), secimler: Object.fromEntries(Object.entries(picks).filter(([k, p]) => (p.v || p.note) && $(`.ex[data-id="${k}"]`))) }, null, 2);
+$('#dlb').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out()], { type: 'application/json' })); a.download = 'calendar-choices.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$('#cp').onclick = async () => { const s = $('#cp span'); try { await navigator.clipboard.writeText(out()); s.textContent = 'Kopyalandı ✓'; } catch { s.textContent = 'Kopyalanamadı'; } setTimeout(() => s.textContent = 'Kopyala', 1500); };
+</script>
+</body>
+</html>
