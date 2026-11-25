@@ -5722,28 +5722,35 @@ const Board = {
     // 129: linked cards (same group / related / own links) stand one under the other with a 48 px gap, so the wire between them shows;
     // a linked run is not split across columns (a column may grow by 2 for it)
     const tied = (a, b) => !!a && ((a.group && a.group === b.group) || !!rl.get(a.id)?.has(b.id)), blocks = [];
+    // 169 (sahip: "sağ-sol kaydırma çok uzun"): on the day layout every month is a row of its own (its days left → right), the next month
+    // under it — a year is 12 rows, not one endless strip
+    let ry = y0, rowMax = 0, rowMon = null, rowHeads = [];
+    const endRow = () => { for (const h of rowHeads) h.rowH = rowMax; rowHeads = []; };
     for (const [n0, d] of days.entries()) {
+      if (!topic) { const mon = d.k.slice(0, 7); if (rowMon && mon !== rowMon) { endRow(); ry += rowMax + 150; rowMax = 0; cx = x0; } rowMon = mon; }
       { const key = i => ZC.topic(i) ?? '#' + i.id, first = new Map(); d.items.forEach((i, n) => { if (!first.has(key(i))) first.set(key(i), n); }); // 119-1: a day's cards of one topic stand together (time order inside), so they read as a cluster from far away
         d.items = d.items.map((i, n) => [i, n]).sort((x, y) => first.get(key(x[0])) - first.get(key(y[0])) || x[1] - y[1]).map(x => x[0]); }
       const left = new Set(d.items), seq = [];
       for (const i of d.items) { if (!left.has(i)) continue; const q = [i]; left.delete(i);
         while (q.length) { const c = q.shift(); seq.push(c); for (const o of d.items) if (left.has(o) && tied(c, o)) { left.delete(o); q.push(o); } } }
-      const pos = [], per = topic ? Math.max(this.PER, Math.round(Math.sqrt(d.items.length) * 1.6)) : this.PER; let col = 0, n = 0, y = y0 + 30, prev = null; // 119-5: a topic is a squarish island, not a strip
+      const pos = [], per = topic ? Math.max(this.PER, Math.round(Math.sqrt(d.items.length) * 1.6)) : this.PER, top = topic ? y0 : ry; let col = 0, n = 0, y = top + 30, prev = null; // 119-5: a topic is a squarish island, not a strip
       for (const i of seq) {
         const t = tied(prev, i);
-        if (n >= per && !(t && n < per + 2)) { col++; n = 0; y = y0 + 30; prev = null; }
+        if (n >= per && !(t && n < per + 2)) { col++; n = 0; y = top + 30; prev = null; }
         else if (prev) y += t ? 48 : 14;
         const h = this.est(i); pos.push({ i, col, y, h }); y += h; n++; prev = i;
       }
       if (topic) { blocks.push({ d, pos, cw: (col + 1) * (this.COLW + this.IN) - this.IN, bh: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, n0 }); continue; }
       const x = cx, cw = (col + 1) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
       for (const p of pos) this.M.set(p.i.id, { i: p.i, x: x + p.col * (this.COLW + this.IN), y: p.y, w: this.COLW, h: p.h, auto: true });
-      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, alt: n0 % 2, today: !topic && d.k === today, topic: !!d.topic });
+      const hh = Math.max(...pos.map(p => p.y + p.h + 14)) - top; rowMax = Math.max(rowMax, hh, 320);
+      const hd = { k: d.k, n: d.items.length, x, y: top, w: cw, h: hh, alt: n0 % 2, today: !topic && d.k === today, topic: !!d.topic }; this.heads.push(hd); rowHeads.push(hd);
     }
+    endRow();
     if (topic) this.packTopics(blocks, x0, y0);
     plane.style.setProperty('--dayh', Math.max(320, ...this.heads.map(h => h.h + 20)) + 'px'); // 109d: the line between days runs as tall as the tallest day, not a stub next to a 1-card day
     // months for the far-out view: each spans its days' columns
-    this.months = []; if (!topic) for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
+    this.months = []; if (!topic) for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: h.y }); }
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
     this.deg = this.degrees();
@@ -5756,12 +5763,12 @@ const Board = {
   // screen and the zoom are noted, the board is redrawn with the filter, the camera goes back to that day (or the nearest one still there)
   keepPlace(fn) {
     if (S.view !== 'board' || !S.cam || !this.heads?.length) return fn();
-    const c = S.cam, [w, h] = this.size(), px = (w / 2 - c.x) / c.k, dy = (h / 2 - c.y) / c.k - (this.y0 || 0);
-    const at = this.heads.reduce((b, x) => Math.abs(x.x + x.w / 2 - px) < Math.abs(b.x + b.w / 2 - px) ? x : b), day = +new Date(at.k), k = c.k;
+    const c = S.cam, [w, h] = this.size(), px = (w / 2 - c.x) / c.k, py = (h / 2 - c.y) / c.k, d2 = x => Math.hypot(x.x + x.w / 2 - px, Math.max(0, x.y - py, py - x.y - x.h));
+    const at = this.heads.reduce((b, x) => d2(x) < d2(b) ? x : b), day = +new Date(at.k), k = c.k, dy = py - at.y;
     this.flip(() => { fn(); renderNow(); }); // 166
     if (!this.heads?.length) return;
     const t = this.heads.reduce((b, x) => Math.abs(+new Date(x.k) - day) < Math.abs(+new Date(b.k) - day) ? x : b);
-    S.cam = { k, x: w / 2 - (t.x + t.w / 2) * k, y: h / 2 - ((this.y0 || 0) + dy) * k }; this.apply();
+    S.cam = { k, x: w / 2 - (t.x + t.w / 2) * k, y: h / 2 - (t.y + dy) * k }; this.apply();
   },
   // 119-3: two layouts, per device: 'time' (days, as before) · 'topic' (one block per topic)
   mode() { if (this._mode == null) { try { this._mode = localStorage.getItem('hn-blayout') === 'topic' ? 'topic' : 'time'; } catch { this._mode = 'time'; } } return this._mode; },
@@ -5837,13 +5844,13 @@ const Board = {
       else if (el && !el.classList.contains('dragging') && !(OnBoard.id === id && OnBoard.el?.isConnected) && !el.querySelector('[contenteditable="true"],[contenteditable="plaintext-only"]')) { el.remove(); this.mounted.delete(id); }
     }
     for (const h of this.heads) {
-      const el = this.mountedHeads.get(h.k), inn = h.x < v.x2 && h.x + h.w > v.x1;
+      const el = this.mountedHeads.get(h.k), inn = h.x < v.x2 && h.x + h.w > v.x1 && h.y - 40 < v.y2 && h.y + (h.rowH || h.h) + 40 > v.y1; // 169: rows
       if (inn && !el) { // 92: each day is one soft band (alternating tone, today in the accent) with its head on top: "Dün · 20 Kasım Cuma"
         const e = document.createElement('div'), l = h.topic ? esc(h.k.charAt(0).toLocaleUpperCase('tr') + h.k.slice(1)) : fmtDay(h.k), rel = !h.topic && (l === 'Bugün' || l === 'Dün');
         e.className = 'day-band' + (h.alt ? ' alt' : '') + (h.today ? ' today' : '') + (h.topic ? ' topic' : '');
         if (h.topic && h.k !== 'Etiketsiz') e.style.setProperty('--tc', tagCol(h.k));
         e.innerHTML = `<div class="col-head"><span class="l">${l}${rel ? `<span class="dt"> · ${fmtDay0d(h.k)}</span>` : ''}</span><span class="s">${h.topic ? l : shortDay(h.k)}</span><span class="cnt">${h.n}</span></div>`;
-        Object.assign(e.style, { left: h.x - 12 + 'px', top: h.y - 12 + 'px', width: h.w + 24 + 'px', height: h.h + 20 + 'px' }); e.style.setProperty('--w', h.w + 'px');
+        Object.assign(e.style, { left: h.x - 12 + 'px', top: h.y - 12 + 'px', width: h.w + 24 + 'px', height: h.h + 20 + 'px' }); e.style.setProperty('--w', h.w + 'px'); if (h.rowH) e.style.setProperty('--dayh', h.rowH + 20 + 'px');
         frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }
     }
@@ -5922,7 +5929,7 @@ const Board = {
   },
   apply() {
     const c = S.cam, pl = $('#plane'); pl.style.transform = `translate3d(${c.x}px,${c.y}px,0) scale(${c.k})`;
-    if (c.k !== this._lk) { this._lk = c.k; pl.classList.add('moving'); clearTimeout(this._sharp); this._sharp = setTimeout(() => { pl.classList.remove('moving'); const q = (this._fq || []).filter(c => c.isConnected); this._fq = null; if (q.length) this.fades(q); }, 180); } // 140: crisp letters once the zoom rests
+    if (c.k !== this._lk) { if (this._lk != null) BoardLite.zooming = true; this._lk = c.k; pl.classList.add('moving'); clearTimeout(this._sharp); this._sharp = setTimeout(() => { pl.classList.remove('moving'); const q = (this._fq || []).filter(c => c.isConnected); this._fq = null; if (q.length) this.fades(q); if (BoardLite.zooming) { BoardLite.zooming = false; this.cull(); } }, 180); } // 140: crisp letters once the zoom rests
     Ink.place();
     // day labels keep a readable size at any zoom. 147b: the two zoom numbers live in one rule for the few elements that use them; set on
     // #plane every zoom step restyled every card (phone 4x: style recalc was most of the frame)

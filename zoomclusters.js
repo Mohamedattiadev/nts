@@ -59,13 +59,13 @@ const ZC = {
     return this._L = { svg, lb, gS, gA };
   },
   rnd: s => () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646,
+  // 169 (sahip: "bu sarı, rastgele ama kare; beğendim, diğerleri de buna benzer rastgele olsun"): every cluster is a hand-drawn square —
+  // its corners pushed out a little at random, its sides wobbling softly, each one a bit different (from its seed); never over the cards
   outline(c) {
-    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), kind = c.mem.length >= 10 ? 'tilt' : (Board.mode() === 'time' ? ['blob', 'oval', 'tilt', 'blob'] : ['bubble', 'blob', 'oval', 'tilt', 'blob', 'bubble'])[c.seed % (Board.mode() === 'time' ? 4 : 6)]; // day layout: no bubble tail (the title sits under the shape)
-    if (kind === 'bubble') { const r = 18 + R() * 14, { x, y, w, h } = b, t = Math.min(74, w * .4);
-      return `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + t} L${x + 34},${y + h + 34} L${x + 44},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`; }
-    if (kind === 'oval') { const rx = b.w / 2 * 1.42, ry = b.h / 2 * 1.42, Q = []; for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283; Q.push([c.cx + rx * Math.cos(a), c.cy + ry * Math.sin(a)]); } return this.smooth(this.wob(Q, c.seed, 6, 120)); }
-    if (kind === 'blob') return this.smooth(this.wob(this.blob(c, P + 6), c.seed, 7 + R() * 5, 90));
-    const j = () => (R() - .5) * Math.min(22, 6 + c.mem.length); return `M${b.x + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + j()} L${b.x + b.w + j()},${b.y + b.h + j()} L${b.x + j()},${b.y + b.h + j()} Z`;
+    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), J = Math.min(28, 8 + c.mem.length * 1.5), o = () => R() * J;
+    const C = [[b.x - o(), b.y - o()], [b.x + b.w + o(), b.y - o()], [b.x + b.w + o(), b.y + b.h + o()], [b.x - o(), b.y + b.h + o()]], pts = [];
+    for (let k = 0; k < 4; k++) { const a = C[k], z = C[(k + 1) % 4], n = Math.max(2, Math.round(Math.hypot(z[0] - a[0], z[1] - a[1]) / 70)); for (let t = 0; t < n; t++) pts.push([a[0] + (z[0] - a[0]) * t / n, a[1] + (z[1] - a[1]) * t / n]); }
+    return this.smooth(this.wob(pts, c.seed, 3 + R() * 4, 60 + R() * 60));
   },
   wob(P, seed, amp, wave) { const R = this.rnd(seed), p1 = R() * 6.28, p2 = R() * 6.28, p3 = R() * 6.28; let s = 0;
     return P.map((p, i) => { if (i) s += Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]); const t = s / wave;
