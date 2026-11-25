@@ -2825,3 +2825,4 @@ dialog.clean .d-body { gap: 12px; }
   mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat; }
 .m-src { display: inline-flex; align-items: center; color: var(--muted); }
 .m-src svg { width: 12px; height: 12px; }
+.zc-l.below { transform-origin: 0 0; transform: scale(var(--zls)); }

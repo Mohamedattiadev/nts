@@ -18,7 +18,8 @@ const ZC = {
     if (!M || typeof rough === 'undefined') return this.arrowsBuild();
     const cards = [...M.values()].filter(m => !m.i.sticky && this.topic(m.i)), C = 400, grid = new Map(), cell = (x, y) => Math.floor(x / C) + ',' + Math.floor(y / C);
     for (const m of cards) { const k = cell(m.x, m.y); (grid.get(k) || grid.set(k, []).get(k)).push(m); }
-    const near = (a, b) => b.x - (a.x + a.w) < this.GAP && a.x - (b.x + b.w) < this.GAP && b.y - (a.y + a.h) < this.GAP && a.y - (b.y + b.h) < this.GAP;
+    const gx = Board.mode() === 'time' ? 24 : this.GAP; // 119-4: on the day layout a cluster stays inside its day (never across the day lines)
+    const near = (a, b) => b.x - (a.x + a.w) < gx && a.x - (b.x + b.w) < gx && b.y - (a.y + a.h) < this.GAP && a.y - (b.y + b.h) < this.GAP;
     const seen = new Set();
     for (const m of cards) {
       if (seen.has(m)) continue; const t = this.topic(m.i), q = [m], mem = []; seen.add(m);
@@ -59,7 +60,7 @@ const ZC = {
   },
   rnd: s => () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646,
   outline(c) {
-    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), kind = ['bubble', 'blob', 'oval', 'tilt', 'blob', 'bubble'][c.seed % 6];
+    const P = this.PAD, b = { x: c.bb.x - P, y: c.bb.y - P, w: c.bb.r - c.bb.x + 2 * P, h: c.bb.b - c.bb.y + 2 * P }, R = this.rnd(c.seed), kind = (Board.mode() === 'time' ? ['blob', 'oval', 'tilt', 'blob'] : ['bubble', 'blob', 'oval', 'tilt', 'blob', 'bubble'])[c.seed % (Board.mode() === 'time' ? 4 : 6)]; // day layout: no bubble tail (the title sits under the shape)
     if (kind === 'bubble') { const r = 18 + R() * 14, { x, y, w, h } = b, t = Math.min(74, w * .4);
       return `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + t} L${x + 34},${y + h + 34} L${x + 44},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`; }
     if (kind === 'oval') { const rx = b.w / 2 * 1.13, ry = b.h / 2 * 1.16, Q = []; for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283; Q.push([c.cx + rx * Math.cos(a), c.cy + ry * Math.sin(a)]); } return this.smooth(this.wob(Q, c.seed, 6, 120)); }
@@ -88,7 +89,7 @@ const ZC = {
     const ln = this.rc.path(d, { stroke: 'S', strokeWidth: 2.4, roughness: 1, bowing: .6, disableMultiStroke: true, seed: c.seed }); ln.classList.add('zc-line');
     g.append(this.paint(w, 'fill', `color-mix(in srgb, ${col} 15%, transparent)`), this.paint(e, 'stroke', `color-mix(in srgb, ${col} 22%, transparent)`), this.paint(ln, 'stroke', col));
     L.gS.append(g);
-    const l = document.createElement('button'); l.type = 'button'; l.className = 'zc-l'; l.dataset.zc = c.id; l.style.left = c.bb.x - this.PAD + 6 + 'px'; l.style.top = c.bb.y - this.PAD - 12 + 'px'; l.style.setProperty('--c', col);
+    const l = document.createElement('button'); l.type = 'button'; l.className = 'zc-l'; l.dataset.zc = c.id; l.style.left = c.bb.x - this.PAD + 6 + 'px'; const below = Board.mode() === 'time'; if (below) l.classList.add('below'); l.style.top = (below ? c.bb.b + this.PAD + 12 : c.bb.y - this.PAD - 12) + 'px'; // day layout: under the shape, clear of the day heads l.style.setProperty('--c', col);
     const name = c.t.charAt(0).toLocaleUpperCase('tr') + c.t.slice(1);
     l.innerHTML = `<b dir="auto">${esc(name)}</b><small>${c.mem.length} kayıt · ${this.ago(c.last)}</small>`; l.setAttribute('aria-label', `${name}: ${c.mem.length} kayıt — yaklaş`);
     L.lb.append(l); this.els.set(c.id, { g, l });
@@ -130,7 +131,7 @@ const ZC = {
     const z = parseFloat(L.lb.style.getPropertyValue('--zls')) || 1, placed = [];
     const ls = [...this.els.entries()].map(([id, e]) => [this.list.find(c => c.id === id), e.l]).filter(x => x[0]).sort((a, b) => b[0].mem.length - a[0].mem.length);
     const sz = ls.map(([, l]) => [l.offsetWidth * z, l.offsetHeight * z]); // one read pass, then writes
-    ls.forEach(([, l], n) => { const x = parseFloat(l.style.left), y = parseFloat(l.style.top), [w, h] = sz[n], r = { x1: x - 8 * z, x2: x + w + 8 * z, y1: y - h - 6 * z, y2: y + 6 * z };
+    ls.forEach(([, l], n) => { const x = parseFloat(l.style.left), y = parseFloat(l.style.top), [w, h] = sz[n], r = l.classList.contains('below') ? { x1: x - 8 * z, x2: x + w + 8 * z, y1: y - 6 * z, y2: y + h + 6 * z } : { x1: x - 8 * z, x2: x + w + 8 * z, y1: y - h - 6 * z, y2: y + 6 * z };
       const hit = placed.some(p => p.x1 < r.x2 && p.x2 > r.x1 && p.y1 < r.y2 && p.y2 > r.y1); l.classList.toggle('zc-hide', hit); if (!hit) placed.push(r); });
   },
   fly(c) {
