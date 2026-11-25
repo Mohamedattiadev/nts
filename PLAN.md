@@ -97,7 +97,7 @@ Bitince maddenin başındaki `[ ]` → `[x]`. Commit/push sadece sahip söyleyin
 ## F. Rakip incelemesinden (Linkwarden, Karakeep, linkding, Readeck, Raindrop, mymind, Readwise Reader)
 - [x] 23. Linkin okunur kopyasını sakla (köprü makale metni + ana görsel) ve okuma görünümü + metin işaretleme.
 - [x] 24. Nts için MCP sunucusu (köprü: ara / ekle / listele) → Claude Code'dan "geçen hafta ne kaydettim?".
-- [ ] 25. Kendi link önizleme servisimiz (Supabase Edge Function), microlink yerine: sınır yok, linkler başka yere gitmez.
+- [-] 25. ERTELENDİ (2026-11-26: microlink yetiyor; önizlemesi gelmeyen link olursa yüklenir) Kendi link önizleme servisimiz (Supabase Edge Function), microlink yerine: sınır yok, linkler başka yere gitmez.
        Kod hazır (`supabase/functions/link-preview`, uygulama onu kullanıyor, yoksa microlink'e düşüyor). Kalan: `supabase functions deploy link-preview --project-ref tsnlhzuhbteqgjvxobbx` (CLI + sahip girişi).
 - [x] 26. "Kaydettin ama bakmadın" haftalık liste.
 - [x] 27. Tarayıcı yer imlerini içe aktar (Netscape HTML dosyası).
