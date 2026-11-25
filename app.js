@@ -862,7 +862,7 @@ const thumbIO = new IntersectionObserver(es => es.forEach(async e => {
   img.onerror = () => img.remove(); img.src = u;
   (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })) // 94d: decoded first, then one soft fade (no half-painted image)
     .then(() => { if (img.naturalWidth && fileKind(i) === 'image') AR.set(i.id, img.naturalWidth / img.naturalHeight);
-      if (img.naturalWidth) { GAR.set(i.id, img.naturalWidth / img.naturalHeight); if (e.target.classList.contains('pic') && parseInt(e.target.style.height) !== BoardPic.h(i)) BoardPic.learned(e.target); const t = e.target.closest('#gallery .tile'), a = GAR.fit(GAR.get(i.id)).toFixed(3); if (t && t.style.getPropertyValue('--ar') !== a) t.style.setProperty('--ar', a); } // 99a: changes only the first time
+      if (img.naturalWidth) { GAR.set(i.id, img.naturalWidth / img.naturalHeight); if (e.target.classList.contains('pic') && parseInt(e.target.style.height) !== BoardPic.h(i)) BoardPic.learned(e.target); const t = e.target.closest('#gallery .tile'), a = GAR.fit(GAR.get(i.id)).toFixed(3); if (t && t.style.getPropertyValue('--ar') !== a) t.style.setProperty('--ar', a);  if (e.target.classList.contains('lpic')) { const a = Math.max(.6, Math.min(2, GAR.get(i.id))).toFixed(3); if (e.target.style.getPropertyValue('--ar') !== a) e.target.style.setProperty('--ar', a); } } // 99a: changes only the first time
       e.target.appendChild(img); requestAnimationFrame(() => img.classList.add('ok')); BoardPic.sharp(e.target, i); }, () => img.remove()).finally(() => e.target.classList.remove('loading'));
 }), { rootMargin: '400px' });
 function thumbBox(i, cls = 'thumb') { // fixed-size box: icon placeholder, image fades in → no layout jumps
@@ -1204,10 +1204,12 @@ function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
     ${(i.tags || []).length > tags ? `<span class="tg more" title="${i.tags.length - tags} etiket daha">+${i.tags.length - tags}</span>` : ''}
     ${i.pending && S.bridgeOk ? `<span class="pend">${ic('spark', 'sm')}düzenleniyor</span>` : ''}${acts ? actsHtml(i) : ''}</div>`;
 }
+// 162: a photo row shows the photo big enough to read (its own shape, 112 px wide, 96 on a phone; sharp like the board's, 159)
+const listPic = i => { const r = BoardPic.ratio(i); return thumbBox(i, 'thumb lpic').replace('class="thumb lpic"', `class="thumb lpic" style="--ar:${(r ? Math.max(.6, Math.min(2, r)) : 4 / 3).toFixed(3)}"`); };
 function itemRow(i, { acts = true } = {}) {
   const sub = snipHtml(i, 300);
   return `<div class="item${S.hits?.has(i.id) && !findMode() ? ' hit' : ''}${now() - (i.createdAt || 0) < 4000 ? ' new' : ''}${markCls(i)}" data-id="${i.id}" tabindex="0">
-    ${leadOf(i)}
+    ${BoardPic.isPic(i) && hasVisual(i) ? listPic(i) : leadOf(i)}
     <div class="body">
       <div class="title">${hl(titleOf(i))}</div>
       ${sub ? `<div class="sub" dir="auto">${sub}</div>` : ''}

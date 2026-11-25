@@ -2803,3 +2803,8 @@ body.lcal .list { padding-top: 16px; }
 /* 159: board photos at their own shape */
 .bcard .thumb.pic { background: var(--surface-2); }
 .bcard .thumb.pic img { object-fit: cover; object-position: center top; }
+
+/* 162: a photo in a list row is big enough to see what is in it: its own shape, 112 px wide (96 on a phone), sharp (BoardPic.mid) */
+.item > .thumb.lpic { width: 112px; height: auto; aspect-ratio: var(--ar, 4/3); min-height: 64px; max-height: 150px; border-radius: 10px; }
+.item > .thumb.lpic img { object-position: center top; }
+@media (max-width: 899px) { .item > .thumb.lpic { width: 96px; max-height: 132px; } }

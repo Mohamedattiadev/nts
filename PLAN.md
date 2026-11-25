@@ -1349,5 +1349,10 @@ Site:
         eğrisi boyunca (offset-path) karttan karta kayar, varınca tek sakin halka (560 ms). Hareketi azalt: hiçbiri çalışmaz, yer tutucu durağan.
         Test (t142): 1366 + 390 × açık/koyu, fare + CDP dokunma; sürüklerken kare p50 16,7 / p95 16,8 ms; konsol hatası 0, yatay taşma 0.
 
+- [x] 162. **Liste satırında foto büyük** (sahip ekran görüntüsü 2026-11-25: 56 px'te ekran görüntüsünün içi anlaşılmıyor): resim kayıtlarında
+        (dosya resmi, kapak resmi, not kapağı) satırın solundaki önizleme kendi oranında, 112 px geniş (telefonda 96), yükseklik 64–150 px
+        (telefonda 132), uzun ekran görüntüsü üstten gösterilir; 159'daki gibi keskin (BoardPic.mid, 960 px). Oran ilk kez öğrenilince bir kez düzelir.
+        Test (t162): 1366 + 390 × açık/koyu; uzun ekran görüntüsünde satırlar okunuyor; konsol hatası 0.
+
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.

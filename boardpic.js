@@ -29,7 +29,7 @@ const BoardPic = {
   },
   // after the small thumbnail: swap in the sharp one (board cards of photos only)
   sharp(box, i) {
-    if (!box.closest('#plane') || fileKind(i) !== 'image' || typeof OffscreenCanvas === 'undefined') return;
+    if (!(box.closest('#plane') || box.classList.contains('lpic')) || fileKind(i) !== 'image' || typeof OffscreenCanvas === 'undefined') return;
     this.mid(i).then(u => { if (!u || !box.isConnected) return; const img = box.querySelector('img'); if (!img || img.src === u) return;
       const n = new Image(); n.src = u; (n.decode ? n.decode() : Promise.resolve()).then(() => { if (box.isConnected) img.src = u; }, () => { }); }).catch(() => { });
   },
