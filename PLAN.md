@@ -1366,3 +1366,5 @@ Site:
 
 ## Her sürümde
 - `sw.js` içindeki `VERSION`'ı artır.
+
+- [ ] 163–164, 119-2, 114b (2026-11-25, C hattı): ayrıntılar NEXT_SESSION.md'de. 163: github.io'da yalnız 13 kayıt, veriler sahibin Google hesabında (mohattiads) toplanacak, Ayarlar'da cihaz/bulut sayısı + hesap satırı. Sahip "şimdi yapmayacağız, söyleyince yaparız" dedi.
