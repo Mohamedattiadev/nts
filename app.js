@@ -3981,7 +3981,7 @@ const TagArc = {
     const i = this.i(), t = i ? this.list[i - 1][0] : null, f = S.filter;
     if (!t && !f.tag) return;
     haptic(10); f.tag = t && f.tag !== t ? t : null;
-    S.limit = 300; S.listFrom = null; S.cam = null; Pop.close(); render(); scrollTo({ top: 0, behavior: 'smooth' });
+    S.limit = 300; S.listFrom = null; Board.keepPlace(() => { S.cam = null; Pop.close(); render(); }); if (S.view !== 'board') scrollTo({ top: 0, behavior: 'smooth' });
   },
   stop() { cancelAnimationFrame(this.raf); this.raf = 0; },
   // spring onto `to` (slightly under-damped: it settles with a soft give, keeps the fling's speed); reduced motion jumps
@@ -5739,6 +5739,17 @@ const Board = {
     if (S.cam) this.apply();
     requestAnimationFrame(() => { if (!S.cam) this.fit(false); }); // 109a: a synced item must not throw the camera back (only a new board/range/view starts from fit)
   },
+  // a filter on the board keeps you where you were (sahip: "Aralık'tayken Linkler'e basınca beni başa atmasın"): the day in the middle of the
+  // screen and the zoom are noted, the board is redrawn with the filter, the camera goes back to that day (or the nearest one still there)
+  keepPlace(fn) {
+    if (S.view !== 'board' || !S.cam || !this.heads?.length) return fn();
+    const c = S.cam, [w, h] = this.size(), px = (w / 2 - c.x) / c.k, dy = (h / 2 - c.y) / c.k - (this.y0 || 0);
+    const at = this.heads.reduce((b, x) => Math.abs(x.x + x.w / 2 - px) < Math.abs(b.x + b.w / 2 - px) ? x : b), day = +new Date(at.k), k = c.k;
+    fn(); renderNow();
+    if (!this.heads?.length) return;
+    const t = this.heads.reduce((b, x) => Math.abs(+new Date(x.k) - day) < Math.abs(+new Date(b.k) - day) ? x : b);
+    S.cam = { k, x: w / 2 - (t.x + t.w / 2) * k, y: h / 2 - ((this.y0 || 0) + dy) * k }; this.apply();
+  },
   FAR: .14, // below this zoom the days fold into month tiles
   view(pad = 360) { // the visible part of the plane, in plane coordinates
     const c = S.cam; if (!c) return null; const p = pad / c.k, [w, h] = this.size();
@@ -7255,12 +7266,12 @@ async function importWhatsApp(file) {
     const text = log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${byIdIn(all, l.att)?.fileName}] ` : '') + l.text).join('\n').trim();
     if (g.length === 1 && !kids.length && !have.length) { // a lone message stays a plain note/link
       const [it] = itemsFromInput({ text: g[0].text }); if (!it) continue;
-      const one = { ...it, id, ts: g[0].ts, group: undefined, source: 'whatsapp', chat, archive: true, tags: [] };
+      const one = { ...it, id, ts: g[0].ts, group: undefined, source: 'whatsapp', chat, tags: [] };
       const old = one.type === 'link' && ix.url(one.url);
       if (old) { seenAgain(old, one); dupN.link++; continue; }
       ix.add(one); fresh.add(one.id); out.push(one); continue;
     }
-    out.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, text, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [],
+    out.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, text, ts: g[0].ts, source: 'whatsapp', chat, tags: [],
       conv: { n: g.length, who, end: g.at(-1).ts, log, kids: [...new Set([...kids.map(k => k.id), ...have])] }, ...(photos[0] ? { cover: photos[0].id } : {}) });
     out.push(...kids);
   }
@@ -7340,7 +7351,7 @@ const Mig = {
   APPS: [['keep', 'note', 'Google Keep', 'takeout.google.com → yalnız Keep → zip'], ['apple', 'note', 'Apple Notes', 'Notlar\'ı HTML olarak dışa aktar (ör. Exporter) → klasörü zip yap'],
     ['notion', 'layers', 'Notion', 'Ayarlar → Dışa aktar → Markdown & CSV → zip'], ['evernote', 'book', 'Evernote', 'Defter → Dışa aktar → .enex'],
     ['telegram', 'chat', 'Telegram', 'Masaüstü: Kaydedilen Mesajlar → ⋮ → Sohbeti dışa aktar → JSON (klasörü zip yap)']],
-  st: null, arch: true,
+  st: null, arch: false, // 163b: imports show on the board unless asked
   icon: k => Mig.APPS.find(a => a[0] === k)?.[1] || 'inbox',
   // a dropped zip: WhatsApp's (a chat .txt) or another app's export?
   async other(f) { const z = await (await needZip()).loadAsync(f), ps = Object.keys(z.files); return !ps.some(p => /\.txt$/i.test(p)) && !!NtsMigrate.detect(ps); },
@@ -8121,7 +8132,7 @@ function wire() {
     else if (b.dataset.unsave) return Saved.remove(b.dataset.unsave);
     else if ('sortprio' in b.dataset) { S.sortPrio = !S.sortPrio; try { localStorage.setItem('hn-sortprio', S.sortPrio ? '1' : ''); } catch { } }
     else return;
-    S.limit = 300; S.listFrom = null; S.cam = null; Pop.close(); render(); scrollTo({ top: 0, behavior: 'smooth' });
+    S.limit = 300; S.listFrom = null; Board.keepPlace(() => { S.cam = null; Pop.close(); render(); }); if (S.view !== 'board') scrollTo({ top: 0, behavior: 'smooth' });
   };
   for (const id of ['#viewSwitch', '#rail', '#railTab', '#popTypes', '#popLists', '#sideTags', '#sideProjects', '#sideMarks', '#popSaved', '#popSrc']) $(id).onclick = onFilter;
   Scrub.init();
@@ -8202,6 +8213,16 @@ async function reloadFromDB() {
   S.items = items; S.idx.clear(); items.forEach(indexItem); runSearch(); render(); AI.kick(); Sync.schedule();
 }
 
+// 163b (sahip: "neden arşive? direkt göstersin, arşivsiz"): WhatsApp imports no longer go to the archive; the ones already in come out once
+// (per device, then synced). Only what the import archived: a record you archived yourself (Temizle → arşiv sets 'sorted') stays there.
+const Unarch = {
+  async run() {
+    try { if (localStorage.getItem('hn-unarch-wa')) return; } catch { return; }
+    const l = S.items.filter(i => i.archive && i.source === 'whatsapp' && !i.parent && !i.deleted && !i.sorted);
+    if (l.length) await upsert(l.map(i => ({ ...i, archive: false })));
+    try { localStorage.setItem('hn-unarch-wa', '1'); } catch { }
+  },
+};
 const Boot = {
   async rest(cutoff) {
     let after = null, n = 0;
@@ -8235,6 +8256,7 @@ const Boot = {
   S.limit = 60; // 94e: the first screen draws 60 rows (fast on a phone); scrolling adds 300 at a time as before
   wire(); render();
   await Boot.rest(cutoff);
+  Unarch.run(); // 163b
   // back from Google: draw first, then trade the ?code for a session (never a blank screen while it waits)
   Cloud.finish().then(() => { if (Cloud.on()) { render(); Sync.run(); Live.start(); BridgeLink.publish(); } });
   BridgeLink.adopt();

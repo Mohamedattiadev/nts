@@ -186,11 +186,11 @@ for (const g of groups) {
   if (old) { saves.push({ id: 'sv' + fnv(old.id + id), saveOf: old.id, save: { ts: g[0].ts, src: 'whatsapp', chat, id } }); state.items[id] = 1; continue; }
   if (g.length === 1 && !kids.length && !have.length) {
     const urls = g[0].text.match(URL_RE) || [];
-    items.push(urls.length === 1 ? { id, type: 'link', url: urls[0], text: g[0].text.replace(urls[0], '').trim(), ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true }
-      : { id, type: 'note', text: g[0].text, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true });
+    items.push(urls.length === 1 ? { id, type: 'link', url: urls[0], text: g[0].text.replace(urls[0], '').trim(), ts: g[0].ts, source: 'whatsapp', chat, tags: [], pending: true }
+      : { id, type: 'note', text: g[0].text, ts: g[0].ts, source: 'whatsapp', chat, tags: [], pending: true });
   } else {
     const label = new Date(g[0].ts).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
-    items.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, ts: g[0].ts, source: 'whatsapp', chat, archive: true, tags: [], pending: true,
+    items.push({ id, type: 'note', title: `${label} · ${g.length} mesaj`, ts: g[0].ts, source: 'whatsapp', chat, tags: [], pending: true,
       text: log.map(l => (who.length > 1 ? l.who + ': ' : '') + (l.att ? `[${kids.find(x => x.id === l.att)?.fileName || snap.find(x => x.id === l.att)?.file || 'dosya'}] ` : '') + l.text).join('\n').trim(),
       conv: { n: g.length, who, end: g.at(-1).ts, log, kids: [...new Set([...kids.map(x => x.id), ...have])] }, ...(photos[0] ? { cover: photos[0].id } : {}) }, ...kids);
   }

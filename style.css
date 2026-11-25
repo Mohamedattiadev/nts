@@ -2798,3 +2798,15 @@ dialog.clean .d-body { gap: 12px; }
   text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); }
 @media (prefers-reduced-motion: reduce) { .zc-svg, .zc-lbls { transition: none; } }
 .zc-l.zc-hide { visibility: hidden; }
+/* 163c (sahip: "daha düzenli, başlıklar iyi okunsun"): month tiles — name and count on one line, at most 2 lines of summary, the pictures
+   always at the bottom in a neat 2×2, every tile of a row the same height; bigger, calmer type */
+.my-y { font-size: calc(22px * var(--fs, 1)); letter-spacing: -.02em; padding-top: 10px; }
+.my-ms { gap: 8px; }
+.m-tile { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; column-gap: 6px; row-gap: 4px; min-height: 140px; padding: 10px 10px 9px; border-radius: 12px; }
+.m-name { grid-column: 1; font-size: calc(14.5px * var(--fs, 1)); font-weight: 750; letter-spacing: -.01em; color: var(--text); }
+.m-n { grid-column: 1; margin-top: -3px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; font-variant-numeric: tabular-nums; }
+.m-sum { grid-column: 1 / -1; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; -webkit-line-clamp: 2; }
+.m-pics { grid-column: 1 / -1; align-self: end; gap: 4px; margin-top: 2px; }
+.m-pics .m-pic { border-radius: 6px; }
+.m-tile.empty { display: flex; min-height: 140px; width: 100%; box-sizing: border-box; }
+.m-tile.empty .m-name { color: var(--muted); font-weight: 600; }
