@@ -10,7 +10,7 @@ const ZC = {
   list: [], els: new Map(), arrows: [],
   NS: 'http://www.w3.org/2000/svg',
   sv(tag, at) { const e = document.createElementNS(this.NS, tag); for (const k in at) e.setAttribute(k, at[k]); return e; },
-  topic: i => i.project || (i.tags || [])[0] || null,
+  topic: i => (i.tags || [])[0] || i.project || null, // 119-3: the owner groups by tags ("etiketlere göre"); a project counts when there is no tag
   // --- model: connected cards with the same topic (grid hash, so 10k cards stay cheap) ---
   build() {
     const M = Board.M; this.list = []; this.byCard = new Map(); this._ak = null;

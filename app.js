@@ -5703,10 +5703,15 @@ const Board = {
     const rb = $('#rangeBtn'); if (rb) { const lab = rangeShort() + (onMain() && Range.arch() ? ' + arşiv' : ''), off = Range.get() !== Range.def() || (onMain() && Range.arch()); // 153: the chosen range is a chip by the zoom box ("6 ay ×")
       rb.innerHTML = `${ic('clock', 'sm')}<span>${lab}</span>`; rb.ariaLabel = `Panoda göster: ${rangeLabel()}${onMain() && Range.arch() ? ', arşiv dahil' : ''}`; rb.hidden = false; rb.classList.toggle('set', off);
       const rx = $('#rangeX'); rx.hidden = !off; rx.title = `${RSHORT[Range.def()]} aralığına dön`; }
+    const lb = $('#layoutBtn'); if (lb) { const topic = this.mode() === 'topic'; lb.hidden = false; lb.innerHTML = `${ic(topic ? 'layers' : 'cal', 'sm')}<span>${topic ? 'Etiket' : 'Zaman'}</span>`; lb.setAttribute('aria-pressed', String(topic));
+      lb.title = lb.ariaLabel = topic ? 'Düzen: etiketlere göre — günlere göre diz' : 'Düzen: günlere göre — etiketlere göre diz'; lb.onclick = () => this.setMode(topic ? 'time' : 'topic'); }
     const bn = $('#boardName'), bnm = onMain() ? 'Genel' : S.board; if (bn) { bn.textContent = bnm; const bp = $('#boardBtn'); bp.title = bp.ariaLabel = `Pano: ${bnm} — değiştir`; bp.classList.toggle('bp-other', !onMain()); } // 116: the logo is the board picker (151: not 'sub' — that is the 2-line clamped subtitle class and stacked logo/name/⌄)
     for (const i of placed) this.M.set(i.id, { i, x: posOf(i).x, y: posOf(i).y, w: i.sticky ? (i.sticky === 'text' ? 420 : i.w || 180) : this.COLW, h: i.sticky ? this.est(i) + 200 : this.est(i) + 40 });
     const days = []; let last = '';
     for (const i of free) { const k = dayKey(i.ts); if (k !== last) { days.push({ k, items: [] }); last = k; } days.at(-1).items.push(i); }
+    const topic = this.mode() === 'topic'; // 119-3: "Konu" — the free cards stand in one block per topic (biggest first, no topic last), each a cluster from afar
+    if (topic) { const g = new Map(); for (const i of free) { const k = ZC.topic(i) || ''; (g.get(k) || g.set(k, []).get(k)).push(i); }
+      days.length = 0; for (const [k, items] of [...g].sort((a, b) => (!a[0]) - (!b[0]) || b[1].length - a[1].length)) days.push({ k: k || 'Etiketsiz', items, topic: true }); }
     let cx = x0; const today = dayKey(now()), { links: rl } = relIndex();
     // 129: linked cards (same group / related / own links) stand one under the other with a 48 px gap, so the wire between them shows;
     // a linked run is not split across columns (a column may grow by 2 for it)
@@ -5726,11 +5731,11 @@ const Board = {
       }
       const x = cx, cw = (col + 1) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
       for (const p of pos) this.M.set(p.i.id, { i: p.i, x: x + p.col * (this.COLW + this.IN), y: p.y, w: this.COLW, h: p.h, auto: true });
-      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, alt: n0 % 2, today: d.k === today });
+      this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, alt: n0 % 2, today: !topic && d.k === today, topic: !!d.topic });
     }
     plane.style.setProperty('--dayh', Math.max(320, ...this.heads.map(h => h.h + 20)) + 'px'); // 109d: the line between days runs as tall as the tallest day, not a stub next to a 1-card day
     // months for the far-out view: each spans its days' columns
-    this.months = []; for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
+    this.months = []; if (!topic) for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
     this.deg = this.degrees();
@@ -5750,6 +5755,9 @@ const Board = {
     const t = this.heads.reduce((b, x) => Math.abs(+new Date(x.k) - day) < Math.abs(+new Date(b.k) - day) ? x : b);
     S.cam = { k, x: w / 2 - (t.x + t.w / 2) * k, y: h / 2 - ((this.y0 || 0) + dy) * k }; this.apply();
   },
+  // 119-3: two layouts, per device: 'time' (days, as before) · 'topic' (one block per topic)
+  mode() { if (this._mode == null) { try { this._mode = localStorage.getItem('hn-blayout') === 'topic' ? 'topic' : 'time'; } catch { this._mode = 'time'; } } return this._mode; },
+  setMode(m) { this._mode = m; try { localStorage.setItem('hn-blayout', m); } catch { } this._key = null; S.cam = null; render(true); toast(m === 'topic' ? 'Pano etiketlere göre dizildi' : 'Pano günlere göre dizildi', 1800, m === 'topic' ? 'layers' : 'cal'); },
   FAR: .14, // below this zoom the days fold into month tiles
   view(pad = 360) { // the visible part of the plane, in plane coordinates
     const c = S.cam; if (!c) return null; const p = pad / c.k, [w, h] = this.size();
@@ -5763,7 +5771,7 @@ const Board = {
   },
   cull() {
     if (!this.M) return; const v = this.view(); if (!v) return;
-    const plane = $('#plane'), frag = document.createDocumentFragment(), fresh = [], far = S.cam.k < this.FAR;
+    const plane = $('#plane'), frag = document.createDocumentFragment(), fresh = [], far = S.cam.k < this.FAR && this.mode() !== 'topic';
     $('#board').classList.toggle('months', far);
     const mg = $('#months');
     if (far) { // semantic zoom: the days fold into months, a year per row ("Mart 2024 · 312 kayıt" + pictures), readable at any distance
@@ -5793,9 +5801,10 @@ const Board = {
     for (const h of this.heads) {
       const el = this.mountedHeads.get(h.k), inn = h.x < v.x2 && h.x + h.w > v.x1;
       if (inn && !el) { // 92: each day is one soft band (alternating tone, today in the accent) with its head on top: "Dün · 20 Kasım Cuma"
-        const e = document.createElement('div'), l = fmtDay(h.k), rel = l === 'Bugün' || l === 'Dün';
-        e.className = 'day-band' + (h.alt ? ' alt' : '') + (h.today ? ' today' : '');
-        e.innerHTML = `<div class="col-head"><span class="l">${l}${rel ? `<span class="dt"> · ${fmtDay0d(h.k)}</span>` : ''}</span><span class="s">${shortDay(h.k)}</span><span class="cnt">${h.n}</span></div>`;
+        const e = document.createElement('div'), l = h.topic ? esc(h.k.charAt(0).toLocaleUpperCase('tr') + h.k.slice(1)) : fmtDay(h.k), rel = !h.topic && (l === 'Bugün' || l === 'Dün');
+        e.className = 'day-band' + (h.alt ? ' alt' : '') + (h.today ? ' today' : '') + (h.topic ? ' topic' : '');
+        if (h.topic && h.k !== 'Etiketsiz') e.style.setProperty('--tc', tagCol(h.k));
+        e.innerHTML = `<div class="col-head"><span class="l">${l}${rel ? `<span class="dt"> · ${fmtDay0d(h.k)}</span>` : ''}</span><span class="s">${h.topic ? l : shortDay(h.k)}</span><span class="cnt">${h.n}</span></div>`;
         Object.assign(e.style, { left: h.x - 12 + 'px', top: h.y - 12 + 'px', width: h.w + 24 + 'px', height: h.h + 20 + 'px' }); e.style.setProperty('--w', h.w + 'px');
         frag.appendChild(e); this.mountedHeads.set(h.k, e); }
       else if (!inn && el) { el.remove(); this.mountedHeads.delete(h.k); }

@@ -2810,3 +2810,7 @@ dialog.clean .d-body { gap: 12px; }
 .m-pics .m-pic { border-radius: 6px; }
 .m-tile.empty { display: flex; min-height: 140px; width: 100%; box-sizing: border-box; }
 .m-tile.empty .m-name { color: var(--muted); font-weight: 600; }
+/* 119-3: "Konu" layout — each block's head carries the topic's colour */
+.day-band.topic .col-head .l, .day-band.topic .col-head .s { color: var(--tc, var(--text)); }
+#layoutBtn[aria-pressed="true"] { color: var(--accent); }
+#board.zc-on .day-band.topic .col-head { opacity: 0; } /* the cluster title says it already */
