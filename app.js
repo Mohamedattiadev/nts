@@ -5758,14 +5758,25 @@ const Board = {
     if (S.view !== 'board' || !S.cam || !this.heads?.length) return fn();
     const c = S.cam, [w, h] = this.size(), px = (w / 2 - c.x) / c.k, dy = (h / 2 - c.y) / c.k - (this.y0 || 0);
     const at = this.heads.reduce((b, x) => Math.abs(x.x + x.w / 2 - px) < Math.abs(b.x + b.w / 2 - px) ? x : b), day = +new Date(at.k), k = c.k;
-    fn(); renderNow();
+    this.flip(() => { fn(); renderNow(); }); // 166
     if (!this.heads?.length) return;
     const t = this.heads.reduce((b, x) => Math.abs(+new Date(x.k) - day) < Math.abs(+new Date(b.k) - day) ? x : b);
     S.cam = { k, x: w / 2 - (t.x + t.w / 2) * k, y: h / 2 - ((this.y0 || 0) + dy) * k }; this.apply();
   },
   // 119-3: two layouts, per device: 'time' (days, as before) · 'topic' (one block per topic)
   mode() { if (this._mode == null) { try { this._mode = localStorage.getItem('hn-blayout') === 'topic' ? 'topic' : 'time'; } catch { this._mode = 'time'; } } return this._mode; },
-  setMode(m) { this._mode = m; try { localStorage.setItem('hn-blayout', m); } catch { } this._key = null; S.cam = null; render(true); toast(m === 'topic' ? 'Pano etiketlere göre dizildi' : 'Pano günlere göre dizildi', 1800, m === 'topic' ? 'layers' : 'cal'); },
+  // 166: cards glide from where they were to where they now stand (layout switch, filter): measured on screen before and after, 220 ms
+  flip(fn) {
+    if (reduced() || S.view !== 'board') return fn();
+    const old = new Map(); for (const c of document.querySelectorAll('#plane > .bcard')) { const r = c.getBoundingClientRect(); if (r.width) old.set(c.dataset.id, r); }
+    fn();
+    requestAnimationFrame(() => requestAnimationFrame(() => { let n = 0; const k = S.cam?.k || 1;
+      for (const c of document.querySelectorAll('#plane > .bcard')) { if (n > 220) break; const o = old.get(c.dataset.id), r = c.getBoundingClientRect(); if (!r.width) continue; n++;
+        if (o) { const dx = (o.left - r.left) / k, dy = (o.top - r.top) / k, s = o.width / r.width; if (Math.abs(dx) + Math.abs(dy) < 2 && Math.abs(s - 1) < .02) continue;
+          c.animate([{ transformOrigin: '0 0', transform: `translate(${dx}px,${dy}px) scale(${s})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+        else c.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: 'ease-out' }); } }));
+  },
+  setMode(m) { this._mode = m; try { localStorage.setItem('hn-blayout', m); } catch { } this.flip(() => { this._key = null; S.cam = null; render(true); renderNow(); this.fit(false); }); toast(m === 'topic' ? 'Pano etiketlere göre dizildi' : 'Pano günlere göre dizildi', 1800, m === 'topic' ? 'layers' : 'cal'); },
   // 119-5 (sahip: "yan yana olmasına gerek yok, Obsidian grafiğindeki dağılım gibi"): the topic islands spread around the biggest one on a
   // spiral (first free spot, 140 px apart), with a small seeded jitter, so the board reads like a map of topics, not a strip
   packTopics(blocks, x0, y0) {
@@ -5809,8 +5820,12 @@ const Board = {
             : `<span class="m-tile empty"><span class="m-name">${l}</span></span>`; }).join('')}</div></div>`).join('') + '<p class="hint my-tip">Bir aya dokun: o günlere yaklaşır. Yakınlaşınca kartlar geri gelir.</p>';
         mg._key = key; hookThumbs(mg);
       }
+      if (mg.hidden && !reduced()) { // 166: the month tiles grow out of where you zoomed, quickly (no jump)
+        const r = $('#board').getBoundingClientRect(), z = this._zp || [r.width / 2, r.height / 2];
+        mg.style.transformOrigin = `${z[0]}px ${z[1]}px`; mg.animate([{ opacity: 0, transform: 'scale(1.12)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
       mg.hidden = false; BoardHint.update(); return;
     }
+    if (!mg.hidden && !reduced()) { const z = this._zp; plane.style.transformOrigin = ''; $('#board').animate([{ opacity: .35, filter: 'blur(2px)' }, { opacity: 1, filter: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); } // 166: back to the cards, softly
     mg.hidden = true;
     for (const [k, el] of this.mountedMonths || []) { el.remove(); this.mountedMonths.delete(k); }
     const inside = m => m.x < v.x2 && m.x + m.w > v.x1 && m.y < v.y2 && m.y + m.h > v.y1;
@@ -5918,6 +5933,7 @@ const Board = {
     if (!this._cq) this._cq = requestAnimationFrame(() => { this._cq = 0; this.cull(); });
   },
   zoomAt(px, py, f) {
+    this._zp = [px, py];
     const c = S.cam; if (!c) return; const k = Math.min(2.5, Math.max(this.minK(), c.k * f));
     c.x = px - (px - c.x) * (k / c.k); c.y = py - (py - c.y) * (k / c.k); c.k = k; this.apply();
   },
