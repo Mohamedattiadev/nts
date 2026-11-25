@@ -1186,10 +1186,10 @@ const TAG_ICONS = [[/kod|code|yaz[ıi]l[ıi]m|dev|program|github|cpu/, 'cpu'], [
 const TAG_COLS = ['blue', 'purple', 'green', 'orange', 'red', 'yellow'];
 // 130b: labels the AI saw in a picture (kedi, mavi, siyah-beyaz): short, lowercase, no '#', at most 6, never a copy of a user tag
 const cleanVtags = a => [...new Set(a.map(t => String(t).toLocaleLowerCase('tr').replace(/^#/, '').trim().replace(/\s+/g, '-')).filter(t => t && t.length <= 24))].slice(0, 6);
+const tagCol = t => { let h = 0; for (const ch of t.toLocaleLowerCase('tr')) h = (h * 31 + ch.codePointAt(0)) >>> 0; return `var(--c-${TAG_COLS[h % TAG_COLS.length]})`; };
 function tagChip(t) {
   const k = t.toLocaleLowerCase('tr'), icn = (TAG_ICONS.find(([re]) => re.test(k)) || [, 'hash'])[1];
-  let h = 0; for (const ch of k) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-  return `<span class="tg" style="--tc:var(--c-${TAG_COLS[h % TAG_COLS.length]})" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
+  return `<span class="tg" style="--tc:${tagCol(t)}" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
 }
 function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
@@ -1259,8 +1259,9 @@ function monthJump(anchor) {
     document.addEventListener('pointerdown', e => { if (!e.target.closest('#jumpPop,[data-ljump]')) p.hidden = true; }); }
   const M = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
   p._anchor = anchor;
-  p.innerHTML = Heat.html(visible()) + [...years].map(([y, ms]) => `<div class="side-label">${y}</div><div class="jm">${M.map((l, n) => { const k = `${y}-${String(n + 1).padStart(2, '0')}`, c = by.get(k); return `<button class="jm-b${c ? '' : ' none'}" ${c ? `data-month="${k}"` : 'disabled'} title="${c ? c + ' kayıt' : ''}">${l}${c ? `<small>${c}</small>` : ''}</button>`; }).join('')}</div>`).join('') || '<p class="hint">Kayıt yok.</p>';
-  p.hidden = false; const hs = p.querySelector('.heat-scroll'); if (hs) hs.scrollLeft = Heat.year === new Date().getFullYear() ? hs.scrollWidth : 0;
+  p.innerHTML = '<div class="ddial"></div>' + Heat.html(visible()) + [...years].map(([y, ms]) => `<div class="side-label">${y}</div><div class="jm">${M.map((l, n) => { const k = `${y}-${String(n + 1).padStart(2, '0')}`, c = by.get(k); return `<button class="jm-b${c ? '' : ' none'}" ${c ? `data-month="${k}"` : 'disabled'} title="${c ? c + ' kayıt' : ''}">${l}${c ? `<small>${c}</small>` : ''}</button>`; }).join('')}</div>`).join('') || '<p class="hint">Kayıt yok.</p>';
+  p.hidden = false; DateDial.mount(p.querySelector('.ddial'), k => { p.hidden = true; showFrom(dayEnd(k)); }); // 123-2: the date dial on top
+  const hs = p.querySelector('.heat-scroll'); if (hs) hs.scrollLeft = Heat.year === new Date().getFullYear() ? hs.scrollWidth : 0;
   const r = anchor.getBoundingClientRect(); p.style.top = r.bottom + 6 + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.right - p.offsetWidth)) + 'px';
 }
 const galleryMedia = items => { const from = S.listFrom ? Math.max(0, items.findIndex(i => i.ts <= S.listFrom)) : 0;
@@ -3942,7 +3943,8 @@ const TagArc = {
   },
   draw() { // labels + detents for the current list
     const deg = this.step * 180 / Math.PI, R = this.R, cut = s => s.length > 11 ? s.slice(0, 10) + '…' : s;
-    $('.tarc-txt', this.dial).innerHTML = Array.from({ length: this.n }, (_, i) => `<text transform="rotate(${(i * deg).toFixed(2)}) translate(0 ${-R})">${esc(cut(this.label(i)))}</text>`).join('');
+    $('.tarc-txt', this.dial).innerHTML = Array.from({ length: this.n }, (_, i) => `<text transform="rotate(${(i * deg).toFixed(2)}) translate(0 ${-R})">${esc(cut(this.label(i)))}</text>`).join('')
+      + Array.from({ length: this.n - 1 }, (_, i) => `<circle class="tarc-dot" r="3.2" transform="rotate(${((i + 1) * deg).toFixed(2)}) translate(0 ${-R + 13})" style="fill:${tagCol(this.list[i][0])}"/>`).join(''); // 123-2 (t-B3): each topic its colour
     $('.tarc-ticks', this.dial).innerHTML = Array.from({ length: this.n * 2 - 1 }, (_, k) => `<line class="${k % 2 ? '' : 'm'}" transform="rotate(${(k * deg / 2).toFixed(2)})" x1="0" x2="0" y1="${-R + 21}" y2="${-R + (k % 2 ? 24 : 26)}"/>`).join('');
     this.T = [...this.dial.querySelectorAll('text')]; this.on = -1; this.sel = -1;
     this.dial.setAttribute('aria-valuemax', this.n - 1);
@@ -3965,7 +3967,7 @@ const TagArc = {
     let p = this.pos; if (p < 0) p = p * .35; else if (p > n - 1) p = n - 1 + (p - n + 1) * .35; // rubber band past the ends
     this.rot.setAttribute('transform', `translate(${this.W / 2} ${this.Y + this.R}) rotate(${(-p * deg).toFixed(3)})`);
     const i = this.i(), sel = this.cur ? this.list.findIndex(t => t[0] === this.cur) + 1 : 0;
-    if (i !== this.on) { this.T[this.on]?.classList.remove('on'); this.T[i]?.classList.add('on'); if (feel && this.on >= 0) haptic(3); this.on = i; this.button(); }
+    if (i !== this.on) { this.dial.parentNode.style.setProperty('--tc', i ? tagCol(this.list[i - 1][0]) : 'var(--muted)'); this.T[this.on]?.classList.remove('on'); this.T[i]?.classList.add('on'); if (feel && this.on >= 0) haptic(3); this.on = i; this.button(); }
     if (sel !== this.sel) { this.T[this.sel]?.classList.remove('sel'); if (sel) this.T[sel]?.classList.add('sel'); this.sel = sel; this.button(); }
   },
   button() {
