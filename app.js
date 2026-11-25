@@ -5721,24 +5721,26 @@ const Board = {
     let cx = x0; const today = dayKey(now()), { links: rl } = relIndex();
     // 129: linked cards (same group / related / own links) stand one under the other with a 48 px gap, so the wire between them shows;
     // a linked run is not split across columns (a column may grow by 2 for it)
-    const tied = (a, b) => !!a && ((a.group && a.group === b.group) || !!rl.get(a.id)?.has(b.id));
+    const tied = (a, b) => !!a && ((a.group && a.group === b.group) || !!rl.get(a.id)?.has(b.id)), blocks = [];
     for (const [n0, d] of days.entries()) {
       { const key = i => ZC.topic(i) ?? '#' + i.id, first = new Map(); d.items.forEach((i, n) => { if (!first.has(key(i))) first.set(key(i), n); }); // 119-1: a day's cards of one topic stand together (time order inside), so they read as a cluster from far away
         d.items = d.items.map((i, n) => [i, n]).sort((x, y) => first.get(key(x[0])) - first.get(key(y[0])) || x[1] - y[1]).map(x => x[0]); }
       const left = new Set(d.items), seq = [];
       for (const i of d.items) { if (!left.has(i)) continue; const q = [i]; left.delete(i);
         while (q.length) { const c = q.shift(); seq.push(c); for (const o of d.items) if (left.has(o) && tied(c, o)) { left.delete(o); q.push(o); } } }
-      const pos = []; let col = 0, n = 0, y = y0 + 30, prev = null;
+      const pos = [], per = topic ? Math.max(this.PER, Math.round(Math.sqrt(d.items.length) * 1.6)) : this.PER; let col = 0, n = 0, y = y0 + 30, prev = null; // 119-5: a topic is a squarish island, not a strip
       for (const i of seq) {
         const t = tied(prev, i);
-        if (n >= this.PER && !(t && n < this.PER + 2)) { col++; n = 0; y = y0 + 30; prev = null; }
+        if (n >= per && !(t && n < per + 2)) { col++; n = 0; y = y0 + 30; prev = null; }
         else if (prev) y += t ? 48 : 14;
         const h = this.est(i); pos.push({ i, col, y, h }); y += h; n++; prev = i;
       }
+      if (topic) { blocks.push({ d, pos, cw: (col + 1) * (this.COLW + this.IN) - this.IN, bh: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, n0 }); continue; }
       const x = cx, cw = (col + 1) * (this.COLW + this.IN) - this.IN; cx += cw + this.GAP;
       for (const p of pos) this.M.set(p.i.id, { i: p.i, x: x + p.col * (this.COLW + this.IN), y: p.y, w: this.COLW, h: p.h, auto: true });
       this.heads.push({ k: d.k, n: d.items.length, x, y: y0, w: cw, h: Math.max(...pos.map(p => p.y + p.h + 14)) - y0, alt: n0 % 2, today: !topic && d.k === today, topic: !!d.topic });
     }
+    if (topic) this.packTopics(blocks, x0, y0);
     plane.style.setProperty('--dayh', Math.max(320, ...this.heads.map(h => h.h + 20)) + 'px'); // 109d: the line between days runs as tall as the tallest day, not a stub next to a 1-card day
     // months for the far-out view: each spans its days' columns
     this.months = []; if (!topic) for (const h of this.heads) { const k = h.k.slice(0, 7), m = this.months.at(-1); if (m && m.k === k) { m.x2 = h.x + h.w; m.n += h.n; m.days.push(h.k); } else this.months.push({ k, x: h.x, x2: h.x + h.w, n: h.n, days: [h.k], y: y0 }); }
@@ -5764,6 +5766,20 @@ const Board = {
   // 119-3: two layouts, per device: 'time' (days, as before) · 'topic' (one block per topic)
   mode() { if (this._mode == null) { try { this._mode = localStorage.getItem('hn-blayout') === 'topic' ? 'topic' : 'time'; } catch { this._mode = 'time'; } } return this._mode; },
   setMode(m) { this._mode = m; try { localStorage.setItem('hn-blayout', m); } catch { } this._key = null; S.cam = null; render(true); toast(m === 'topic' ? 'Pano etiketlere göre dizildi' : 'Pano günlere göre dizildi', 1800, m === 'topic' ? 'layers' : 'cal'); },
+  // 119-5 (sahip: "yan yana olmasına gerek yok, Obsidian grafiğindeki dağılım gibi"): the topic islands spread around the biggest one on a
+  // spiral (first free spot, 140 px apart), with a small seeded jitter, so the board reads like a map of topics, not a strip
+  packTopics(blocks, x0, y0) {
+    const placed = [], M = 140, cx = x0, cy = y0;
+    const hit = (x, y, w, h) => placed.some(r => x < r.x + r.w + M && x + w + M > r.x && y < r.y + r.h + M && y + h + M > r.y);
+    for (const b of blocks) {
+      const w = b.cw, h = b.bh + 40; let x = cx - w / 2, y = cy - h / 2;
+      if (placed.length) for (let t = 0; t < 4000; t += .25) { const r = 60 * t, a = t * 1.1; x = cx + r * Math.cos(a) * 1.5 - w / 2; y = cy + r * Math.sin(a) - h / 2; if (!hit(x, y, w, h)) break; }
+      let sd = 7; for (const ch of b.d.k) sd = (sd * 31 + ch.charCodeAt(0)) % 9973; x += (sd % 61) - 30; y += ((sd >> 3) % 61) - 30;
+      placed.push({ x, y, w, h }); x = Math.round(x); y = Math.round(y);
+      for (const p of b.pos) this.M.set(p.i.id, { i: p.i, x: x + p.col * (this.COLW + this.IN), y: y + (p.y - y0), w: this.COLW, h: p.h, auto: true });
+      this.heads.push({ k: b.d.k, n: b.d.items.length, x, y: y - 0, w: w, h: b.bh, alt: b.n0 % 2, today: false, topic: true });
+    }
+  },
   FAR: .14, // below this zoom the days fold into month tiles
   view(pad = 360) { // the visible part of the plane, in plane coordinates
     const c = S.cam; if (!c) return null; const p = pad / c.k, [w, h] = this.size();

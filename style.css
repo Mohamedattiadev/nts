@@ -2826,3 +2826,4 @@ dialog.clean .d-body { gap: 12px; }
 .m-src { display: inline-flex; align-items: center; color: var(--muted); }
 .m-src svg { width: 12px; height: 12px; }
 .zc-l.below { transform-origin: 0 0; transform: scale(var(--zls)); }
+.day-band.topic::before { display: none; } /* 119-5: islands, no day lines */
