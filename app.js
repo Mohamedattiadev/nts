@@ -906,6 +906,9 @@ const Rich = {
     const h = u.hostname.replace(/^www\.|^m\./, ''), p = u.pathname;
     if (h === 'vimeo.com' || h === 'player.vimeo.com') { const v = p.match(/(?:^|\/)(\d{6,12})(?:\/|$)/); if (v) return { k: 'vimeo', src: `https://player.vimeo.com/video/${v[1]}?autoplay=1&dnt=1`, h: 135, label: 'Vimeo' }; }
     if (h === 'open.spotify.com') { const s = p.match(/^\/(?:intl-[\w-]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]{10,40})/); if (s) return { k: 'spotify', src: `https://open.spotify.com/embed/${s[1]}/${s[2]}`, h: s[1] === 'track' || s[1] === 'episode' ? 80 : 152, label: 'Spotify' }; }
+    // 165: Instagram reels / posts and TikTok videos play inside the card too (owner's months are full of them)
+    if (h === 'instagram.com') { const g = p.match(/^\/(?:[\w.]+\/)?(reel|reels|p|tv)\/([\w-]{5,40})/); if (g) return { k: 'insta', src: `https://www.instagram.com/${g[1] === 'reels' ? 'reel' : g[1]}/${g[2]}/embed/`, h: 430, label: 'Instagram' }; }
+    if (h === 'tiktok.com' || h === 'vm.tiktok.com') { const t = p.match(/\/video\/(\d{8,25})/); if (t) return { k: 'tiktok', src: `https://www.tiktok.com/embed/v2/${t[1]}`, h: 470, label: 'TikTok' }; }
     if (/^(google\.[a-z.]+|maps\.google\.[a-z.]+)$/.test(h) && (h.startsWith('maps.') || p.startsWith('/maps'))) {
       const place = p.match(/\/place\/([^/]+)/)?.[1], at = p.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/), q = u.searchParams.get('q') || u.searchParams.get('query') || (place && decodeURIComponent(place.replace(/\+/g, ' '))) || (at && at[1] + ',' + at[2]);
       if (q) return { k: 'map', src: `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`, h: 150, label: 'Harita', q };
@@ -3168,7 +3171,7 @@ function openItem(id) {
         <button class="side-row" role="menuitem" data-act="priv">${ic('lock', 'sm')}<span class="lbl">${i.priv ? 'Gizlemeyi kaldır' : 'Gizle'}</span></button><hr><button class="side-row danger" role="menuitem" data-act="del">${ic('trash', 'sm')}<span class="lbl">Sil</span></button></div></div>
     <div class="${media ? 'd-split' : 'd-info'}">${media ? '<div class="d-media">' : ''}
     ${yt ? `<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(i)}" title="YouTube" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
-    ${emb ? `<div class="d-emb ${emb.k}" style="${emb.k === 'vimeo' ? 'aspect-ratio:16/9' : `height:${emb.k === 'spotify' ? emb.h : 320}px`}"><iframe src="${esc(emb.src.replace(/[?&]autoplay=1/, ''))}" title="${emb.label}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+    ${emb ? `<div class="d-emb ${emb.k}" style="${emb.k === 'vimeo' ? 'aspect-ratio:16/9' : `height:${emb.k === 'spotify' ? emb.h : emb.k === 'insta' || emb.k === 'tiktok' ? 600 : 320}px`}"><iframe src="${esc(emb.src.replace(/[?&]autoplay=1/, ''))}" title="${emb.label}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
     ${media ? lcard : ''}
     ${i.type === 'file' ? `<div class="preview" id="filePrev"${k === 'image' && AR.has(i.id) ? ` style="aspect-ratio:${AR.get(i.id).toFixed(4)};max-height:70vh"` : ''}><div class="prev-empty">${ic(k === 'text' ? 'note' : k, 'xl')}<span>Önizleme hazırlanıyor…</span></div></div>` : ''}
     ${media ? '</div><div class="d-info">' : ''}
