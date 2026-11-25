@@ -2826,3 +2826,4 @@ dialog.clean .d-body { gap: 12px; }
 .zc-l.below { transform-origin: 0 0; transform: scale(var(--zls)); }
 .day-band.topic::before { display: none; } /* 119-5: islands, no day lines */
 .board-lite { position: absolute; left: 0; top: 0; pointer-events: none; } /* 168: far-out board painted as one picture */
+.t-filt { color: var(--accent); border-color: var(--accent); margin-bottom: 8px; }

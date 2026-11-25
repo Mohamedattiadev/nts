@@ -313,7 +313,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             hedef telefonda ilk ekran < 300 ms, her dokunuşa < 100 ms tepki (Playwright ile ölç, bench.log'a yaz);
         (f) PWA: uygulama ikonunda bekleyen görev sayısı (Badging API), masaüstünde `display_override: window-controls-overlay`.
         ✓ (e)+(f) 2026-11-24: ölçüm (tools/startbench.mjs, 300 kayıt, tekrar açılış, bench-start.log): ilk ekran masaüstü 2,7 sn → 0,13 sn, telefon (4x yavaş CPU) 2,8 sn → ~0,4 sn. Asıl sebep Google Fonts CSS'inin ekranı bloklamasıydı (her açılışta ağı bekliyordu, SW önbelleğe almıyordu): artık bloklamaz (önce sistem yazısı, Inter gelince geçer) ve sw.js yazı tipini kendi önbelleğinde tutar (çevrimdışı da). JSZip artık açılışta değil, zip/docx/yedek ilk kullanıldığında yüklenir (`needZip`; pdf.js ve KaTeX zaten böyleydi). İlk liste 60 satır çizer, kaydırınca eskisi gibi 300'er eklenir. Dokunma tepkisi en kötü: masaüstü ~110 ms, telefon 4x CPU'da ~170 ms (Event Timing). (f) ikon rozeti: açık görev sayısı (`Badge`, yalnız değişince); manifest `display_override: window-controls-overlay`: kurulu masaüstü uygulamada başlık çubuğu uygulamanın parçası, üstte ince sürükleme şeridi, sağdaki düğmeler pencere düğmelerinin soluna kayar (macOS'ta soldakiler sağa). Gerçek pencere başlığı + rozet sahibin cihazında denenmeli.
-- [ ] 95. **Öneriler (sahip onayladı 2026-11-21, ayrı ayrı yap: 95a–95g):** sesli not (basılı tut → kaydet → yapay zekâ yazıya döker); sabah özeti bildirimi
+- [x] 95. **Öneriler (sahip onayladı 2026-11-21, ayrı ayrı yap: 95a–95g):** sesli not (basılı tut → kaydet → yapay zekâ yazıya döker); sabah özeti bildirimi
         (dün kaydettiklerin + bugünkü görevler); okuma listesinde "3 gün sonra tekrar göster"; ekran görüntüsünde tarih görünce "göreve çevireyim mi";
         Ctrl+K komut paleti (her şeye tek yerden); ~~salt okunur paylaşılabilir pano linki~~ (95f KALDIRILDI, sahip); tarayıcı eklentisi (sağ tık → Nts'e gönder);
         gerçek native gerekirse aynı kodla Tauri (masaüstü) / Capacitor (telefon) sarmalayıcı.
@@ -433,7 +433,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             TİTREME YOK (sahip): yazarken liste/galeri/pano baştan çizilmez (innerHTML yok); eşleşmeyenler sınıfla solup gizlenir, kalanlar
             FLIP ile kayarak toplanır, kaydırma yerinde kalır, resimler yeniden yüklenmez; harf silince geri gelenler de yumuşak.
 
-- [ ] 104. **Akıllı arama** (sahip: "akıllı search olmalı, ona özel şeyler düşünülmeli"; 103b'den sonra):
+- [x] 104. **Akıllı arama** (sahip: "akıllı search olmalı, ona özel şeyler düşünülmeli"; 103b'den sonra):
         (a) doğal dil süzgeçleri: "geçen hafta / mart 2024 / dün" → tarih, "pdf / foto / link / video" → tür, "whatsapp annem / telefon" → kaynak;
             kutunun üstünde çip, × ile kalkar; (b) yazım hatası + Türkçe harf toleransı ("faturra", "sut", "gorev");
         (c) her yerde ara: OCR, PDF metni, okunur kopya, LaTeX, WhatsApp mesajları; sonuçta eşleşen yer vurgulu kısa alıntı;
@@ -457,6 +457,9 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             parantez, alanlar tr/en/ar, tarih/son:/is:/has:/boyut:/tür:/renk:/sırala:); sözdizimi yoksa eski hızlı bulanık arama. Bozuk parça
             çökertmez, metin olarak aranır + 1,2 sn sonra uyarı. norm() Arapça normalleştirme + Arapça sözcük bölme; kutu dir="auto".
             tools/test/query.test.mjs: 156 kontrol geçiyor, 10k kayıtta ~17 ms. Eksik: is:silindi çöpü göstermez (görünüm silinmişleri süzüyor).
+            [x] 104h (2026-11-25, C hattı): is:silindi artık çöpü gösterir: sonuç penceresi "Çöpte N kayıt eşleşiyor · Çöpte gör" → Çöp kutusu yalnız
+            eşleşenlerle açılır (üstte "Aramaya uyanlar · N ×" çipi süzgeci kaldırır; süzgeçliyken "Çöpü boşalt" gizli). Yazım hatasıyla bulunan sözcük
+            ("faturra" → faturası) artık sonuçta bütün olarak <mark>'lı. "mart" tek başına çip olur (105a'da yapılmıştı).
         [x] 104a+b+c (2026-11-23, B hattı): (a) Ara modunda sözdizimsiz cümle → çipler (query.js natural(): dün/bugün/geçen hafta/bu ay/geçen yıl,
             "mart 2024"/"2024 mart"/"march 2024"/"مارس 2024", "son 7 gün"/"last 2 weeks"/"آخر 7 أيام", pdf/foto/resim/link/video/ses/notlar, whatsapp/telefon/
             bilgisayar/yer imleri, "whatsapp annem" → sohbet; Türkçe ekler ("telefondan", "fotoğraflar", "mart'ta")); çipler sonuç penceresinin başında,
@@ -576,7 +579,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
 - [x] 106c. (2026-11-24, B hattı: sahibin 106-0'da seçtikleri c-cover-A + c-empty-A. Kapak: notun içindeki ilk resim (106b resim bloğu nts:<id> ya da https) kapak olur — pano kartının üstünde, listede satır resmi (noteCover, hasVisual, Prev.thumb); kapak resmi kart içindeki mini belgede tekrar yazılmaz (Rich.covLn), Board.est tahmini = gerçek (292/292, 223/223). Liste/pano alt satırında artık ham "![](nts:…)" görünmez (mdPlain resim satırını atar). Boş durumlar: simge kutusu yerine uygulamanın çizgi simgeleriyle aynı dilde küçük çizimler (EMPTY_ART: ilk açılış kutu, bulunamadı, süzgeç, galeri, konular, görevler; gri çizgi + tek vurgu rengi çizgi, dolgu rengi yok); yeni "Bu süzgeçte kayıt yok" / "Bu süzgeçte görsel yok" durumu + "Süzgeci kaldır" düğmesi (data-do=unfilter). Cam efekti YAPILMADI: sahip 106-0'da c-glass-A/B'yi seçmedi (cam ayarı 121'de ayrı). Galeriye not kapakları eklenmedi (galeri = medya). Test: 4 yapı, konsol hatası 0, phone-audit (liste/süzgeç) 0; ekran görüntüleri design/106c/. sw v74)
 - [x] 106b. (2026-11-24, B hattı: yeni ed.js `Ed` — kayıt penceresindeki Not alanı artık zengin düzenleyici, saklama yine Markdown (bir satır = bir blok; dokunulmayan not birebir aynı kalır). Sahibin seçtikleri: b-menu-C klavye üstü şerit (telefon: + · ☐ · • · H · B · I · ↶ ↷ · ✓, visualViewport ile klavyenin üstünde), b-sheet-A "+" alt sayfa (telefonda "/" da açar), b-fmt-A seçince biçim çubuğu (kalın, italik, vurgu ==, kod, link — prompt yok, çubukta adres kutusu —, başlık). Masaüstünde "/" imlecin altında liste, yazdıkça süzer (/ona → Onay listesi), ↑↓ Enter Esc. Bloklar: metin, başlık, alt başlık, onay listesi, madde, numaralı, alıntı, kod, tablo (Tab/Enter hücre-satır ekler), resim (ayrı dosya kaydı, parent=not, metinde nts:<id>), ayırıcı. Yazarken dönüşür: # ## - 1. [] > --- ``` ve **kalın** *eğik* ==vurgu== `kod`; Ctrl+B/I, Ctrl+Shift+7/8/9. Enter/Backspace blok kuralları (boş madde → paragraf, kod bloğunda boş satırda Enter → çıkış). Kendi geri al/yinele (Ctrl+Z/Y, şerit, telefon historyUndo). Yapıştırılan HTML → temiz Markdown (stil/script/renk yok), resim yapıştır/bırak → resim bloğu. Okuma sayfası notu Docs.md ile aynı biçimde çiziyor (onay kutuları, vurgu, resim); pano kartı Rich.isDoc: yapılı her not mini belge (başlık, madde, numara, alıntı, tablo satırı, kod, resim satırı); liste/galeri alt satırı ve başlık Markdown işaretsiz (Ed.plain). Test: t106b 4 yapılandırma, konsol hatası yok; sw v73)
 - [x] 106a. (2026-11-24, B hattı: app.js `Rich` (render bölümünün üstünde) — pano kartında yalnız kaydın gerçekten içerdiği: YouTube/Vimeo/Spotify/Google Haritalar linki kartta oynar (önce gerçek küçük resim + ▶; resim yoksa düz zemin + simge + "Kartta oynat"/"Haritayı kartta aç"; dokununca iframe, `Rich.on` pano yeniden çizilince de korur, kart büyür); YouTube'da meta.image yoksa i.ytimg küçük resmi (liste/galeri/pano hepsinde, hasVisual + Prev.thumb). Kayıt penceresi Vimeo/Spotify/haritayı da gömülü açar (.d-emb). WhatsApp sohbeti son 3 mesaj balonla (ilk konuşan solda). 130e: onay listeli not kartta mini belge (başlık/madde/onay satırları, en çok 6 satır + "+N satır", "2/4 bitti"), kutucuk açmadan işaretlenir (fare, dokunma, klavye Enter), metne [x]/[ ] yazılır. Kod dosyası (.py/.js/…): bu cihazdaki dosyanın ilk 8 satırı küçük bir boyayıcıyla (anahtar sözcük/dize/sayı/yorum, AA için renk+metin karışımı). PDF ilk sayfa kapağı zaten vardı (Prev.thumb). Board.est Rich.embH/bodyH ile: tahmin–gerçek fark ≤4 px (Spotify başlığı 2 satırsa 19). Site rengi YAPILMADI: kayıtta gerçek renk yok (microlink theme-color vermiyor), uydurmamak için (106s ölçütü 1). Not: kod dosyası başka cihazdaysa kart o yüksekliği boş tutar. Test: 4 yapı (1366/390 × açık/koyu), konsol hatası 0; ekran görüntüleri design/106a/.)
-- [ ] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
+- [x] 106. **Zengin arayüz (rich UI)** (sahip: "rich UI eklemek istiyorum" → önerilen sırayla, telefon önce + phone-audit 0):
         (a) zengin kart önizlemeleri: link büyük görsel + site rengi; YouTube/Spotify/Vimeo/harita kartta oynar (tıklayınca iframe, önce
             küçük resim); PDF ilk sayfa kapak; kod dosyası renkli (küçük, sonradan yüklenen vurgulayıcı); WhatsApp sohbeti balonlarla;
         (b) [x 106b] (sahip: TAM hâliyle kalsın, tablo + "/" menüsü dahil) zengin not düzenleyici: "/" blok menüsü (başlık, madde, onay listesi, alıntı, kod, tablo, resim, ayırıcı), Markdown kısayolları
@@ -591,7 +594,7 @@ Kural: senkron tamamen otomatik; "hangisi kalsın" diye asla sorulmaz, uygulama 
             çizelgesi, onay listesi, küçük grafik, cevap kartı, eylem düğmeleri (Pano yap / Göreve çevir / Kaydet / Aç). Bilinmeyen parça → düz metin.
             Akış (stream) varsa parçalar geldikçe çizilsin. Telefon önce.
 
-- [ ] 107. **Genel öneriler (sahip onayladı 2026-11-21), telefon önce + phone-audit 0:**
+- [x] 107. **Genel öneriler (sahip onayladı 2026-11-21), telefon önce + phone-audit 0:**
         (a) "Gelen kutusunu temizle" kartları (telefon): günde bir, kartlar tek tek; sağ = sakla, sol = sil (geri alınır), yukarı = göreve çevir,
             aşağı = arşiv; masaüstünde ok tuşları; kaç kart kaldı sayacı;
             [x] (2026-11-24, B hattı) `Clean` (app.js, weeklyUnseen altında), #clean penceresi: son 14 günün ayıklanmamış kayıtları (parent/sorted/archive/todo/
@@ -1057,7 +1060,7 @@ Arayüz:
         aynı, reduced-motion'da yok). tools/perf.mjs: scrubDrag + scrubDrop (takvim kapalı). Ölçüm 10k kayıt: telefon 4x sürükleme
         18 fps / 50 uzun görev → 48–55 fps / 2–5 (makine yüklü, oynak); masaüstü 57 fps, uzun görev 0. Bırakınca listenin yeniden çizimi
         (300 satır) masaüstü 130–210 ms, telefon 4x 0,5–1,3 s — eski render maliyeti, bu maddede değişmedi. Konsol hatası 0, 4 yapılandırma.
-- [ ] 157. **Sahibin 2026-11-24 akşam ekran görüntüleri** (4 iş, a–d ayrı commit olabilir):
+- [x] 157. **Sahibin 2026-11-24 akşam ekran görüntüleri** (4 iş, a–d ayrı commit olabilir):
         a) design/feedback-34.png: Ara/liste üstünde "Tarihe git" hap düğmesi turuncu "En yeniye dön" şeridinin sağ üst köşesine biniyor ("düzelt").
            İkisi aynı satırda yan yana ya da şerit görünürken "Tarihe git" şeridin içine girsin; hiçbir genişlikte çakışma 0 (ölç), açık + koyu, telefon.
            [x] a YAPILDI (2026-11-24, B hattı): "… ve öncesi" şeridi varken Sabitle/Tarihe git hapları şeridin İÇİNDE, sonunda; şerit yapışkan satır
@@ -1116,7 +1119,7 @@ Arayüz:
         Tek monitör var: çoklu monitör denenemedi, kural monitöre göre (cursor/monitor_w), place() farenin monitörünü seçer. install.sh worktree'den
         çalışsa da ANA klasörü yazar, eski kural bloğunu değiştirir. Görüntüler design/156b/. Not: arka plandaki kutu ana klasördeki kodu çalıştırır;
         ana klasör main'i çekince `nts-quick` sürecini yeniden başlat (pkill -f nts-quick.py; F7).
-- [ ] 158. **Sahibin 2026-11-24 akşam ekran görüntüleri (2)**:
+- [x] 158. **Sahibin 2026-11-24 akşam ekran görüntüleri (2)**:
         a) design/feedback-39.png (Galeri, 1366×768, "Ekim 2024 ve öncesi"): sağdaki önizleme kutusu ("Bir kartın üzerine gel…") zaman çizgisinin
            üstüne biniyor — sürükleme balonu "2026" kutunun arkasında yarım görünüyor (149'daki düzeltme yetmemiş ya da balon/sürükleme hâli
            hesaba katılmamış); ayrıca "En yeniye dön" şeridinin üst kenarının arkasında iki yarım hap düğme duruyor (157a'nın "Tarihe git"i?).

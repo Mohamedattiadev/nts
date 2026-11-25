@@ -283,7 +283,7 @@ const qHay = i => { let x = S.idx.get(i.id); if (!x) { indexItem(i); x = S.idx.g
 const qSrc = (i, s) => s === 'whatsapp' ? i.source === 'whatsapp' : s === 'share' ? i.source === 'share' : srcMatch(i, s);
 let qWarnT;
 function runSearch() {
-  const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; S.loose = null; S.dym = null; clearTimeout(qWarnT);
+  const q = S.q.trim(); S.qx = null; S.nl = null; S.semIds = null; S.loose = null; S.dym = null; S.trashQ = null; clearTimeout(qWarnT);
   if (!q || S.mode === 'ask' || (S.mode !== 'find' && (q.startsWith('?') || q.endsWith('?')))) { S.hits = null; if (!q) ImgFind.drop(); return; } // a question goes to the AI, it doesn't filter (in Ara mode it does)
   // 105b: in Ara the "?" closing a question is not a wildcard ("kaç sensör var?" searched "var" + one more letter and found nothing)
   if (window.NtsQuery && /[?؟]$/.test(q) && NtsQuery.intent(q) === 'ask') return runSearch0(q.replace(/\s*[?؟]+$/, ''));
@@ -295,6 +295,8 @@ function runSearch0(q) {
   if (window.NtsQuery && !NtsQuery.isPlain(q)) {
     const x = S.qx = NtsQuery.compile(q, { hay: qHay, raw: rawText, title: titleOf, kind: fileKind, site: i => i.meta?.site || domain(i.url || ''), src: qSrc });
     const toks = tokens(x.terms.join(' ')); S.hits = new Map();
+    // is:silindi: deleted items aren't search results (they can't be opened), the trash shows the ones that match
+    if (x.deleted) { const n = Trash.list().filter(i => x.test(i)).length; S.trashQ = { x, n }; return; }
     for (const i of S.items) {
       if (i.deleted || hid(i) || !x.test(i)) continue;
       S.hits.set(i.id, x.sort === 'old' ? -i.ts : x.sort === 'new' ? i.ts : (toks.length && scoreItem(i, toks, true)) || 1 + (i.starred ? .5 : 0));
@@ -391,7 +393,9 @@ function hl(text) {
   const out = esc(text);
   if (!S.hits || !S.q.trim()) return out;
   const re = hlRe(); if (!re) return out;
-  return out.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(re, '<mark>$1</mark>'));
+  // 104b: a word found only by the typo tolerance ("faturra" → faturası) is marked whole; entities (&amp;) stay as they are
+  const ty = re.ty, word = w => { re.lastIndex = 0; if (re.test(w)) { re.lastIndex = 0; return w.replace(re, '<mark>$1</mark>'); } const n = norm(w); return n.length >= 3 && ty.some(t => (n[0] === t[0] || n[0] === t[1]) && typoHit(n, t)) ? `<mark>${w}</mark>` : w; };
+  return out.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => tag || (ty.length ? txt.replace(/&[#\w]+;|[\p{L}\p{N}]+/gu, w => w[0] === '&' ? w : word(w)) : txt.replace(re, '<mark>$1</mark>')));
 }
 // 104c: where the words were found: when the title / first lines don't show it, a short piece around the first match
 // (picture text, PDF or file text, readable copy, conversation, summary) with a small label of where it came from
@@ -414,7 +418,8 @@ const snipHtml = (i, n, lead) => { const x = snip(i, n, lead); return x.sub ? (x
 function hlRe() {
   const toks = tokens(S.qx ? S.qx.terms.join(' ') : S.nl ? S.nl.rest : S.q).filter(t => t.length > 1);
   if (!toks.length) return null;
-  return new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
+  const re = new RegExp('(' + toks.map(t => [...t].map(c => CH[c] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('')).join('|') + ')', 'gi');
+  re.ty = toks.filter(t => t.length >= 4); return re; // 104b: the words that may have matched with a typo
 }
 // colour labels and priority (set by hand: window, right-click / long-press menu)
 const COLORS = [['red', 'Kırmızı'], ['orange', 'Turuncu'], ['yellow', 'Sarı'], ['green', 'Yeşil'], ['blue', 'Mavi'], ['purple', 'Mor']];
@@ -2102,14 +2107,14 @@ const Sample = {
 
 const Trash = {
   DAYS: 30,
-  list: () => S.items.filter(i => i.deleted && !i.purged && i.deletedAt && i.type !== 'vault' && i.type !== 'bridge').sort((a, b) => b.deletedAt - a.deletedAt),
+  list(f) { return S.items.filter(i => i.deleted && !i.purged && i.deletedAt && i.type !== 'vault' && i.type !== 'bridge' && (!f || f.test(i))).sort((a, b) => b.deletedAt - a.deletedAt); },
   async purge(items) { // tombstone only: other devices learn it is gone; the file goes too
     items = [...items, ...items.flatMap(i => (i.conv?.kids || []).map(byId).filter(Boolean))];
     for (const i of items) { DB.del('files', i.id); DB.del('files', i.id + ':t'); DB.del('files', i.id + ':m'); }
     await upsert(items.map(i => ({ id: i.id, deleted: true, purged: true, ts: i.ts, type: i.type })));
   },
   async sweep() { const old = this.list().filter(i => now() - i.deletedAt > this.DAYS * 864e5); if (old.length) await this.purge(old); },
-  open() {
+  open(q) {
     let d = $('#trash');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'trash'; d.className = 'drawer modal narrow'; document.body.appendChild(d);
@@ -2119,20 +2124,22 @@ const Trash = {
         const r = e.target.closest('[data-restore]'), k = e.target.closest('[data-kill]');
         if (r) { const i = byId(r.dataset.restore); await upsert([{ ...i, deleted: false, deletedAt: undefined }]); toast('Geri getirildi', 1800, 'check'); return this.draw(); }
         if (k) { await this.purge([byId(k.dataset.kill)]); return this.draw(); }
+        if (e.target.closest('[data-tall]')) { this.f = null; return this.draw(); }
         if (e.target.closest('[data-tmore]')) { this.lim += 300; return this.draw(); }
         if (e.target.closest('[data-empty]')) { const all = this.list(); if (!all.length) return; if (e.target.closest('[data-empty]').dataset.sure !== '1') { const b = e.target.closest('[data-empty]'); b.dataset.sure = '1'; b.textContent = `Emin misin? ${all.length} kayıt kalıcı silinir`; return; } await this.purge(all); toast('Çöp kutusu boşaldı', 2000, 'trash'); this.draw(); }
       });
     }
+    this.f = q?.test ? q : null; // 104d is:silindi: only the matching ones, a chip clears it
     this.lim = 100; this.draw(); Back.open(d); // 147c: a big trash (hundreds after a cleanup) draws 100 rows, the rest on request
   },
   draw() {
-    const d = $('#trash'), all = this.list(), lim = this.lim || 100, left = i => Math.max(1, this.DAYS - Math.floor((now() - i.deletedAt) / 864e5));
+    const d = $('#trash'), all = this.list(this.f), lim = this.lim || 100, left = i => Math.max(1, this.DAYS - Math.floor((now() - i.deletedAt) / 864e5));
     d.innerHTML = `<div class="d-body" tabindex="-1"><div class="d-head"><span class="type">${ic('trash', 'sm')}Çöp kutusu</span><span class="sp"></span><button class="icon-btn sm" data-x title="Kapat" aria-label="Kapat">${ic('x')}</button></div>
-      <p class="hint">Silinenler ${this.DAYS} gün burada durur, sonra kendiliğinden kalıcı silinir.</p>
+      <p class="hint">Silinenler ${this.DAYS} gün burada durur, sonra kendiliğinden kalıcı silinir.</p>${this.f ? `<div class="row"><button class="chip t-filt" data-tall title="Süzgeci kaldır" aria-label="Süzgeci kaldır: hepsini göster">${ic('search', 'sm')}Aramaya uyanlar · ${all.length}${ic('x', 'sm')}</button></div>` : ''}
       ${all.length ? `<div class="v-list">${all.slice(0, lim).map(i => { const k = i.type === 'draw' ? 'pen' : fileKind(i); return `<div class="v-row"><span class="v-av ${i.type}-c">${ic(k === 'text' ? 'note' : k, 'sm')}</span>
           <span class="v-t" style="flex:1"><b>${esc(i.type === 'draw' ? 'Çizim' : titleOf(i))}</b><small>${fmtDay(dayKey(i.deletedAt))} silindi · ${left(i)} gün kaldı</small></span>
           <button class="btn secondary sm" data-restore="${i.id}">Geri getir</button><button class="icon-btn sm danger" data-kill="${i.id}" title="Kalıcı sil" aria-label="Kalıcı sil">${ic('x', 'sm')}</button></div>`; }).join('')}</div>${all.length > lim ? `<button class="btn secondary sm t-more" data-tmore>${all.length - lim} kayıt daha göster</button>` : ''}
-        <div class="row" style="justify-content:flex-end"><button class="btn danger" data-empty>Çöpü boşalt</button></div>`
+        ${this.f ? '' : `<div class="row" style="justify-content:flex-end"><button class="btn danger" data-empty>Çöpü boşalt</button></div>`}`
         : `<p class="hint v-empty">Çöp kutusu boş.</p>`}</div>`;
   },
 };
@@ -2264,7 +2271,8 @@ const Find = {
     const dym = S.dym ? `<button class="btn secondary sm f-dym" data-dym="${esc(S.dym)}">Bunu mu demek istedin: <b dir="auto">${esc(S.dym)}</b></button>` : '';
     el.querySelector('.f-loose')?.remove(); const askq = window.NtsQuery && NtsQuery.intent(S.q) === 'ask'; // the "Soru gibi" button is below then
     if (want.length && (S.loose || dym)) g.insertAdjacentHTML('beforebegin', `<div class="f-loose">${S.loose === 'nofilter' ? 'Süzgeçlerle bir şey yok; süzgeçsiz bulunanlar' : S.loose === 'drop' ? `Hepsine uyan yok; “${esc(S.looseLabel)}” olmadan` : S.loose ? 'Hepsini içeren kayıt yok; en yakınlar' : ''}${dym}</div>`);
-    if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">${dym || 'Bulunamadı.'}<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button>${askq ? '' : `<button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>`}</div>`);
+    if (!want.length && S.trashQ) g.insertAdjacentHTML('beforeend', `<div class="f-none">${S.trashQ.n ? `Çöpte ${S.trashQ.n} kayıt eşleşiyor` : 'Çöpte eşleşen kayıt yok'}<button class="btn secondary sm" data-trashq>${ic('trash', 'sm')}Çöpte gör</button></div>`);
+    else if (!want.length) g.insertAdjacentHTML('beforeend', `<div class="f-none">${dym || 'Bulunamadı.'}<button class="btn secondary sm" data-mode="note">${ic('pen', 'sm')}Not olarak kaydet</button>${askq ? '' : `<button class="btn secondary sm" data-mode="ask">${ic('spark', 'sm')}${aiTo()} sor</button>`}</div>`);
     if (anim) {
       const moves = []; for (const [n, a] of before) { if (!n.isConnected) continue; const b = n.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top; if (dx || dy) moves.push([n, dx, dy]); }
       for (const [n, dx, dy] of moves) n.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.8,.2,1)' });
@@ -8144,6 +8152,7 @@ function wire() {
   };
   $('#hits').onclick = e => {
     if (e.target.closest('[data-clear]')) { clearBox(); return inp.focus(); }
+    if (e.target.closest('[data-trashq]')) { const x = S.trashQ?.x; hideHits(); Trash.open(x); return; }
     const nx = e.target.closest('[data-nlx]'); if (nx) { dropChip(+nx.dataset.nlx); return inp.focus(); }
     const dy = e.target.closest('[data-dym]'); if (dy) { // 105c: the fixed words replace the typed ones, the chips stay
       const v = S.nl ? (S.nl.chips.map(c => S.q.trim().slice(c.a, c.b)).join(' ') + ' ' + dy.dataset.dym).trim() : dy.dataset.dym;
