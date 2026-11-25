@@ -2818,3 +2818,10 @@ dialog.clean .d-body { gap: 12px; }
 .acct-cnt { display: block; margin-top: 2px; } .acct-cnt b { font-weight: 650; color: var(--text); } .acct-cnt b.low { color: var(--danger); }
 .acct-warn { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--hit) 12%, transparent); color: var(--text); }
 .acct-warn svg { flex: none; margin-top: 2px; color: var(--hit); }
+/* 114b: list rows fade instead of "…"; a small icon tells where a record came from */
+.item .title { display: block; -webkit-line-clamp: unset; max-height: 2lh; line-height: 1.4; }
+.item .sub { display: block; -webkit-line-clamp: unset; max-height: 2lh; line-height: 1.45; }
+.item .title.ov, .item .sub.ov { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat;
+  mask: linear-gradient(#000, #000) top / 100% calc(100% - 1lh) no-repeat, linear-gradient(90deg, #000 55%, transparent 96%) bottom / 100% 1lh no-repeat; }
+.m-src { display: inline-flex; align-items: center; color: var(--muted); }
+.m-src svg { width: 12px; height: 12px; }

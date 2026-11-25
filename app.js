@@ -1191,9 +1191,11 @@ function tagChip(t) {
   const k = t.toLocaleLowerCase('tr'), icn = (TAG_ICONS.find(([re]) => re.test(k)) || [, 'hash'])[1];
   return `<span class="tg" style="--tc:${tagCol(t)}" dir="auto">${ic(icn, 'sm')}${esc(t)}</span>`;
 }
+const SRC_IC = { whatsapp: 'chat', telegram: 'chat', pc: 'cpu', web: 'ext', share: 'share', bookmarks: 'star', keep: 'layers', apple: 'layers', notion: 'layers', evernote: 'layers' };
 function metaHtml(i, { tags = 2, acts = false, day = false, due = true } = {}) {
   const rel = relatedOf(i).filter(x => x.group !== i.group).length;
-  return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>
+  const sI = SRC_IC[i.source], sL = sI && srcLabel(i); // 114b: where it came from, as a small icon
+  return `<div class="meta"><span>${day ? fmtDay(dayKey(i.ts)) + ' ' : ''}${fmtTime(i.ts)}</span>${sI ? `<span class="m-src" title="${esc(sL || i.source)}" aria-label="${esc(sL || i.source)}">${ic(sI, 'sm')}</span>` : ''}
     ${i.type === 'link' ? `<span>${esc(domain(i.url))}</span>${i.dead ? `<span class="m-dead" title="Bu link artık açılmıyor">açılmıyor</span>` : ''}` : ''}
     ${i.type === 'file' && i.size ? `<span>${fmtSize(i.size)}</span>` : ''}
     ${i.starred ? ic('star', 'sm fill star-on') : ''}
@@ -1244,6 +1246,7 @@ function renderList(items, append = false) {
   hookThumbs(el);
   const m = $('#more');
   if (m) new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); S.limit += 300; render(); } }, { rootMargin: '600px' }).observe(m);
+  ListFade.run(el); // 114b
 }
 const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git" aria-label="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
 // "Tarihe git": every month that has items, newest first, with counts; picking one shows the list from there

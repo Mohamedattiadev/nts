@@ -34,3 +34,19 @@ const BoardPic = {
       const n = new Image(); n.src = u; (n.decode ? n.decode() : Promise.resolve()).then(() => { if (box.isConnected) img.src = u; }, () => { }); }).catch(() => { });
   },
 };
+// 114b: list rows: a long title / text fades out at the end of its last line (like the board), never "…". Only the first rows on the
+// page are measured (one read pass, then the writes); rows further down are measured when the list grows.
+const ListFade = {
+  run(el) {
+    this.el = el;
+    if (!this._w) { this._w = true; addEventListener('scroll', () => { if (this._q || S.view !== 'list') return; this._q = requestAnimationFrame(() => { this._q = 0; this.near(); }); }, { passive: true }); }
+    requestAnimationFrame(() => this.near());
+  },
+  // rows in content-visibility groups have no size until they are near the screen: measure those near it, once per row draw
+  near() {
+    const el = this.el; if (!el?.isConnected) return; const vh = innerHeight;
+    const rows = [...el.querySelectorAll('.item:not([data-fm])')].filter(r => { const b = r.getBoundingClientRect(); return b.height && b.bottom > -vh && b.top < 2 * vh; }).slice(0, 120);
+    const els = rows.flatMap(r => [...r.querySelectorAll(':scope > .body > .title, :scope > .body > .sub')]), ov = els.map(e => e.scrollHeight > e.clientHeight + 1);
+    els.forEach((e, k) => e.classList.toggle('ov', ov[k])); rows.forEach(r => r.dataset.fm = '1');
+  },
+};
