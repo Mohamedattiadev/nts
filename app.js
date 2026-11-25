@@ -1225,7 +1225,7 @@ function renderList(items, append = false) {
     let html = '', open = false;
     for (const i of list) {
       const dk = dayKey(i.ts);
-      if (dk !== lastDay) { if (open) html += '</div>'; open = false; html += `<div class="day" data-dk="${dk}">${fmtDay(dk)}<span class="cnt">${counts[dk]}</span>${Summ.day(dk) ? `<span class="d-sum" title="${aiOf()} özeti">${esc(Summ.day(dk))}</span>` : ''}</div>`; lastDay = dk; lastGroup = null; }
+      if (dk !== lastDay) { if (open) html += '</div>'; open = false; html += `<div class="day">${fmtDay(dk)}<span class="cnt">${counts[dk]}</span>${Summ.day(dk) ? `<span class="d-sum" title="${aiOf()} özeti">${esc(Summ.day(dk))}</span>` : ''}</div>`; lastDay = dk; lastGroup = null; }
       if (i.group !== lastGroup || !open) { if (open) html += '</div>'; html += '<div class="group">'; open = true; lastGroup = i.group; }
       html += itemRow(i);
     }
@@ -1245,7 +1245,7 @@ function renderList(items, append = false) {
   const m = $('#more');
   if (m) new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); S.limit += 300; render(); } }, { rootMargin: '600px' }).observe(m);
 }
-const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}${Cal._on === false ? `<button class="l-jump" data-lcal title="Takvimi aç" aria-label="Takvimi aç">${ic('cal', 'sm')}<span>Takvim</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git" aria-label="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
+const topBtns = (cls = '', pre = '') => `<div class="l-top ${cls}">${pre}${Saved.active() ? `<button class="l-jump" data-lpin title="Bu aramayı/filtreyi sol çubuğa sabitle">${ic('pin', 'sm')}<span>Sabitle</span></button>` : ''}<button class="l-jump" data-ljump title="Tarihe git" aria-label="Tarihe git">${ic('clock', 'sm')}<span>Tarihe git</span></button></div>`;
 // "Tarihe git": every month that has items, newest first, with counts; picking one shows the list from there
 function monthJump(anchor) {
   const by = new Map(); visible().forEach(i => { const k = dayKey(i.ts).slice(0, 7); by.set(k, (by.get(k) || 0) + 1); });
@@ -1261,9 +1261,7 @@ function monthJump(anchor) {
   p._anchor = anchor;
   p.innerHTML = Heat.html(visible()) + [...years].map(([y, ms]) => `<div class="side-label">${y}</div><div class="jm">${M.map((l, n) => { const k = `${y}-${String(n + 1).padStart(2, '0')}`, c = by.get(k); return `<button class="jm-b${c ? '' : ' none'}" ${c ? `data-month="${k}"` : 'disabled'} title="${c ? c + ' kayıt' : ''}">${l}${c ? `<small>${c}</small>` : ''}</button>`; }).join('')}</div>`).join('') || '<p class="hint">Kayıt yok.</p>';
   p.hidden = false; const hs = p.querySelector('.heat-scroll'); if (hs) hs.scrollLeft = Heat.year === new Date().getFullYear() ? hs.scrollWidth : 0;
-  let r = anchor.getBoundingClientRect();
-  if (r.bottom + p.offsetHeight + 14 > innerHeight && r.top > 120) { scrollBy(0, r.top - 60); r = anchor.getBoundingClientRect(); } // 158b: the pill sits low under the calendar: bring it up first (it is sticky)
-  p.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - p.offsetHeight - 8)) + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.right - p.offsetWidth)) + 'px';
+  const r = anchor.getBoundingClientRect(); p.style.top = r.bottom + 6 + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.right - p.offsetWidth)) + 'px';
 }
 const galleryMedia = items => { const from = S.listFrom ? Math.max(0, items.findIndex(i => i.ts <= S.listFrom)) : 0;
   return items.filter(i => i.type === 'file' || (i.type === 'link' && i.meta?.image)).slice(0, from + S.limit).filter(i => !S.listFrom || i.ts <= S.listFrom).slice(0, S.limit); };
@@ -1292,19 +1290,7 @@ function renderGallery(items) { // month headers stick to the top while scrollin
 // 157c (feedback-35): zoom layers — Ay (the month grid) → Yıl (12 small months, days tinted by how much they hold) → Yıllar (one row per
 // year, 12 month squares). Out: the title, the Ay/Yıl/Yıllar switch, "−", Ctrl+wheel or a pinch; in: a month/year, "+", Enter, the
 // same gestures over it. The new layer grows out of (or back into) the place it came from (FLIP, 200 ms). Shift+PageUp/PageDown = a year.
-// 158b (feedback-40): the calendar is no longer a view of its own: it sits folded/unfolded on top of the List (Pano · Liste · Galeri).
-// A day scrolls the list below IN PLACE to that day (the page stays, the day's head flashes); while the list scrolls the calendar marks
-// the day on top (and follows its month); ‹ › change the month and take the list there. Phone: one week row, a swipe down (or "Ay")
-// opens the month. While it shows, the time line on the right (149) is hidden — one date tool at a time. Old ?view=cal / hn-view 'cal'
-// open the List with the calendar unfolded.
 const Cal = {
-  LS: 'hn-lcal',
-  on() { if (this._on == null) { try { this._on = localStorage.getItem(this.LS) !== '0'; } catch { this._on = true; } } return S.view === 'list' && this._on; },
-  show(v) { this._on = !!v; try { localStorage.setItem(this.LS, v ? '1' : '0'); } catch { } },
-  toggle() { const v = !this.on(); this.show(v); if (S.view !== 'list') return setView('list'); this._ck = null; render(true); renderNow(); },
-  phone: () => innerWidth <= 700,
-  wkMode() { return this.phone() && !this.full && !this.zoom(); },
-  draw() { this._ck = null; this.render(visible()); }, // the calendar only: the list under it stays as it is
   WD: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
   Z: ['Ay', 'Yıl', 'Yıllar'],
   MS: Array.from({ length: 12 }, (_, k) => new Date(2000, k, 1).toLocaleDateString('tr-TR', { month: 'short' })),
@@ -1312,16 +1298,7 @@ const Cal = {
   month() { return S.calMonth || (S.calMonth = dayKey(now()).slice(0, 7)); },
   zoom() { return S.calZoom || 0; },
   key() { return this.month() + '|' + this.zoom(); }, // render's cache key
-  go(m, focusDay, follow = true) { S.calMonth = m; this._focus = focusDay || null; this._kb = !!document.activeElement?.closest?.('#cal');
-    if (focusDay && focusDay.length === 10) this.wk = focusDay; else if (follow) this.wk = null;
-    this.draw(); if (follow && !this.zoom()) this.toMonth(m); },
-  // ‹ › / the keys / a week swipe take the list along WITHOUT moving the page (the calendar stays under the finger): the list right
-  // under it is drawn from the end of that month / week ("… ve öncesi"); this month or later → the newest again
-  from(ts) {
-    const t = ts >= dayEnd(dayKey(now())) ? null : ts; if (t === (S.listFrom || null)) return;
-    S.listFrom = t; S.limit = 300; this._lock = performance.now() + 700; render();
-  },
-  toMonth(m) { this.from(new Date(+m.slice(0, 4), +m.slice(5), 1).getTime() - 1); },
+  go(m, focusDay) { S.calMonth = m; this._focus = focusDay || null; this._kb = !!document.activeElement?.closest?.('#cal'); render(); renderNow(); },
   step(n) { const [y, mo] = this.month().split('-').map(Number), d = new Date(y, mo - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; },
   // counts per day and per month, one pass over the items, kept while the list is the same (10k items: a few ms, once)
   counts(items) {
@@ -1344,17 +1321,15 @@ const Cal = {
   head(title, sum, nav, up) {
     const z = this.zoom();
     return `<div class="c-head"><h2 class="c-title">${up ? `<button class="c-up" data-cz="${z + 1}" title="Uzaklaş (−)" aria-label="${esc(title)} — uzaklaş">${esc(title)}</button>` : esc(title)}</h2><span class="c-sum">${sum}</span>
-      <span class="c-nav"><span class="c-zoom" role="group" aria-label="Yakınlık">${this.Z.map((n, k) => `<button class="c-z" data-cz="${k}" aria-pressed="${k === z}">${n}</button>`).join('')}</span>${nav}<button class="c-btn c-fold" data-cfold aria-label="Takvimi kapat" title="Takvimi kapat (zaman çizgisi geri gelir)">${ic('chev', 'sm')}</button></span></div>`;
+      <span class="c-nav"><span class="c-zoom" role="group" aria-label="Yakınlık">${this.Z.map((n, k) => `<button class="c-z" data-cz="${k}" aria-pressed="${k === z}">${n}</button>`).join('')}</span>${nav}</span></div>`;
   },
   navBtns(unit, isNow) {
     const keys = unit === 'ay' ? ['PageUp', 'PageDown'] : ['Shift+PageUp', 'Shift+PageDown'];
-    if (unit === 'hafta') keys[0] = keys[1] = '‹ ›';
     return `<button class="c-btn" data-cgo="-1" aria-label="Önceki ${unit}" title="Önceki ${unit} (${keys[0]})">${ic('chev', 'sm')}</button>${isNow ? '' : '<button class="c-btn c-today" data-cgo="0">Bugün</button>'}<button class="c-btn" data-cgo="1" aria-label="Sonraki ${unit}" title="Sonraki ${unit} (${keys[1]})">${ic('chev', 'sm')}</button>`;
   },
   render(items) {
-    const el = $('#cal'), z = this.zoom(), ck = [items, this.key(), this.wkMode(), this.wk, this.seen, dayKey(now())];
-    if (this._ck && ck.every((x, k) => x === this._ck[k])) return; this._ck = ck;
-    el.dataset.z = z; el.classList.toggle('wk', this.wkMode());
+    const el = $('#cal'), z = this.zoom();
+    el.dataset.z = z;
     if (z === 2) this.renderYears(el, items); else if (z === 1) this.renderYear(el, items); else this.renderMonth(el, items);
     const want = this._focus; this._focus = null;
     const sel = z ? '[data-cmo]' : '[data-cday]', tgt = (want && el.querySelector(`[data-cday="${want}"],[data-cmo="${want}"]`)) || el.querySelector(sel + '.today,' + sel + '.cur') || el.querySelector(sel);
@@ -1364,39 +1339,26 @@ const Cal = {
     if (!z) hookThumbs(el);
     this.fly();
   },
-  // phone week row: the week of the day the list shows (else today in this month, else the month's first day with items)
-  wkKey(m) {
-    const t = dayKey(now()), w = this.wk || this.seen;
-    if (w?.startsWith(m)) return w; if (t.startsWith(m)) return t;
-    const { day } = this.counts(visible()); for (let d = 1; d <= 31; d++) { const k = `${m}-${String(d).padStart(2, '0')}`; if (day.get(k)) return k; }
-    return m + '-01';
-  },
   renderMonth(el, items) {
     const m = this.month(), [y, mo] = m.split('-').map(Number), first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate();
     const lo = first.getTime(), hi = new Date(y, mo, 1).getTime(), by = new Map(); let total = 0;
     for (const i of items) { if (i.ts < lo || i.ts >= hi || i.type === 'draw') continue; const k = dayKey(i.ts); (by.get(k) || by.set(k, []).get(k)).push(i); total++; }
     const max = Math.max(1, ...[...by.values()].map(a => a.length)), today = dayKey(now()), lead = (first.getDay() + 6) % 7;
-    const wk = this.wkMode() && this.wkKey(m), wrow = wk ? Math.floor((lead + +wk.slice(8) - 1) / 7) : -1, row = k => Math.floor(k / 7);
-    const wkc = k => row(k) === wrow ? ' wk-on' : '';
     let cells = '';
-    for (let k = 0; k < lead; k++) cells += `<span class="c-day out${wkc(k)}" aria-hidden="true"></span>`;
+    for (let k = 0; k < lead; k++) cells += '<span class="c-day out" aria-hidden="true"></span>';
     for (let d = 1; d <= days; d++) {
-      const key = `${m}-${String(d).padStart(2, '0')}`, its = by.get(key) || [], n = its.length;
-      const media = its.filter(i => i.type === 'file' && ['image', 'video', 'pdf'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image)).slice(0, 3);
-      // up to 3 square pictures, else up to 3 kind icons (one per item), then "+N" for the rest
-      const body = media.length ? media.map(i => thumbBox(i, 'thumb c-pic')).join('')
-        : its.slice(0, 3).map(i => { const k = i.type === 'file' ? fileKind(i) : i.type === 'link' ? 'link' : 'note'; return `<span class="c-ico">${ic(k === 'text' ? 'note' : k, 'sm')}</span>`; }).join('');
-      const more = n - (media.length || Math.min(n, 3));
-      const lbl = `${F_DLW.format(new Date(y, mo - 1, d))}: ${n ? n + ' kayıt' : 'kayıt yok'}`, L = this.lvl(n, max);
-      cells += `<button class="c-day l${L}${key === today ? ' today' : ''}${key > today ? ' fut' : ''}${key === this.seen ? ' seen' : ''}${wkc(lead + d - 1)}" data-cday="${key}" tabindex="-1" aria-label="${esc(lbl)}"${n ? '' : ' aria-disabled="true"'}>
-        <span class="c-n">${d}</span>${n ? `<span class="c-dn" aria-hidden="true">${'<i></i>'.repeat(L)}</span><span class="c-th">${body}${more > 0 ? `<span class="c-more">+${more}</span>` : ''}</span>` : ''}</button>`;
+      const key = `${m}-${String(d).padStart(2, '0')}`, its = by.get(key) || [], n = its.length, media = its.filter(i => i.type === 'file' && ['image', 'video', 'pdf'].includes(fileKind(i)) || (i.type === 'link' && i.meta?.image)).slice(0, 3);
+      const body = media.length ? `<span class="c-th">${media.map(i => thumbBox(i, 'thumb c-pic')).join('')}</span>`
+        : n ? `<span class="c-tt">${its.slice(0, 2).map(i => `<span dir="auto">${esc(titleOf(i))}</span>`).join('')}</span>` : '';
+      const lbl = `${F_DLW.format(new Date(y, mo - 1, d))}: ${n ? n + ' kayıt' : 'kayıt yok'}`;
+      cells += `<button class="c-day l${this.lvl(n, max)}${key === today ? ' today' : ''}${key > today ? ' fut' : ''}" data-cday="${key}" tabindex="-1" aria-label="${esc(lbl)}"${n ? '' : ' aria-disabled="true"'}>
+        <span class="c-n">${d}</span>${n ? `<span class="c-c">${n}</span>` : ''}${body}</button>`;
     }
-    const tail = (7 - (lead + days) % 7) % 7; for (let k = 0; k < tail; k++) cells += `<span class="c-day out${wkc(lead + days + k)}" aria-hidden="true"></span>`;
+    const tail = (7 - (lead + days) % 7) % 7; for (let k = 0; k < tail; k++) cells += '<span class="c-day out" aria-hidden="true"></span>';
     const name = first.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-    const grow = this.phone() ? `<button class="c-grow" data-cgrow aria-expanded="${!wk}" aria-label="${wk ? 'Bütün ayı göster' : 'Yalnız bu haftayı göster'}">${ic('chev', 'sm')}<span>${wk ? 'Ay' : 'Hafta'}</span></button>` : '';
-    el.innerHTML = this.head(name, total ? total + ' kayıt' : 'Bu ayda kayıt yok', this.navBtns(wk ? 'hafta' : 'ay', m === today.slice(0, 7)), true) + `
+    el.innerHTML = this.head(name, total ? total + ' kayıt' : 'Bu ayda kayıt yok', this.navBtns('ay', m === today.slice(0, 7)), true) + `
       <div class="c-wd" aria-hidden="true">${this.WD.map(w => `<span>${w}</span>`).join('')}</div>
-      <div class="c-grid c-body" role="grid" aria-label="${esc(name)}">${cells}</div>${grow}`;
+      <div class="c-grid c-body" role="grid" aria-label="${esc(name)}">${cells}</div>`;
   },
   renderYear(el, items) {
     const { day, mon } = this.counts(items), y = +this.month().slice(0, 4), today = dayKey(now()), tm = today.slice(0, 7), cur = this.month();
@@ -1434,7 +1396,7 @@ const Cal = {
     this._fly = { dir, r, m: m || this.month() };
     S.calZoom = z; if (m) S.calMonth = m;
     this._focus = z ? (m || this.month()) : null; this._kb = !!document.activeElement?.closest?.('#cal');
-    this.draw(); Scrub.draw([]); if (!z && m) this.toMonth(m);
+    render(); renderNow(); scrollTo(0, 0);
   },
   fly() {
     const f = this._fly; this._fly = null; const b = $('#cal .c-body'); if (!f || !b || reduced()) return;
@@ -1466,39 +1428,7 @@ const Cal = {
     this.setZoom(z - 1, null, $(`#cal [data-cmo="${this.month()}"]`));
   },
   clampDay: (m, d) => `${m}-${String(Math.min(d, new Date(+m.slice(0, 4), +m.slice(5), 0).getDate())).padStart(2, '0')}`,
-  // the list below goes to that day IN PLACE: the day already drawn → smooth scroll; not drawn (older than the rows on the page, or
-  // newer than "… ve öncesi") → the list is drawn from that day, then scrolled. quiet = ‹ › moved the month (no flash)
-  open(key, quiet) {
-    if (S.view !== 'list') { this.show(true); setView('list'); }
-    const find = () => $(`#list .day[data-dk="${key}"]`);
-    let h = find();
-    if (!h) { S.listFrom = dayEnd(key); S.limit = 300; render(); renderNow(); h = find(); }
-    if (!h) return;
-    this.wk = key; this.seen = key; this._lock = performance.now() + 900; this.draw();
-    // rows with content-visibility get their real height only when drawn, so the first aim is off: short way → smooth, long way →
-    // a jump; then a few frames of correction until the day's first row sits right under its sticky head
-    const off = () => { if (!h.isConnected) h = find() || h; const g = h.nextElementSibling || h; return g.getBoundingClientRect().top - h.offsetHeight - (parseFloat(getComputedStyle(h).top) || 0) - 2; };
-    const d0 = off(), smooth = Math.abs(d0) < 1.5 * innerHeight && !reduced();
-    scrollTo({ top: Math.max(0, scrollY + d0), behavior: smooth ? 'smooth' : 'auto' });
-    // things above it (folders, "geçen yıl bugün", pictures) may still grow, the list may be redrawn: keep it there for 2.5 s unless the user moves
-    const w = { t: performance.now() + (smooth ? 500 : 0), x: 0 }, stop = () => { w.x = 1; }, evs = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
-    evs.forEach(v => addEventListener(v, stop, { once: true, passive: true }));
-    const fix = () => { if (w.x || performance.now() > w.t + 2500) return evs.forEach(v => removeEventListener(v, stop));
-      if (performance.now() >= w.t) { const d = off(); if (Math.abs(d) > 2) scrollTo(0, Math.max(0, scrollY + d)); } requestAnimationFrame(fix); };
-    requestAnimationFrame(fix);
-    if (!quiet && !reduced()) h.animate([{ color: 'var(--accent)', backgroundColor: 'var(--accent-soft)' }, { color: '', backgroundColor: '' }], { duration: 1200, delay: 300, easing: 'ease-out' });
-  },
-  // the list scrolls: the day on top is marked in the calendar (and its month / week follows) — not while open() is still scrolling
-  sync() {
-    if (!this.on() || this.zoom() || performance.now() < (this._lock || 0)) return;
-    const hs = document.querySelectorAll('#list .day[data-dk]'); if (!hs.length) return;
-    const lim = (parseFloat(getComputedStyle(hs[0]).top) || 54) + hs[0].offsetHeight + 4; let k = null;
-    for (const h of hs) { const g = h.nextElementSibling; if (!g || g.getBoundingClientRect().top > lim) break; k = h.dataset.dk; }
-    k ||= hs[0].dataset.dk;
-    if (k === this.seen) return; this.seen = k; this.wk = null;
-    if (!k.startsWith(this.month())) S.calMonth = k.slice(0, 7);
-    this.draw();
-  },
+  open(key) { const [y, mo, d] = key.split('-').map(Number); S.listFrom = new Date(y, mo - 1, d + 1).getTime() - 1; S.limit = 300; setView('list'); scrollTo(0, 0); },
   key2(e) { // keys that work anywhere in the calendar (and when nothing has focus): layers and years
     const z = this.zoom();
     if (e.shiftKey && (e.key === 'PageUp' || e.key === 'PageDown')) { e.preventDefault(); const nm = this.step(e.key === 'PageUp' ? -12 : 12), c = e.target.closest?.('[data-cday]');
@@ -1511,16 +1441,16 @@ const Cal = {
   wire(el) {
     this.wired = true;
     el.addEventListener('click', e => {
-      if (e.target.closest('[data-cfold]')) return this.toggle();
-      if (e.target.closest('[data-cgrow]')) { this.full = !this.full; return this.draw(); }
-      const wg = this.wkMode() && e.target.closest('[data-cgo]'); if (wg) return this.week(+wg.dataset.cgo);
       const zb = e.target.closest('[data-cz]'); if (zb) { const k = +zb.dataset.cz; return this.setZoom(k, null, k < this.zoom() ? $(`#cal [data-cmo="${this.month()}"]`) : null); }
       const g = e.target.closest('[data-cgo]'); if (g) { const n = +g.dataset.cgo, u = this.zoom() ? 12 : 1; this.go(n ? this.step(n * u) : dayKey(now()).slice(0, 7), this.zoom() && !n ? dayKey(now()).slice(0, 7) : null); return; }
       const yb = e.target.closest('[data-cyear]'); if (yb) return this.setZoom(1, `${yb.dataset.cyear}${this.month().slice(4)}`, yb.closest('.c-yrow'));
       const mb = e.target.closest('[data-cmo]'); if (mb) return this.setZoom(this.zoom() === 2 ? 1 : 0, mb.dataset.cmo, this.zoom() === 2 ? mb.closest('.c-yrow') : mb);
       const c = e.target.closest('[data-cday]'); if (c && c.getAttribute('aria-disabled') !== 'true') this.open(c.dataset.cday);
     });
-    addEventListener('scroll', () => { if (this._sq || !this.on()) return; this._sq = requestAnimationFrame(() => { this._sq = 0; this.sync(); }); }, { passive: true });
+    document.addEventListener('keydown', e => { // nothing focused (body) and the calendar is on: the layer keys still work
+      if (S.view !== 'cal' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || document.activeElement !== document.body || document.querySelector('dialog[open], .modal:not([hidden])')) return;
+      this.key2(e);
+    });
     el.addEventListener('keydown', e => {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (this.key2(e) !== false) return;
@@ -1557,17 +1487,9 @@ const Cal = {
       if (pinch && pts.size === 2) { const r = dist() / pinch.d; if (r < .72 || r > 1.4) { this._swiped = Date.now(); const p = pinch; pinch = null; this.zoomAt(r < 1 ? -1 : 1, p.x, p.y); } } });
     const up = e => { if (!pts.delete(e.pointerId)) return; if (pts.size < 2 && pinch) { pinch = null; this._swiped = Date.now(); }
       if (sx == null || e.type !== 'pointerup') { sx = null; return; } const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
-      if (this.zoom() < 2 && Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) { this._swiped = Date.now(); return this.wkMode() ? this.week(dx < 0 ? 1 : -1) : this.slide(dx < 0 ? 1 : -1); }
-      if (this.phone() && !this.zoom() && Math.abs(dy) > 50 && Math.abs(dy) > 1.5 * Math.abs(dx) && (dy > 0) === !this.full && e.target.closest?.('.c-grid, .c-wd, .c-grow')) { this._swiped = Date.now(); this.full = dy > 0; this.draw(); } };
+      if (this.zoom() < 2 && Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) { this._swiped = Date.now(); this.slide(dx < 0 ? 1 : -1); } };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
     el.addEventListener('click', e => { if (Date.now() - (this._swiped || 0) < 400) { e.stopPropagation(); e.preventDefault(); } }, true); // a swipe / pinch is not a tap
-  },
-  week(n) { // phone week row: ‹ › / a swipe = a week (into the next month too); the list follows to that week's newest day
-    if (!n) return this.go(dayKey(now()).slice(0, 7), dayKey(now()));
-    const [y, mo, d] = this.wkKey(this.month()).split('-').map(Number), k = dayKey(new Date(y, mo - 1, d + 7 * n).getTime());
-    S.calMonth = k.slice(0, 7); this.wk = k; this.draw();
-    const [ky, km, kd] = k.split('-').map(Number), dow = (new Date(ky, km - 1, kd).getDay() + 6) % 7;
-    this.from(new Date(ky, km - 1, kd - dow + 7).getTime() - 1);
   },
   slide(n) { this.go(this.step(n * (this.zoom() ? 12 : 1))); const g2 = $('#cal .c-body'); if (!g2 || reduced()) return;
     g2.animate([{ transform: `translateX(${n * 24}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); },
@@ -1722,7 +1644,7 @@ function renderTopics(items) {
   hookThumbs(el);
 }
 
-const VIEWS = [['board', 'board', 'Pano'], ['list', 'list', 'Liste'], ['gallery', 'grid', 'Galeri']]; // 158b: Takvim lives on top of the List
+const VIEWS = [['board', 'board', 'Pano'], ['list', 'list', 'Liste'], ['gallery', 'grid', 'Galeri'], ['cal', 'cal', 'Takvim']];
 // 147: every count the rail and the side lists show, in one pass over the items, kept until the items change (a view change
 // counted 10k items ~15 times: 100–300 ms on a phone). Unseen / reading-list counts depend on the time: a new pass each minute.
 function chromeCounts(live) {
@@ -1972,7 +1894,7 @@ function renderNow() {
     if (!renderQueued) return; renderQueued = false;
     // typing only changes the dropdown: views and chrome redraw when data, filters, a real search or the view change
     const live = findMode(); // 103b: in Ara mode typing filters the page with classes (Live), the views are not redrawn
-    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.view === 'board' ? Range.get() + Range.arch() : '') + (S.board || ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
+    const vkey = [S.items, JSON.stringify(S.filter), S.sortPrio, live ? 'L' : S.searchOn, live ? 'L' : S.searchOn && S.hits, S.limit, S.view + (S.listFrom || '') + (S.view === 'board' ? Range.get() + Range.arch() : '') + (S.board || '') + (S.view === 'cal' ? Cal.key() : ''), S.bridgeOk, S.palOpen, aiKey(), S.allTags, JSON.stringify(S.settings?.lists || {}), S.folder + '|' + S.foldAll + '|' + AIF.ver + '|' + JSON.stringify(S.settings?.folders || {})];
     const pv = S._vview, viewOnly = !!S._vkey && pv !== S.view && pv !== 'todo' && S.view !== 'todo' && vkey.every((x, k) => k === 6 || x === S._vkey[k]); S._vview = S.view;
     const same = !!S._vkey && vkey.every((x, k) => x === S._vkey[k]), onlyMore = !!S._vkey && S.view === 'list' && vkey[5] > S._vkey[5] && vkey.every((x, k) => k === 5 || x === S._vkey[k]); S._vkey = vkey;
     if (Sem.w && Sem._of !== S.items) { Sem._of = S.items; Sem.sync(); } // 104f: changed items get new meaning numbers
@@ -1992,8 +1914,7 @@ function renderNow() {
     const fv = S.view === 'todo' ? 'todo' : S.view === 'gallery' ? 'gallery' : S.view === 'list' ? 'list' : null; // 102: same view redrawn → FLIP
     const fr = fv && S._fv === fv && !onlyMore && $('#' + fv), fb = fr && Flip.snap(fr); S._fv = fv;
     if (viewOnly && !none) chromeView(); else if (!same) renderChrome(); // 104g: a live search that only needs other rows drawn doesn't change the rail / side lists
-    for (const v of ['list', 'board', 'gallery', 'topics', 'todo']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
-    const calOn = Cal.on() && !none; $('#cal').hidden = !calOn; document.body.classList.toggle('lcal', calOn);
+    for (const v of ['list', 'board', 'gallery', 'topics', 'todo', 'cal']) $('#' + v).hidden = (none && v !== 'todo') || S.view !== v;
     document.body.classList.toggle('board-view', S.view === 'board' && !none);
     { const bp = $('#boardBtn'), on = S.view === 'board' && !none; bp.tabIndex = on ? 0 : -1; const pp = $('#boardPop'); if (!on && pp) pp.hidden = true; bp.setAttribute('aria-expanded', String(!!pp && !pp.hidden)); } // 146: a redraw keeps the open list's state (the tip checks it) // 116: outside the board the logo is just the logo
     document.body.classList.toggle('gallery-view', S.view === 'gallery' && !none); Peek.dock();
@@ -2016,12 +1937,12 @@ function renderNow() {
       else if (!S.cam) { Board.fit(false); Board.cull(); } // 147b2: back on the board with nothing changed: the same cards from the fit, no rebuild (phone 4x: 70–540 ms)
     }
     else if (S.view === 'gallery') renderGallery(items);
+    else if (S.view === 'cal') Cal.render(items);
     else renderTopics(items);
     if (S.view !== 'gallery' && Sel.mode) Sel.clear(); if (S.view !== 'board') Link.end();
     S._lkey = S.view === 'list' && !live && items.length ? vkey : S.view === 'list' ? null : S._lkey;
     Flip.play(fr, fb);
-    if (calOn) Cal.render(items);
-    Scrub.draw(none || S.view === 'todo' || calOn ? [] : items);
+    Scrub.draw(none || S.view === 'todo' || S.view === 'cal' ? [] : items);
     if (!$('#splash').classList.contains('gone')) { $('#splash').classList.add('gone'); performance.mark?.('nts-ui'); } // 94e: first screen time (tools/bench-start.log)
     Badge.set(); Sample.bar(); Rel.update();
 }
@@ -3007,7 +2928,7 @@ const Cmd = {
       ['v-board', 'board', 'Pano görünümü', 'board canvas view', () => setView('board'), '', S.view !== 'board'],
       ['v-list', 'list', 'Liste görünümü', 'list view', () => setView('list'), '', S.view !== 'list'],
       ['v-gallery', 'grid', 'Galeri görünümü', 'gallery images resimler view', () => setView('gallery'), '', S.view !== 'gallery'],
-      ['v-cal', 'cal', Cal.on() ? 'Takvimi kapat' : 'Takvimi aç (Liste)', 'calendar month ay takvim view تقويم', () => Cal.toggle(), '', true],
+      ['v-cal', 'cal', 'Takvim görünümü', 'calendar month ay takvim view تقويم', () => setView('cal'), '', S.view !== 'cal'],
       ['v-todo', 'todo', 'Yapılacaklar', 'todo tasks görevler', () => setView('todo'), '', S.view !== 'todo'],
       ['m-note', 'pen', 'Yeni not yaz', 'new note ekle kaydet', () => { setMode('note'); $('#input').focus(); }, 'N'],
       ['m-find', 'search', 'Ara', 'search find bul', () => { setMode('find'); $('#input').focus(); }, '/'],
@@ -8209,7 +8130,6 @@ function wire() {
     if (id === '#gallery' && Sel.click(e)) return;
     const a = e.target.closest('.act'); if (a) { e.stopPropagation(); return itemAction(a.dataset.a, a.closest('[data-id]').dataset.id); }
     if (e.target.closest('[data-ljump]')) return monthJump(e.target.closest('[data-ljump]'));
-    if (e.target.closest('[data-lcal]')) { Cal.show(true); S._lkey = null; render(true); return scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); }
     if (e.target.closest('[data-lpin]')) return Saved.save();
     const od = e.target.closest('[data-otd]'); if (od) return showFrom(dayEnd(od.dataset.otd));
     if (e.target.closest('[data-otdx]')) { try { localStorage.setItem('hn-otd-hide', dayKey(now())); } catch { } return render(true); }
@@ -8258,7 +8178,6 @@ const Fly = {
   },
 };
 function setView(v) {
-  if (v === 'cal' || v === 'calendar') { Cal.show(true); v = 'list'; } // 158b: old links / shortcuts → the List with its calendar
   if (v === 'todo' && S.view !== 'todo') S.prevView = S.view;
   const ch = v !== S.view;
   S._vfrom = S.view; if (ch) { S.cam = null; hideHits(); } S.view = v; try { localStorage.setItem('hn-view', v); } catch { } // same view again: keep the camera (render would skip and leave it empty)
@@ -8268,7 +8187,7 @@ function setView(v) {
     h.classList.remove('vt'); fly?.done(); }
   }
   render();
-  if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change
+  if (ch) { const el = $('#' + (v === 'board' ? 'board' : v === 'gallery' ? 'gallery' : v === 'todo' ? 'todo' : v === 'cal' ? 'cal' : 'list')); if (el) { el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', () => el.classList.remove('vin'), { once: true }); } } // 90: soft view change
 }
 async function reloadFromDB() {
   const items = await DB.all('items');
@@ -8292,7 +8211,7 @@ const Boot = {
 (async function main() {
   setTheme(document.documentElement.dataset.theme); Glass.apply();
   try { const a = localStorage.getItem('hn-accent'); if (a?.startsWith('#')) setAccent(a); } catch { }
-  try { const v = localStorage.getItem('hn-view'); if (v === 'cal' || v === 'calendar') { S.view = 'list'; Cal.show(true); } else if (['list', 'board', 'gallery', 'todo'].includes(v)) S.view = v; else if (innerWidth < 900) S.view = 'list'; } catch { } // phone: first screen is the readable list
+  try { const v = localStorage.getItem('hn-view'); if (['list', 'board', 'gallery', 'todo', 'cal'].includes(v)) S.view = v; else if (innerWidth < 900) S.view = 'list'; } catch { } // phone: first screen is the readable list
   await loadSettings();
   const hp = new URLSearchParams(location.hash.slice(1)); // one-tap setup: #bridge=<token>&url=<bridgeUrl>
   if (hp.get('bridge')) {
@@ -8316,7 +8235,6 @@ const Boot = {
   { // home-screen shortcuts (long-press the icon): new note, to-dos, vault
     const q = new URLSearchParams(location.search), v = q.get('view'), d = q.get('do');
     if (v === 'todo') setView('todo');
-    if (v === 'cal' || v === 'calendar') setView('cal');
     if (d === 'read') setTimeout(() => Read.queue(), 400); // 95c: tapped the "okuma listesi" notification
     if (v === 'morning') setTimeout(() => Morning.open(), 400); // 95b: the morning notification tapped with the app closed
     const qt = (q.get('text') || '').trim().slice(0, 20000), qu = (q.get('url') || '').trim(); // 96: Android "Nts'e kaydet" (selected text) and links
