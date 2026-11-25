@@ -3942,7 +3942,7 @@ const TagArc = {
   W: 236, R: 230, Y: 31, STEP: 78, // viewBox width, ring radius, label line, px between topics on the arc
   list: [], key: null, cur: undefined, pos: 0, vel: 0, target: 0, raf: 0, last: 0, wheel: 0,
   get n() { return this.list.length + 1; },
-  get step() { return this.STEP / this.R; }, // radians per topic
+  get step() { return (this.gap || this.STEP) / this.R; }, // radians per topic
   label(i) { return i ? '#' + this.list[i - 1][0] : 'Hepsi'; },
   build() {
     const el = $('#tagArc'), { W, R, Y } = this, cy = Y + R, A = Math.asin((W / 2 + 8) / R), x = s => (W / 2 + R * Math.sin(s)).toFixed(1), y = s => (cy - R * Math.cos(s)).toFixed(1);
@@ -3956,7 +3956,13 @@ const TagArc = {
     this.wire();
   },
   draw() { // labels + detents for the current list
-    const deg = this.step * 180 / Math.PI, R = this.R, cut = s => s.length > 11 ? s.slice(0, 10) + '…' : s;
+    const R = this.R, cut = s => s.length > 11 ? s.slice(0, 10) + '…' : s;
+    // owner (2026-11-26, "çok sıkışmış"): long topics overlapped at a fixed 78 → the gap follows the longest label (≈7.6 units a letter
+    // at 12.5px, the one in the window is bold) and the window fits it
+    const wid = Math.max(...Array.from({ length: this.n }, (_, i) => [...cut(this.label(i))].length)) * 7.6;
+    this.gap = Math.max(this.STEP, Math.min(128, wid + 26)); const ww = Math.max(72, Math.min(this.W - 40, wid + 20)), win = $('.tarc-win', this.dial);
+    win.setAttribute('x', (this.W / 2 - ww / 2).toFixed(1)); win.setAttribute('width', ww.toFixed(1));
+    const deg = this.step * 180 / Math.PI;
     $('.tarc-txt', this.dial).innerHTML = Array.from({ length: this.n }, (_, i) => `<text transform="rotate(${(i * deg).toFixed(2)}) translate(0 ${-R})">${esc(cut(this.label(i)))}</text>`).join('')
       + Array.from({ length: this.n - 1 }, (_, i) => `<circle class="tarc-dot" r="3.2" transform="rotate(${((i + 1) * deg).toFixed(2)}) translate(0 ${-R + 13})" style="fill:${tagCol(this.list[i][0])}"/>`).join(''); // 123-2 (t-B3): each topic its colour
     $('.tarc-ticks', this.dial).innerHTML = Array.from({ length: this.n * 2 - 1 }, (_, k) => `<line class="${k % 2 ? '' : 'm'}" transform="rotate(${(k * deg / 2).toFixed(2)})" x1="0" x2="0" y1="${-R + 21}" y2="${-R + (k % 2 ? 24 : 26)}"/>`).join('');
@@ -3980,6 +3986,7 @@ const TagArc = {
     const deg = this.step * 180 / Math.PI, n = this.n;
     let p = this.pos; if (p < 0) p = p * .35; else if (p > n - 1) p = n - 1 + (p - n + 1) * .35; // rubber band past the ends
     this.rot.setAttribute('transform', `translate(${this.W / 2} ${this.Y + this.R}) rotate(${(-p * deg).toFixed(3)})`);
+    for (let k = 0; k < n; k++) { const d = Math.abs(k - p), o = d < .5 ? 1 : Math.max(0, .75 - (d - .5) * .6); const t = this.T[k]; if (t._o !== o) { t.style.opacity = o.toFixed(2); t._o = o; } } // neighbours fade
     const i = this.i(), sel = this.cur ? this.list.findIndex(t => t[0] === this.cur) + 1 : 0;
     if (i !== this.on) { this.dial.parentNode.style.setProperty('--tc', i ? tagCol(this.list[i - 1][0]) : 'var(--muted)'); this.T[this.on]?.classList.remove('on'); this.T[i]?.classList.add('on'); if (feel && this.on >= 0) haptic(3); this.on = i; this.button(); }
     if (sel !== this.sel) { this.T[this.sel]?.classList.remove('sel'); if (sel) this.T[sel]?.classList.add('sel'); this.sel = sel; this.button(); }
