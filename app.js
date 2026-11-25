@@ -5712,6 +5712,8 @@ const Board = {
     // a linked run is not split across columns (a column may grow by 2 for it)
     const tied = (a, b) => !!a && ((a.group && a.group === b.group) || !!rl.get(a.id)?.has(b.id));
     for (const [n0, d] of days.entries()) {
+      { const key = i => ZC.topic(i) ?? '#' + i.id, first = new Map(); d.items.forEach((i, n) => { if (!first.has(key(i))) first.set(key(i), n); }); // 119-1: a day's cards of one topic stand together (time order inside), so they read as a cluster from far away
+        d.items = d.items.map((i, n) => [i, n]).sort((x, y) => first.get(key(x[0])) - first.get(key(y[0])) || x[1] - y[1]).map(x => x[0]); }
       const left = new Set(d.items), seq = [];
       for (const i of d.items) { if (!left.has(i)) continue; const q = [i]; left.delete(i);
         while (q.length) { const c = q.shift(); seq.push(c); for (const o of d.items) if (left.has(o) && tied(c, o)) { left.delete(o); q.push(o); } } }
@@ -5732,6 +5734,7 @@ const Board = {
     const vis = new Map(); for (const d of days) for (const i of d.items) { const k = d.k.slice(0, 7); if (hasVisual(i)) { const a = vis.get(k) || vis.set(k, []).get(k); if (a.length < 4) a.push(i); } }
     this.months.forEach(m => { m.pics = vis.get(m.k) || []; });
     this.deg = this.degrees();
+    ZC.build(); // 119-1: the watercolour clusters seen from far away
     this.cull(); Link.frame();
     if (S.cam) this.apply();
     requestAnimationFrame(() => { if (!S.cam) this.fit(false); }); // 109a: a synced item must not throw the camera back (only a new board/range/view starts from fit)
@@ -5791,6 +5794,7 @@ const Board = {
       if (plane.classList.contains('moving')) (this._fq ||= []).push(...fresh); else this.fades(fresh); }
     this.fitHeads();
     this.wires();
+    ZC.cull();
     BoardHint.update();
   },
   // 92b: a day head is never cut. Full label if it fits its band on screen, else the short one ("20 Kas 3"), else it stands vertically in the band
@@ -5867,6 +5871,7 @@ const Board = {
     const zr = this._zr ||= (() => { const st = document.head.appendChild(document.createElement('style')); st.textContent = '.day-band, .b-date, .b-lk { --hs: 1; --ik: 1 }'; return st.sheet.cssRules[0].style; })();
     zr.setProperty('--hs', Math.max(1, 1 / c.k)); zr.setProperty('--ik', 1 / c.k);
     const b = $('#board'); b.classList.toggle('far', c.k < .7); b.classList.toggle('nowire', c.k < this.WIREK); const g = 24 * c.k * 2 ** Math.max(0, Math.ceil(Math.log2(12 / (24 * c.k)))); b.style.backgroundSize = `${g}px ${g}px`; b.style.backgroundPosition = `${c.x}px ${c.y}px`;
+    ZC.zoom(c.k);
     const p = $('#zoomPct'); if (p) p.textContent = (c.k < .1 ? (c.k * 100).toFixed(1) : Math.round(c.k * 100)) + '%';
     if (!this._cq) this._cq = requestAnimationFrame(() => { this._cq = 0; this.cull(); });
   },

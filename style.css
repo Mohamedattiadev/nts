@@ -2781,3 +2781,20 @@ dialog.clean .d-body { gap: 12px; }
 .dd-read .dd-go { background: var(--accent); color: var(--accent-text, #fff); border-color: transparent; min-width: 64px; }
 @media (pointer: coarse) { .dd-read button { height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .tarc-win, .tarc-ptr, .tarc-go { transition: none; } }
+/* 119-1: watercolour clusters when zoomed out (zoomclusters.js) */
+.zc-svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; z-index: 0; }
+.zc-svg path { vector-effect: non-scaling-stroke; }
+.zc-wash { filter: url(#zcwc); }
+.plane.moving .zc-wash { filter: none; } /* the grain is redrawn at every zoom step otherwise */
+.zc-arw path { fill: none; stroke: color-mix(in srgb, var(--text) 78%, transparent); stroke-linecap: round; }
+.zc-lbls { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 3; --zls: 1; }
+.zc-l { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0; border: 0; background: none; cursor: pointer; white-space: nowrap;
+  transform-origin: 0 100%; transform: translateY(-100%) scale(var(--zls)); font: inherit; color: var(--c); text-align: left;
+  text-shadow: 0 0 3px var(--bg), 0 0 8px var(--bg); }
+.zc-l b { font-size: 23px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.zc-l small { font-size: 14px; font-weight: 500; color: var(--muted); }
+.zc-l:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.zc-al { position: absolute; transform: translate(-50%, -50%) scale(var(--zls)); font-size: 14px; font-weight: 550; color: var(--text-2); white-space: nowrap; pointer-events: none;
+  text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); }
+@media (prefers-reduced-motion: reduce) { .zc-svg, .zc-lbls { transition: none; } }
+.zc-l.zc-hide { visibility: hidden; }
